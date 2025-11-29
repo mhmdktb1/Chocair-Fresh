@@ -1,0 +1,337 @@
+/* =========================================================
+   CHECKOUT PAGE - Chocair Fresh
+========================================================= */
+
+/* Base layout */
+.checkout-page {
+  background: #f5f9f4;
+  min-height: 100vh;
+  padding: 40px 0;
+}
+
+.checkout-container {
+  background: linear-gradient(180deg, #f8fdf7 0%, #ffffff 100%);
+  border-radius: 16px;
+  padding: 40px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
+  margin: 40px auto;
+  max-width: 1100px;
+}
+
+.checkout-title {
+  font-size: 2rem;
+  text-align: center;
+  color: #2e7d32;
+  margin-bottom: 32px;
+  font-weight: 800;
+  letter-spacing: 0.5px;
+}
+
+/* Grid Layout */
+.checkout-grid {
+  display: grid;
+  grid-template-columns: 2fr 1fr;
+  gap: 30px;
+}
+
+/* =========================================================
+   FORM STYLING
+========================================================= */
+.checkout-form {
+  background: #ffffff;
+  border-radius: 16px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+  padding: 24px;
+}
+
+.checkout-form h2 {
+  color: #1b5e20;
+  font-size: 1.2rem;
+  margin-bottom: 12px;
+  font-weight: 700;
+  border-left: 4px solid #4caf50;
+  padding-left: 8px;
+}
+
+.form-group {
+  margin-bottom: 16px;
+  display: flex;
+  flex-direction: column;
+}
+
+.form-group label {
+  font-weight: 600;
+  color: #2e7d32;
+  margin-bottom: 6px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+input, select {
+  border: 1px solid #cde3cf;
+  border-radius: 8px;
+  padding: 10px 12px;
+  font-size: 1rem;
+  outline: none;
+  transition: 0.25s;
+  font-family: "Cairo", sans-serif;
+}
+
+input:focus, select:focus {
+  border-color: #4caf50;
+  box-shadow: 0 0 0 3px rgba(76, 175, 80, 0.15);
+}
+
+/* =========================================================
+   MAP + LOCATION
+========================================================= */
+.map-container {
+  border-radius: 12px;
+  overflow: hidden;
+  border: 1px solid #d8e6d1;
+  margin-bottom: 16px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+  height: 300px;
+}
+
+.use-location-btn {
+  background: linear-gradient(90deg, #4caf50, #66bb6a);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  padding: 10px 16px;
+  font-weight: 600;
+  margin-bottom: 12px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  transition: 0.3s ease;
+  justify-content: center;
+}
+
+.use-location-btn:hover {
+  background: linear-gradient(90deg, #388e3c, #4caf50);
+  transform: translateY(-1px);
+}
+
+/* =========================================================
+   PAYMENT OPTIONS
+========================================================= */
+.payment-options {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 20px;
+}
+
+.payment-option {
+  border: 2px solid #cde3cf;
+  border-radius: 8px;
+  padding: 10px 14px;
+  cursor: pointer;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  transition: 0.3s ease;
+}
+
+.payment-option.selected {
+  background: #e8f5e9;
+  border-color: #4caf50;
+  color: #2e7d32;
+  box-shadow: 0 3px 10px rgba(76, 175, 80, 0.2);
+}
+
+/* =========================================================
+   CARD INPUTS
+========================================================= */
+.form-row {
+  display: flex;
+  gap: 12px;
+}
+.form-group.half {
+  flex: 1;
+}
+
+/* =========================================================
+   ORDER BUTTON
+========================================================= */
+.place-order-btn {
+  background: linear-gradient(90deg, #2e7d32, #43a047);
+  color: #fff;
+  font-weight: 700;
+  padding: 12px 18px;
+  border-radius: 10px;
+  border: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  transition: 0.3s;
+  width: 100%;
+  margin-top: 12px;
+}
+
+.place-order-btn:hover {
+  background: linear-gradient(90deg, #1b5e20, #2e7d32);
+  transform: translateY(-1px);
+}
+
+/* =========================================================
+   ORDER SUMMARY
+========================================================= */
+.order-summary {
+  background: #ffffff;
+  border-radius: 16px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+  padding: 24px;
+  border-left: 3px solid #4caf50;
+  height: fit-content;
+}
+
+.order-summary h2 {
+  color: #2e7d32;
+  font-weight: 700;
+}
+
+.summary-item, .summary-total {
+  display: flex;
+  justify-content: space-between;
+  padding: 8px 0;
+  color: #333;
+}
+
+.summary-total {
+  border-top: 1px solid #c8e6c9;
+  margin-top: 12px;
+  padding-top: 12px;
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: #1b5e20;
+}
+
+.summary-note {
+  font-size: 0.9rem;
+  color: #4b6b4b;
+  margin-top: 10px;
+}
+
+/* =========================================================
+   RESPONSIVE
+========================================================= */
+@media (max-width: 992px) {
+  .checkout-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .order-summary {
+    margin-top: 24px;
+  }
+}
+
+@media (max-width: 768px) {
+  .checkout-container {
+    width: 100%;
+    max-width: 100%;
+    margin: 0;
+    padding: 16px;
+    box-shadow: none;
+  }
+
+  .checkout-grid {
+    display: block;
+  }
+
+  .checkout-form,
+  .order-summary {
+    width: 100%;
+    margin: 0;
+  }
+
+  .map-container {
+    height: 250px !important;
+  }
+
+  .use-location-btn {
+    width: 100%;
+    font-size: 0.95rem;
+  }
+
+  input,
+  select,
+  textarea {
+    font-size: 16px;
+  }
+
+  .place-order-btn {
+    width: 100%;
+  }
+}
+/* =========================================================
+   STICKY ORDER BAR (MOBILE)
+========================================================= */
+@media (max-width: 768px) {
+  .sticky-order-bar {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    background: #ffffff;
+    box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.08);
+    padding: 10px 16px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    z-index: 9999;
+    border-top: 3px solid #4caf50;
+  }
+
+  .sticky-total {
+    display: flex;
+    flex-direction: column;
+    line-height: 1.2;
+  }
+
+  .sticky-total span {
+    color: #4b6b4b;
+    font-size: 0.9rem;
+  }
+
+  .sticky-total strong {
+    color: #2e7d32;
+    font-size: 1.2rem;
+    font-weight: 800;
+  }
+
+  .sticky-btn {
+    background: linear-gradient(90deg, #2e7d32, #43a047);
+    color: #fff;
+    font-weight: 700;
+    padding: 12px 20px;
+    border-radius: 10px;
+    border: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    transition: 0.3s;
+    font-size: 1rem;
+  }
+
+  .sticky-btn:hover {
+    background: linear-gradient(90deg, #1b5e20, #2e7d32);
+    transform: translateY(-1px);
+  }
+
+  /* Hide regular place-order button on mobile */
+  .place-order-btn {
+    display: none;
+  }
+
+  /* Add bottom padding so the form isn't hidden behind the sticky bar */
+  .checkout-form {
+    padding-bottom: 100px;
+  }
+}

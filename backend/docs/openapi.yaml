@@ -1,0 +1,78 @@
+openapi: 3.0.0
+info:
+  title: Chocair Fresh API
+  version: 1.0.0
+  description: API for Chocair Fresh E-commerce Platform
+servers:
+  - url: http://localhost:5000/api
+    description: Local Development Server
+paths:
+  /health:
+    get:
+      summary: Health check
+      responses:
+        '200':
+          description: Server is healthy
+  /users/register:
+    post:
+      summary: Register a new user
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                email:
+                  type: string
+                password:
+                  type: string
+      responses:
+        '201':
+          description: User registered
+  /users/login:
+    post:
+      summary: Login user
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                email:
+                  type: string
+                password:
+                  type: string
+      responses:
+        '200':
+          description: Login successful
+  /products:
+    get:
+      summary: Get all products
+      responses:
+        '200':
+          description: List of products
+    post:
+      summary: Create product (Admin)
+      security:
+        - bearerAuth: []
+      responses:
+        '201':
+          description: Product created
+  /orders:
+    post:
+      summary: Create order
+      security:
+        - bearerAuth: []
+      responses:
+        '201':
+          description: Order created
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT

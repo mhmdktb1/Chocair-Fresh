@@ -1,0 +1,22 @@
+
+
+.header.scrolled .nav-links a,
+.header.scrolled .logo,
+.header.scrolled .icon-btn svg {
+  color: #2e7d32 !important;
+  stroke: #2e7d32 !important;
+}
+
+#root {
+  margin: 0 !important;
+  padding: 0 !important;
+  width: 100% !important;
+}
+
+
+
+body {
+  margin: 0 !important;
+  padding: 0 !important;
+  font-family: 'Cairo', sans-serif !important;
+}

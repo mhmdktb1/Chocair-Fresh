@@ -1,0 +1,51 @@
+{
+  "name": "chocair-fresh-backend",
+  "version": "1.0.0",
+  "description": "Backend API for Chocair Fresh - E-commerce Grocery Delivery Platform",
+  "main": "server.js",
+  "type": "module",
+  "scripts": {
+    "dev": "nodemon server.js",
+    "start": "node server.js",
+    "test": "cross-env NODE_ENV=test NODE_OPTIONS=--experimental-vm-modules jest --runInBand --detectOpenHandles",
+    "lint": "eslint .",
+    "format": "prettier -w .",
+    "health": "node scripts/healthcheck.js",
+    "seed": "node scripts/seed.js"
+  },
+  "keywords": [
+    "ecommerce",
+    "grocery",
+    "delivery",
+    "api"
+  ],
+  "author": "Chocair Fresh Team",
+  "license": "MIT",
+  "dependencies": {
+    "axios": "^1.13.2",
+    "bcryptjs": "^2.4.3",
+    "cloudinary": "^1.41.0",
+    "cors": "^2.8.5",
+    "dotenv": "^16.3.1",
+    "express": "^4.18.2",
+    "express-async-errors": "^3.1.1",
+    "helmet": "^8.1.0",
+    "jsonwebtoken": "^9.0.2",
+    "mongodb": "^7.0.0",
+    "mongoose": "^8.0.0",
+    "morgan": "^1.10.1",
+    "multer": "^1.4.5-lts.1",
+    "zod": "^4.1.12"
+  },
+  "devDependencies": {
+    "cross-env": "^10.1.0",
+    "eslint": "^9.39.1",
+    "eslint-config-prettier": "^10.1.8",
+    "eslint-plugin-import": "^2.32.0",
+    "jest": "^30.2.0",
+    "mongodb-memory-server": "^10.3.0",
+    "nodemon": "^3.0.1",
+    "prettier": "^3.6.2",
+    "supertest": "^7.1.4"
+  }
+}
