@@ -4,14 +4,14 @@ import { useCMS } from "../../context/CMSContext";
 import { Plus, Edit2, Trash2, Search, X, Star } from "lucide-react";
 
 function AdminProducts() {
-  const { products, addProduct, updateProduct, deleteProduct, loading, error, refreshProducts } = useAdmin();
-  const { categories, pricingRules, calculatePrice } = useCMS();
+  const { products, categories, addProduct, updateProduct, deleteProduct, loading, error, refreshProducts } = useAdmin();
+  const { pricingRules, calculatePrice } = useCMS();
   const [searchQuery, setSearchQuery] = useState("");
   const [showModal, setShowModal] = useState(false);
   const [editingProduct, setEditingProduct] = useState(null);
   const [formData, setFormData] = useState({
     name: "",
-    category: "fruits",
+    category: "",
     categories: [],
     price: "",
     priceUnit: "kg",
@@ -46,7 +46,7 @@ function AdminProducts() {
       setEditingProduct(null);
       setFormData({
         name: "",
-        category: "fruits",
+        category: "",
         categories: [],
         price: "",
         priceUnit: "kg",
@@ -65,7 +65,7 @@ function AdminProducts() {
     setEditingProduct(null);
     setFormData({
       name: "",
-      category: "fruits",
+      category: "",
       categories: [],
       price: "",
       priceUnit: "kg",
@@ -77,12 +77,12 @@ function AdminProducts() {
     });
   };
 
-  const handleCategoryToggle = (categorySlug) => {
-    const newCategories = formData.categories.includes(categorySlug)
-      ? formData.categories.filter(c => c !== categorySlug)
-      : [...formData.categories, categorySlug];
+  const handleCategoryToggle = (categoryName) => {
+    const newCategories = formData.categories.includes(categoryName)
+      ? formData.categories.filter(c => c !== categoryName)
+      : [...formData.categories, categoryName];
     
-    setFormData({ ...formData, categories: newCategories, category: newCategories[0] || "fruits" });
+    setFormData({ ...formData, categories: newCategories, category: newCategories[0] || "" });
   };
 
   const handleSubmit = async (e) => {
@@ -136,32 +136,6 @@ function AdminProducts() {
 
   return (
     <div>
-      {/* DEV MODE / Backend status banner */}
-      <div style={{
-        background: '#fff3cd',
-        border: '1px solid #ffeeba',
-        color: '#856404',
-        padding: '10px 16px',
-        borderRadius: '8px',
-        marginBottom: '16px',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        gap: '12px'
-      }}>
-        <span style={{ fontSize: '0.9rem', fontWeight: 600 }}>⚠️ Dev Mode: Authentication bypassed. Backend products {loading ? 'loading…' : products.length === 0 ? 'empty or unreachable.' : `loaded (${products.length}).`}</span>
-        <button onClick={refreshProducts} style={{
-          background: '#2e7d32',
-          color: '#fff',
-          border: 'none',
-          padding: '6px 14px',
-          borderRadius: '6px',
-          cursor: 'pointer',
-          fontSize: '0.8rem',
-          fontWeight: 600
-        }}>Reload</button>
-      </div>
-
       {error && (
         <div style={{
           background: '#fdecea',
@@ -493,17 +467,17 @@ function AdminProducts() {
                   borderRadius: '8px',
                   background: '#fafafa'
                 }}>
-                  {categories.filter(cat => cat.isVisible).map(category => (
+                  {categories.filter(cat => cat.isVisible !== false).map(category => (
                     <label
-                      key={category.id}
+                      key={category._id}
                       style={{
                         display: 'flex',
                         alignItems: 'center',
                         gap: '6px',
                         padding: '8px 12px',
-                        background: formData.categories.includes(category.slug) ? '#2e7d32' : '#fff',
-                        color: formData.categories.includes(category.slug) ? '#fff' : '#333',
-                        border: '2px solid ' + (formData.categories.includes(category.slug) ? '#2e7d32' : '#e0e0e0'),
+                        background: formData.categories.includes(category.name) ? '#2e7d32' : '#fff',
+                        color: formData.categories.includes(category.name) ? '#fff' : '#333',
+                        border: '2px solid ' + (formData.categories.includes(category.name) ? '#2e7d32' : '#e0e0e0'),
                         borderRadius: '20px',
                         cursor: 'pointer',
                         fontSize: '0.9rem',
@@ -514,8 +488,8 @@ function AdminProducts() {
                     >
                       <input
                         type="checkbox"
-                        checked={formData.categories.includes(category.slug)}
-                        onChange={() => handleCategoryToggle(category.slug)}
+                        checked={formData.categories.includes(category.name)}
+                        onChange={() => handleCategoryToggle(category.name)}
                         style={{ display: 'none' }}
                       />
                       {category.name}

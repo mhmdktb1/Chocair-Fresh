@@ -1,6 +1,6 @@
 import { useState, useMemo, useCallback } from "react";
 import { useAdmin } from "../../context/AdminContext";
-import { Filter, Package, CheckCircle, Truck, Clock, Trash2, Calendar, ChevronLeft, ChevronRight, Search, ArrowUpDown } from "lucide-react";
+import { Filter, Package, CheckCircle, Truck, Clock, Trash2, Calendar, ChevronLeft, ChevronRight, Search, ArrowUpDown, XCircle } from "lucide-react";
 
 function AdminOrders() {
   const { orders, updateOrderStatus, deleteOrder } = useAdmin();
@@ -124,6 +124,7 @@ function AdminOrders() {
       case "Pending": return { bg: "#fff3e0", color: "#f57c00" };
       case "Preparing": return { bg: "#e3f2fd", color: "#1976d2" };
       case "Delivered": return { bg: "#e8f5e9", color: "#2e7d32" };
+      case "Cancelled": return { bg: "#ffebee", color: "#c62828" };
       default: return { bg: "#f5f5f5", color: "#666" };
     }
   };
@@ -133,6 +134,7 @@ function AdminOrders() {
       case "Pending": return Clock;
       case "Preparing": return Truck;
       case "Delivered": return CheckCircle;
+      case "Cancelled": return XCircle;
       default: return Package;
     }
   };
@@ -301,7 +303,7 @@ function AdminOrders() {
         <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
           <Filter size={20} color="#666" />
           <span style={{ fontWeight: 600, color: '#333' }}>Status:</span>
-          {["all", "Pending", "Preparing", "Delivered"].map(status => (
+          {["all", "Pending", "Preparing", "Delivered", "Cancelled"].map(status => (
             <button
               key={status}
               onClick={() => handleFilterChange(setFilterStatus)(status)}
@@ -457,7 +459,7 @@ function AdminOrders() {
 
                 {/* Actions */}
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', minWidth: '150px' }} onClick={(e) => e.stopPropagation()}>
-                  {order.status !== "Delivered" && (
+                  {order.status !== "Delivered" && order.status !== "Cancelled" && (
                     <select
                       value={order.status}
                       onChange={(e) => {
@@ -482,6 +484,7 @@ function AdminOrders() {
                       <option value="Pending">Pending</option>
                       <option value="Preparing">Preparing</option>
                       <option value="Delivered">Delivered</option>
+                      <option value="Cancelled">Cancelled</option>
                     </select>
                   )}
                   
@@ -674,6 +677,12 @@ function AdminOrders() {
             <p style={{ margin: 0, fontSize: '0.9rem', color: '#2e7d32' }}>Delivered</p>
             <p style={{ margin: '5px 0 0 0', fontSize: '1.8rem', fontWeight: 700, color: '#2e7d32' }}>
               {orders.filter(o => o.status === "Delivered").length}
+            </p>
+          </div>
+          <div style={{ padding: '15px', background: '#ffebee', borderRadius: '10px' }}>
+            <p style={{ margin: 0, fontSize: '0.9rem', color: '#c62828' }}>Cancelled</p>
+            <p style={{ margin: '5px 0 0 0', fontSize: '1.8rem', fontWeight: 700, color: '#c62828' }}>
+              {orders.filter(o => o.status === "Cancelled").length}
             </p>
           </div>
         </div>
@@ -918,7 +927,7 @@ function AdminOrders() {
 
             {/* Action Buttons */}
             <div style={{ display: 'flex', gap: '10px', marginTop: '25px' }}>
-              {selectedOrder.status !== "Delivered" && (
+              {selectedOrder.status !== "Delivered" && selectedOrder.status !== "Cancelled" && (
                 <select
                   value={selectedOrder.status}
                   onChange={(e) => {
@@ -942,6 +951,7 @@ function AdminOrders() {
                   <option value="Pending">Mark as Pending</option>
                   <option value="Preparing">Mark as Preparing</option>
                   <option value="Delivered">Mark as Delivered</option>
+                  <option value="Cancelled">Mark as Cancelled</option>
                 </select>
               )}
               <button
@@ -950,7 +960,7 @@ function AdminOrders() {
                   handleCloseModal();
                 }}
                 style={{
-                  flex: selectedOrder.status === "Delivered" ? 1 : 'none',
+                  flex: (selectedOrder.status === "Delivered" || selectedOrder.status === "Cancelled") ? 1 : 'none',
                   padding: '12px 24px',
                   background: '#f44336',
                   color: '#fff',

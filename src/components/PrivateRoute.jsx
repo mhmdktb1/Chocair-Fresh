@@ -12,7 +12,7 @@ import { Navigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 
 // TEMP DEV MODE: bypass all route guards
-const DEV_MODE = true;
+const DEV_MODE = false;
 
 /**
  * PrivateRoute Component
@@ -43,7 +43,7 @@ export default function PrivateRoute({ children }) {
   // Redirect to login if not authenticated
   // Pass current location to redirect back after login
   if (!isAuthenticated) {
-    return <Navigate to="/login" state={{ from: location }} replace />;
+    return <Navigate to="/login-phone" state={{ from: location }} replace />;
   }
 
   // Render protected component

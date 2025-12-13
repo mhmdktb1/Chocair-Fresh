@@ -73,8 +73,8 @@ function ProductPage() {
         >
           <Heart 
             size={24} 
-            fill={isFavorite(product.id) ? '#2E7D32' : 'none'}
-            stroke={isFavorite(product.id) ? '#2E7D32' : '#666'}
+            fill={isFavorite(product._id || product.id) ? '#2E7D32' : 'none'}
+            stroke={isFavorite(product._id || product.id) ? '#2E7D32' : '#666'}
           />
         </button>
       </div>

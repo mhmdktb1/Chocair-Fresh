@@ -1,9 +1,9 @@
 import { useState, useCallback } from "react";
-import { useCMS } from "../../context/CMSContext";
+import { useAdmin } from "../../context/AdminContext";
 import { Plus, Edit, Trash2, Eye, EyeOff, Star, X, Save, Image as ImageIcon } from "lucide-react";
 
 function AdminCategories() {
-  const { categories, addCategory, updateCategory, deleteCategory } = useCMS();
+  const { categories, addCategory, updateCategory, deleteCategory } = useAdmin();
   const [showModal, setShowModal] = useState(false);
   const [editingCategory, setEditingCategory] = useState(null);
   const [formData, setFormData] = useState({
@@ -42,45 +42,45 @@ function AdminCategories() {
     setEditingCategory(null);
   }, []);
 
-  const handleSubmit = useCallback((e) => {
+  const handleSubmit = useCallback(async (e) => {
     e.preventDefault();
     
-    if (!formData.name || !formData.description) {
+    if (!formData.name) {
       alert("Please fill in all required fields");
       return;
     }
 
     if (editingCategory) {
-      updateCategory(editingCategory.id, formData);
+      await updateCategory(editingCategory._id, formData);
       alert("✅ Category updated successfully!");
     } else {
-      addCategory(formData);
+      await addCategory(formData);
       alert("✅ Category added successfully!");
     }
     
     handleCloseModal();
   }, [formData, editingCategory, addCategory, updateCategory, handleCloseModal]);
 
-  const handleDelete = useCallback((id, name) => {
+  const handleDelete = useCallback(async (id, name) => {
     if (window.confirm(`Are you sure you want to delete "${name}" category?\n\nNote: This won't delete the products in this category.`)) {
-      deleteCategory(id);
+      await deleteCategory(id);
       alert("🗑️ Category deleted successfully!");
     }
   }, [deleteCategory]);
 
   const handleToggleVisibility = useCallback((category) => {
-    updateCategory(category.id, { isVisible: !category.isVisible });
+    updateCategory(category._id, { isVisible: !category.isVisible });
   }, [updateCategory]);
 
   const handleToggleFeatured = useCallback((category) => {
-    updateCategory(category.id, { featured: !category.featured });
+    updateCategory(category._id, { featured: !category.featured });
   }, [updateCategory]);
 
   const handleInputChange = (field, value) => {
     setFormData(prev => ({ ...prev, [field]: value }));
   };
 
-  const sortedCategories = [...categories].sort((a, b) => a.order - b.order);
+  const sortedCategories = [...categories].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
   const visibleCategories = sortedCategories.filter(cat => cat.isVisible);
   const hiddenCategories = sortedCategories.filter(cat => !cat.isVisible);
   const featuredCategories = sortedCategories.filter(cat => cat.featured);
@@ -203,7 +203,7 @@ function AdminCategories() {
       }}>
         {sortedCategories.map((category) => (
           <div
-            key={category.id}
+            key={category._id}
             style={{
               background: '#fff',
               borderRadius: '16px',
@@ -294,7 +294,7 @@ function AdminCategories() {
                 color: '#999',
                 marginBottom: '12px'
               }}>
-                <strong>Slug:</strong> {category.slug} • <strong>Order:</strong> #{category.order}
+                <strong>Created:</strong> {new Date(category.createdAt).toLocaleDateString()}
               </div>
 
               {/* Action Buttons */}
@@ -379,7 +379,7 @@ function AdminCategories() {
                 </button>
 
                 <button
-                  onClick={() => handleDelete(category.id, category.name)}
+                  onClick={() => handleDelete(category._id, category.name)}
                   style={{
                     display: 'flex',
                     alignItems: 'center',

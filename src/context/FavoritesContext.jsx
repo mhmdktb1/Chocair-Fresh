@@ -30,11 +30,13 @@ export function FavoritesProvider({ children }) {
     localStorage.setItem("chocair_favorites", JSON.stringify(favorites));
   }, [favorites]);
 
+  const getId = (item) => item._id || item.id;
+
   const addToFavorites = (product) => {
     console.log("Adding to favorites:", product);
     
     setFavorites((prevFavorites) => {
-      const alreadyFavorite = prevFavorites.some((item) => item.id === product.id);
+      const alreadyFavorite = prevFavorites.some((item) => getId(item) === getId(product));
       if (alreadyFavorite) {
         return prevFavorites;
       }
@@ -45,21 +47,22 @@ export function FavoritesProvider({ children }) {
   const removeFromFavorites = (productId) => {
     console.log("Removing from favorites:", productId);
     setFavorites((prevFavorites) =>
-      prevFavorites.filter((item) => item.id !== productId)
+      prevFavorites.filter((item) => getId(item) !== productId)
     );
   };
 
   const toggleFavorite = (product) => {
-    const isFavorite = favorites.some((item) => item.id === product.id);
-    if (isFavorite) {
-      removeFromFavorites(product.id);
+    const id = getId(product);
+    const isFav = favorites.some((item) => getId(item) === id);
+    if (isFav) {
+      removeFromFavorites(id);
     } else {
       addToFavorites(product);
     }
   };
 
   const isFavorite = (productId) => {
-    return favorites.some((item) => item.id === productId);
+    return favorites.some((item) => getId(item) === productId);
   };
 
   const clearFavorites = () => {

@@ -15,6 +15,8 @@ import SignIn from "./pages/SignIn";
 import Login from "./pages/Login";
 import LoginPhone from "./pages/LoginPhone";
 import Register from "./pages/Register";
+import OrderSuccess from "./pages/OrderSuccess";
+import UserOrders from "./pages/user/UserOrders";
 import AdminDashboard from "./pages/admin/AdminDashboard";
 import PrivateRoute, { AdminRoute, GuestRoute } from "./components/PrivateRoute";
 
@@ -86,9 +88,17 @@ function App() {
                   />
                   <Route 
                     path="/checkout" 
+                    element={<Checkout />} 
+                  />
+                  <Route 
+                    path="/order-success" 
+                    element={<OrderSuccess />} 
+                  />
+                  <Route 
+                    path="/my-orders" 
                     element={
                       <PrivateRoute>
-                        <Checkout />
+                        <UserOrders />
                       </PrivateRoute>
                     } 
                   />
@@ -96,14 +106,10 @@ function App() {
                   {/* Cart can be public or protected - keeping it public for now */}
                   <Route path="/cart" element={<Cart />} />
                   
-                  {/* Admin Routes (require admin role) */}
+                  {/* Admin Routes (Public for now) */}
                   <Route 
                     path="/admin/*" 
-                    element={
-                      <AdminRoute>
-                        <AdminDashboard />
-                      </AdminRoute>
-                    } 
+                    element={<AdminDashboard />} 
                   />
                 </Routes>
               </Router>

@@ -17,6 +17,7 @@ import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { Phone, Lock, Mail, Eye, EyeOff, ArrowLeft, User } from 'lucide-react';
 import { normalizeLebanesePhoneNumber, isValidLebanesePhoneNumber, formatPhoneNumber } from '../utils/phoneUtils';
+import { saveAuthData } from '../utils/api';
 
 export default function LoginPhone() {
   const navigate = useNavigate();
@@ -99,27 +100,30 @@ export default function LoginPhone() {
 
     try {
       console.log('📱 Sending OTP to:', normalizedPhone);
-  const result = { success: true };
       
-      console.log('📱 OTP Result:', result, 'keys:', result ? Object.keys(result) : null, 'success type:', typeof result?.success);
+      // Call backend to send OTP
+      const response = await fetch('http://localhost:5001/api/users/auth/send-otp', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ phone: normalizedPhone }),
+      });
+
+      const result = await response.json();
       
-      if (result?.success || result?.data?.phone) {
+      console.log('📱 OTP Result:', result);
+      
+      if (result.success) {
         setSuccess(`OTP sent to ${formatPhoneNumber(normalizedPhone, 'friendly')}`);
-        if (result?.data) {
-          setUserExists(!!result.data.userExists); // Store whether user exists
-        }
-        console.log('📱 Moving to step 2');
         setStep(2);
         setCountdown(300); // 5 minutes countdown
         
-        // For testing: Display OTP on screen (remove in production)
-        if (result?.otp) {
+        // For testing: Display OTP on screen (only in development)
+        if (result.otp) {
           setTestOTP(result.otp);
           setShowOTP(true);
         }
       } else {
-        console.error('📱 OTP send failed - no success flag');
-        setError('Failed to send OTP. Please try again.');
+        setError(result.message || 'Failed to send OTP. Please try again.');
       }
     } catch (error) {
       console.error('📱 Error sending OTP:', error);
@@ -143,32 +147,40 @@ export default function LoginPhone() {
     }
 
     try {
-      // First OTP verification - don't send name yet
-      // Backend will tell us if registration is needed
-  const result = { success: true, requiresRegistration: false };
+      // Call backend to verify OTP
+      const response = await fetch('http://localhost:5001/api/users/auth/verify-otp', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ phone, code: otp }),
+      });
+
+      const result = await response.json();
       
       if (result.success) {
-        // Check if registration is required
-        if (result.requiresRegistration) {
+        if (result.isNewUser) {
           // New user - show registration form (Step 3)
           setSuccess('Phone verified! Please complete your registration.');
           setStep(3);
         } else {
           // Existing user - login successful
-          setSuccess('Login successful! Redirecting...');
+          // Save user and token to localStorage using api utility
+          if (result.token) {
+            saveAuthData(result.token, result.user);
+          } else {
+            // Fallback if no token (should not happen with updated backend)
+            localStorage.setItem('chocair_user', JSON.stringify(result.user));
+          }
           
-          setTimeout(() => {
-            navigate(from, { replace: true });
-          }, 1000);
+          // Force a reload to update AuthContext
+          // Redirect to account page as requested
+          window.location.href = '/account';
         }
+      } else {
+        setError(result.message || 'Invalid OTP');
       }
     } catch (error) {
-      // OTP failed
-      if (error.message.includes('Invalid OTP') || error.message.includes('expired')) {
-        setError(error.message);
-      } else {
-        setError(error.message || 'OTP verification failed');
-      }
+      console.error('📱 Error verifying OTP:', error);
+      setError(error.message || 'OTP verification failed');
     }
   };
 
@@ -185,7 +197,13 @@ export default function LoginPhone() {
     }
 
     try {
-  const result = { success: true, otp: '123456' };
+      const response = await fetch('http://localhost:5001/api/users/auth/send-otp', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ phone }),
+      });
+
+      const result = await response.json();
       
       if (result.success) {
         setSuccess('New OTP sent successfully!');
@@ -197,6 +215,8 @@ export default function LoginPhone() {
           setTestOTP(result.otp);
           setShowOTP(true);
         }
+      } else {
+        setError(result.message || 'Failed to send OTP');
       }
     } catch (error) {
       setError(error.message || 'Failed to resend OTP');
@@ -224,32 +244,32 @@ export default function LoginPhone() {
     }
 
     try {
-      // Need to get a fresh OTP first since the previous one was consumed
-      const otpResult = await resendOTP(phone);
-      
-      if (!otpResult.success) {
-        setError('Failed to send verification code. Please try again.');
-        return;
-      }
+      // Call backend to register new user
+      const response = await fetch('http://localhost:5001/api/users/auth/register', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ phone, name: name.trim() }),
+      });
 
-      const newOtp = otpResult.otp || otpResult.data?.otp;
-      
-      if (!newOtp) {
-        setError('Failed to generate verification code. Please try again.');
-        return;
-      }
-
-      // Now call backend with the new OTP and name to complete registration
-      const result = await verifyPhoneOTP(phone, newOtp, name.trim());
+      const result = await response.json();
       
       if (result.success) {
-        setSuccess('Account created successfully! Redirecting...');
+        // Save user and token to localStorage using api utility
+        if (result.token) {
+          saveAuthData(result.token, result.user);
+        } else {
+          // Fallback
+          localStorage.setItem('chocair_user', JSON.stringify(result.user));
+        }
         
-        setTimeout(() => {
-          navigate(from, { replace: true });
-        }, 1000);
+        // Force a reload to update AuthContext
+        // Redirect to account page as requested
+        window.location.href = '/account';
+      } else {
+        setError(result.message || 'Registration failed');
       }
     } catch (error) {
+      console.error('📱 Registration error:', error);
       setError(error.message || 'Registration failed. Please try again.');
     }
   };

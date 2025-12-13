@@ -1,19 +1,54 @@
 import { useState, useCallback } from "react";
-import { useCMS } from "../../context/CMSContext";
+import { useAdmin } from "../../context/AdminContext";
 import { Plus, Edit, Trash2, Eye, EyeOff, MoveUp, MoveDown, X, Save } from "lucide-react";
 
 function AdminHero() {
-  const { heroSlides, addHeroSlide, updateHeroSlide, deleteHeroSlide } = useCMS();
+  const { heroSlides, addHeroSlide, updateHeroSlide, deleteHeroSlide } = useAdmin();
   const [showModal, setShowModal] = useState(false);
   const [editingSlide, setEditingSlide] = useState(null);
+  const [filterPage, setFilterPage] = useState('all');
   const [formData, setFormData] = useState({
     title: "",
     subtitle: "",
     backgroundImage: "",
     ctaText: "Shop Now",
     ctaLink: "/products",
-    isActive: true
+    isActive: true,
+    page: "home"
   });
+  const [uploading, setUploading] = useState(false);
+
+  const uploadFileHandler = async (e) => {
+    const file = e.target.files[0];
+    const formData = new FormData();
+    formData.append('image', file);
+    setUploading(true);
+
+    try {
+      const response = await fetch('http://localhost:5001/api/upload', {
+        method: 'POST',
+        body: formData,
+      });
+      
+      if (!response.ok) {
+        throw new Error('Upload failed');
+      }
+
+      const data = await response.text();
+      // Assuming backend returns relative path like /uploads/image.jpg
+      // We need to prepend the backend URL if we want to store the full URL, 
+      // or just store the relative path and handle it in the frontend.
+      // For simplicity, let's store the full URL for now, or relative if the frontend handles it.
+      // The current Hero component uses the URL directly in `backgroundImage: url(...)`.
+      // So full URL is safer: http://localhost:5001/uploads/image.jpg
+      setFormData(prev => ({ ...prev, backgroundImage: `http://localhost:5001${data}` }));
+      setUploading(false);
+    } catch (error) {
+      console.error(error);
+      setUploading(false);
+      alert('Image upload failed');
+    }
+  };
 
   const handleOpenModal = useCallback((slide = null) => {
     if (slide) {
@@ -24,7 +59,8 @@ function AdminHero() {
         backgroundImage: slide.backgroundImage,
         ctaText: slide.ctaText,
         ctaLink: slide.ctaLink,
-        isActive: slide.isActive
+        isActive: slide.isActive,
+        page: slide.page || "home"
       });
     } else {
       setEditingSlide(null);
@@ -34,7 +70,8 @@ function AdminHero() {
         backgroundImage: "",
         ctaText: "Shop Now",
         ctaLink: "/products",
-        isActive: true
+        isActive: true,
+        page: "home"
       });
     }
     setShowModal(true);
@@ -45,7 +82,7 @@ function AdminHero() {
     setEditingSlide(null);
   }, []);
 
-  const handleSubmit = useCallback((e) => {
+  const handleSubmit = useCallback(async (e) => {
     e.preventDefault();
     
     if (!formData.title || !formData.subtitle) {
@@ -54,32 +91,47 @@ function AdminHero() {
     }
 
     if (editingSlide) {
-      updateHeroSlide(editingSlide.id, formData);
+      await updateHeroSlide(editingSlide._id, formData);
       alert("✅ Hero slide updated successfully!");
     } else {
-      addHeroSlide(formData);
+      await addHeroSlide(formData);
       alert("✅ Hero slide added successfully!");
     }
     
     handleCloseModal();
   }, [formData, editingSlide, addHeroSlide, updateHeroSlide, handleCloseModal]);
 
-  const handleDelete = useCallback((id, title) => {
+  const handleDelete = useCallback(async (id, title) => {
     if (window.confirm(`Are you sure you want to delete "${title}"?`)) {
-      deleteHeroSlide(id);
+      await deleteHeroSlide(id);
       alert("🗑️ Hero slide deleted successfully!");
     }
   }, [deleteHeroSlide]);
 
   const handleToggleActive = useCallback((slide) => {
-    updateHeroSlide(slide.id, { isActive: !slide.isActive });
+    updateHeroSlide(slide._id, { isActive: !slide.isActive });
   }, [updateHeroSlide]);
+
+  const handleMove = useCallback(async (index, direction) => {
+    const newSlides = [...heroSlides].sort((a, b) => a.order - b.order);
+    if (index + direction < 0 || index + direction >= newSlides.length) return;
+    
+    const currentSlide = newSlides[index];
+    const targetSlide = newSlides[index + direction];
+    
+    // Swap orders
+    const tempOrder = currentSlide.order;
+    await updateHeroSlide(currentSlide._id, { order: targetSlide.order });
+    await updateHeroSlide(targetSlide._id, { order: tempOrder });
+  }, [heroSlides, updateHeroSlide]);
 
   const handleInputChange = (field, value) => {
     setFormData(prev => ({ ...prev, [field]: value }));
   };
 
-  const sortedSlides = [...heroSlides].sort((a, b) => a.order - b.order);
+  const sortedSlides = [...heroSlides]
+    .filter(slide => filterPage === 'all' || slide.page === filterPage)
+    .sort((a, b) => a.order - b.order);
 
   return (
     <div style={{ padding: '30px', maxWidth: '1400px', margin: '0 auto' }}>
@@ -123,15 +175,38 @@ function AdminHero() {
         </button>
       </div>
 
+      {/* Filter Tabs */}
+      <div style={{ display: 'flex', gap: '10px', marginBottom: '20px', overflowX: 'auto', paddingBottom: '5px' }}>
+        {['all', 'home', 'products', 'about', 'contact', 'categories'].map(page => (
+          <button
+            key={page}
+            onClick={() => setFilterPage(page)}
+            style={{
+              padding: '8px 16px',
+              borderRadius: '20px',
+              border: 'none',
+              background: filterPage === page ? '#2e7d32' : '#f5f5f5',
+              color: filterPage === page ? '#fff' : '#666',
+              cursor: 'pointer',
+              fontWeight: 600,
+              textTransform: 'capitalize',
+              transition: 'all 0.3s ease'
+            }}
+          >
+            {page === 'all' ? 'All Pages' : page}
+          </button>
+        ))}
+      </div>
+
       {/* Hero Slides Grid */}
       <div style={{ 
         display: 'grid',
         gridTemplateColumns: 'repeat(auto-fill, minmax(400px, 1fr))',
         gap: '24px'
       }}>
-        {sortedSlides.map((slide) => (
+        {sortedSlides.map((slide, index) => (
           <div
-            key={slide.id}
+            key={slide._id}
             style={{
               background: '#fff',
               borderRadius: '16px',
@@ -158,6 +233,20 @@ function AdminHero() {
               textAlign: 'center',
               position: 'relative'
             }}>
+              <div style={{
+                position: 'absolute',
+                top: '10px',
+                left: '10px',
+                background: 'rgba(0,0,0,0.6)',
+                color: '#fff',
+                padding: '4px 10px',
+                borderRadius: '12px',
+                fontSize: '0.75rem',
+                fontWeight: 600,
+                textTransform: 'uppercase'
+              }}>
+                {slide.page || 'HOME'}
+              </div>
               <div style={{
                 position: 'absolute',
                 top: '10px',
@@ -217,6 +306,46 @@ function AdminHero() {
                 </div>
               </div>
 
+              {/* Move Buttons */}
+              <div style={{ display: 'flex', gap: '8px', marginBottom: '12px' }}>
+                <button
+                  onClick={() => handleMove(index, -1)}
+                  disabled={index === 0}
+                  style={{
+                    flex: 1,
+                    padding: '8px',
+                    background: index === 0 ? '#e0e0e0' : '#f5f5f5',
+                    color: index === 0 ? '#999' : '#333',
+                    border: 'none',
+                    borderRadius: '8px',
+                    cursor: index === 0 ? 'default' : 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center'
+                  }}
+                >
+                  <MoveUp size={16} />
+                </button>
+                <button
+                  onClick={() => handleMove(index, 1)}
+                  disabled={index === sortedSlides.length - 1}
+                  style={{
+                    flex: 1,
+                    padding: '8px',
+                    background: index === sortedSlides.length - 1 ? '#e0e0e0' : '#f5f5f5',
+                    color: index === sortedSlides.length - 1 ? '#999' : '#333',
+                    border: 'none',
+                    borderRadius: '8px',
+                    cursor: index === sortedSlides.length - 1 ? 'default' : 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center'
+                  }}
+                >
+                  <MoveDown size={16} />
+                </button>
+              </div>
+
               {/* Action Buttons */}
               <div style={{ 
                 display: 'flex', 
@@ -274,7 +403,7 @@ function AdminHero() {
                   Edit
                 </button>
                 <button
-                  onClick={() => handleDelete(slide.id, slide.title)}
+                  onClick={() => handleDelete(slide._id, slide.title)}
                   style={{
                     padding: '10px 14px',
                     background: '#f44336',
@@ -397,6 +526,36 @@ function AdminHero() {
             <form onSubmit={handleSubmit}>
               <div style={{ marginBottom: '20px' }}>
                 <label style={{ display: 'block', marginBottom: '8px', fontWeight: 600, color: '#333' }}>
+                  Page Location *
+                </label>
+                <select
+                  value={formData.page}
+                  onChange={(e) => handleInputChange('page', e.target.value)}
+                  style={{
+                    width: '100%',
+                    padding: '12px',
+                    border: '2px solid #e0e0e0',
+                    borderRadius: '10px',
+                    fontSize: '1rem',
+                    outline: 'none',
+                    transition: 'border 0.3s ease',
+                    fontFamily: 'inherit',
+                    boxSizing: 'border-box',
+                    background: '#fff'
+                  }}
+                  onFocus={(e) => e.target.style.borderColor = '#2e7d32'}
+                  onBlur={(e) => e.target.style.borderColor = '#e0e0e0'}
+                >
+                  <option value="home">Home Page</option>
+                  <option value="products">Products Page</option>
+                  <option value="about">About Page</option>
+                  <option value="contact">Contact Page</option>
+                  <option value="categories">Categories Page</option>
+                </select>
+              </div>
+
+              <div style={{ marginBottom: '20px' }}>
+                <label style={{ display: 'block', marginBottom: '8px', fontWeight: 600, color: '#333' }}>
                   Title *
                 </label>
                 <input
@@ -450,27 +609,54 @@ function AdminHero() {
 
               <div style={{ marginBottom: '20px' }}>
                 <label style={{ display: 'block', marginBottom: '8px', fontWeight: 600, color: '#333' }}>
-                  Background Image URL
+                  Background Image
                 </label>
-                <input
-                  type="text"
-                  value={formData.backgroundImage}
-                  onChange={(e) => handleInputChange('backgroundImage', e.target.value)}
-                  placeholder="/assets/images/hero-bg.jpg"
-                  style={{
-                    width: '100%',
-                    padding: '12px',
-                    border: '2px solid #e0e0e0',
-                    borderRadius: '10px',
-                    fontSize: '1rem',
-                    outline: 'none',
-                    transition: 'border 0.3s ease',
-                    fontFamily: 'inherit',
-                    boxSizing: 'border-box'
-                  }}
-                  onFocus={(e) => e.target.style.borderColor = '#2e7d32'}
-                  onBlur={(e) => e.target.style.borderColor = '#e0e0e0'}
-                />
+                <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+                  <input
+                    type="text"
+                    value={formData.backgroundImage}
+                    onChange={(e) => handleInputChange('backgroundImage', e.target.value)}
+                    placeholder="Enter URL or upload image"
+                    style={{
+                      flex: 1,
+                      padding: '12px',
+                      border: '2px solid #e0e0e0',
+                      borderRadius: '10px',
+                      fontSize: '1rem',
+                      outline: 'none',
+                      transition: 'border 0.3s ease',
+                      fontFamily: 'inherit',
+                      boxSizing: 'border-box'
+                    }}
+                    onFocus={(e) => e.target.style.borderColor = '#2e7d32'}
+                    onBlur={(e) => e.target.style.borderColor = '#e0e0e0'}
+                  />
+                  <label 
+                    style={{
+                      padding: '12px 20px',
+                      background: '#f5f5f5',
+                      border: '2px solid #e0e0e0',
+                      borderRadius: '10px',
+                      cursor: 'pointer',
+                      fontWeight: 600,
+                      color: '#555',
+                      whiteSpace: 'nowrap'
+                    }}
+                  >
+                    {uploading ? 'Uploading...' : 'Upload'}
+                    <input 
+                      type="file" 
+                      onChange={uploadFileHandler}
+                      style={{ display: 'none' }}
+                      accept="image/*"
+                    />
+                  </label>
+                </div>
+                {formData.backgroundImage && (
+                  <div style={{ marginTop: '10px', height: '100px', borderRadius: '8px', overflow: 'hidden' }}>
+                    <img src={formData.backgroundImage} alt="Preview" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                  </div>
+                )}
               </div>
 
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '15px', marginBottom: '20px' }}>

@@ -30,16 +30,18 @@ export function CartProvider({ children }) {
     localStorage.setItem("chocair_cart", JSON.stringify(cartItems));
   }, [cartItems]);
 
+  const getId = (item) => item._id || item.id;
+
   const addToCart = (product, quantity = 1) => {
     console.log("Adding to cart:", product, "Quantity:", quantity);
     
     setCartItems((prevItems) => {
-      const existingItem = prevItems.find((item) => item.id === product.id);
+      const existingItem = prevItems.find((item) => getId(item) === getId(product));
       
       if (existingItem) {
         // Update quantity if item already in cart
         return prevItems.map((item) =>
-          item.id === product.id
+          getId(item) === getId(product)
             ? { ...item, qty: item.qty + quantity }
             : item
         );
@@ -52,7 +54,7 @@ export function CartProvider({ children }) {
 
   const removeFromCart = (productId) => {
     console.log("Removing from cart:", productId);
-    setCartItems((prevItems) => prevItems.filter((item) => item.id !== productId));
+    setCartItems((prevItems) => prevItems.filter((item) => getId(item) !== productId));
   };
 
   const updateQuantity = (productId, newQuantity) => {
@@ -65,7 +67,7 @@ export function CartProvider({ children }) {
 
     setCartItems((prevItems) =>
       prevItems.map((item) =>
-        item.id === productId ? { ...item, qty: newQuantity } : item
+        getId(item) === productId ? { ...item, qty: newQuantity } : item
       )
     );
   };
@@ -89,7 +91,7 @@ export function CartProvider({ children }) {
   };
 
   const isInCart = (productId) => {
-    return cartItems.some((item) => item.id === productId);
+    return cartItems.some((item) => getId(item) === productId);
   };
 
   return (

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   User,
@@ -8,51 +8,81 @@ import {
   MessageCircle,
   LogOut,
   ShoppingBag,
+  Clock,
+  Truck,
+  CheckCircle,
+  XCircle
 } from "lucide-react";
 import { useAuth } from "../context/AuthContext";
 import { useFavorites } from "../context/FavoritesContext";
+import { get } from "../utils/api";
 import "../styles/accountPage.css";
 
 function AccountPage() {
   const navigate = useNavigate();
   const { user, logoutUser, isAuthenticated } = useAuth();
   const { favorites } = useFavorites();
-
-  // Demo data for previous orders
-  const [orders] = useState([
-    {
-      id: "#ORD-2341",
-      date: "Nov 3, 2025",
-      total: 32.45,
-      items: 8,
-      status: "Delivered",
-    },
-    {
-      id: "#ORD-2315",
-      date: "Oct 28, 2025",
-      total: 18.9,
-      items: 5,
-      status: "Delivered",
-    },
-    {
-      id: "#ORD-2298",
-      date: "Oct 22, 2025",
-      total: 45.2,
-      items: 12,
-      status: "Delivered",
-    },
-  ]);
+  const [orders, setOrders] = useState([]);
+  const [loadingOrders, setLoadingOrders] = useState(true);
 
   // Redirect to sign in if not authenticated
-  if (!isAuthenticated) {
-    navigate("/signin");
-    return null;
-  }
+  useEffect(() => {
+    if (!isAuthenticated) {
+      navigate("/login-phone");
+    }
+  }, [isAuthenticated, navigate]);
+
+  // Fetch real orders
+  useEffect(() => {
+    const fetchOrders = async () => {
+      if (!user?.phone && !user?.email) return;
+      
+      try {
+        // Fetch orders by phone or email
+        const query = user.phone ? `phone=${user.phone}` : `email=${user.email}`;
+        const data = await get(`/orders?${query}`);
+        setOrders(data);
+      } catch (error) {
+        console.error("Failed to fetch orders:", error);
+      } finally {
+        setLoadingOrders(false);
+      }
+    };
+
+    if (isAuthenticated) {
+      fetchOrders();
+    }
+  }, [isAuthenticated, user]);
 
   const handleLogout = () => {
-    logoutUser();
     navigate("/");
+    // Delay logout slightly to allow navigation to complete
+    setTimeout(() => {
+      logoutUser();
+    }, 100);
   };
+
+  const getStatusColor = (status) => {
+    switch (status) {
+      case 'Pending': return '#f39c12';
+      case 'Preparing': return '#3498db';
+      case 'Delivered': return '#2ecc71';
+      case 'Cancelled': return '#e74c3c';
+      default: return '#95a5a6';
+    }
+  };
+
+  const getStatusIcon = (status) => {
+    switch (status) {
+      case 'Pending': return Clock;
+      case 'Preparing': return Truck;
+      case 'Delivered': return CheckCircle;
+      case 'Cancelled': return XCircle;
+      default: return Package;
+    }
+  };
+
+  if (!isAuthenticated) return null;
 
   return (
     <div className="account-page">
@@ -63,7 +93,7 @@ function AccountPage() {
         </div>
         <div className="profile-info">
           <h1>{user?.name || "Guest User"}</h1>
-          <p>{user?.email || "guest@chocair.com"}</p>
+          <p>{user?.phone || user?.email || ""}</p>
         </div>
       </div>
 
@@ -110,30 +140,69 @@ function AccountPage() {
         </div>
 
         <div className="orders-list">
-          {orders.map((order) => (
-            <div key={order.id} className="order-card">
-              <div className="order-icon">
-                <ShoppingBag size={22} />
-              </div>
-              <div className="order-details">
-                <div className="order-row">
-                  <h4>{order.id}</h4>
-                  <span className="order-status">{order.status}</span>
-                </div>
-                <p className="order-date">{order.date}</p>
-                <div className="order-summary">
-                  <span>{order.items} items</span>
-                  <span className="order-total">${order.total.toFixed(2)}</span>
-                </div>
-              </div>
-              <button
-                className="view-details-btn"
-                onClick={() => navigate(`/order/${order.id}`)}
+          {loadingOrders ? (
+            <p style={{ padding: '20px', color: '#666' }}>Loading orders...</p>
+          ) : orders.length === 0 ? (
+            <div style={{ textAlign: 'center', padding: '30px 0' }}>
+              <p style={{ color: '#666', marginBottom: '15px' }}>No orders yet</p>
+              <button 
+                onClick={() => navigate('/products')}
+                style={{
+                  background: '#2e7d32',
+                  color: 'white',
+                  border: 'none',
+                  padding: '10px 20px',
+                  borderRadius: '8px',
+                  cursor: 'pointer',
+                  fontWeight: '600'
+                }}
               >
-                <ChevronRight size={18} />
+                Start Shopping
               </button>
             </div>
-          ))}
+          ) : (
+            orders.map((order) => {
+              const StatusIcon = getStatusIcon(order.status);
+              const statusColor = getStatusColor(order.status);
+              
+              return (
+                <div key={order._id} className="order-card">
+                  <div className="order-icon" style={{ background: `${statusColor}20` }}>
+                    <StatusIcon size={22} color={statusColor} />
+                  </div>
+                  <div className="order-details">
+                    <div className="order-row">
+                      <h4 style={{ fontSize: '0.9rem' }}>#{order._id.slice(-6).toUpperCase()}</h4>
+                      <span 
+                        className="order-status" 
+                        style={{ 
+                          color: statusColor,
+                          background: `${statusColor}15`,
+                          padding: '2px 8px',
+                          borderRadius: '12px',
+                          fontSize: '0.75rem'
+                        }}
+                      >
+                        {order.status}
+                      </span>
+                    </div>
+                    <p className="order-date">
+                      {new Date(order.createdAt).toLocaleDateString('en-US', {
+                        month: 'short',
+                        day: 'numeric',
+                        year: 'numeric'
+                      })}
+                    </p>
+                    <div className="order-summary">
+                      <span>{order.orderItems?.length || 0} items</span>
+                      <span className="order-total">${(order.totalPrice || 0).toFixed(2)}</span>
+                    </div>
+                  </div>
+                  {/* Removed View Details button for now as detail page isn't fully ready */}
+                </div>
+              );
+            })
+          )}
         </div>
       </section>
 

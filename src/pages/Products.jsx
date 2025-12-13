@@ -4,10 +4,15 @@ import { Menu, Search, User, ShoppingCart } from "lucide-react";
 import "../styles/style.css";
 import "../styles/products.css";
 import Header from "../components/layout/Header";
+import Hero from "../components/home/Hero";
 import { useCart } from "../context/CartContext";
+import { get } from "../utils/api";
 
 function Products() {
   const [activeCategory, setActiveCategory] = useState("all");
+  const [products, setProducts] = useState([]);
+  const [categories, setCategories] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [placeholder, setPlaceholder] = useState("");
   const [index, setIndex] = useState(0);
   const [subIndex, setSubIndex] = useState(0);
@@ -15,6 +20,25 @@ function Products() {
   const navigate = useNavigate();
   const location = useLocation();
   const { addToCart } = useCart();
+
+  // Fetch products and categories from backend
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const [productsData, categoriesData] = await Promise.all([
+          get("/products"),
+          get("/categories")
+        ]);
+        setProducts(productsData);
+        setCategories(categoriesData.filter(c => c.isVisible !== false));
+      } catch (error) {
+        console.error("Failed to fetch data:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchData();
+  }, []);
 
   const phrases = [
     "Search for fresh fruits 🍎",
@@ -125,81 +149,32 @@ useEffect(() => {
     return () => categoriesScroll.removeEventListener("scroll", updateProgress);
   }, []);
 
-  // Product data (static like your JS)
-  const productsData = {
-    fruits: [
-      { name: "Strawberry", price: "$3.50", unit: "kg", desc: "Fresh and sweet strawberries.", img: "/assets/images/products/strawberry.jpg" },
-      { name: "Orange", price: "$2.80", unit: "kg", desc: "Juicy Lebanese oranges.", img: "/assets/images/products/orange.jpg" },
-      { name: "Banana", price: "$2.50", unit: "kg", desc: "Perfect ripe bananas.", img: "/assets/images/products/banana.jpg" },
-      { name: "Apple", price: "$3.20", unit: "kg", desc: "Crisp red apples for your day.", img: "/assets/images/products/apple.jpg" },
-      { name: "Kiwi", price: "$3.90", unit: "kg", desc: "Rich in vitamins and flavor.", img: "/assets/images/products/kiwi.jpg" },
-      { name: "Grapes", price: "$3.60", unit: "kg", desc: "Sweet seedless grapes.", img: "/assets/images/products/grapes.jpg" },
-      { name: "Watermelon", price: "$5.00", unit: "pcs", desc: "Refreshing juicy watermelon.", img: "/assets/images/products/watermelon.jpg" },
-    ],
-    vegetables: [
-      { name: "Tomato", price: "$1.80", unit: "kg", desc: "Farm-grown Lebanese tomatoes.", img: "/assets/images/products/tomato.jpg" },
-      { name: "Cucumber", price: "$1.60", unit: "kg", desc: "Fresh green cucumbers.", img: "/assets/images/products/cucumber.jpg" },
-      { name: "Lettuce", price: "$1.70", unit: "pcs", desc: "Crisp and refreshing lettuce.", img: "/assets/images/products/lettuce.jpg" },
-      { name: "Onion", price: "$1.10", unit: "kg", desc: "Perfect for salads and dishes.", img: "/assets/images/products/onion.jpg" },
-      { name: "Potato", price: "$1.40", unit: "kg", desc: "Golden potatoes for fries or mash.", img: "/assets/images/products/potato.jpg" },
-      { name: "Carrot", price: "$1.90", unit: "kg", desc: "Crunchy and full of color.", img: "/assets/images/products/carrot.jpg" },
-    ],
-    herbs: [
-      { name: "Mint", price: "$1.00", unit: "bunch", desc: "Fresh aromatic mint leaves.", img: "/assets/images/products/mint.jpg" },
-      { name: "Parsley", price: "$1.20", unit: "bunch", desc: "Perfect for tabbouleh and salads.", img: "/assets/images/products/parsley.jpg" },
-      { name: "Thyme", price: "$1.80", unit: "bunch", desc: "Lebanese fresh thyme bundle.", img: "/assets/images/products/thyme.jpg" },
-    ],
-    nuts: [
-      { name: "Almonds", price: "$5.50", unit: "kg", desc: "Roasted and salted almonds.", img: "/assets/images/products/almonds.jpg" },
-      { name: "Cashews", price: "$6.00", unit: "kg", desc: "Premium roasted cashews.", img: "/assets/images/products/cashews.jpg" },
-      { name: "Pistachio", price: "$7.40", unit: "kg", desc: "Salted Lebanese pistachios.", img: "/assets/images/products/pistachio.jpg" },
-      { name: "Walnut", price: "$5.90", unit: "kg", desc: "Fresh Lebanese walnut kernels.", img: "/assets/images/products/walnut.jpg" },
-    ],
-    pickles: [
-      { name: "Mixed Pickles", price: "$3.00", unit: "jar", desc: "Traditional Lebanese homemade mix.", img: "/assets/images/products/pickles.jpg" },
-      { name: "Olives", price: "$4.00", unit: "jar", desc: "Green olives from our farms.", img: "/assets/images/products/olives.jpg" },
-      { name: "Beet Pickle", price: "$3.40", unit: "jar", desc: "Colorful and tangy beet pickles.", img: "/assets/images/products/beet-pickle.jpg" },
-    ],
-    featured: [
-      { name: "Avocado", price: "$4.80", unit: "kg", desc: "Perfectly ripe creamy avocado.", img: "/assets/images/products/avocado.jpg" },
-      { name: "Peach", price: "$3.90", unit: "kg", desc: "Soft and aromatic Lebanese peach.", img: "/assets/images/products/peach.jpg" },
-    ],
-  };
 
-  const categories = [
-    { key: "all", label: "All", icon: "all" },
-    { key: "fruits", label: "Fruits", icon: "fruits" },
-    { key: "vegetables", label: "Vegetables", icon: "vegetables" },
-    { key: "herbs", label: "Herbs", icon: "herbs" },
-    { key: "nuts", label: "Nuts", icon: "nuts" },
-    { key: "pickles", label: "Pickles", icon: "pickles" },
-    { key: "featured", label: "Featured", icon: "featured" },
+  const categoryList = [
+    { key: "all", label: "All", icon: "/assets/images/icons/all.png" },
+    ...categories.map(cat => ({
+      key: cat.name, // Assuming product.category matches category.name
+      label: cat.name,
+      icon: cat.image // Use category image as icon
+    }))
   ];
-
-  const allProducts = Object.entries(productsData).flatMap(([cat, items]) =>
-    items.map((p, index) => ({ ...p, id: `${cat}-${index}`, category: cat }))
-  );
 
   const filteredProducts =
     activeCategory === "all"
-      ? allProducts
-      : allProducts.filter((p) => p.category === activeCategory);
+      ? products
+      : products.filter((p) => p.category === activeCategory);
 
   return (
     <>
       <Header active="products" variant="products" />
 
       {/* HERO SMALL */}
-      <section className="hero-small">
-        <div className="hero-overlay">
-          <h1>Our Fresh Selection</h1>
-        </div>
-      </section>
+      <Hero page="products" />
 
       {/* CATEGORY BAR */}
       <section className="category-bar" id="categoryBar">
         <div className="categories-scroll" id="categoriesScroll">
-          {categories.map((cat) => (
+          {categoryList.map((cat) => (
             <div
               key={cat.key}
               className={`cat-item ${activeCategory === cat.key ? "active" : ""}`}
@@ -211,7 +186,19 @@ useEffect(() => {
                 navigate({ pathname: "/products", search: params.toString() }, { replace: true });
               }}
             >
-              <img src={`/assets/images/icons/${cat.icon}.png`} alt={cat.label} />
+              <img 
+                src={cat.icon} 
+                alt={cat.label} 
+                onError={(e) => { 
+                  // Fallback if icon fails or is not a full URL
+                  if (!e.target.src.includes('assets')) {
+                     e.target.src = `/assets/images/icons/${cat.key.toLowerCase()}.png`;
+                  } else {
+                     e.target.style.display = 'none'; 
+                  }
+                }} 
+                style={{ width: '30px', height: '30px', objectFit: 'contain' }}
+              />
               <span>{cat.label}</span>
             </div>
           ))}
@@ -223,37 +210,43 @@ useEffect(() => {
       {/* PRODUCTS GRID */}
       <section className="products-section">
         <div className="products-grid">
-          {filteredProducts.map((prod, i) => {
-            const slug = prod.name.toLowerCase().replace(/\s+/g, "-");
-            return (
-              <div
-                key={i}
-                className="product-card"
-                data-category={prod.category}
-                onClick={() => navigate(`/product/${slug}`, { state: { product: prod } })}
-                style={{ cursor: "pointer" }}
-              >
-                <img src={prod.img} alt={prod.name} />
-                <div className="product-info">
-                  <h3>{prod.name}</h3>
-                  <span className="product-price">
-                    {prod.price}
-                    {prod.unit && <span className="product-unit"> / {prod.unit}</span>}
-                  </span>
-                  <p>{prod.desc}</p>
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      addToCart(prod, 1);
-                      console.log("Added to cart:", prod.name);
-                    }}
-                  >
-                    Add to Cart
-                  </button>
+          {loading ? (
+            <div style={{ textAlign: "center", padding: "50px", width: "100%" }}>Loading products...</div>
+          ) : filteredProducts.length === 0 ? (
+            <div style={{ textAlign: "center", padding: "50px", width: "100%" }}>No products found.</div>
+          ) : (
+            filteredProducts.map((prod, i) => {
+              const slug = prod.name.toLowerCase().replace(/\s+/g, "-");
+              return (
+                <div
+                  key={prod._id || i}
+                  className="product-card"
+                  data-category={prod.category}
+                  onClick={() => navigate(`/product/${slug}`, { state: { product: prod } })}
+                  style={{ cursor: "pointer" }}
+                >
+                  <img src={prod.image || prod.img} alt={prod.name} />
+                  <div className="product-info">
+                    <h3>{prod.name}</h3>
+                    <span className="product-price">
+                      ${typeof prod.price === 'number' ? prod.price.toFixed(2) : prod.price}
+                      {prod.unit && <span className="product-unit"> / {prod.unit}</span>}
+                    </span>
+                    <p>{prod.description || prod.desc}</p>
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        addToCart(prod, 1);
+                        console.log("Added to cart:", prod.name);
+                      }}
+                    >
+                      Add to Cart
+                    </button>
+                  </div>
                 </div>
-              </div>
-            );
-          })}
+              );
+            })
+          )}
         </div>
       </section>
 

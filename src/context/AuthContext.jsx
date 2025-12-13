@@ -24,7 +24,7 @@ import {
 const AuthContext = createContext();
 
 // Dev shortcut: set true to bypass auth completely
-const DEV_MODE = true;
+const DEV_MODE = false;
 
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(() =>

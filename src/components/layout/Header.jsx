@@ -26,10 +26,13 @@ function Header({ active = "", variant = "home" }) {
   const navigate = useNavigate();
 
   const handleLogout = () => {
-    logoutUser();
-    setMenuOpen(false);
-    // Use navigate instead of window.location for better React Router integration
+    // Navigate first to avoid PrivateRoute redirecting to login
     navigate("/");
+    // Delay logout slightly to allow navigation to complete
+    setTimeout(() => {
+      logoutUser();
+      setMenuOpen(false);
+    }, 100);
   };
 
   useEffect(() => {
@@ -99,11 +102,11 @@ function Header({ active = "", variant = "home" }) {
             
             {isAuthenticated ? (
               <>
-                <Link to="/profile" className="icon-btn" aria-label="Account">
-                  <User />
+                <Link to="/account" className="icon-btn" aria-label="Account">
+                  <User size={22} strokeWidth={2.5} color={isScrolled ? "#2e7d32" : "#fff"} />
                 </Link>
                 <Link to="/cart" className="icon-btn" aria-label="Cart" style={{ position: 'relative' }}>
-                  <ShoppingCart />
+                  <ShoppingCart size={22} strokeWidth={2.5} color={isScrolled ? "#2e7d32" : "#fff"} />
                   {cartCount > 0 && (
                     <span style={{
                       position: 'absolute',
@@ -130,8 +133,27 @@ function Header({ active = "", variant = "home" }) {
                 <Link to="/login-phone" className="login-btn">
                   Log In
                 </Link>
-                <Link to="/register" className="register-btn desktop-only">
-                  Sign Up
+                <Link to="/cart" className="icon-btn" aria-label="Cart" style={{ position: 'relative' }}>
+                  <ShoppingCart size={22} strokeWidth={2.5} color={isScrolled ? "#2e7d32" : "#fff"} />
+                  {cartCount > 0 && (
+                    <span style={{
+                      position: 'absolute',
+                      top: '-4px',
+                      right: '-4px',
+                      background: '#2E7D32',
+                      color: 'white',
+                      borderRadius: '50%',
+                      width: '18px',
+                      height: '18px',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      fontSize: '0.7rem',
+                      fontWeight: '700'
+                    }}>
+                      {cartCount}
+                    </span>
+                  )}
                 </Link>
               </>
             )}

@@ -1,16 +1,34 @@
 import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import Header from "../components/layout/Header";
+import Hero from "../components/home/Hero";
 import { Menu, Search, User, ShoppingCart } from "lucide-react";
+import { get } from "../utils/api";
 import "../styles/style.css";
 import "../styles/categories.css";
 
 function Categories() {
+  const [categories, setCategories] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [placeholder, setPlaceholder] = useState("");
   const [isDeleting, setIsDeleting] = useState(false);
   const [index, setIndex] = useState(0);
   const [subIndex, setSubIndex] = useState(0);
   const navigate = useNavigate();
+
+  useEffect(() => {
+    const fetchCategories = async () => {
+      try {
+        const data = await get("/categories");
+        setCategories(data.filter(cat => cat.isVisible !== false));
+      } catch (error) {
+        console.error("Failed to fetch categories:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchCategories();
+  }, []);
 
   const phrases = [
     "Search for fresh fruits 🍎",
@@ -48,39 +66,7 @@ function Categories() {
       <Header active="categories" variant="categories" />
 
       {/* =============== HERO + SEARCH =============== */}
-      <section className="hero-section hero-categories">
-        <img
-          src="/assets/images/hero.jpg"
-          alt="Fresh categories"
-          className="hero-image"
-        />
-        <div className="hero-content">
-          <h1>Shop by Category</h1>
-          <p>
-            Explore our full range of premium Lebanese fruits, vegetables, and
-            more.
-          </p>
-          <form
-            className="hero-search"
-            role="search"
-            onSubmit={(e) => {
-              e.preventDefault();
-              navigate("/products");
-            }}
-          >
-            <Search className="search-icon" />
-            <input
-              type="search"
-              id="heroSearchInput"
-              placeholder={placeholder}
-              aria-label="Search"
-              value=""
-              readOnly
-            />
-            <button type="submit">Search</button>
-          </form>
-        </div>
-      </section>
+      <Hero page="categories" />
 
       {/* =============== FEATURED CATEGORIES =============== */}
       <section className="featured-categories">
@@ -90,56 +76,21 @@ function Categories() {
         </p>
 
         <div className="featured-grid">
-          <Link to="/products?category=fruits" className="featured-card">
-            <img src="/assets/images/fruits.jpg" alt="Fruits" />
-            <div className="card-info">
-              <h3>Fruits</h3>
-              <p>Juicy Lebanese fruits for every season.</p>
-            </div>
-          </Link>
-
-          <Link to="/products?category=vegetables" className="featured-card">
-            <img src="/assets/images/vegetables.jpg" alt="Vegetables" />
-            <div className="card-info">
-              <h3>Vegetables</h3>
-              <p>Fresh hand-picked vegetables daily.</p>
-            </div>
-          </Link>
-
-          <Link to="/products?category=herbs" className="featured-card">
-            <img src="/assets/images/categories/herbs.jpg" alt="Herbs" />
-            <div className="card-info">
-              <h3>Herbs</h3>
-              <p>Fragrant herbs to elevate your dishes.</p>
-            </div>
-          </Link>
-
-          <Link to="/products?category=nuts" className="featured-card">
-            <img src="/assets/images/categories/nuts.jpg" alt="Nuts" />
-            <div className="card-info">
-              <h3>Nuts</h3>
-              <p>Crunchy Lebanese and imported nuts.</p>
-            </div>
-          </Link>
-
-          <Link to="/products?category=pickles" className="featured-card">
-            <img src="/assets/images/categories/pickles.jpg" alt="Pickles" />
-            <div className="card-info">
-              <h3>Pickles</h3>
-              <p>Traditional Lebanese homemade pickles.</p>
-            </div>
-          </Link>
-
-          <Link to="/products?category=featured" className="featured-card">
-            <img
-              src="/assets/images/categories/local-products.jpg"
-              alt="Local Products"
-            />
-            <div className="card-info">
-              <h3>Local Products</h3>
-              <p>Authentic local jars and organic goods.</p>
-            </div>
-          </Link>
+          {loading ? (
+            <div style={{ textAlign: "center", width: "100%", padding: "40px" }}>Loading categories...</div>
+          ) : categories.length === 0 ? (
+            <div style={{ textAlign: "center", width: "100%", padding: "40px" }}>No categories found.</div>
+          ) : (
+            categories.map((cat) => (
+              <Link to={`/products?category=${cat.name}`} className="featured-card" key={cat._id}>
+                <img src={cat.image} alt={cat.name} onError={(e) => { e.target.src = '/assets/images/placeholder.jpg'; }} />
+                <div className="card-info">
+                  <h3>{cat.name}</h3>
+                  <p>{cat.description || "Fresh products"}</p>
+                </div>
+              </Link>
+            ))
+          )}
         </div>
       </section>
     </>
