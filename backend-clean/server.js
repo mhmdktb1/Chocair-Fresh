@@ -11,6 +11,7 @@ import categoryRoutes from './routes/categoryRoutes.js';
 import heroRoutes from './routes/heroRoutes.js';
 import uploadRoutes from './routes/uploadRoutes.js';
 import userRoutes from './routes/userRoutes.js';
+import recommendationRoutes from './recommendation/routes/recommendationRoutes.js';
 
 dotenv.config();
 
@@ -40,6 +41,7 @@ app.use('/api/categories', categoryRoutes);
 app.use('/api/hero', heroRoutes);
 app.use('/api/upload', uploadRoutes);
 app.use('/api/users', userRoutes);
+app.use('/api/recommend', recommendationRoutes);
 
 const __dirname = path.resolve();
 app.use('/uploads', express.static(path.join(__dirname, '/uploads')));

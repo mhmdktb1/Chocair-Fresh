@@ -11,7 +11,11 @@
     "lint": "eslint .",
     "format": "prettier -w .",
     "health": "node scripts/healthcheck.js",
-    "seed": "node scripts/seed.js"
+    "seed": "node scripts/seed.js",
+    "recommend:build": "node recommendation/scripts/buildAll.js",
+    "recommend:associations": "node recommendation/scripts/buildProductAssociations.js",
+    "recommend:popularity": "node recommendation/scripts/buildProductPopularity.js",
+    "recommend:test": "node recommendation/scripts/testSystem.js"
   },
   "keywords": [
     "ecommerce",

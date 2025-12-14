@@ -21,6 +21,7 @@ import mongoose from 'mongoose';
 // Import Routes
 import productRoutes from './routes/productRoutes.js';
 import orderRoutes from './routes/orderRoutes.js';
+import recommendationRoutes from './recommendation/routes/recommendationRoutes.js';
 
 // Load environment variables
 dotenv.config();
@@ -94,6 +95,7 @@ app.get('/favicon.ico', (_, res) => res.status(204).end());
 // API Routes
 app.use('/api/products', productRoutes);
 app.use('/api/orders', orderRoutes);
+app.use('/api/recommend', recommendationRoutes);
 
 // Root route
 app.get('/', (req, res) => {
@@ -103,6 +105,7 @@ app.get('/', (req, res) => {
     endpoints: {
       products: '/api/products',
       orders: '/api/orders',
+      recommendations: '/api/recommend',
       test: '/api/test',
       health: '/api/health'
     }
