@@ -7,6 +7,7 @@ import { useChocairFeatures } from "../hooks/useChocairFeatures";
 import Header from "../components/layout/Header";
 import Hero from "../components/home/Hero";
 import Footer from "../components/layout/Footer";
+import TrendingProducts from "../components/recommendations/TrendingProducts";
 
 import "../styles/style.css";
 
@@ -79,6 +80,9 @@ function Home() {
 
       {/* HERO SECTION */}
       <Hero />
+
+      {/* TRENDING PRODUCTS - RECOMMENDATION SYSTEM */}
+      <TrendingProducts />
 
       {/* FEATURED CATEGORIES */}
       <section className="featured-categories">

@@ -42,7 +42,7 @@ async function buildProductPopularity() {
     // Fetch all completed orders
     const orders = await Order.find({
       status: { $in: ['Delivered', 'Preparing', 'Out for Delivery'] }
-    }).select('items');
+    }).select('orderItems items');
 
     console.log(`📦 Analyzing ${orders.length} orders...\n`);
 
@@ -59,10 +59,13 @@ async function buildProductPopularity() {
 
     // Process each order
     for (const order of orders) {
-      for (const item of order.items) {
+      const items = order.orderItems || order.items;
+      if (!items) continue;
+      
+      for (const item of items) {
         const productId = item.product.toString();
         const productName = item.name;
-        const quantity = item.quantity;
+        const quantity = item.qty || item.quantity;
 
         // Store product name
         if (!productNames[productId]) {

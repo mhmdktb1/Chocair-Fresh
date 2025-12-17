@@ -2,19 +2,22 @@ import { useNavigate } from "react-router-dom";
 import "../styles/cart.css";
 import { Trash2, CreditCard, Truck, ArrowLeft } from "lucide-react";
 import { useCart } from "../context/CartContext";
+import CartRecommendations from "../components/recommendations/CartRecommendations";
 
 function Cart() {
   const navigate = useNavigate();
   const { cartItems, removeFromCart, updateQuantity, getCartTotal } = useCart();
 
-  const handleRemove = (id) => {
-    removeFromCart(id);
+  const getId = (item) => item._id || item.id;
+
+  const handleRemove = (item) => {
+    removeFromCart(getId(item));
   };
 
-  const handleQtyChange = (id, delta) => {
-    const item = cartItems.find((item) => item.id === id);
-    if (item) {
-      updateQuantity(id, item.qty + delta);
+  const handleQtyChange = (item, delta) => {
+    const newQty = item.qty + delta;
+    if (newQty > 0) {
+      updateQuantity(getId(item), newQty);
     }
   };
 
@@ -39,30 +42,40 @@ function Cart() {
           <div className="cart-grid">
             {/* Left side: items */}
             <div className="cart-items">
-              {cartItems.map((item) => (
-                <div key={item.id} className="cart-item">
-                  <img src={item.img} alt={item.name} />
-                  <div className="cart-details">
-                    <h3>{item.name}</h3>
-                    <p>
-                      ${typeof item.price === 'string' ? parseFloat(item.price.replace('$', '')).toFixed(2) : item.price.toFixed(2)}
-                      {item.unit && <span style={{ fontSize: '0.85rem', color: '#666' }}> / {item.unit}</span>}
-                    </p>
-                    <div className="qty-controls">
-                      <button onClick={() => handleQtyChange(item.id, -1)}>-</button>
-                      <span>{item.qty} {item.unit || 'item'}{item.qty > 1 ? 's' : ''}</span>
-                      <button onClick={() => handleQtyChange(item.id, 1)}>+</button>
+              {cartItems.map((item) => {
+                const itemId = getId(item);
+                const itemPrice = typeof item.price === 'string' 
+                  ? parseFloat(item.price.replace('$', '')) 
+                  : item.price;
+                const itemImage = item.image || item.img || '/assets/images/placeholder.jpg';
+                
+                return (
+                  <div key={itemId} className="cart-item">
+                    <img src={itemImage} alt={item.name} onError={(e) => {
+                      e.target.src = '/assets/images/placeholder.jpg';
+                    }} />
+                    <div className="cart-details">
+                      <h3>{item.name}</h3>
+                      <p>
+                        ${itemPrice.toFixed(2)}
+                        {item.unit && <span style={{ fontSize: '0.85rem', color: '#666' }}> / {item.unit}</span>}
+                      </p>
+                      <div className="qty-controls">
+                        <button onClick={() => handleQtyChange(item, -1)}>-</button>
+                        <span>{item.qty} {item.unit || 'item'}{item.qty > 1 ? 's' : ''}</span>
+                        <button onClick={() => handleQtyChange(item, 1)}>+</button>
+                      </div>
                     </div>
+                    <button
+                      className="remove-btn"
+                      onClick={() => handleRemove(item)}
+                      aria-label="Remove item"
+                    >
+                      <Trash2 />
+                    </button>
                   </div>
-                  <button
-                    className="remove-btn"
-                    onClick={() => handleRemove(item.id)}
-                    aria-label="Remove item"
-                  >
-                    <Trash2 />
-                  </button>
-                </div>
-              ))}
+                );
+              })}
             </div>
 
             {/* Right side: summary */}
@@ -90,6 +103,11 @@ function Cart() {
               </div>
             </div>
           </div>
+        )}
+
+        {/* CART RECOMMENDATIONS */}
+        {cartItems.length > 0 && (
+          <CartRecommendations cartItems={cartItems} />
         )}
       </div>
     </section>

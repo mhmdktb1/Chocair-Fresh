@@ -42,7 +42,7 @@ async function buildProductAssociations() {
     // Fetch all completed orders with their items
     const orders = await Order.find({
       status: { $in: ['Delivered', 'Preparing', 'Out for Delivery'] }
-    }).select('items');
+    }).select('orderItems items');
 
     console.log(`📦 Analyzing ${orders.length} orders...\n`);
 
@@ -59,10 +59,10 @@ async function buildProductAssociations() {
 
     // Process each order
     for (const order of orders) {
-      const items = order.items;
+      const items = order.orderItems || order.items;
 
       // Skip orders with single item (no associations possible)
-      if (items.length < 2) continue;
+      if (!items || items.length < 2) continue;
 
       // For each pair of products in the order
       for (let i = 0; i < items.length; i++) {

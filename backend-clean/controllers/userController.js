@@ -127,7 +127,7 @@ const verifyOTP = asyncHandler(async (req, res) => {
 // @access  Public
 // ==========================================
 const registerUser = asyncHandler(async (req, res) => {
-  const { phone, name, email, age, gender } = req.body;
+  const { phone, name, email, age, gender, location } = req.body;
 
   if (!phone || !name) {
     res.status(400);
@@ -148,6 +148,7 @@ const registerUser = asyncHandler(async (req, res) => {
     email: email || undefined,
     age: age || undefined,
     gender: gender || undefined,
+    location: location || undefined,
   });
 
   res.status(201).json({
@@ -158,6 +159,7 @@ const registerUser = asyncHandler(async (req, res) => {
       name: user.name,
       phone: user.phone,
       email: user.email,
+      location: user.location,
       age: user.age,
       gender: user.gender,
       isAdmin: user.isAdmin,

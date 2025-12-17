@@ -29,6 +29,10 @@ const userSchema = new mongoose.Schema(
       type: String,
       enum: ['male', 'female', 'other', 'prefer-not-to-say'],
     },
+    location: {
+      type: String,
+      required: false,
+    },
     isAdmin: {
       type: Boolean,
       default: false,

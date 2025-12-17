@@ -4,6 +4,7 @@ import { ArrowLeft, Plus, Minus, ShoppingCart, Heart } from "lucide-react";
 import "../styles/ProductPage.css";
 import { useCart } from "../context/CartContext";
 import { useFavorites } from "../context/FavoritesContext";
+import ProductRecommendations from "../components/recommendations/ProductRecommendations";
 
 function ProductPage() {
   const { id } = useParams();
@@ -94,6 +95,9 @@ function ProductPage() {
           <button onClick={increase}><Plus /></button>
         </div>
       </div>
+
+      {/* PRODUCT RECOMMENDATIONS */}
+      <ProductRecommendations productId={product._id || product.id} />
 
       {/* Sticky Add to Cart Bar */}
       <div className="add-bar">

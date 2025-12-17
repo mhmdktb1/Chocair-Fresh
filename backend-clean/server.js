@@ -15,6 +15,20 @@ import recommendationRoutes from './recommendation/routes/recommendationRoutes.j
 
 dotenv.config();
 
+// Add global error handlers to debug crashes
+process.on('uncaughtException', (err) => {
+  console.error('UNCAUGHT EXCEPTION! 💥 Shutting down...');
+  console.error(err.name, err.message);
+  console.error(err.stack);
+  process.exit(1);
+});
+
+process.on('unhandledRejection', (err) => {
+  console.error('UNHANDLED REJECTION! 💥 Shutting down...');
+  console.error(err.name, err.message);
+  process.exit(1);
+});
+
 if (process.env.NODE_ENV !== 'test') {
   connectDB();
 }
@@ -52,10 +66,18 @@ app.use(errorHandler);
 const PORT = process.env.PORT || 5000;
 
 if (process.env.NODE_ENV !== 'test') {
-  app.listen(
-    PORT,
-    console.log(`Server running in ${process.env.NODE_ENV} mode on port ${PORT}`)
-  );
+  const server = app.listen(PORT, () => {
+    console.log(`Server running in ${process.env.NODE_ENV} mode on port ${PORT}`);
+  });
+
+  server.on('error', (error) => {
+    if (error.code === 'EADDRINUSE') {
+      console.error(`Port ${PORT} is already in use!`);
+    } else {
+      console.error('Server error:', error);
+    }
+    process.exit(1);
+  });
 }
 
 export default app;
