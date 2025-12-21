@@ -101,4 +101,51 @@ const deleteOrder = asyncHandler(async (req, res) => {
   }
 });
 
-export { addOrderItems, getOrderById, getOrders, updateOrderStatus, deleteOrder };
+// @desc    Get logged in user orders
+// @route   GET /api/orders/myorders
+// @access  Private
+const getMyOrders = asyncHandler(async (req, res) => {
+  const query = {
+    $or: [
+      { 'customerInfo.phone': req.user.phone }
+    ]
+  };
+
+  if (req.user.email) {
+    query.$or.push({ 'customerInfo.email': req.user.email });
+  }
+
+  const orders = await Order.find(query).sort({ createdAt: -1 });
+  res.json(orders);
+});
+
+// @desc    Cancel order
+// @route   PUT /api/orders/:id/cancel
+// @access  Private
+const cancelMyOrder = asyncHandler(async (req, res) => {
+  const order = await Order.findById(req.params.id);
+
+  if (order) {
+    const isOwner = (order.customerInfo.phone === req.user.phone) || 
+                    (req.user.email && order.customerInfo.email === req.user.email);
+
+    if (!isOwner && !req.user.isAdmin) {
+      res.status(401);
+      throw new Error('Not authorized to cancel this order');
+    }
+
+    if (order.status !== 'Pending') {
+      res.status(400);
+      throw new Error('Cannot cancel order that is not pending');
+    }
+
+    order.status = 'Cancelled';
+    const updatedOrder = await order.save();
+    res.json(updatedOrder);
+  } else {
+    res.status(404);
+    throw new Error('Order not found');
+  }
+});
+
+export { addOrderItems, getOrderById, getOrders, updateOrderStatus, deleteOrder, getMyOrders, cancelMyOrder };

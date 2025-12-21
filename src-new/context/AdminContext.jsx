@@ -27,8 +27,8 @@ export const AdminProvider = ({ children }) => {
     category: p.category,
     categories: [p.category], // Backend only has single category
     price: p.price,
-    priceUnit: "kg", // Default
-    unit: "kg", // Default
+    priceUnit: p.unit || "kg", 
+    unit: p.unit || "kg",
     stock: p.countInStock,
     image: p.image,
     description: p.description,

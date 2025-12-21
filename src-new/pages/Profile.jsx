@@ -1,17 +1,23 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { User, MapPin, Mail, Calendar, Edit2, LogOut, Save, X } from 'lucide-react';
+import { 
+  User, MapPin, Mail, Calendar, Edit2, LogOut, Save, X, 
+  Package, Settings, ChevronRight, ShoppingBag, Heart, ChevronDown, ChevronUp, AlertCircle 
+} from 'lucide-react';
 import Navbar from '../components/layout/Navbar';
-import { getStoredUser, clearAuthData, put, saveAuthData } from '../utils/api';
+import { getStoredUser, clearAuthData, saveAuthData, get, put } from '../utils/api';
 import Button from '../components/common/Button';
 import './Profile.css';
 
 const Profile = () => {
   const navigate = useNavigate();
   const [user, setUser] = useState(null);
-  const [isEditing, setIsEditing] = useState(false);
+  const [activeTab, setActiveTab] = useState('overview'); // overview, orders, settings
+  const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [isEditing, setIsEditing] = useState(false);
   const [formData, setFormData] = useState({});
+  const [expandedOrder, setExpandedOrder] = useState(null);
 
   useEffect(() => {
     const storedUser = getStoredUser();
@@ -20,176 +26,276 @@ const Profile = () => {
     } else {
       setUser(storedUser);
       setFormData(storedUser);
+      fetchOrders();
     }
   }, [navigate]);
+
+  const fetchOrders = async () => {
+    try {
+      const data = await get('/orders/myorders');
+      setOrders(data);
+    } catch (error) {
+      console.error('Failed to fetch orders', error);
+    }
+  };
 
   const handleLogout = () => {
     clearAuthData();
     navigate('/');
   };
 
-  const handleSave = async () => {
+  const handleSaveProfile = async () => {
     setLoading(true);
     try {
-      // Assuming there's an endpoint to update user profile
-      // If not, we might need to create one or just update local storage for now
-      // For this demo, we'll simulate an API call and update local storage
+      // Simulate API call
+      await new Promise(resolve => setTimeout(resolve, 1000));
       
-      // const response = await put('/users/profile', formData);
-      // if (response.success) {
-      //   setUser(response.user);
-      //   saveAuthData(localStorage.getItem('token'), response.user);
-      //   setIsEditing(false);
-      // }
-
-      // Simulating update since backend endpoint might not be ready
       setUser(formData);
       saveAuthData(localStorage.getItem('token'), formData);
       setIsEditing(false);
-      
     } catch (error) {
       console.error('Failed to update profile', error);
-      alert('Failed to update profile');
     } finally {
       setLoading(false);
     }
   };
 
-  const handleCancel = () => {
-    setFormData(user);
-    setIsEditing(false);
+  const handleCancelOrder = async (e, orderId) => {
+    e.stopPropagation();
+    if (!window.confirm('Are you sure you want to cancel this order?')) return;
+    
+    try {
+      await put(`/orders/${orderId}/cancel`);
+      fetchOrders(); // Refresh list
+      alert('Order cancelled successfully');
+    } catch (error) {
+      console.error('Failed to cancel order', error);
+      alert(error.message || 'Failed to cancel order');
+    }
+  };
+
+  const toggleOrder = (orderId) => {
+    if (expandedOrder === orderId) {
+      setExpandedOrder(null);
+    } else {
+      setExpandedOrder(orderId);
+    }
   };
 
   if (!user) return null;
 
+  const renderSidebar = () => (
+    <div className="profile-sidebar">
+      <div className="user-summary-card">
+        <div className="avatar-container">
+          {user.name ? user.name.charAt(0).toUpperCase() : <User />}
+        </div>
+        <h3 className="user-name">{user.name || 'User'}</h3>
+        <p className="user-email">{user.email}</p>
+      </div>
+
+      <div className="profile-nav">
+        <button 
+          className={`nav-item ${activeTab === 'overview' ? 'active' : ''}`}
+          onClick={() => setActiveTab('overview')}
+        >
+          <User size={20} /> Overview
+        </button>
+        <button 
+          className={`nav-item ${activeTab === 'orders' ? 'active' : ''}`}
+          onClick={() => setActiveTab('orders')}
+        >
+          <Package size={20} /> My Orders
+        </button>
+        <button 
+          className={`nav-item ${activeTab === 'settings' ? 'active' : ''}`}
+          onClick={() => setActiveTab('settings')}
+        >
+          <Settings size={20} /> Settings
+        </button>
+        <button className="nav-item logout" onClick={handleLogout}>
+          <LogOut size={20} /> Logout
+        </button>
+      </div>
+    </div>
+  );
+
+  const renderOverview = () => (
+    <div className="profile-content fade-in">
+      <div className="section-header">
+        <div>
+          <h2 className="section-title">Profile Overview</h2>
+          <p className="section-subtitle">Manage your personal information</p>
+        </div>
+        {!isEditing ? (
+          <Button variant="outline" onClick={() => setIsEditing(true)}>
+            <Edit2 size={16} style={{ marginRight: '8px' }} /> Edit Profile
+          </Button>
+        ) : (
+          <div style={{ display: 'flex', gap: '10px' }}>
+            <Button variant="secondary" onClick={() => setIsEditing(false)}>
+              <X size={16} style={{ marginRight: '8px' }} /> Cancel
+            </Button>
+            <Button onClick={handleSaveProfile} loading={loading}>
+              <Save size={16} style={{ marginRight: '8px' }} /> Save
+            </Button>
+          </div>
+        )}
+      </div>
+
+      <div className="form-grid">
+        <div className="form-group">
+          <label className="form-label">Full Name</label>
+          <input 
+            type="text" 
+            className="form-input"
+            value={formData.name || ''}
+            onChange={(e) => setFormData({...formData, name: e.target.value})}
+            disabled={!isEditing}
+          />
+        </div>
+        <div className="form-group">
+          <label className="form-label">Email Address</label>
+          <input 
+            type="email" 
+            className="form-input"
+            value={formData.email || ''}
+            disabled={true} // Email usually can't be changed easily
+          />
+        </div>
+        <div className="form-group">
+          <label className="form-label">Phone Number</label>
+          <input 
+            type="tel" 
+            className="form-input"
+            value={formData.phone || ''}
+            onChange={(e) => setFormData({...formData, phone: e.target.value})}
+            disabled={!isEditing}
+          />
+        </div>
+        <div className="form-group">
+          <label className="form-label">Location</label>
+          <input 
+            type="text" 
+            className="form-input"
+            value={formData.location || ''}
+            onChange={(e) => setFormData({...formData, location: e.target.value})}
+            disabled={!isEditing}
+          />
+        </div>
+      </div>
+    </div>
+  );
+
+  const renderOrders = () => (
+    <div className="profile-content fade-in">
+      <div className="section-header">
+        <div>
+          <h2 className="section-title">My Orders</h2>
+          <p className="section-subtitle">Track and manage your orders</p>
+        </div>
+      </div>
+
+      {orders.length === 0 ? (
+        <div className="empty-state">
+          <ShoppingBag size={48} style={{ marginBottom: '1rem', opacity: 0.5 }} />
+          <h3>No orders yet</h3>
+          <p>Start shopping to see your orders here!</p>
+          <Button onClick={() => navigate('/shop')} style={{ marginTop: '1rem' }}>
+            Browse Products
+          </Button>
+        </div>
+      ) : (
+        <div className="orders-list">
+          {orders.map(order => (
+            <div key={order._id} className={`order-card ${expandedOrder === order._id ? 'expanded' : ''}`} onClick={() => toggleOrder(order._id)}>
+              <div className="order-header">
+                <div className="order-info">
+                  <span className="order-id">Order #{order._id.slice(-6)}</span>
+                  <span className="order-date">{new Date(order.createdAt).toLocaleDateString()}</span>
+                </div>
+                <div className="order-status-container">
+                  <span className={`order-status status-${order.status?.toLowerCase() || 'pending'}`}>
+                    {order.status || 'Pending'}
+                  </span>
+                  {expandedOrder === order._id ? <ChevronUp size={20} /> : <ChevronDown size={20} />}
+                </div>
+              </div>
+              
+              <div className="order-summary-row">
+                <span>{order.orderItems?.length || 0} Items</span>
+                <span className="order-total">${order.totalPrice?.toFixed(2)}</span>
+              </div>
+
+              {expandedOrder === order._id && (
+                <div className="order-details fade-in">
+                  <div className="order-items">
+                    {order.orderItems.map((item, index) => (
+                      <div key={index} className="order-item">
+                        <div className="item-image">
+                          {item.image ? <img src={item.image} alt={item.name} /> : <Package size={24} />}
+                        </div>
+                        <div className="item-info">
+                          <div className="item-name">{item.name}</div>
+                          <div className="item-meta">Qty: {item.qty} × ${item.price}</div>
+                        </div>
+                        <div className="item-total">${(item.qty * item.price).toFixed(2)}</div>
+                      </div>
+                    ))}
+                  </div>
+                  
+                  <div className="order-footer">
+                    <div className="shipping-info">
+                      <strong>Shipping to:</strong>
+                      <p>{order.customerInfo?.address}, {order.customerInfo?.city}</p>
+                    </div>
+                    
+                    {order.status === 'Pending' && (
+                      <Button 
+                        variant="outline" 
+                        className="cancel-btn"
+                        onClick={(e) => handleCancelOrder(e, order._id)}
+                      >
+                        Cancel Order
+                      </Button>
+                    )}
+                  </div>
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+
+  const renderSettings = () => (
+    <div className="profile-content fade-in">
+      <div className="section-header">
+        <div>
+          <h2 className="section-title">Account Settings</h2>
+          <p className="section-subtitle">Manage your preferences</p>
+        </div>
+      </div>
+      
+      <div className="empty-state">
+        <Settings size={48} style={{ marginBottom: '1rem', opacity: 0.5 }} />
+        <h3>Settings Coming Soon</h3>
+        <p>We are working on more features for you!</p>
+      </div>
+    </div>
+  );
+
   return (
     <div className="profile-page">
       <Navbar />
-      <div className="container profile-container">
-        <div className="profile-card">
-          <div className="profile-header">
-            <div className="profile-avatar">
-              <User size={40} color="#fff" />
-            </div>
-            <div className="profile-title">
-              <h1>My Account</h1>
-              <p>Manage your personal information</p>
-            </div>
-            <div className="profile-actions">
-              {!isEditing ? (
-                <button className="action-btn edit-btn" onClick={() => setIsEditing(true)}>
-                  <Edit2 size={18} /> Edit Profile
-                </button>
-              ) : (
-                <div className="edit-actions">
-                  <button className="action-btn cancel-btn" onClick={handleCancel} disabled={loading}>
-                    <X size={18} /> Cancel
-                  </button>
-                  <button className="action-btn save-btn" onClick={handleSave} disabled={loading}>
-                    <Save size={18} /> {loading ? 'Saving...' : 'Save Changes'}
-                  </button>
-                </div>
-              )}
-              <button className="action-btn logout-btn" onClick={handleLogout}>
-                <LogOut size={18} /> Logout
-              </button>
-            </div>
-          </div>
-
-          <div className="profile-content">
-            <div className="info-grid">
-              <div className="info-item">
-                <div className="info-label">
-                  <User size={16} /> Full Name
-                </div>
-                {isEditing ? (
-                  <input 
-                    type="text" 
-                    className="edit-input"
-                    value={formData.name || ''}
-                    onChange={(e) => setFormData({...formData, name: e.target.value})}
-                  />
-                ) : (
-                  <div className="info-value">{user.name}</div>
-                )}
-              </div>
-
-              <div className="info-item">
-                <div className="info-label">
-                  <MapPin size={16} /> Location
-                </div>
-                {isEditing ? (
-                  <input 
-                    type="text" 
-                    className="edit-input"
-                    value={formData.location || ''}
-                    onChange={(e) => setFormData({...formData, location: e.target.value})}
-                  />
-                ) : (
-                  <div className="info-value">{user.location || 'Not provided'}</div>
-                )}
-              </div>
-
-              <div className="info-item">
-                <div className="info-label">
-                  <Mail size={16} /> Email Address
-                </div>
-                {isEditing ? (
-                  <input 
-                    type="email" 
-                    className="edit-input"
-                    value={formData.email || ''}
-                    onChange={(e) => setFormData({...formData, email: e.target.value})}
-                  />
-                ) : (
-                  <div className="info-value">{user.email || 'Not provided'}</div>
-                )}
-              </div>
-
-              <div className="info-item">
-                <div className="info-label">
-                  <Calendar size={16} /> Age
-                </div>
-                {isEditing ? (
-                  <input 
-                    type="number" 
-                    className="edit-input"
-                    value={formData.age || ''}
-                    onChange={(e) => setFormData({...formData, age: e.target.value})}
-                  />
-                ) : (
-                  <div className="info-value">{user.age || 'Not provided'}</div>
-                )}
-              </div>
-
-              <div className="info-item">
-                <div className="info-label">
-                  <User size={16} /> Gender
-                </div>
-                {isEditing ? (
-                  <select 
-                    className="edit-input"
-                    value={formData.gender || ''}
-                    onChange={(e) => setFormData({...formData, gender: e.target.value})}
-                  >
-                    <option value="">Select</option>
-                    <option value="male">Male</option>
-                    <option value="female">Female</option>
-                    <option value="other">Other</option>
-                  </select>
-                ) : (
-                  <div className="info-value" style={{textTransform: 'capitalize'}}>{user.gender || 'Not provided'}</div>
-                )}
-              </div>
-
-              <div className="info-item full-width">
-                <div className="info-label">
-                  Phone Number (Cannot be changed)
-                </div>
-                <div className="info-value disabled">{user.phone}</div>
-              </div>
-            </div>
-          </div>
+      <div className="profile-container">
+        {renderSidebar()}
+        
+        <div className="profile-main">
+          {activeTab === 'overview' && renderOverview()}
+          {activeTab === 'orders' && renderOrders()}
+          {activeTab === 'settings' && renderSettings()}
         </div>
       </div>
     </div>

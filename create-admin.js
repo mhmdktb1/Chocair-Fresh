@@ -11,8 +11,8 @@ const data = JSON.stringify({
 
 const options = {
   hostname: 'localhost',
-  port: 5000,
-  path: '/api/users/register',
+  port: 5001,
+  path: '/api/users/auth/register',
   method: 'POST',
   headers: {
     'Content-Type': 'application/json',

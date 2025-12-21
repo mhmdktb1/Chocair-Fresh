@@ -3,6 +3,7 @@
   background: linear-gradient(135deg, #f8f9fa 0%, #e8f8f5 100%);
   display: flex;
   flex-direction: column;
+  padding-top: 6rem;
 }
 
 .login-container {

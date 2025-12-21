@@ -1,84 +1,72 @@
 import React from 'react';
-import { Truck, Heart, ShieldCheck, Leaf } from 'lucide-react';
+import { ArrowRight } from 'lucide-react';
 import Button from '../common/Button';
-import '../../pages/About.css'; // Reusing the styles
+import './AboutSection.css';
 
-const Feature = ({ icon: Icon, title, description }) => (
-  <div className="feature-card">
-    <div className="feature-icon">
-      <Icon size={32} />
-    </div>
-    <h3 className="feature-title">{title}</h3>
-    <p className="feature-desc">{description}</p>
-  </div>
-);
+const AboutSection = ({ data }) => {
+  const {
+    title = "Cultivating Goodness",
+    subtitle = "Fresh from the farm, straight to your table.",
+    description = "Chocair Fresh started with a simple mission: bridging the gap between local farmers and your kitchen. We believe everyone deserves authentic, chemical-free produce.",
+    image = "https://images.unsplash.com/photo-1542838132-92c53300491e?ixlib=rb-4.0.3&auto=format&fit=crop&w=1000&q=80"
+  } = data || {};
 
-const AboutSection = () => {
+  // Helper to parse title for highlighting
+  const renderTitle = (text) => {
+    if (!text) return null;
+    const parts = text.split('*');
+    return parts.map((part, index) => {
+      if (index % 2 === 1) {
+        return <span key={index} className="highlight">{part}</span>;
+      }
+      return <React.Fragment key={index}>{part}</React.Fragment>;
+    });
+  };
+
   return (
-    <section id="about" className="about-section">
-      {/* Hero-like separator */}
-      <div className="about-hero" style={{ height: '40vh', marginBottom: '4rem' }}>
-        <div className="container">
-          <h2 className="about-title">Cultivating <span className="highlight">Goodness</span></h2>
-          <p className="about-subtitle">
-            We believe in the power of fresh, organic food to transform lives.
+    <section id="about" className="home-about-section">
+      
+      {/* Hero Banner - Restored as requested */}
+      <div className="about-hero-banner">
+        <div className="about-hero-content">
+          <h2 className="about-hero-title">{renderTitle(title)}</h2>
+          <p className="about-hero-subtitle">
+            {subtitle}
           </p>
         </div>
       </div>
 
-      {/* Story Section */}
-      <div className="section-story container">
-        <div className="story-grid">
-          <div className="story-image-wrapper">
+      <div className="about-container">
+        {/* Content Grid */}
+        <div className="about-content-grid">
+          
+          {/* Image Side - New Image */}
+          <div className="about-image-wrapper">
             <img 
-              src="https://images.unsplash.com/photo-1595855709915-445676d2f6cd?ixlib=rb-4.0.3&auto=format&fit=crop&w=1000&q=80" 
-              alt="Farmer holding fresh produce" 
-              className="story-img"
+              src={image} 
+              alt="About Us" 
+              className="about-main-img"
             />
-            <div className="story-badge">
-              <span className="years">15+</span>
-              <span className="label">Years of Service</span>
+            <div className="about-stat-badge">
+              <span className="stat-number">15+</span>
+              <span className="stat-label">Years of Service</span>
             </div>
           </div>
           
-          <div className="story-content">
-            <h2 className="section-title">Our Story</h2>
-            <p className="story-text">
-              Started in 2010, Chocair Fresh began with a simple mission: to bridge the gap between local farmers and urban households. We noticed that while farmers struggled to find fair markets, city dwellers craved authentic, chemical-free produce.
+          {/* Text Side - Shortened Text */}
+          <div className="about-text-content">
+            <h3 className="story-title">Our Story</h3>
+            <p className="story-paragraph">
+              {description}
             </p>
-            <p className="story-text">
-              Today, we partner with over 50 local farms, ensuring that the food on your table is harvested within 24 hours of delivery.
-            </p>
-            <Button variant="primary">Read More</Button>
+            
+            <div className="about-cta">
+              <Button variant="primary" className="flex items-center gap-2">
+                Read Full Story <ArrowRight size={18} />
+              </Button>
+            </div>
           </div>
-        </div>
-      </div>
 
-      {/* Features Section */}
-      <div className="section-features">
-        <div className="container">
-          <div className="features-grid">
-            <Feature 
-              icon={Leaf} 
-              title="100% Organic" 
-              description="Certified organic produce free from harmful pesticides."
-            />
-            <Feature 
-              icon={Truck} 
-              title="Fast Delivery" 
-              description="Order before 10 AM and get delivery by evening."
-            />
-            <Feature 
-              icon={ShieldCheck} 
-              title="Quality Guarantee" 
-              description="Not satisfied? We'll replace it for free."
-            />
-            <Feature 
-              icon={Heart} 
-              title="Community First" 
-              description="We support local farmers with fair prices."
-            />
-          </div>
         </div>
       </div>
     </section>

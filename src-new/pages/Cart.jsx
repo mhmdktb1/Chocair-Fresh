@@ -4,6 +4,7 @@ import { Trash2, Plus, Minus, ArrowRight, ShoppingBag } from 'lucide-react';
 import { useCart } from '../context/CartContext';
 import Navbar from '../components/layout/Navbar';
 import Button from '../components/common/Button';
+import CartRecommendations from '../components/shop/CartRecommendations';
 import './Cart.css';
 
 const Cart = () => {
@@ -131,6 +132,8 @@ const Cart = () => {
             </Link>
           </div>
         </div>
+        
+        <CartRecommendations />
       </div>
     </div>
   );

@@ -194,6 +194,73 @@ export async function getTrendingProducts(limit = 10) {
 }
 
 /**
+ * Get product recommendations based on the entire cart contents
+ * 
+ * @param {Array<{productId: string, quantity: number}>} cartItems - Items in the cart
+ * @param {Object} options - Recommendation options
+ * @param {number} options.limit - Maximum number of recommendations
+ * @returns {Promise<Array>} Array of recommended products with scores
+ */
+export async function getCartRecommendations(cartItems, options = {}) {
+  const { limit = 10 } = options;
+
+  // Ensure knowledge is loaded
+  if (!productAssociations) {
+    await loadKnowledge();
+  }
+
+  const scores = {}; // { productId: { associationScore: number, sources: number } }
+  const cartProductIds = new Set(cartItems.map(item => item.productId));
+
+  // 1. Iterate through each item in the cart
+  for (const item of cartItems) {
+    const { productId, quantity } = item;
+    const associations = productAssociations[productId];
+
+    if (!associations) continue;
+
+    // 2. Iterate through associations for this item
+    for (const [relatedId, count] of Object.entries(associations)) {
+      // Skip if the related item is already in the cart
+      if (cartProductIds.has(relatedId)) continue;
+
+      // Calculate weighted score contribution
+      // Base score is count * 10 (matching the single product logic)
+      // Multiplied by quantity to give weight to bulk items
+      const weight = quantity || 1;
+      const contribution = (count * 10) * weight;
+
+      if (!scores[relatedId]) {
+        scores[relatedId] = { associationScore: 0, sources: 0 };
+      }
+      scores[relatedId].associationScore += contribution;
+      scores[relatedId].sources += 1; // Track how many cart items recommended this
+    }
+  }
+
+  // 3. Finalize scores with popularity bonus
+  let recommendations = Object.entries(scores).map(([productId, data]) => {
+    const popularity = productPopularity[productId] || 0;
+    // Logarithmic popularity bonus (same as single product logic)
+    const popularityScore = Math.log(popularity + 1) * 2;
+    
+    return {
+      productId,
+      score: data.associationScore + popularityScore,
+      associationScore: data.associationScore,
+      popularity,
+      matches: data.sources // How many items in cart triggered this
+    };
+  });
+
+  // 4. Sort by score descending
+  recommendations.sort((a, b) => b.score - a.score);
+
+  // 5. Limit results
+  return recommendations.slice(0, limit);
+}
+
+/**
  * Refresh knowledge maps (reload from files)
  * Call this after rebuilding the data
  */
@@ -204,6 +271,7 @@ export async function refreshKnowledge() {
 // Export for use in other modules
 export default {
   getProductRecommendations,
+  getCartRecommendations,
   getTrendingProducts,
   refreshKnowledge
 };

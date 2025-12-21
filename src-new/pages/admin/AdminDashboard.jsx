@@ -1,12 +1,13 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { LayoutDashboard, Package, ShoppingBag, Users, LogOut, Menu, X, Image, Grid3x3, Tag } from 'lucide-react';
+import { LayoutDashboard, Package, ShoppingBag, Users, LogOut, Menu, X, Image, Grid3x3, Tag, Home } from 'lucide-react';
 import './AdminDashboard.css';
 import AdminOverview from './AdminOverview';
 import AdminProducts from './AdminProducts';
 import AdminOrders from './AdminOrders';
 import AdminUsers from './AdminUsers';
 import AdminCategories from './AdminCategories';
+import HomeEditor from '../../components/admin/HomeEditor';
 
 const AdminDashboard = () => {
   const [activeTab, setActiveTab] = useState("dashboard");
@@ -24,6 +25,7 @@ const AdminDashboard = () => {
     { id: "categories", label: "Categories", icon: Grid3x3 },
     { id: "orders", label: "Orders", icon: ShoppingBag },
     { id: "users", label: "Users", icon: Users },
+    { id: "homepage", label: "Homepage", icon: Home },
   ];
 
   const renderContent = () => {
@@ -33,6 +35,7 @@ const AdminDashboard = () => {
       case "categories": return <AdminCategories />;
       case "orders": return <AdminOrders />;
       case "users": return <AdminUsers />;
+      case "homepage": return <HomeEditor />;
       default: return <AdminOverview />;
     }
   };
