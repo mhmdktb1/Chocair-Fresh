@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { get, put } from '../../utils/api';
+import api from '../../utils/api';
 import { toast } from 'react-toastify';
 import { Save, Image as ImageIcon, Type, Layout } from 'lucide-react';
 import './HomeEditor.css';
@@ -28,7 +28,8 @@ const HomeEditor = () => {
 
   const fetchSettings = async () => {
     try {
-      const data = await get('/home-config');
+      const response = await api.get('/home-config');
+      const data = response.data;
       if (data) {
         // Ensure stats array has 3 items
         if (!data.hero.stats || data.hero.stats.length === 0) {
@@ -66,7 +67,7 @@ const HomeEditor = () => {
 
   const handleSave = async () => {
     try {
-      await put('/home-config', formData);
+      await api.put('/home-config', formData);
       toast.success("Homepage updated successfully!");
     } catch (error) {
       console.error(error);

@@ -1,4 +1,4 @@
-import asyncHandler from 'express-async-handler';
+import asyncHandler from '../middleware/asyncHandler.js';
 import mongoose from 'mongoose';
 import User from '../models/userModel.js';
 import OTP from '../models/otpModel.js';

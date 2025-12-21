@@ -1,5 +1,5 @@
 import { createContext, useContext, useState, useEffect } from "react";
-import { get, post, put, del } from "../utils/api";
+import api from "../utils/api";
 
 const AdminContext = createContext();
 
@@ -60,8 +60,8 @@ export const AdminProvider = ({ children }) => {
   const fetchProducts = async () => {
     try {
       setLoading(true);
-      const data = await get("/products");
-      setProducts(data.map(mapProduct));
+      const response = await api.get("/products");
+      setProducts(response.data.map(mapProduct));
     } catch (e) {
       console.error("Failed to load products", e);
       setError("Failed to load products");
@@ -72,8 +72,8 @@ export const AdminProvider = ({ children }) => {
 
   const fetchOrders = async () => {
     try {
-      const data = await get("/orders");
-      setOrders(data.map(mapOrder));
+      const response = await api.get("/orders");
+      setOrders(response.data.map(mapOrder));
     } catch (e) {
       console.error("Failed to load orders", e);
     }
@@ -81,8 +81,8 @@ export const AdminProvider = ({ children }) => {
 
   const fetchCategories = async () => {
     try {
-      const data = await get("/categories");
-      setCategories(data);
+      const response = await api.get("/categories");
+      setCategories(response.data);
     } catch (e) {
       console.error("Failed to load categories", e);
     }
@@ -90,8 +90,8 @@ export const AdminProvider = ({ children }) => {
 
   const fetchHeroes = async () => {
     try {
-      const data = await get("/hero");
-      setHeroSlides(data);
+      const response = await api.get("/hero");
+      setHeroSlides(response.data);
     } catch (e) {
       console.error("Failed to load hero slides", e);
     }
@@ -118,8 +118,8 @@ export const AdminProvider = ({ children }) => {
         unit: productData.unit || "kg",
       };
 
-      const data = await post("/products", payload);
-      const newProduct = mapProduct(data);
+      const response = await api.post("/products", payload);
+      const newProduct = mapProduct(response.data);
       setProducts((prev) => [...prev, newProduct]);
       return newProduct;
     } catch (e) {
@@ -141,8 +141,8 @@ export const AdminProvider = ({ children }) => {
         unit: productData.unit || "kg",
       };
 
-      const data = await put(`/products/${id}`, payload);
-      const updated = mapProduct(data);
+      const response = await api.put(`/products/${id}`, payload);
+      const updated = mapProduct(response.data);
       setProducts((prev) => prev.map((p) => (p.id === id ? updated : p)));
       return updated;
     } catch (e) {
@@ -153,7 +153,7 @@ export const AdminProvider = ({ children }) => {
 
   const deleteProduct = async (id) => {
     try {
-      await del(`/products/${id}`);
+      await api.delete(`/products/${id}`);
       setProducts((prev) => prev.filter((p) => p.id !== id));
     } catch (e) {
       console.error("Delete product failed", e);
@@ -164,8 +164,8 @@ export const AdminProvider = ({ children }) => {
   // Order Functions
   const updateOrderStatus = async (id, newStatus) => {
     try {
-      const data = await put(`/orders/${id}/status`, { status: newStatus });
-      const updated = mapOrder(data);
+      const response = await api.put(`/orders/${id}/status`, { status: newStatus });
+      const updated = mapOrder(response.data);
       setOrders((prev) => prev.map((o) => (o.id === id ? updated : o)));
       return updated;
     } catch (e) {
@@ -176,7 +176,7 @@ export const AdminProvider = ({ children }) => {
 
   const deleteOrder = async (id) => {
     try {
-      await del(`/orders/${id}`);
+      await api.delete(`/orders/${id}`);
       setOrders((prev) => prev.filter((o) => o.id !== id));
     } catch (e) {
       console.error("Delete order failed", e);
@@ -202,8 +202,8 @@ export const AdminProvider = ({ children }) => {
 
   const addCategory = async (categoryData) => {
     try {
-      const data = await post("/categories", categoryData);
-      setCategories((prev) => [...prev, data]);
+      const response = await api.post("/categories", categoryData);
+      setCategories((prev) => [...prev, response.data]);
       return { success: true };
     } catch (e) {
       console.error("Failed to add category", e);
@@ -213,8 +213,8 @@ export const AdminProvider = ({ children }) => {
 
   const updateCategory = async (id, categoryData) => {
     try {
-      const data = await put(`/categories/${id}`, categoryData);
-      setCategories((prev) => prev.map((c) => (c._id === id ? data : c)));
+      const response = await api.put(`/categories/${id}`, categoryData);
+      setCategories((prev) => prev.map((c) => (c._id === id ? response.data : c)));
       return { success: true };
     } catch (e) {
       console.error("Failed to update category", e);
@@ -224,7 +224,7 @@ export const AdminProvider = ({ children }) => {
 
   const deleteCategory = async (id) => {
     try {
-      await del(`/categories/${id}`);
+      await api.delete(`/categories/${id}`);
       setCategories((prev) => prev.filter((c) => c._id !== id));
       return { success: true };
     } catch (e) {
@@ -235,8 +235,8 @@ export const AdminProvider = ({ children }) => {
 
   const addHeroSlide = async (slideData) => {
     try {
-      const data = await post("/hero", slideData);
-      setHeroSlides((prev) => [...prev, data]);
+      const response = await api.post("/hero", slideData);
+      setHeroSlides((prev) => [...prev, response.data]);
       return { success: true };
     } catch (e) {
       console.error("Failed to add hero slide", e);
@@ -246,8 +246,8 @@ export const AdminProvider = ({ children }) => {
 
   const updateHeroSlide = async (id, slideData) => {
     try {
-      const data = await put(`/hero/${id}`, slideData);
-      setHeroSlides((prev) => prev.map((s) => (s._id === id ? data : s)));
+      const response = await api.put(`/hero/${id}`, slideData);
+      setHeroSlides((prev) => prev.map((s) => (s._id === id ? response.data : s)));
       return { success: true };
     } catch (e) {
       console.error("Failed to update hero slide", e);
@@ -257,7 +257,7 @@ export const AdminProvider = ({ children }) => {
 
   const deleteHeroSlide = async (id) => {
     try {
-      await del(`/hero/${id}`);
+      await api.delete(`/hero/${id}`);
       setHeroSlides((prev) => prev.filter((s) => s._id !== id));
       return { success: true };
     } catch (e) {

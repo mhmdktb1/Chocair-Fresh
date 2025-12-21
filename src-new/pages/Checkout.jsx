@@ -4,7 +4,7 @@ import { CheckCircle, CreditCard, Truck, MapPin } from 'lucide-react';
 import { useCart } from '../context/CartContext';
 import Navbar from '../components/layout/Navbar';
 import Button from '../components/common/Button';
-import { post, getStoredUser } from '../utils/api';
+import api, { getStoredUser } from '../utils/api';
 import './Checkout.css';
 
 const Checkout = () => {
@@ -80,7 +80,7 @@ const Checkout = () => {
           totalPrice: finalTotal
         };
 
-        await post('/orders', orderData);
+        await api.post('/orders', orderData);
 
         setLoading(false);
         setStep(3);

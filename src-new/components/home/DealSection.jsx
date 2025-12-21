@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Button from '../common/Button';
+import { parseHighlightedText } from '../../utils/textUtils';
 import './DealSection.css';
 
 const DealSection = ({ data }) => {
@@ -37,25 +38,13 @@ const DealSection = ({ data }) => {
     return () => clearInterval(timer);
   }, []);
 
-  // Helper to parse title for highlighting
-  const renderTitle = (text) => {
-    if (!text) return null;
-    const parts = text.split('*');
-    return parts.map((part, index) => {
-      if (index % 2 === 1) {
-        return <span key={index} className="highlight">{part}</span>;
-      }
-      return <React.Fragment key={index}>{part}</React.Fragment>;
-    });
-  };
-
   return (
     <section className="deal-section">
       <div className="container">
         <div className="deal-wrapper">
           <div className="deal-content">
             <span className="deal-badge">Limited Time Offer</span>
-            <h2 className="deal-title">{renderTitle(title)}</h2>
+            <h2 className="deal-title">{parseHighlightedText(title)}</h2>
             <p className="deal-desc">
               {description}
             </p>

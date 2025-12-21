@@ -3,7 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { Minus, Plus, ShoppingBag, ArrowLeft, Star, Truck, ShieldCheck, Clock, Scale } from 'lucide-react';
 import Navbar from '../components/layout/Navbar';
 import { useCart } from '../context/CartContext';
-import { get } from '../utils/api';
+import api from '../utils/api';
 import Button from '../components/common/Button';
 import WeightScale from '../components/shop/WeightScale';
 import RecommendationRow from '../components/shop/RecommendationRow';
@@ -25,7 +25,8 @@ const ProductDetails = () => {
     const fetchProduct = async () => {
       try {
         setLoading(true);
-        const data = await get(`/products/${id}`);
+        const response = await api.get(`/products/${id}`);
+        const data = response.data;
         setProduct(data);
         // Set default quantity based on unit
         if (data.unit === 'kg' || data.unit === 'g') {

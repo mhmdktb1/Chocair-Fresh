@@ -4,7 +4,7 @@ import { Phone, ArrowRight, CheckCircle, Loader2, User } from 'lucide-react';
 import { normalizeLebanesePhoneNumber, formatPhoneNumber } from '../utils/phoneUtils';
 import Navbar from '../components/layout/Navbar';
 import Button from '../components/common/Button';
-import { post, saveAuthData } from '../utils/api';
+import api, { saveAuthData } from '../utils/api';
 import './Login.css';
 
 const Login = () => {
@@ -37,17 +37,17 @@ const Login = () => {
       }
 
       // Call Backend API
-      const response = await post('/users/auth/send-otp', { phone: normalizedPhone });
+      const response = await api.post('/users/auth/send-otp', { phone: normalizedPhone });
       
-      if (response.success) {
+      if (response.data.success) {
         // In development, the OTP might be returned in the response for testing
-        if (response.otp) {
-          console.log('DEV OTP:', response.otp);
-          alert(`DEV MODE: Your OTP is ${response.otp}`);
+        if (response.data.otp) {
+          console.log('DEV OTP:', response.data.otp);
+          alert(`DEV MODE: Your OTP is ${response.data.otp}`);
         }
         setStep('OTP');
       } else {
-        throw new Error(response.message || 'Failed to send OTP');
+        throw new Error(response.data.message || 'Failed to send OTP');
       }
     } catch (err) {
       console.error(err);
@@ -64,21 +64,21 @@ const Login = () => {
 
     try {
       const normalizedPhone = normalizeLebanesePhoneNumber(phoneNumber);
-      const response = await post('/users/auth/verify-otp', { 
+      const response = await api.post('/users/auth/verify-otp', { 
         phone: normalizedPhone,
         code: otp 
       });
 
-      if (response.success) {
-        if (response.isNewUser) {
+      if (response.data.success) {
+        if (response.data.isNewUser) {
           setStep('REGISTER');
         } else {
           // Existing user - Login success
-          saveAuthData(response.token, response.user);
+          saveAuthData(response.data.token, response.data.user);
           navigate('/');
         }
       } else {
-        throw new Error(response.message || 'Invalid verification code');
+        throw new Error(response.data.message || 'Invalid verification code');
       }
     } catch (err) {
       console.error(err);
@@ -99,7 +99,7 @@ const Login = () => {
       }
 
       const normalizedPhone = normalizeLebanesePhoneNumber(phoneNumber);
-      const response = await post('/users/auth/register', {
+      const response = await api.post('/users/auth/register', {
         phone: normalizedPhone,
         name: regData.name,
         location: regData.location,
@@ -108,11 +108,11 @@ const Login = () => {
         gender: regData.gender === 'select' ? undefined : regData.gender.toLowerCase()
       });
 
-      if (response.success) {
-        saveAuthData(response.token, response.user);
+      if (response.data.success) {
+        saveAuthData(response.data.token, response.data.user);
         navigate('/profile');
       } else {
-        throw new Error(response.message || 'Registration failed');
+        throw new Error(response.data.message || 'Registration failed');
       }
     } catch (err) {
       console.error(err);

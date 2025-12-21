@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Button from '../common/Button';
+import { parseHighlightedText } from '../../utils/textUtils';
 import './Hero.css';
 
 const Hero = ({ data }) => {
@@ -37,18 +38,6 @@ const Hero = ({ data }) => {
     return () => window.removeEventListener('mousemove', handleMouseMove);
   }, []);
 
-  // Helper to parse title for highlighting
-  const renderTitle = (text) => {
-    if (!text) return null;
-    const parts = text.split('*');
-    return parts.map((part, index) => {
-      if (index % 2 === 1) {
-        return <span key={index} className="text-gradient">{part}</span>;
-      }
-      return <React.Fragment key={index}>{part}</React.Fragment>;
-    });
-  };
-
   return (
     <section className="hero" ref={heroRef}>
       <div className="hero-bg-gradient"></div>
@@ -79,7 +68,7 @@ const Hero = ({ data }) => {
           </div>
           
           <h1 className="hero-title">
-            {renderTitle(title)}
+            {parseHighlightedText(title, 'text-gradient')}
           </h1>
           
           <p className="hero-subtitle">

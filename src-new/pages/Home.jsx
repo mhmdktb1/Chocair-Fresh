@@ -10,7 +10,7 @@ import NewsletterSection from '../components/home/NewsletterSection';
 import AboutSection from '../components/home/AboutSection';
 import ContactSection from '../components/home/ContactSection';
 import RecommendationRow from '../components/shop/RecommendationRow';
-import { getStoredUser, get } from '../utils/api';
+import api, { getStoredUser } from '../utils/api';
 
 const Home = () => {
   const { hash } = useLocation();
@@ -23,8 +23,8 @@ const Home = () => {
 
     const fetchHomeConfig = async () => {
       try {
-        const data = await get('/home-config');
-        setHomeConfig(data);
+        const response = await api.get('/home-config');
+        setHomeConfig(response.data);
       } catch (error) {
         console.error("Failed to load home config", error);
       }

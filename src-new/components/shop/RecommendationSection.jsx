@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { post } from '../../utils/api';
+import api from '../../utils/api';
 import ProductCard from './ProductCard';
 import './RecommendationSection.css';
 
@@ -14,13 +14,13 @@ const RecommendationSection = ({ currentProductId }) => {
       
       try {
         setLoading(true);
-        const response = await post('/recommend/product', { 
+        const response = await api.post('/recommend/product', { 
           productId: currentProductId,
           limit: 4 
         });
         
-        if (response.success && response.data) {
-          setRecommendations(response.data);
+        if (response.data.success && response.data.data) {
+          setRecommendations(response.data.data);
         }
       } catch (err) {
         console.error("Failed to fetch recommendations", err);

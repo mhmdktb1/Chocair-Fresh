@@ -2,6 +2,7 @@ import React from 'react';
 import { Link } from 'react-router-dom';
 import { ShoppingBag, Heart, Eye, Star } from 'lucide-react';
 import { useCart } from '../../context/CartContext';
+import { formatCurrency } from '../../utils/formatters';
 import './ProductCard.css';
 
 const ProductCard = ({ product }) => {
@@ -60,10 +61,10 @@ const ProductCard = ({ product }) => {
         
         <div className="product-footer">
           <div className="price-wrapper">
-            <span className="current-price">${product.price.toFixed(2)}</span>
+            <span className="current-price">{formatCurrency(product.price)}</span>
             {product.oldPrice && (
               <span className="original-price">
-                ${product.oldPrice.toFixed(2)}
+                {formatCurrency(product.oldPrice)}
               </span>
             )}
           </div>

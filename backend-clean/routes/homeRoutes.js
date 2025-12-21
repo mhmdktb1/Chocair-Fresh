@@ -6,6 +6,6 @@ const router = express.Router();
 
 router.route('/')
   .get(getHomeConfig)
-  .put(updateHomeConfig); // Temporarily removed auth for testing
+  .put(protect, admin, updateHomeConfig);
 
 export default router;

@@ -5,6 +5,7 @@ import { useCart } from '../context/CartContext';
 import Navbar from '../components/layout/Navbar';
 import Button from '../components/common/Button';
 import CartRecommendations from '../components/shop/CartRecommendations';
+import { formatCurrency } from '../utils/formatters';
 import './Cart.css';
 
 const Cart = () => {
@@ -58,7 +59,7 @@ const Cart = () => {
                   <div className="item-details">
                     <span className="item-category">{item.category}</span>
                     <h3 className="item-name">{item.name}</h3>
-                    <span className="item-price">${item.price.toFixed(2)}</span>
+                    <span className="item-price">{formatCurrency(item.price)}</span>
                   </div>
                 </div>
                 
@@ -79,7 +80,7 @@ const Cart = () => {
                 </div>
                 
                 <div className="item-total">
-                  <span className="total-price">${(item.price * item.quantity).toFixed(2)}</span>
+                  <span className="total-price">{formatCurrency(item.price * item.quantity)}</span>
                   <button 
                     className="remove-btn"
                     onClick={() => removeFromCart(item._id)}
@@ -98,17 +99,17 @@ const Cart = () => {
             
             <div className="summary-row">
               <span>Subtotal</span>
-              <span>${cartTotal.toFixed(2)}</span>
+              <span>{formatCurrency(cartTotal)}</span>
             </div>
             
             <div className="summary-row">
               <span>Shipping</span>
-              <span>{shippingCost === 0 ? 'Free' : `$${shippingCost.toFixed(2)}`}</span>
+              <span>{shippingCost === 0 ? 'Free' : formatCurrency(shippingCost)}</span>
             </div>
             
             {shippingCost > 0 && (
               <div className="shipping-note">
-                Free shipping on orders over $50
+                Free shipping on orders over {formatCurrency(50)}
               </div>
             )}
             
@@ -116,7 +117,7 @@ const Cart = () => {
             
             <div className="summary-row total">
               <span>Total</span>
-              <span>${finalTotal.toFixed(2)}</span>
+              <span>{formatCurrency(finalTotal)}</span>
             </div>
             
             <Button 

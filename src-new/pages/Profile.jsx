@@ -5,7 +5,7 @@ import {
   Package, Settings, ChevronRight, ShoppingBag, Heart, ChevronDown, ChevronUp, AlertCircle 
 } from 'lucide-react';
 import Navbar from '../components/layout/Navbar';
-import { getStoredUser, clearAuthData, saveAuthData, get, put } from '../utils/api';
+import api, { getStoredUser, clearAuthData, saveAuthData } from '../utils/api';
 import Button from '../components/common/Button';
 import './Profile.css';
 
@@ -32,8 +32,8 @@ const Profile = () => {
 
   const fetchOrders = async () => {
     try {
-      const data = await get('/orders/myorders');
-      setOrders(data);
+      const response = await api.get('/orders/myorders');
+      setOrders(response.data);
     } catch (error) {
       console.error('Failed to fetch orders', error);
     }
@@ -65,7 +65,7 @@ const Profile = () => {
     if (!window.confirm('Are you sure you want to cancel this order?')) return;
     
     try {
-      await put(`/orders/${orderId}/cancel`);
+      await api.put(`/orders/${orderId}/cancel`);
       fetchOrders(); // Refresh list
       alert('Order cancelled successfully');
     } catch (error) {

@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { ArrowRight, ArrowLeft } from 'lucide-react';
 import ProductCard from './ProductCard';
-import { get, post } from '../../utils/api';
+import api from '../../utils/api';
 import './RecommendationRow.css';
 
 const RecommendationRow = ({ title, type, productId = null, limit = 8 }) => {
@@ -18,26 +18,26 @@ const RecommendationRow = ({ title, type, productId = null, limit = 8 }) => {
 
         switch (type) {
           case 'popular': // Best Sellers
-            response = await get(`/recommend/trending?limit=${limit}`);
+            response = await api.get(`/recommend/trending?limit=${limit}`);
             break;
           case 'new': // Trending Now
-            response = await get(`/recommend/new?limit=${limit}`);
+            response = await api.get(`/recommend/new?limit=${limit}`);
             break;
           case 'personalized': // Just For You
-            response = await get(`/recommend/personalized?limit=${limit}`);
+            response = await api.get(`/recommend/personalized?limit=${limit}`);
             break;
           case 'related': // Frequently Bought Together
             if (productId) {
-              response = await post('/recommend/product', { productId, limit });
+              response = await api.post('/recommend/product', { productId, limit });
             }
             break;
           default:
             return;
         }
 
-        if (response && response.success && response.data) {
+        if (response.data && response.data.success && response.data.data) {
           // Extract product data from the wrapper object { product: {...}, score: ... }
-          const items = response.data.map(item => item.product);
+          const items = response.data.data.map(item => item.product);
           setProducts(items);
         }
       } catch (error) {

@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { ArrowRight, Sparkles } from 'lucide-react';
 import ProductCard from './ProductCard';
-import { post } from '../../utils/api';
+import api from '../../utils/api';
 import { useCart } from '../../context/CartContext';
 import './RecommendationRow.css'; // Reuse existing styles
 
@@ -33,14 +33,14 @@ const CartRecommendations = ({ limit = 4 }) => {
           quantity: item.quantity
         }));
 
-        const response = await post('/recommend/cart', { 
+        const response = await api.post('/recommend/cart', { 
           cartItems: formattedItems,
           limit 
         });
 
-        if (response && response.success && response.data) {
+        if (response.data && response.data.success && response.data.data) {
           // Extract product data from the wrapper object { product: {...}, score: ... }
-          const items = response.data.map(item => item.product);
+          const items = response.data.data.map(item => item.product);
           setProducts(items);
         }
       } catch (error) {

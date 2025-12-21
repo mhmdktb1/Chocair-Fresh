@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { ShoppingBag, User, Menu, X, LogOut, Search, ArrowRight } from 'lucide-react';
 import { useCart } from '../../context/CartContext';
-import { getStoredUser, clearAuthData, get } from '../../utils/api';
+import api, { getStoredUser, clearAuthData } from '../../utils/api';
 import './Navbar.css';
 
 const Navbar = () => {
@@ -60,8 +60,8 @@ const Navbar = () => {
   useEffect(() => {
     const fetchProducts = async () => {
       try {
-        const data = await get('/products');
-        setAllProducts(data);
+        const response = await api.get('/products');
+        setAllProducts(response.data);
       } catch (error) {
         console.error('Failed to fetch products for search', error);
       }

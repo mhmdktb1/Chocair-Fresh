@@ -1,6 +1,7 @@
 import React from 'react';
 import { ArrowRight } from 'lucide-react';
 import Button from '../common/Button';
+import { parseHighlightedText } from '../../utils/textUtils';
 import './AboutSection.css';
 
 const AboutSection = ({ data }) => {
@@ -11,25 +12,13 @@ const AboutSection = ({ data }) => {
     image = "https://images.unsplash.com/photo-1542838132-92c53300491e?ixlib=rb-4.0.3&auto=format&fit=crop&w=1000&q=80"
   } = data || {};
 
-  // Helper to parse title for highlighting
-  const renderTitle = (text) => {
-    if (!text) return null;
-    const parts = text.split('*');
-    return parts.map((part, index) => {
-      if (index % 2 === 1) {
-        return <span key={index} className="highlight">{part}</span>;
-      }
-      return <React.Fragment key={index}>{part}</React.Fragment>;
-    });
-  };
-
   return (
     <section id="about" className="home-about-section">
       
       {/* Hero Banner - Restored as requested */}
       <div className="about-hero-banner">
         <div className="about-hero-content">
-          <h2 className="about-hero-title">{renderTitle(title)}</h2>
+          <h2 className="about-hero-title">{parseHighlightedText(title)}</h2>
           <p className="about-hero-subtitle">
             {subtitle}
           </p>
