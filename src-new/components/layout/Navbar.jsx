@@ -2,7 +2,8 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { ShoppingBag, User, Menu, X, LogOut, Search, ArrowRight } from 'lucide-react';
 import { useCart } from '../../context/CartContext';
-import api, { getStoredUser, clearAuthData } from '../../utils/api';
+import { useAuth } from '../../context/AuthContext';
+import api from '../../utils/api';
 import './Navbar.css';
 
 const Navbar = () => {
@@ -15,7 +16,7 @@ const Navbar = () => {
   const [allProducts, setAllProducts] = useState([]);
   const searchInputRef = useRef(null);
   const { cartCount } = useCart();
-  const [user, setUser] = useState(null);
+  const { user, logout } = useAuth();
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -40,19 +41,8 @@ const Navbar = () => {
 
     window.addEventListener('scroll', handleScroll);
     
-    // Check for logged in user
-    const checkUser = () => {
-      const storedUser = getStoredUser();
-      setUser(storedUser);
-    };
-    
-    checkUser();
-    // Listen for storage events to update auth state across tabs/components
-    window.addEventListener('storage', checkUser);
-    
     return () => {
       window.removeEventListener('scroll', handleScroll);
-      window.removeEventListener('storage', checkUser);
     };
   }, []);
 
@@ -102,8 +92,7 @@ const Navbar = () => {
   }, [searchQuery, allProducts]);
 
   const handleLogout = () => {
-    clearAuthData();
-    setUser(null);
+    logout();
     navigate('/');
   };
 

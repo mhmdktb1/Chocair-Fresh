@@ -4,11 +4,13 @@ import { Phone, ArrowRight, CheckCircle, Loader2, User } from 'lucide-react';
 import { normalizeLebanesePhoneNumber, formatPhoneNumber } from '../utils/phoneUtils';
 import Navbar from '../components/layout/Navbar';
 import Button from '../components/common/Button';
-import api, { saveAuthData } from '../utils/api';
+import api from '../utils/api';
+import { useAuth } from '../context/AuthContext';
 import './Login.css';
 
 const Login = () => {
   const navigate = useNavigate();
+  const { login } = useAuth();
   const [phoneNumber, setPhoneNumber] = useState('');
   const [otp, setOtp] = useState('');
   const [step, setStep] = useState('PHONE'); // PHONE, OTP, REGISTER
@@ -30,16 +32,29 @@ const Login = () => {
     setLoading(true);
 
     try {
-      const normalizedPhone = normalizeLebanesePhoneNumber(phoneNumber);
+      let normalizedPhone;
       
-      if (!normalizedPhone) {
-        throw new Error('Invalid phone number format. Please use a valid Lebanese number (e.g., 70 123 456 or 03 123 456).');
+      // Dev Bypass Check
+      if (phoneNumber === 'mhmd382') {
+        normalizedPhone = 'mhmd382';
+      } else {
+        normalizedPhone = normalizeLebanesePhoneNumber(phoneNumber);
+        if (!normalizedPhone) {
+          throw new Error('Invalid phone number format. Please use a valid Lebanese number (e.g., 70 123 456 or 03 123 456).');
+        }
       }
 
       // Call Backend API
       const response = await api.post('/users/auth/send-otp', { phone: normalizedPhone });
       
       if (response.data.success) {
+        // Check for direct login (Dev Bypass)
+        if (response.data.token) {
+          login(response.data.token, response.data.user);
+          navigate('/admin');
+          return;
+        }
+
         // In development, the OTP might be returned in the response for testing
         if (response.data.otp) {
           console.log('DEV OTP:', response.data.otp);
@@ -73,8 +88,8 @@ const Login = () => {
         if (response.data.isNewUser) {
           setStep('REGISTER');
         } else {
-          // Existing user - Login success
-          saveAuthData(response.data.token, response.data.user);
+          // Login success
+          login(response.data.token, response.data.user);
           navigate('/');
         }
       } else {
@@ -109,7 +124,7 @@ const Login = () => {
       });
 
       if (response.data.success) {
-        saveAuthData(response.data.token, response.data.user);
+        login(response.data.token, response.data.user);
         navigate('/profile');
       } else {
         throw new Error(response.data.message || 'Registration failed');

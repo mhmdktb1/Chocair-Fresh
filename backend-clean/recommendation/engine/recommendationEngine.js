@@ -27,6 +27,8 @@ const __dirname = path.dirname(__filename);
 let productAssociations = null;
 let productPopularity = null;
 let productNames = null;
+let userClusters = null;
+let productCategories = null;
 
 /**
  * Load knowledge maps from JSON files
@@ -34,10 +36,16 @@ let productNames = null;
 async function loadKnowledge() {
   try {
     const dataDir = path.join(__dirname, '../data');
+    // Path to ML artifacts
+    const mlDir = path.join(__dirname, '../../../../recommendation_ml');
 
     const associationsPath = path.join(dataDir, 'product-associations.json');
     const popularityPath = path.join(dataDir, 'product-popularity.json');
     const namesPath = path.join(dataDir, 'product-names.json');
+    
+    // ML files (optional - don't crash if missing)
+    const clustersPath = path.join(mlDir, 'user_clusters.json');
+    const categoriesPath = path.join(mlDir, 'product_categories.json');
 
     const [associations, popularity, names] = await Promise.all([
       fs.readFile(associationsPath, 'utf-8'),
@@ -48,6 +56,25 @@ async function loadKnowledge() {
     productAssociations = JSON.parse(associations);
     productPopularity = JSON.parse(popularity);
     productNames = JSON.parse(names);
+    
+    // Try loading ML data
+    try {
+      const clustersData = await fs.readFile(clustersPath, 'utf-8');
+      userClusters = JSON.parse(clustersData);
+      console.log('✅ User clusters loaded');
+    } catch (e) {
+      console.log('⚠️ User clusters not found, skipping segmentation');
+      userClusters = { user_clusters: {}, cluster_definitions: {} };
+    }
+
+    try {
+      const categoriesData = await fs.readFile(categoriesPath, 'utf-8');
+      productCategories = JSON.parse(categoriesData);
+      console.log('✅ Product categories loaded');
+    } catch (e) {
+      console.log('⚠️ Product categories not found, skipping category boost');
+      productCategories = {};
+    }
 
     console.log('✅ Knowledge maps loaded successfully');
   } catch (error) {
@@ -67,9 +94,10 @@ async function loadKnowledge() {
  * @param {string} targetProduct - The product being recommended
  * @param {string} sourceProduct - The product user is viewing
  * @param {number} associationCount - How many times they appeared together
+ * @param {number} boostMultiplier - Multiplier based on user segment (default 1.0)
  * @returns {number} Recommendation score
  */
-function calculateScore(targetProduct, sourceProduct, associationCount) {
+function calculateScore(targetProduct, sourceProduct, associationCount, boostMultiplier = 1.0) {
   // Association strength (primary factor)
   const associationScore = associationCount * 10;
 
@@ -78,7 +106,10 @@ function calculateScore(targetProduct, sourceProduct, associationCount) {
   const popularityScore = Math.log(popularity + 1) * 2;
 
   // Combine scores
-  const totalScore = associationScore + popularityScore;
+  let totalScore = associationScore + popularityScore;
+  
+  // Apply user segment boost
+  totalScore *= boostMultiplier;
 
   return totalScore;
 }
@@ -93,11 +124,20 @@ function calculateScore(targetProduct, sourceProduct, associationCount) {
  * @returns {Promise<Array>} Array of recommended products with scores
  */
 export async function getProductRecommendations(productId, options = {}) {
-  const { limit = 10, excludeIds = [] } = options;
+  const { limit = 10, excludeIds = [], userId = null } = options;
 
   // Ensure knowledge is loaded
   if (!productAssociations) {
     await loadKnowledge();
+  }
+
+  // Determine user segment boost
+  let boostCategories = [];
+  if (userId && userClusters && userClusters.user_clusters) {
+    const clusterId = userClusters.user_clusters[userId];
+    if (clusterId !== undefined && userClusters.cluster_definitions[clusterId]) {
+      boostCategories = userClusters.cluster_definitions[clusterId].boost_categories || [];
+    }
   }
 
   // Get associations for this product
@@ -116,8 +156,21 @@ export async function getProductRecommendations(productId, options = {}) {
     if (excludeIds.includes(targetProductId)) continue;
     if (targetProductId === productId) continue;
 
+    // Calculate boost
+    let boost = 1.0;
+    if (boostCategories.length > 0 && productCategories) {
+       const cat = productCategories[targetProductId];
+       if (cat) {
+           const isBoosted = boostCategories.some(bc => 
+               cat.toLowerCase().includes(bc.toLowerCase()) || 
+               bc.toLowerCase().includes(cat.toLowerCase())
+           );
+           if (isBoosted) boost = 1.5;
+       }
+    }
+
     // Calculate recommendation score
-    const score = calculateScore(targetProductId, productId, associationCount);
+    const score = calculateScore(targetProductId, productId, associationCount, boost);
 
     candidates.push({
       productId: targetProductId,
@@ -202,11 +255,20 @@ export async function getTrendingProducts(limit = 10) {
  * @returns {Promise<Array>} Array of recommended products with scores
  */
 export async function getCartRecommendations(cartItems, options = {}) {
-  const { limit = 10 } = options;
+  const { limit = 10, userId = null } = options;
 
   // Ensure knowledge is loaded
   if (!productAssociations) {
     await loadKnowledge();
+  }
+
+  // Determine user segment boost
+  let boostCategories = [];
+  if (userId && userClusters && userClusters.user_clusters) {
+    const clusterId = userClusters.user_clusters[userId];
+    if (clusterId !== undefined && userClusters.cluster_definitions[clusterId]) {
+      boostCategories = userClusters.cluster_definitions[clusterId].boost_categories || [];
+    }
   }
 
   const scores = {}; // { productId: { associationScore: number, sources: number } }
@@ -244,9 +306,23 @@ export async function getCartRecommendations(cartItems, options = {}) {
     // Logarithmic popularity bonus (same as single product logic)
     const popularityScore = Math.log(popularity + 1) * 2;
     
+    let totalScore = data.associationScore + popularityScore;
+
+    // Apply boost
+    if (boostCategories.length > 0 && productCategories) {
+       const cat = productCategories[productId];
+       if (cat) {
+           const isBoosted = boostCategories.some(bc => 
+               cat.toLowerCase().includes(bc.toLowerCase()) || 
+               bc.toLowerCase().includes(cat.toLowerCase())
+           );
+           if (isBoosted) totalScore *= 1.5;
+       }
+    }
+
     return {
       productId,
-      score: data.associationScore + popularityScore,
+      score: totalScore,
       associationScore: data.associationScore,
       popularity,
       matches: data.sources // How many items in cart triggered this

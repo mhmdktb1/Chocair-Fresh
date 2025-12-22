@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { LayoutDashboard, Package, ShoppingBag, Users, LogOut, Menu, X, Image, Grid3x3, Tag, Home } from 'lucide-react';
 import './AdminDashboard.css';
@@ -8,16 +8,27 @@ import AdminOrders from './AdminOrders';
 import AdminUsers from './AdminUsers';
 import AdminCategories from './AdminCategories';
 import HomeEditor from '../../components/admin/HomeEditor';
+import { useAuth } from '../../context/AuthContext';
 
 const AdminDashboard = () => {
   const [activeTab, setActiveTab] = useState("dashboard");
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const navigate = useNavigate();
+  const { user, isAdmin, loading, logout } = useAuth();
+
+  useEffect(() => {
+    if (!loading && !isAdmin) {
+      navigate('/login');
+    }
+  }, [loading, isAdmin, navigate]);
 
   const handleLogout = () => {
-    // Implement logout logic here
+    logout();
     navigate("/");
   };
+
+  if (loading) return <div className="loading">Loading...</div>;
+  if (!isAdmin) return null;
 
   const tabs = [
     { id: "dashboard", label: "Dashboard", icon: LayoutDashboard },

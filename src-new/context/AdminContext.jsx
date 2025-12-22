@@ -1,5 +1,6 @@
 import { createContext, useContext, useState, useEffect } from "react";
 import api from "../utils/api";
+import { useAuth } from "./AuthContext";
 
 const AdminContext = createContext();
 
@@ -12,6 +13,7 @@ export const useAdmin = () => {
 };
 
 export const AdminProvider = ({ children }) => {
+  const { isAdmin } = useAuth();
   const [products, setProducts] = useState([]);
   const [orders, setOrders] = useState([]);
   const [categories, setCategories] = useState([]);
@@ -97,12 +99,36 @@ export const AdminProvider = ({ children }) => {
     }
   };
 
+  const fetchUsers = async () => {
+    try {
+      const response = await api.get("/users");
+      // Map backend user to UI user
+      const mappedUsers = response.data.map(u => ({
+        id: u._id,
+        name: u.name,
+        email: u.email,
+        phone: u.phone,
+        role: u.isAdmin ? "Admin" : "Customer",
+        joinDate: u.createdAt ? new Date(u.createdAt).toLocaleDateString() : "N/A",
+        orders: 0, // Backend doesn't send this yet, would need aggregation
+        status: "Active"
+      }));
+      setUsers(mappedUsers);
+    } catch (e) {
+      console.error("Failed to load users", e);
+    }
+  };
+
   useEffect(() => {
     fetchProducts();
-    fetchOrders();
     fetchCategories();
     fetchHeroes();
-  }, []);
+    
+    if (isAdmin) {
+      fetchOrders();
+      fetchUsers();
+    }
+  }, [isAdmin]);
 
   const addProduct = async (productData) => {
     try {
@@ -184,8 +210,14 @@ export const AdminProvider = ({ children }) => {
     }
   };
 
-  const deleteUser = (id) => {
-    setUsers(users.filter(u => u.id !== id));
+  const deleteUser = async (id) => {
+    try {
+      await api.delete(`/users/${id}`);
+      setUsers((prev) => prev.filter((u) => u.id !== id));
+    } catch (e) {
+      console.error("Delete user failed", e);
+      throw e;
+    }
   };
 
   const getStats = () => {

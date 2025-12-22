@@ -16,6 +16,7 @@ import {
 } from '../engine/recommendationEngine.js';
 import Product from '../../models/productModel.js';
 import Order from '../../models/orderModel.js';
+import User from '../../models/userModel.js';
 
 /**
  * @desc    Get product recommendations based on a product
@@ -23,11 +24,24 @@ import Order from '../../models/orderModel.js';
  * @access  Public
  */
 export const recommendByProduct = asyncHandler(async (req, res) => {
-  const { productId, limit = 10, excludeIds = [] } = req.body;
+  const { productId, limit = 10, excludeIds = [], userId } = req.body;
 
   if (!productId) {
     res.status(400);
     throw new Error('Product ID is required');
+  }
+
+  // Resolve user phone if userId is provided
+  let userPhone = null;
+  if (userId) {
+    try {
+      const user = await User.findById(userId);
+      if (user) {
+        userPhone = user.phone;
+      }
+    } catch (e) {
+      // Ignore invalid user ID
+    }
   }
 
   // Verify product exists
@@ -40,7 +54,8 @@ export const recommendByProduct = asyncHandler(async (req, res) => {
   // Get recommendations
   const recommendations = await getProductRecommendations(productId, {
     limit: Number(limit),
-    excludeIds
+    excludeIds,
+    userId: userPhone // Pass phone as userId for clustering
   });
 
   // Enrich with full product data
@@ -82,7 +97,7 @@ export const recommendByProduct = asyncHandler(async (req, res) => {
  * @access  Public
  */
 export const recommendByCart = asyncHandler(async (req, res) => {
-  const { cartItems, limit = 10 } = req.body;
+  const { cartItems, limit = 10, userId } = req.body;
 
   // Validate input
   if (!cartItems || !Array.isArray(cartItems)) {
@@ -99,9 +114,23 @@ export const recommendByCart = asyncHandler(async (req, res) => {
     });
   }
 
+  // Resolve user phone if userId is provided
+  let userPhone = null;
+  if (userId) {
+    try {
+      const user = await User.findById(userId);
+      if (user) {
+        userPhone = user.phone;
+      }
+    } catch (e) {
+      // Ignore invalid user ID
+    }
+  }
+
   // Get recommendations
   const recommendations = await getCartRecommendations(cartItems, {
-    limit: Number(limit)
+    limit: Number(limit),
+    userId: userPhone
   });
 
   // Enrich with full product data

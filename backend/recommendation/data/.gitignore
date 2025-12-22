@@ -1,5 +1,0 @@
-# Knowledge map files (can be regenerated)
-*.json
-
-# Keep this file
-!.gitignore

