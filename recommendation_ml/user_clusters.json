@@ -1,0 +1,90 @@
+{
+  "user_clusters": {
+    "+1234567891": 2,
+    "+1234567892": 2,
+    "+1234567893": 0,
+    "+1234567894": 2,
+    "70516382\\": 4,
+    "+96170888888": 1,
+    "+9617012333": 3
+  },
+  "cluster_definitions": {
+    "0": {
+      "name": "69433225f8e93d6a736d6cdb Lover & 69433225f8e93d6a736d6cd9 Lover",
+      "boost_categories": [
+        "69433225f8e93d6a736d6cdb",
+        "Unknown"
+      ],
+      "stats": {
+        "total_orders": 2.0,
+        "avg_items_per_order": 3.0,
+        "avg_quantity_per_item": 1.3333333333333333,
+        "ratio_69433225f8e93d6a736d6cd9": 0.25,
+        "ratio_69433225f8e93d6a736d6cdb": 0.375,
+        "ratio_Unknown": 0.375,
+        "ratio_fruits": 0.0
+      }
+    },
+    "1": {
+      "name": "fruits Lover & Frequent Buyer",
+      "boost_categories": [
+        "Unknown",
+        "fruits"
+      ],
+      "stats": {
+        "total_orders": 5.0,
+        "avg_items_per_order": 1.0,
+        "avg_quantity_per_item": 1.8,
+        "ratio_69433225f8e93d6a736d6cd9": 0.1111111111111111,
+        "ratio_69433225f8e93d6a736d6cdb": 0.0,
+        "ratio_Unknown": 0.4444444444444444,
+        "ratio_fruits": 0.4444444444444444
+      }
+    },
+    "2": {
+      "name": "Unknown Lover & Large Basket",
+      "boost_categories": [
+        "Unknown"
+      ],
+      "stats": {
+        "total_orders": 2.6666666666666665,
+        "avg_items_per_order": 2.5,
+        "avg_quantity_per_item": 1.3285714285714285,
+        "ratio_69433225f8e93d6a736d6cd9": 0.14814814814814814,
+        "ratio_69433225f8e93d6a736d6cdb": 0.0,
+        "ratio_Unknown": 0.8518518518518517,
+        "ratio_fruits": 0.0
+      }
+    },
+    "3": {
+      "name": "Bulk Item Buyer & Unknown Lover",
+      "boost_categories": [
+        "Unknown"
+      ],
+      "stats": {
+        "total_orders": 1.0,
+        "avg_items_per_order": 1.0,
+        "avg_quantity_per_item": 5.0,
+        "ratio_69433225f8e93d6a736d6cd9": 0.0,
+        "ratio_69433225f8e93d6a736d6cdb": 0.0,
+        "ratio_Unknown": 1.0,
+        "ratio_fruits": 0.0
+      }
+    },
+    "4": {
+      "name": "fruits Lover",
+      "boost_categories": [
+        "fruits"
+      ],
+      "stats": {
+        "total_orders": 1.0,
+        "avg_items_per_order": 1.0,
+        "avg_quantity_per_item": 1.0,
+        "ratio_69433225f8e93d6a736d6cd9": 0.0,
+        "ratio_69433225f8e93d6a736d6cdb": 0.0,
+        "ratio_Unknown": 0.0,
+        "ratio_fruits": 1.0
+      }
+    }
+  }
+}
