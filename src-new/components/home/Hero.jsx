@@ -8,6 +8,7 @@ const Hero = ({ data }) => {
   const navigate = useNavigate();
   const heroRef = useRef(null);
   const [offset, setOffset] = useState({ x: 0, y: 0 });
+  const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
 
   // Default values if data is missing (e.g. during loading or error)
   const { 
@@ -22,6 +23,18 @@ const Hero = ({ data }) => {
   } = data || {};
 
   useEffect(() => {
+    // Detect mobile on resize
+    const handleResize = () => {
+      setIsMobile(window.innerWidth < 768);
+    };
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
+  useEffect(() => {
+    // Only enable parallax on desktop
+    if (isMobile) return;
+
     const handleMouseMove = (e) => {
       if (!heroRef.current) return;
       const { clientX, clientY } = e;
@@ -36,45 +49,53 @@ const Hero = ({ data }) => {
 
     window.addEventListener('mousemove', handleMouseMove);
     return () => window.removeEventListener('mousemove', handleMouseMove);
-  }, []);
+  }, [isMobile]);
 
   return (
-    <section className="hero" ref={heroRef}>
+    <section className="hero" ref={heroRef} role="region" aria-label="Hero banner">
       <div className="hero-bg-gradient"></div>
       
-      {/* Parallax Floating Elements */}
-      <div className="floating-elements">
-        <div 
-          className="float-item leaf-1"
-          style={{ transform: `translate(${offset.x * -20}px, ${offset.y * -20}px) rotate(${offset.x * 10}deg)` }}
-        >🍃</div>
-        <div 
-          className="float-item leaf-2"
-          style={{ transform: `translate(${offset.x * 30}px, ${offset.y * 30}px) rotate(${offset.y * -10}deg)` }}
-        >🌿</div>
-        <div 
-          className="float-item leaf-3"
-          style={{ transform: `translate(${offset.x * 25}px, ${offset.y * -25}px) rotate(${offset.x * -15}deg)` }}
-        >🍃</div>
-        <div 
-          className="float-item berry-1"
-          style={{ transform: `translate(${offset.x * -40}px, ${offset.y * 20}px)` }}
-        >🍓</div>
-        <div 
-          className="float-item berry-2"
-          style={{ transform: `translate(${offset.x * -35}px, ${offset.y * 35}px)` }}
-        >🍇</div>
-        <div 
-          className="float-item berry-3"
-          style={{ transform: `translate(${offset.x * 45}px, ${offset.y * -10}px)` }}
-        >🍊</div>
-      </div>
+      {/* Parallax Floating Elements - Hidden on Mobile */}
+      {!isMobile && (
+        <div className="floating-elements">
+          <div 
+            className="float-item leaf-1"
+            style={{ transform: `translate(${offset.x * -20}px, ${offset.y * -20}px) rotate(${offset.x * 10}deg)` }}
+            aria-hidden="true"
+          >🍃</div>
+          <div 
+            className="float-item leaf-2"
+            style={{ transform: `translate(${offset.x * 30}px, ${offset.y * 30}px) rotate(${offset.y * -10}deg)` }}
+            aria-hidden="true"
+          >🌿</div>
+          <div 
+            className="float-item leaf-3"
+            style={{ transform: `translate(${offset.x * 25}px, ${offset.y * -25}px) rotate(${offset.x * -15}deg)` }}
+            aria-hidden="true"
+          >🍃</div>
+          <div 
+            className="float-item berry-1"
+            style={{ transform: `translate(${offset.x * -40}px, ${offset.y * 20}px)` }}
+            aria-hidden="true"
+          >🍓</div>
+          <div 
+            className="float-item berry-2"
+            style={{ transform: `translate(${offset.x * -35}px, ${offset.y * 35}px)` }}
+            aria-hidden="true"
+          >🍇</div>
+          <div 
+            className="float-item berry-3"
+            style={{ transform: `translate(${offset.x * 45}px, ${offset.y * -10}px)` }}
+            aria-hidden="true"
+          >🍊</div>
+        </div>
+      )}
 
       <div className="container hero-container">
-        <div className="hero-content" style={{ transform: `translate(${offset.x * -10}px, ${offset.y * -10}px)` }}>
+        <div className="hero-content" style={!isMobile ? { transform: `translate(${offset.x * -10}px, ${offset.y * -10}px)` } : {}}>
           <div className="hero-badge-wrapper">
-            <span className="hero-badge">
-              <span className="pulse-dot"></span>
+            <span className="hero-badge" aria-label="100% Organic and Fresh">
+              <span className="pulse-dot" aria-hidden="true"></span>
               100% Organic & Fresh
             </span>
           </div>
@@ -96,54 +117,59 @@ const Hero = ({ data }) => {
             </Button>
           </div>
           
-          <div className="hero-stats">
+          <div className="hero-stats" role="list">
             {stats.map((stat, index) => (
               <React.Fragment key={index}>
-                <div className="stat-item">
+                <div className="stat-item" role="listitem">
                   <span className="stat-number">{stat.value}</span>
                   <span className="stat-label">{stat.label}</span>
                 </div>
-                {index < stats.length - 1 && <div className="stat-divider"></div>}
+                {index < stats.length - 1 && <div className="stat-divider" aria-hidden="true"></div>}
               </React.Fragment>
             ))}
           </div>
         </div>
         
         <div className="hero-image-wrapper">
-          <div className="hero-circle-bg"></div>
+          <div className="hero-circle-bg" aria-hidden="true"></div>
           <img 
             src={backgroundImage} 
-            alt="Hero" 
+            alt="Fresh organic produce - Chocair Fresh" 
             className="hero-img main-img"
-            style={{ transform: `translate(${offset.x * 15}px, ${offset.y * 15}px) scale(1.05)` }}
+            loading="lazy"
+            style={!isMobile ? { transform: `translate(${offset.x * 15}px, ${offset.y * 15}px) scale(1.05)` } : {}}
           />
           
-          {/* Floating Cards */}
-          <div 
-            className="hero-card card-fresh"
-            style={{ transform: `translate(${offset.x * 25}px, ${offset.y * -15}px)` }}
-          >
-            <div className="card-icon-box">🍓</div>
-            <div className="card-text">
-              <span className="card-title">Fresh Picked</span>
-              <span className="card-sub">Just Arrived</span>
-            </div>
-          </div>
+          {/* Floating Cards - Hidden on Mobile */}
+          {!isMobile && (
+            <>
+              <div 
+                className="hero-card card-fresh"
+                style={{ transform: `translate(${offset.x * 25}px, ${offset.y * -15}px)` }}
+              >
+                <div className="card-icon-box" aria-hidden="true">🍓</div>
+                <div className="card-text">
+                  <span className="card-title">Fresh Picked</span>
+                  <span className="card-sub">Just Arrived</span>
+                </div>
+              </div>
 
-          <div 
-            className="hero-card card-delivery"
-            style={{ transform: `translate(${offset.x * -20}px, ${offset.y * 25}px)` }}
-          >
-            <div className="card-icon-box">🚚</div>
-            <div className="card-text">
-              <span className="card-title">Free Shipping</span>
-              <span className="card-sub">On orders $50+</span>
-            </div>
-          </div>
+              <div 
+                className="hero-card card-delivery"
+                style={{ transform: `translate(${offset.x * -20}px, ${offset.y * 25}px)` }}
+              >
+                <div className="card-icon-box" aria-hidden="true">🚚</div>
+                <div className="card-text">
+                  <span className="card-title">Free Shipping</span>
+                  <span className="card-sub">On orders $50+</span>
+                </div>
+              </div>
+            </>
+          )}
         </div>
       </div>
       
-      <div className="scroll-indicator">
+      <div className="scroll-indicator" aria-hidden="true">
         <div className="mouse">
           <div className="wheel"></div>
         </div>
