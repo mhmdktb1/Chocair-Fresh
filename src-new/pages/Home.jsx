@@ -70,7 +70,7 @@ const Home = () => {
       <div className="container" style={{ marginTop: '4rem', marginBottom: '4rem' }}>
         {/* For You Section - Personalized for User, Trending for Guest */}
         <RecommendationRow 
-          title={user ? `Recommended for You, ${user.name?.split(' ')[0]}` : "Recommended for You"} 
+          title={user && user.name ? `Recommended for You, ${user.name.split(' ')[0]}` : "Recommended for You"} 
           type={user ? "personalized" : "new"} 
         />
 

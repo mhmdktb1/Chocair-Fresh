@@ -23,32 +23,35 @@ const RecommendationRow = ({ title, type, productId = null, limit = 8, cartItems
 
         let response;
 
+        // Add timestamp to prevent caching
+        const t = Date.now();
+
         switch (type) {
           case 'popular': // Best Sellers
-            response = await api.get(`/recommend/trending?limit=${limit}`);
+            response = await api.get(`/recommend/trending?limit=${limit}&t=${t}`);
             break;
           case 'new': // Trending Now
-            response = await api.get(`/recommend/new?limit=${limit}`);
+            response = await api.get(`/recommend/new?limit=${limit}&t=${t}`);
             break;
           case 'top-rated': // Top Rated
-            response = await api.get(`/recommend/top-rated?limit=${limit}`);
+            response = await api.get(`/recommend/top-rated?limit=${limit}&t=${t}`);
             break;
           case 'personalized': // Just For You
-            response = await api.get(`/recommend/personalized?limit=${limit}`);
+            response = await api.get(`/recommend/personalized?limit=${limit}&t=${t}`);
             break;
           case 'related': // Frequently Bought Together
             if (productId) {
-              response = await api.post('/recommend/product', { productId, limit, type: 'associations' });
+              response = await api.post(`/recommend/product?t=${t}`, { productId, limit, type: 'associations' });
             }
             break;
           case 'similar': // Similar Products
             if (productId) {
-              response = await api.post('/recommend/product', { productId, limit, type: 'similar' });
+              response = await api.post(`/recommend/product?t=${t}`, { productId, limit, type: 'similar' });
             }
             break;
           case 'cart': // Complete Your Cart
             if (cartItems && cartItems.length > 0) {
-              response = await api.post('/recommend/cart', { cartItems, limit });
+              response = await api.post(`/recommend/cart?t=${t}`, { cartItems, limit });
             }
             break;
           default:

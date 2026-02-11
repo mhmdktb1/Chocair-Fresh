@@ -32,8 +32,8 @@ def train_clusters():
     X_scaled = scaler.fit_transform(X)
 
     # K-Means
-    # Use 5 clusters as requested/suggested
-    n_clusters = min(5, len(df)) # Handle case with very few users
+    # Use 3 clusters for cleaner separation with small data (53 users)
+    n_clusters = min(3, len(df)) 
     kmeans = KMeans(n_clusters=n_clusters, random_state=42, n_init=10)
     clusters = kmeans.fit_predict(X_scaled)
 

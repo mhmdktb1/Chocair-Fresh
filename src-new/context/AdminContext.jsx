@@ -18,7 +18,7 @@ export const AdminProvider = ({ children }) => {
   const [orders, setOrders] = useState([]);
   const [categories, setCategories] = useState([]);
   const [heroSlides, setHeroSlides] = useState([]);
-  const [users, setUsers] = useState([]); // Keep empty for now or fetch if backend has it
+  const [users, setUsers] = useState([]); 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
@@ -106,13 +106,14 @@ export const AdminProvider = ({ children }) => {
       // Map backend user to UI user
       const mappedUsers = response.data.map(u => ({
         id: u._id,
-        name: u.name,
-        email: u.email,
-        phone: u.phone,
+        name: u.name || "No Name",
+        email: u.email || "",
+        phone: u.phone || "",
         location: u.location || "Unknown",
         role: u.isAdmin ? "Admin" : "Customer",
         joinDate: u.createdAt ? new Date(u.createdAt).toLocaleDateString() : "N/A",
-        orders: 0, // Backend doesn't send this yet, would need aggregation
+        orders: u.orderCount || 0,
+        totalSpent: u.totalSpent || 0,
         status: "Active"
       }));
       setUsers(mappedUsers);

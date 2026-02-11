@@ -492,7 +492,7 @@ const products = [
 /* ===================== FRUITS ===================== */
 {
   name: "Apple Red",
-  image: "/assets/images/products/apple-red",
+  image: "/assets/images/products/fruits/apple-red-user.jpeg",
   description: "Fresh red apples",
   brand: "Chocair",
   category: "Fruits",
@@ -504,10 +504,11 @@ const products = [
 },
 {
   name: "Apple Green",
-  image: "/assets/images/products/apple-green",
+  image: "/assets/images/products/fruits/apple-green-user.jpeg",
   description: "Fresh green apples",
   brand: "Chocair",
   category: "Fruits",
+
   unit: "kg",
   price: 2.8,
   countInStock: 35,
@@ -516,7 +517,7 @@ const products = [
 },
 {
   name: "Banana",
-  image: "/assets/images/products/banana",
+  image: "/assets/images/products/fruits/banana-user.jpeg",
   description: "Fresh bananas",
   brand: "Chocair",
   category: "Fruits",
@@ -528,7 +529,7 @@ const products = [
 },
 {
   name: "Orange",
-  image: "/assets/images/products/orange",
+  image: "/assets/images/products/fruits/orange.jpg",
   description: "Juicy oranges",
   brand: "Chocair",
   category: "Fruits",
@@ -540,7 +541,7 @@ const products = [
 },
 {
   name: "Mandarin",
-  image: "/assets/images/products/mandarin",
+  image: "/assets/images/products/fruits/mandarin.jpg",
   description: "Sweet mandarin oranges",
   brand: "Chocair",
   category: "Fruits",
@@ -552,7 +553,7 @@ const products = [
 },
 {
   name: "Lemon",
-  image: "/assets/images/products/lemon",
+  image: "/assets/images/products/fruits/lemon.jpg",
   description: "Fresh lemons",
   brand: "Chocair",
   category: "Fruits",
@@ -564,7 +565,7 @@ const products = [
 },
 {
   name: "Grapefruit",
-  image: "/assets/images/products/grapefruit",
+  image: "/assets/images/products/fruits/grapefruit.jpg",
   description: "Fresh grapefruit",
   brand: "Chocair",
   category: "Fruits",
@@ -576,7 +577,7 @@ const products = [
 },
 {
   name: "Strawberry",
-  image: "/assets/images/products/strawberry",
+  image: "/assets/images/products/fruits/strawberry-user.jpeg",
   description: "Fresh strawberries",
   brand: "Chocair",
   category: "Fruits",
@@ -588,7 +589,7 @@ const products = [
 },
 {
   name: "Cherry",
-  image: "/assets/images/products/cherry",
+  image: "/assets/images/products/fruits/cherry.jpg",
   description: "Fresh cherries",
   brand: "Chocair",
   category: "Fruits",
@@ -600,7 +601,7 @@ const products = [
 },
 {
   name: "Peach",
-  image: "/assets/images/products/peach",
+  image: "/assets/images/products/fruits/peach.jpg",
   description: "Fresh peaches",
   brand: "Chocair",
   category: "Fruits",
@@ -914,7 +915,7 @@ const products = [
 },
 {
   name: "Potato",
-  image: "/assets/images/products/potato",
+  image: "/assets/images/products/vegetables/potato-user.jpeg",
   description: "Fresh potatoes",
   brand: "Chocair",
   category: "Vegetables",
@@ -2530,7 +2531,7 @@ const importData = async () => {
       });
 
       orders.push({
-        // user: randomUser._id, // Removed as per schema
+        user: randomUser._id,
         orderItems,
         customerInfo: {
           name: randomUser.name,

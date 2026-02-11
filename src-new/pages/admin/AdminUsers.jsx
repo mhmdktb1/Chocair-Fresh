@@ -6,11 +6,13 @@ function AdminUsers() {
   const { users, deleteUser } = useAdmin();
   const [searchQuery, setSearchQuery] = useState("");
 
-  const filteredUsers = users.filter(u =>
-    u.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    u.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    u.phone.includes(searchQuery)
-  );
+  const filteredUsers = users.filter(u => {
+    const q = searchQuery.toLowerCase();
+    const nameMatch = u.name?.toLowerCase().includes(q);
+    const emailMatch = u.email?.toLowerCase().includes(q);
+    const phoneMatch = u.phone?.includes(q);
+    return nameMatch || emailMatch || phoneMatch;
+  });
 
   const handleDeleteUser = (id, name) => {
     if (window.confirm(`Are you sure you want to remove user "${name}"?`)) {
@@ -137,7 +139,7 @@ function AdminUsers() {
                 </div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
                   <Calendar size={16} color="#2e7d32" />
-                  <span>Joined: {user.joined}</span>
+                  <span>Joined: {user.joinDate}</span>
                 </div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                   <ShoppingBag size={16} color="#2e7d32" />
@@ -156,7 +158,7 @@ function AdminUsers() {
                 fontWeight: 600,
                 marginBottom: '15px'
               }}>
-                Total Spent: ${(user.orders * 25.5).toFixed(2)}
+                Total Spent: ${Number(user.totalSpent || 0).toFixed(2)}
               </div>
 
               {/* Delete Button */}

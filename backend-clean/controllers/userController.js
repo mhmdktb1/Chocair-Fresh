@@ -346,7 +346,33 @@ const updateUserPhone = asyncHandler(async (req, res) => {
 // @access  Private/Admin
 // ==========================================
 const getUsers = asyncHandler(async (req, res) => {
-  const users = await User.find({});
+  const users = await User.aggregate([
+    {
+      $lookup: {
+        from: 'orders',
+        localField: '_id',
+        foreignField: 'user',
+        as: 'ordersData',
+      },
+    },
+    {
+      $project: {
+        _id: 1,
+        name: 1,
+        email: 1,
+        phone: 1,
+        isAdmin: 1,
+        location: 1,
+        createdAt: 1,
+        orderCount: { $size: '$ordersData' },
+        totalSpent: { $sum: '$ordersData.totalPrice' },
+      },
+    },
+    {
+      $sort: { createdAt: -1 } 
+    }
+  ]);
+  
   res.json(users);
 });
 

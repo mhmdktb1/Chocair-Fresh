@@ -39,16 +39,6 @@ api.interceptors.response.use(
     return response;
   },
   (error) => {
-    // Handle 401 Unauthorized (Token expired or invalid)
-    if (error.response && error.response.status === 401) {
-      // Only clear if we are not already on the login page to avoid loops
-      if (!window.location.pathname.includes('/login')) {
-        console.warn('Session expired or unauthorized. Clearing auth data.');
-        // clearAuthData(); // Optional: Clear immediately or let the UI handle it
-        // window.location.href = '/login'; // Optional: Force redirect
-      }
-    }
-
     // Handle common errors
     const message = error.response?.data?.message || error.message || 'Something went wrong';
     return Promise.reject({ ...error, message });
