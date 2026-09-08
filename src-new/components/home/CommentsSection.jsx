@@ -147,8 +147,8 @@ const CommentItem = ({ comment, onReply, onDelete, currentUser, activeReplyId, s
 
 const CommentsSection = () => {
   const { user } = useAuth();
-  const [comments, setComments] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const [comments, setComments] = useState(defaultSampleComments);
+  const [loading, setLoading] = useState(false);
   const [newComment, setNewComment] = useState('');
   const [rating, setRating] = useState(0);
   const [activeReplyId, setActiveReplyId] = useState(null);

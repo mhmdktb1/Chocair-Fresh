@@ -92,7 +92,30 @@ const RecommendationRow = ({ title, type, productId = null, limit = 8, cartItems
     }
   };
 
-  if (loading) return <div className="rec-row-loading"></div>;
+  if (loading && products.length === 0) {
+    return (
+      <section className="recommendation-row skeleton-row">
+        <div className="container">
+          <div className="row-header">
+            <div className="header-left">
+              <h2 className="row-title skeleton-title">{title}</h2>
+              <div className="title-underline"></div>
+            </div>
+          </div>
+          <div className="row-scroll-container">
+            {[1, 2, 3, 4].map((n) => (
+              <div key={n} className="scroll-item skeleton-card">
+                <div className="skeleton-image"></div>
+                <div className="skeleton-line short"></div>
+                <div className="skeleton-line"></div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+    );
+  }
+
   if (products.length === 0) return null;
 
   return (

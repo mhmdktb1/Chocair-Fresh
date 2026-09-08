@@ -1,17 +1,50 @@
 import React from 'react';
 import ProductCard from './ProductCard';
 
-const ProductGrid = ({ products, loading, error }) => {
+const ProductGrid = ({ products = [], loading, error }) => {
   if (loading) {
-    return <div className="empty-state">Loading products...</div>;
+    return (
+      <div className="premium-grid">
+        {[1, 2, 3, 4, 5, 6].map((n) => (
+          <div key={n} className="skeleton-card" style={{ minHeight: '260px' }}>
+            <div className="skeleton-image" style={{ height: '180px' }}></div>
+            <div className="skeleton-line short" style={{ marginTop: '10px' }}></div>
+            <div className="skeleton-line"></div>
+          </div>
+        ))}
+      </div>
+    );
   }
 
   if (error) {
-    return <div className="empty-state">Error loading products.</div>;
+    return (
+      <div className="empty-state" style={{ padding: '3rem 1rem', textAlign: 'center' }}>
+        <p style={{ color: '#64748b', fontSize: '1rem', fontWeight: 600 }}>
+          Unable to reach fresh inventory right now.
+        </p>
+        <button 
+          onClick={() => window.location.reload()} 
+          style={{ 
+            marginTop: '1rem', 
+            background: 'var(--primary)', 
+            color: '#fff', 
+            padding: '0.6rem 1.5rem', 
+            borderRadius: '50px', 
+            fontWeight: 700 
+          }}
+        >
+          Retry
+        </button>
+      </div>
+    );
   }
 
-  if (products.length === 0) {
-    return <div className="empty-state">No products found in this category.</div>;
+  if (!products || products.length === 0) {
+    return (
+      <div className="empty-state" style={{ padding: '3rem 1rem', textAlign: 'center', color: '#64748b' }}>
+        <p>No fresh produce found in this category.</p>
+      </div>
+    );
   }
 
   return (
