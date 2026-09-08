@@ -66,3 +66,10 @@
   padding: 1rem 2.5rem;
   font-size: 1.125rem;
 }
+
+@media (max-width: 480px) {
+  .btn-large {
+    padding: 0.9rem 1.2rem;
+    font-size: 0.98rem;
+  }
+}

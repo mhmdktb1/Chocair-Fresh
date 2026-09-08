@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { ArrowRight, Sparkles, Truck, Star, ShieldCheck, Leaf } from 'lucide-react';
 import Button from '../common/Button';
 import { parseHighlightedText } from '../../utils/textUtils';
 import './Hero.css';
@@ -96,7 +97,8 @@ const Hero = ({ data }) => {
           <div className="hero-badge-wrapper">
             <span className="hero-badge" aria-label="100% Organic and Fresh">
               <span className="pulse-dot" aria-hidden="true"></span>
-              100% Organic & Fresh
+              <Sparkles size={14} className="badge-sparkle-icon" />
+              100% Organic & Farm Fresh
             </span>
           </div>
           
@@ -109,14 +111,16 @@ const Hero = ({ data }) => {
           </p>
           
           <div className="hero-buttons">
-            <Button variant="primary" size="large" onClick={() => navigate('/shop')} className="btn-glow">
-              Shop Now
+            <Button variant="primary" size="large" onClick={() => navigate('/shop')} className="btn-glow hero-cta-btn">
+              <span>Shop Fresh Now</span>
+              <ArrowRight size={18} className="cta-arrow" />
             </Button>
-            <Button variant="outline" size="large" className="btn-glass">
-              View Process
+            <Button variant="outline" size="large" onClick={() => navigate('/shop?discount=true')} className="btn-glass hero-sec-btn">
+              Explore Deals
             </Button>
           </div>
           
+          {/* Trust Metric Strip */}
           <div className="hero-stats" role="list">
             {stats.map((stat, index) => (
               <React.Fragment key={index}>
@@ -130,8 +134,10 @@ const Hero = ({ data }) => {
           </div>
         </div>
         
+        {/* Showcase Image Container */}
         <div className="hero-image-wrapper">
           <div className="hero-circle-bg" aria-hidden="true"></div>
+          
           <img 
             src={backgroundImage} 
             alt="Fresh organic produce - Chocair Fresh" 
@@ -139,8 +145,19 @@ const Hero = ({ data }) => {
             loading="lazy"
             style={!isMobile ? { transform: `translate(${offset.x * 15}px, ${offset.y * 15}px) scale(1.05)` } : {}}
           />
+
+          {/* Mobile Overlay Micro-Badges */}
+          <div className="mobile-hero-pill pill-top">
+            <Star size={13} className="pill-star" />
+            <span>4.9 / 5.0 (2.4k+ Happy Foodies)</span>
+          </div>
+
+          <div className="mobile-hero-pill pill-bottom">
+            <Truck size={13} className="pill-truck" />
+            <span>⚡ Same-Day Free Delivery</span>
+          </div>
           
-          {/* Floating Cards - Hidden on Mobile */}
+          {/* Desktop Floating Cards */}
           {!isMobile && (
             <>
               <div 

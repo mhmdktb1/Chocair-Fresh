@@ -3,8 +3,11 @@ import { MongoMemoryServer } from 'mongodb-memory-server';
 import request from 'supertest';
 import app from '../server.js';
 import Product from '../models/productModel.js';
+import User from '../models/userModel.js';
+import generateToken from '../utils/generateToken.js';
 
 let mongoServer;
+let adminToken;
 
 beforeAll(async () => {
   mongoServer = await MongoMemoryServer.create();
@@ -23,6 +26,13 @@ beforeEach(async () => {
     const collection = collections[key];
     await collection.deleteMany();
   }
+
+  const adminUser = await User.create({
+    name: 'Admin Test',
+    phone: '+96170000002',
+    isAdmin: true,
+  });
+  adminToken = generateToken(adminUser._id);
 });
 
 describe('Order API', () => {
@@ -65,17 +75,42 @@ describe('Order API', () => {
     totalPrice: 9.00
   });
 
-  it('POST /api/orders - should create an order', async () => {
+  it('POST /api/orders - should create an order and atomically decrement stock', async () => {
     const res = await request(app).post('/api/orders').send(createOrderData());
     expect(res.status).toBe(201);
     expect(res.body.totalPrice).toBe(9.00);
     expect(res.body.orderItems).toHaveLength(1);
+
+    const updatedProduct = await Product.findById(productId);
+    expect(updatedProduct.countInStock).toBe(98);
   });
 
-  it('GET /api/orders/admin/all - should list all orders', async () => {
+  it('POST /api/orders - should reject order when quantity exceeds stock', async () => {
+    const orderData = createOrderData();
+    orderData.orderItems[0].qty = 999;
+
+    const res = await request(app).post('/api/orders').send(orderData);
+    expect(res.status).toBe(400);
+
+    const untouchedProduct = await Product.findById(productId);
+    expect(untouchedProduct.countInStock).toBe(100);
+  });
+
+  it('POST /api/orders - should allow missing item image and use fallback', async () => {
+    const payload = createOrderData();
+    payload.orderItems[0].image = '';
+
+    const res = await request(app).post('/api/orders').send(payload);
+    expect(res.status).toBe(201);
+    expect(res.body.orderItems[0].image).toBe('/assets/images/placeholder-product.jpg');
+  });
+
+  it('GET /api/orders - should list all orders when authenticated as admin', async () => {
     await request(app).post('/api/orders').send(createOrderData());
     
-    const res = await request(app).get('/api/orders');
+    const res = await request(app)
+      .get('/api/orders')
+      .set('Authorization', `Bearer ${adminToken}`);
     expect(res.status).toBe(200);
     expect(res.body).toBeInstanceOf(Array);
     expect(res.body.length).toBe(1);
@@ -90,20 +125,25 @@ describe('Order API', () => {
     expect(res.body._id).toBe(orderId);
   });
 
-  it('PUT /api/orders/:id/status - should update status', async () => {
+  it('PUT /api/orders/:id/status - should update status when authenticated as admin', async () => {
     const createRes = await request(app).post('/api/orders').send(createOrderData());
     const orderId = createRes.body._id;
 
-    const res = await request(app).put(`/api/orders/${orderId}/status`).send({ status: 'Preparing' });
+    const res = await request(app)
+      .put(`/api/orders/${orderId}/status`)
+      .set('Authorization', `Bearer ${adminToken}`)
+      .send({ status: 'Preparing' });
     expect(res.status).toBe(200);
     expect(res.body.status).toBe('Preparing');
   });
 
-  it('DELETE /api/orders/:id - should delete order', async () => {
+  it('DELETE /api/orders/:id - should delete order when authenticated as admin', async () => {
     const createRes = await request(app).post('/api/orders').send(createOrderData());
     const orderId = createRes.body._id;
 
-    const res = await request(app).delete(`/api/orders/${orderId}`);
+    const res = await request(app)
+      .delete(`/api/orders/${orderId}`)
+      .set('Authorization', `Bearer ${adminToken}`);
     expect(res.status).toBe(200);
     expect(res.body.message).toBe('Order removed');
 
@@ -111,8 +151,17 @@ describe('Order API', () => {
     expect(checkRes.status).toBe(404);
   });
   
-  it('GET /api/orders/myorders - should return empty if no email provided', async () => {
-    const res = await request(app).get('/api/orders?email=nonexistent@example.com');
+  it('GET /api/orders/myorders - should return empty if no user orders exist', async () => {
+    const user = await User.create({
+      name: 'Customer Test',
+      phone: '+96170999999',
+      email: 'customer@test.com',
+    });
+    const userToken = generateToken(user._id);
+
+    const res = await request(app)
+      .get('/api/orders/myorders')
+      .set('Authorization', `Bearer ${userToken}`);
     expect(res.status).toBe(200);
     expect(res.body).toEqual([]);
   });

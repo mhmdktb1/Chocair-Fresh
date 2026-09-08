@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { Flame, Sparkles, ArrowRight, ShoppingBag } from 'lucide-react';
 import Button from '../common/Button';
 import { parseHighlightedText } from '../../utils/textUtils';
 import './DealSection.css';
@@ -39,11 +40,17 @@ const DealSection = ({ data }) => {
   }, []);
 
   return (
-    <section className="deal-section">
+    <section className="deal-section" aria-label="Limited Time Offer">
       <div className="container">
         <div className="deal-wrapper">
           <div className="deal-content">
-            <span className="deal-badge">Limited Time Offer</span>
+            <div className="deal-badge-row">
+              <span className="deal-badge">
+                <Flame size={14} className="deal-flame" /> Flash Deal
+              </span>
+              <span className="deal-tag-sub">Ends Soon</span>
+            </div>
+
             <h2 className="deal-title">{parseHighlightedText(title)}</h2>
             <p className="deal-desc">
               {description}
@@ -66,22 +73,37 @@ const DealSection = ({ data }) => {
               </div>
             </div>
 
+            {/* Deal Stock / Progress Meter */}
+            <div className="deal-progress-box">
+              <div className="deal-progress-info">
+                <span>🔥 <strong>84% Claimed</strong></span>
+                <span className="deal-stock-left">Only 16 bundles left</span>
+              </div>
+              <div className="deal-progress-track">
+                <div className="deal-progress-fill" style={{ width: '84%' }}></div>
+              </div>
+            </div>
+
             <div className="deal-price">
               <span className="old-price">$45.00</span>
               <span className="new-price">$29.99</span>
+              <span className="deal-save-pill">Save $15.01</span>
             </div>
 
-            <Button variant="primary" size="large" onClick={() => navigate('/shop')} className="deal-btn">
-              Claim Offer Now
+            <Button variant="primary" size="large" onClick={() => navigate('/shop?discount=true')} className="deal-btn">
+              <ShoppingBag size={18} />
+              <span>Claim Offer Now</span>
+              <ArrowRight size={18} />
             </Button>
           </div>
 
           <div className="deal-image-wrapper">
             <div className="deal-circle"></div>
             <img 
-              src="https://images.unsplash.com/photo-1519999482648-25049ddd37b1?ixlib=rb-4.0.3&auto=format&fit=crop&w=1000&q=80" 
+              src={image || "https://images.unsplash.com/photo-1519999482648-25049ddd37b1?ixlib=rb-4.0.3&auto=format&fit=crop&w=1000&q=80"} 
               alt="Berry Bundle" 
               className="deal-img"
+              loading="lazy"
             />
             <div className="discount-tag">
               <span className="discount-amount">35%</span>

@@ -2,8 +2,11 @@ import mongoose from 'mongoose';
 import { MongoMemoryServer } from 'mongodb-memory-server';
 import request from 'supertest';
 import app from '../server.js';
+import User from '../models/userModel.js';
+import generateToken from '../utils/generateToken.js';
 
 let mongoServer;
+let adminToken;
 
 beforeAll(async () => {
   mongoServer = await MongoMemoryServer.create();
@@ -22,6 +25,13 @@ beforeEach(async () => {
     const collection = collections[key];
     await collection.deleteMany();
   }
+
+  const adminUser = await User.create({
+    name: 'Admin Test',
+    phone: '+96170000001',
+    isAdmin: true,
+  });
+  adminToken = generateToken(adminUser._id);
 });
 
 describe('Product API', () => {
@@ -43,14 +53,25 @@ describe('Product API', () => {
     expect(res.body.length).toBe(0);
   });
 
-  it('POST /api/products - should create a product', async () => {
+  it('POST /api/products - should reject unauthorized requests with 401', async () => {
     const res = await request(app).post('/api/products').send(productData);
+    expect(res.status).toBe(401);
+  });
+
+  it('POST /api/products - should create a product when authenticated as admin', async () => {
+    const res = await request(app)
+      .post('/api/products')
+      .set('Authorization', `Bearer ${adminToken}`)
+      .send(productData);
     expect(res.status).toBe(201);
     expect(res.body.name).toBe(productData.name);
   });
 
-  it('GET /api/products/:id - should return product details', async () => {
-    const createRes = await request(app).post('/api/products').send(productData);
+  it('GET /api/products/:id - should return product details publicly', async () => {
+    const createRes = await request(app)
+      .post('/api/products')
+      .set('Authorization', `Bearer ${adminToken}`)
+      .send(productData);
     const productId = createRes.body._id;
 
     const res = await request(app).get(`/api/products/${productId}`);
@@ -58,23 +79,34 @@ describe('Product API', () => {
     expect(res.body.name).toBe(productData.name);
   });
 
-  it('PUT /api/products/:id - should update a product', async () => {
-    const createRes = await request(app).post('/api/products').send(productData);
+  it('PUT /api/products/:id - should update a product when authenticated as admin', async () => {
+    const createRes = await request(app)
+      .post('/api/products')
+      .set('Authorization', `Bearer ${adminToken}`)
+      .send(productData);
     const productId = createRes.body._id;
 
     const updateData = { ...productData, name: 'Updated Apple', price: 2.99 };
-    const res = await request(app).put(`/api/products/${productId}`).send(updateData);
+    const res = await request(app)
+      .put(`/api/products/${productId}`)
+      .set('Authorization', `Bearer ${adminToken}`)
+      .send(updateData);
     
     expect(res.status).toBe(200);
     expect(res.body.name).toBe('Updated Apple');
     expect(res.body.price).toBe(2.99);
   });
 
-  it('DELETE /api/products/:id - should delete the product', async () => {
-    const createRes = await request(app).post('/api/products').send(productData);
+  it('DELETE /api/products/:id - should delete the product when authenticated as admin', async () => {
+    const createRes = await request(app)
+      .post('/api/products')
+      .set('Authorization', `Bearer ${adminToken}`)
+      .send(productData);
     const productId = createRes.body._id;
 
-    const res = await request(app).delete(`/api/products/${productId}`);
+    const res = await request(app)
+      .delete(`/api/products/${productId}`)
+      .set('Authorization', `Bearer ${adminToken}`);
     expect(res.status).toBe(200);
 
     const checkRes = await request(app).get(`/api/products/${productId}`);

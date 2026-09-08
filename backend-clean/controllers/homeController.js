@@ -16,7 +16,29 @@ const getHomeConfig = async (req, res) => {
     }
     res.json(config);
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    // If DB fails, return default config
+    console.error('DB error in getHomeConfig:', error.message);
+    const defaultConfig = {
+      hero: {
+        title: "Welcome to Chocair Fresh",
+        subtitle: "Fresh, Organic, and Delicious",
+        backgroundImage: "/assets/images/hero-bg.jpg"
+      },
+      featuredCategories: [],
+      bundle: {
+        title: "Limited Time Offer",
+        products: []
+      },
+      story: {
+        title: "Our Story",
+        content: "We are passionate about providing fresh organic products."
+      },
+      seasonal: {
+        title: "Seasonal Favorites",
+        products: []
+      }
+    };
+    res.json(defaultConfig);
   }
 };
 
@@ -26,15 +48,32 @@ const getHomeConfig = async (req, res) => {
 const updateHomeConfig = async (req, res) => {
   try {
     let config = await HomeConfig.findOne();
+    
+    // Clean up IDs for seasonal products and featured categories
+    const seasonalPayload = req.body.seasonal ? {
+      title: req.body.seasonal.title || config?.seasonal?.title || 'Seasonal Favorites',
+      products: Array.isArray(req.body.seasonal.products)
+        ? req.body.seasonal.products.map(p => (p && p._id ? p._id : p))
+        : []
+    } : undefined;
+
+    const featuredCategoriesPayload = Array.isArray(req.body.featuredCategories)
+      ? req.body.featuredCategories.map(c => (c && c._id ? c._id : c))
+      : undefined;
+
     if (!config) {
-      config = new HomeConfig(req.body);
+      config = new HomeConfig({
+        ...req.body,
+        ...(seasonalPayload && { seasonal: seasonalPayload }),
+        ...(featuredCategoriesPayload && { featuredCategories: featuredCategoriesPayload }),
+      });
     } else {
       // Update fields
       if (req.body.hero) config.hero = { ...config.hero, ...req.body.hero };
-      if (req.body.featuredCategories) config.featuredCategories = req.body.featuredCategories;
+      if (featuredCategoriesPayload !== undefined) config.featuredCategories = featuredCategoriesPayload;
       if (req.body.bundle) config.bundle = { ...config.bundle, ...req.body.bundle };
       if (req.body.story) config.story = { ...config.story, ...req.body.story };
-      if (req.body.seasonal) config.seasonal = { ...config.seasonal, ...req.body.seasonal };
+      if (seasonalPayload !== undefined) config.seasonal = seasonalPayload;
     }
     
     const updatedConfig = await config.save();
@@ -43,6 +82,7 @@ const updateHomeConfig = async (req, res) => {
     await updatedConfig.populate('seasonal.products');
     res.json(updatedConfig);
   } catch (error) {
+    console.error('Error in updateHomeConfig:', error.message);
     res.status(500).json({ message: error.message });
   }
 };

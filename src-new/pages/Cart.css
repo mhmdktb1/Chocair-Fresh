@@ -253,21 +253,38 @@
   
   .cart-item {
     grid-template-columns: 1fr;
-    gap: 1rem;
-    text-align: center;
+    gap: 1.25rem;
+    padding: 1.25rem 1rem;
+    border-bottom: 1px solid #f1f5f9;
   }
   
   .item-info {
-    flex-direction: column;
+    flex-direction: row;
+    align-items: center;
+    gap: 1rem;
+  }
+
+  .item-image {
+    width: 65px;
+    height: 65px;
+    flex-shrink: 0;
   }
   
   .item-quantity {
-    justify-content: center;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    width: 100%;
+    background: #f8fafc;
+    padding: 0.5rem 0.75rem;
+    border-radius: var(--radius-md);
   }
   
   .item-total {
-    justify-content: center;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    width: 100%;
     padding-right: 0;
-    gap: 2rem;
   }
 }

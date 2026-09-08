@@ -1,0 +1,27 @@
+/* Home.css - Page Level Responsive Polish */
+.home-page {
+  position: relative;
+  min-height: 100vh;
+  width: 100%;
+  overflow-x: hidden;
+  background-color: #fbfdfc;
+}
+
+.home-recommendations-container {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+@media (max-width: 768px) {
+  .home-page {
+    /* Ensure content is not covered by fixed bottom navigation dock */
+    padding-bottom: calc(65px + env(safe-area-inset-bottom, 12px));
+    background-color: #ffffff;
+  }
+
+  .home-recommendations-container {
+    gap: 0.25rem;
+    padding: 0 0.5rem;
+  }
+}

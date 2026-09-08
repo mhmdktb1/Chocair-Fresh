@@ -255,14 +255,35 @@ body.nav-hidden .category-rail-section.sticky-rail {
     gap: 1.5rem;
   }
   
-  .category-rail-section,
+  .category-rail-section {
+    padding: 0.5rem 0;
+  }
+
+  .category-rail {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scroll-snap-type: x mandatory;
+    gap: 0.75rem;
+    padding-bottom: 0.5rem;
+    scrollbar-width: none;
+  }
+
+  .category-rail::-webkit-scrollbar {
+    display: none;
+  }
+
+  .category-item {
+    scroll-snap-align: start;
+    flex-shrink: 0;
+  }
+  
   .shop-content-layout {
     padding: 0 1rem;
   }
 
   .premium-grid {
-    grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
-    gap: 1rem;
+    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+    gap: 0.85rem;
   }
   
   .shop-toolbar {

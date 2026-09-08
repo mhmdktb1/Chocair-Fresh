@@ -144,23 +144,87 @@
   to { opacity: 1; transform: translateY(0); }
 }
 
-@media (max-width: 968px) {
+@media (max-width: 768px) {
+  .home-about-section {
+    padding-bottom: 3rem;
+  }
+
+  .about-hero-banner {
+    height: 220px;
+    margin-bottom: 2.5rem;
+    background-attachment: scroll; /* Smoother scrolling on mobile GPUs */
+  }
+
+  .about-hero-content {
+    padding: 0 1rem;
+  }
+
+  .about-hero-title {
+    font-size: 2.2rem;
+  }
+
+  .about-hero-subtitle {
+    font-size: 1.05rem;
+  }
+
+  .about-container {
+    padding: 0 1rem;
+  }
+
   .about-content-grid {
     grid-template-columns: 1fr;
-    gap: 4rem;
+    gap: 2.5rem;
   }
-  
+
   .about-text-content {
     padding-right: 0;
     order: 2;
   }
-  
+
   .about-image-wrapper {
     order: 1;
-    margin-bottom: 2rem;
+    margin-bottom: 1.5rem;
   }
-  
-  .about-hero-title {
-    font-size: 2.5rem;
+
+  .about-main-img {
+    border-radius: 1.5rem;
+    transform: rotate(0deg);
+  }
+
+  .about-stat-badge {
+    bottom: -1rem;
+    right: 0.5rem;
+    padding: 0.85rem 1.15rem;
+    border-radius: 1rem;
+    min-width: 130px;
+  }
+
+  .stat-number {
+    font-size: 2rem;
+  }
+
+  .stat-label {
+    font-size: 0.75rem;
+  }
+
+  .story-title {
+    font-size: 1.75rem;
+    margin-bottom: 1rem;
+  }
+
+  .story-paragraph {
+    font-size: 0.95rem;
+    line-height: 1.6;
+    margin-bottom: 1.25rem;
+  }
+
+  .about-cta {
+    margin-top: 1.5rem;
+  }
+
+  .about-cta .btn {
+    width: 100%;
+    justify-content: center;
+    min-height: 48px;
   }
 }

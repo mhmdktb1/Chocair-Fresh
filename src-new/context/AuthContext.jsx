@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { getStoredUser, saveAuthData, clearAuthData } from '../utils/api';
+import api, { getStoredUser, saveAuthData, clearAuthData } from '../utils/api';
 
 const AuthContext = createContext();
 
@@ -22,12 +22,29 @@ export const AuthProvider = ({ children }) => {
 
     if (storedUser && token) {
       setUser(storedUser);
+      // Validate with backend to refresh latest data & admin permissions
+      api.get('/users/profile')
+        .then((res) => {
+          if (res.data) {
+            const freshUser = { ...storedUser, ...res.data };
+            saveAuthData(token, freshUser);
+            setUser(freshUser);
+          }
+        })
+        .catch(() => {
+          // Token expired or invalidated
+          clearAuthData();
+          setUser(null);
+        })
+        .finally(() => {
+          setLoading(false);
+        });
     } else {
       // If either is missing, ensure we start clean
       clearAuthData();
       setUser(null);
+      setLoading(false);
     }
-    setLoading(false);
   }, []);
 
   const login = (token, userData) => {

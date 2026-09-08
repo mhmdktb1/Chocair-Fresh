@@ -1,19 +1,21 @@
 import React, { useEffect, useState, useRef } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { 
   User, MapPin, Mail, Calendar, Edit2, LogOut, Save, X, 
   Package, Settings, ChevronRight, ShoppingBag, Heart, ChevronDown, ChevronUp, AlertCircle, Phone, Camera, Upload, Plus 
 } from 'lucide-react';
 import Navbar from '../components/layout/Navbar';
 import LocationPicker from '../components/common/LocationPicker';
-import api, { getStoredUser, clearAuthData, saveAuthData } from '../utils/api';
+import api, { getStoredUser, clearAuthData, saveAuthData, getAssetUrl } from '../utils/api';
 import Button from '../components/common/Button';
 import Loading from '../components/common/Loading';
 import { normalizeLebanesePhoneNumber } from '../utils/phoneUtils';
+import { toast } from 'react-toastify';
 import './Profile.css';
 
 const Profile = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const [user, setUser] = useState(null);
   const [activeTab, setActiveTab] = useState('overview'); // overview, orders, settings
   const [orders, setOrders] = useState([]);
@@ -35,6 +37,12 @@ const Profile = () => {
   const [showAvatarModal, setShowAvatarModal] = useState(false);
   const fileInputRef = useRef(null);
   const cameraInputRef = useRef(null);
+
+  useEffect(() => {
+    if (location.state?.activeTab) {
+      setActiveTab(location.state.activeTab);
+    }
+  }, [location.state]);
 
   useEffect(() => {
     const loadUserData = async () => {
@@ -104,10 +112,10 @@ const Profile = () => {
       setFormData(updatedUser);
       saveAuthData(localStorage.getItem('token'), updatedUser);
       setIsEditing(false);
-      alert('Profile updated successfully!');
+      toast.success('Profile updated successfully!');
     } catch (error) {
       console.error('Failed to update profile', error);
-      alert(error.response?.data?.message || 'Failed to update profile');
+      toast.error(error.response?.data?.message || 'Failed to update profile');
     } finally {
       setLoading(false);
     }
@@ -128,7 +136,7 @@ const Profile = () => {
       
       if (response.data.success) {
         if (response.data.otp) {
-          alert(`DEV MODE: Your OTP is ${response.data.otp}`);
+          toast.info(`DEV MODE: Your OTP is ${response.data.otp}`);
         }
         setPhoneStep('OTP');
       }
@@ -160,7 +168,7 @@ const Profile = () => {
         setNewPhone('');
         setOtp('');
         setPhoneStep('INPUT');
-        alert('Phone number updated successfully!');
+        toast.success('Phone number updated successfully!');
       }
     } catch (err) {
       setPhoneError(err.response?.data?.message || 'Invalid OTP or phone number already in use');
@@ -176,10 +184,10 @@ const Profile = () => {
     try {
       await api.put(`/orders/${orderId}/cancel`);
       fetchOrders(); // Refresh list
-      alert('Order cancelled successfully');
+      toast.success('Order cancelled successfully');
     } catch (error) {
       console.error('Failed to cancel order', error);
-      alert(error.message || 'Failed to cancel order');
+      toast.error(error.response?.data?.message || error.message || 'Failed to cancel order');
     }
   };
 
@@ -230,8 +238,9 @@ const Profile = () => {
       setUser(updatedUser);
       setFormData(updatedUser);
       saveAuthData(localStorage.getItem('token'), updatedUser);
+      toast.success('Avatar updated successfully!');
     } catch (err) {
-      alert('Failed to upload image');
+      toast.error('Failed to upload image');
     } finally {
       setLoading(false);
     }
@@ -259,9 +268,7 @@ const Profile = () => {
 
   const renderSidebar = () => {
     const avatarUrl = user.avatar || formData.avatar;
-    const fullAvatarUrl = avatarUrl && !avatarUrl.startsWith('http') 
-      ? `http://localhost:5001${avatarUrl}` 
-      : avatarUrl;
+    const fullAvatarUrl = avatarUrl ? getAssetUrl(avatarUrl) : '';
 
     return (
       <div className="profile-sidebar">

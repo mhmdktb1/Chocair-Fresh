@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useRef, useState, useCallback } from "react";
 import { GoogleMap, MarkerF, useJsApiLoader } from "@react-google-maps/api";
 import { MapPin, Navigation } from "lucide-react";
+import { toast } from "react-toastify";
 
 /**
  * Props:
@@ -15,12 +16,16 @@ const LocationPicker = ({ onLocationSelect, initialLocation }) => {
   const [selected, setSelected] = useState(null); // {lat, lng} | null
   const [address, setAddress] = useState("");
   const [isLocating, setIsLocating] = useState(false);
+  const [isManualEdit, setIsManualEdit] = useState(false);
   const mapRef = useRef(null);
   const geocoderRef = useRef(null);
   const lastGeocodeIdRef = useRef(0);
 
+  const googleMapsApiKey =
+    import.meta.env.VITE_GOOGLE_MAPS_API_KEY || "AIzaSyA2sDabFv8XdkWGWQ6OBRFK17iDnDqcN9Y";
+
   const { isLoaded, loadError } = useJsApiLoader({
-    googleMapsApiKey: "AIzaSyA2sDabFv8XdkWGWQ6OBRFK17iDnDqcN9Y",
+    googleMapsApiKey,
     // libraries: ["places"], // only if you use Places features
   });
 
@@ -120,7 +125,7 @@ const LocationPicker = ({ onLocationSelect, initialLocation }) => {
 
   const handleGetCurrentLocation = useCallback(() => {
     if (!navigator.geolocation) {
-      alert("Geolocation is not supported in this browser.");
+      toast.warn("Geolocation is not supported in this browser.");
       return;
     }
 
@@ -139,7 +144,7 @@ const LocationPicker = ({ onLocationSelect, initialLocation }) => {
         if (err.code === 1) msg = "Location permission denied. Allow it from the browser settings.";
         if (err.code === 2) msg = "Location unavailable. Check device/location settings.";
         if (err.code === 3) msg = "Location request timed out. Try again.";
-        alert(msg);
+        toast.error(msg);
       },
       { enableHighAccuracy: false, timeout: 20000, maximumAge: 0 }
     );
@@ -253,18 +258,46 @@ const LocationPicker = ({ onLocationSelect, initialLocation }) => {
       </div>
 
       <div className="form-group" style={{ marginTop: 12 }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6 }}>
+          <label style={{ fontSize: "0.85rem", color: "#666", fontWeight: 600 }}>Selected Address Details:</label>
+          <button
+            type="button"
+            onClick={() => setIsManualEdit(!isManualEdit)}
+            style={{
+              background: "none",
+              border: "none",
+              color: "#2e7d32",
+              fontSize: "0.8rem",
+              cursor: "pointer",
+              textDecoration: "underline",
+              padding: 0
+            }}
+          >
+            {isManualEdit ? "Lock Address" : "Edit / Refine Manually"}
+          </button>
+        </div>
         <div style={{ position: "relative" }}>
           <input
             type="text"
             value={address}
-            readOnly
-            placeholder="No location selected"
+            readOnly={!isManualEdit}
+            onChange={(e) => {
+              const val = e.target.value;
+              setAddress(val);
+              onLocationSelect?.({
+                address: val,
+                lat: selected?.lat ?? null,
+                lng: selected?.lng ?? null,
+                source: "manual",
+              });
+            }}
+            placeholder="Click map or type your full delivery address (building, floor, landmark)..."
             style={{
               width: "100%",
               padding: "10px 10px 10px 35px",
               border: "1px solid #ddd",
               borderRadius: "8px",
-              backgroundColor: "#f9f9f9",
+              backgroundColor: isManualEdit ? "#fff" : "#f9f9f9",
             }}
           />
           <MapPin
@@ -275,7 +308,7 @@ const LocationPicker = ({ onLocationSelect, initialLocation }) => {
         </div>
 
         <small style={{ display: "block", marginTop: 6, opacity: 0.75 }}>
-          Tip: Click the map or drag the pin to adjust.
+          Tip: Click the map or drag the pin to adjust, or click "Edit / Refine Manually" to add building details.
         </small>
       </div>
     </div>

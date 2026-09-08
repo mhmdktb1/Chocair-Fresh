@@ -5,10 +5,11 @@ import {
   updateHero,
   deleteHero,
 } from '../controllers/heroController.js';
+import { protect, admin } from '../middleware/authMiddleware.js';
 
 const router = express.Router();
 
-router.route('/').get(getHeroes).post(createHero);
-router.route('/:id').put(updateHero).delete(deleteHero);
+router.route('/').get(getHeroes).post(protect, admin, createHero);
+router.route('/:id').put(protect, admin, updateHero).delete(protect, admin, deleteHero);
 
 export default router;

@@ -599,7 +599,6 @@ input[type="file"]::file-selector-button:hover {
 /* Buttons Override */
 button {
   font-family: 'Inter', sans-serif;
-}
   font-size: 0.9rem;
   cursor: pointer;
   transition: all 0.2s;

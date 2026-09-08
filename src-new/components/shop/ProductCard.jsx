@@ -1,16 +1,18 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { ShoppingBag, Heart, Eye, Star } from 'lucide-react';
+import { Plus, Minus, Eye, Star } from 'lucide-react';
 import { useCart } from '../../context/CartContext';
 import { formatCurrency } from '../../utils/formatters';
 import './ProductCard.css';
 
 const ProductCard = ({ product }) => {
-  const { addToCart } = useCart();
+  const { cartItems = [], addToCart, updateQuantity, removeFromCart } = useCart();
 
   // Helper to generate random rating for demo purposes if not provided
   const rating = product.rating || 4.5;
   const reviews = product.reviews || 12;
+
+  const cartItem = cartItems.find(item => item._id === product._id);
 
   return (
     <div className="product-card group">
@@ -20,37 +22,71 @@ const ProductCard = ({ product }) => {
           {product.isNew && <span className="badge badge-hot">New</span>}
           {product.discount > 0 && <span className="badge badge-sale">-{product.discount}%</span>}
         </div>
-        
-        <button className="wishlist-btn" aria-label="Add to wishlist">
-          <Heart size={18} />
-        </button>
 
         <Link to={`/product/${product._id}`}>
-          <img src={product.image} alt={product.name} className="product-image" />
+          <img src={product.image} alt={product.name} className="product-image" loading="lazy" />
         </Link>
         
         {/* Overlay Actions */}
         <div className="product-actions-overlay">
           <Link to={`/product/${product._id}`} className="action-btn quick-view" title="Quick View">
-            <Eye size={20} />
+            <Eye size={18} />
           </Link>
-          <button 
-            className="action-btn add-cart" 
-            onClick={(e) => {
-              e.preventDefault();
-              addToCart(product);
-            }}
-            title="Add to Cart"
-          >
-            <ShoppingBag size={20} />
-          </button>
+          
+          {cartItem ? (
+            <div className="product-card-stepper" onClick={(e) => e.stopPropagation()}>
+              <button 
+                type="button"
+                className="card-stepper-btn minus"
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  if (cartItem.quantity <= 1) {
+                    removeFromCart(product._id);
+                  } else {
+                    updateQuantity(product._id, cartItem.quantity - 1);
+                  }
+                }}
+                aria-label="Decrease quantity"
+              >
+                <Minus size={12} />
+              </button>
+              <span className="card-stepper-qty">{cartItem.quantity}</span>
+              <button 
+                type="button"
+                className="card-stepper-btn plus"
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  updateQuantity(product._id, cartItem.quantity + 1);
+                }}
+                aria-label="Increase quantity"
+              >
+                <Plus size={12} />
+              </button>
+            </div>
+          ) : (
+            <button 
+              type="button"
+              className="action-btn add-cart" 
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                addToCart(product);
+              }}
+              title="Add to Cart"
+              aria-label={`Add ${product.name} to cart`}
+            >
+              <Plus size={16} />
+            </button>
+          )}
         </div>
       </div>
 
       {/* Content */}
       <div className="product-content">
         <div className="product-rating">
-          <Star size={14} className="star-icon filled" />
+          <Star size={12} className="star-icon filled" />
           <span className="rating-value">{rating}</span>
           <span className="review-count">({reviews})</span>
         </div>

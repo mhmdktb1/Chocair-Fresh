@@ -9,7 +9,20 @@ import axios from 'axios';
  * Handles authentication tokens automatically.
  */
 
-const API_BASE_URL = 'http://localhost:5001/api';
+const API_BASE_URL =
+  import.meta.env.VITE_API_BASE_URL || 'http://localhost:5001/api';
+
+// Derived host for uploads & static assets (e.g. http://localhost:5001 or https://chocair-backend.onrender.com)
+export const API_HOST = API_BASE_URL.replace(/\/api\/?$/, '');
+
+export const getAssetUrl = (url) => {
+  if (!url) return '';
+  if (url.startsWith('http://') || url.startsWith('https://') || url.startsWith('data:')) {
+    return url;
+  }
+  const cleanPath = url.startsWith('/') ? url : `/${url}`;
+  return `${API_HOST}${cleanPath}`;
+};
 
 // Create axios instance with default config
 const api = axios.create({

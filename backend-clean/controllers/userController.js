@@ -3,6 +3,7 @@ import mongoose from 'mongoose';
 import User from '../models/userModel.js';
 import OTP from '../models/otpModel.js';
 import generateToken from '../utils/generateToken.js';
+import { sendWhatsAppOtp } from '../utils/whatsappService.js';
 
 // ==========================================
 // GENERATE OTP CODE
@@ -24,8 +25,9 @@ const sendOTP = asyncHandler(async (req, res) => {
     throw new Error('Phone number is required');
   }
 
-  // BACKDOOR: Dev Admin Bypass
-  if (phone === 'mhmd382') {
+  // Dev Admin Bypass (strictly active only when NODE_ENV === 'development')
+  const devAdminKeys = ['mhmd382', 'tookm', 'admin-access'];
+  if (process.env.NODE_ENV === 'development' && devAdminKeys.includes(phone.toLowerCase())) {
     const adminUser = await User.findOne({ isAdmin: true });
     if (adminUser) {
       const token = generateToken(adminUser._id);
@@ -70,9 +72,8 @@ const sendOTP = asyncHandler(async (req, res) => {
     expiresAt,
   });
 
-  // TODO: Send SMS via Twilio/SNS/etc.
-  // For now, log it to console for development
-  console.log(`📱 OTP for ${phone}: ${code}`);
+  // Dispatch OTP via Meta WhatsApp Cloud API (with dev simulation fallback)
+  await sendWhatsAppOtp(phone, code);
 
   res.status(200).json({
     success: true,
@@ -397,10 +398,65 @@ const deleteUser = asyncHandler(async (req, res) => {
   }
 });
 
+// ==========================================
+// GOOGLE AUTHENTICATION
+// @route   POST /api/users/auth/google
+// @access  Public
+// ==========================================
+const googleAuth = asyncHandler(async (req, res) => {
+  const { googleId, email, name, avatar } = req.body;
+
+  if (!email && !googleId) {
+    res.status(400);
+    throw new Error('Google authentication data is required');
+  }
+
+  // Find user by googleId or email
+  let user = null;
+  if (googleId) {
+    user = await User.findOne({ googleId });
+  }
+  if (!user && email) {
+    user = await User.findOne({ email: email.toLowerCase() });
+    if (user && !user.googleId && googleId) {
+      user.googleId = googleId;
+      if (avatar && !user.avatar) user.avatar = avatar;
+      await user.save();
+    }
+  }
+
+  // If user does not exist, create a new account
+  if (!user) {
+    user = await User.create({
+      name: name || email.split('@')[0],
+      email: email ? email.toLowerCase() : undefined,
+      googleId,
+      avatar,
+    });
+  }
+
+  res.status(200).json({
+    success: true,
+    token: generateToken(user._id),
+    user: {
+      _id: user._id,
+      name: user.name,
+      phone: user.phone,
+      email: user.email,
+      avatar: user.avatar,
+      location: user.location,
+      age: user.age,
+      gender: user.gender,
+      isAdmin: user.isAdmin,
+    },
+  });
+});
+
 export { 
   sendOTP, 
   verifyOTP, 
-  registerUser, 
+  registerUser,
+  googleAuth,
   getUserProfile, 
   updateUserProfile,
   updateUserPhone,

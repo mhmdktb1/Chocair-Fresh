@@ -160,16 +160,6 @@
   font-variant-numeric: tabular-nums;
 }
 
-.scale-tick-label {
-  position: absolute;
-  bottom: -25px;
-  left: 50%;
-  transform: translateX(-50%);
-  font-size: 0.8rem;
-  color: #999;
-  font-weight: 600;
-}
-
 .scale-actions {
   display: flex;
   gap: 1rem;

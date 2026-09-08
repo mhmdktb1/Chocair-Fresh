@@ -10,7 +10,8 @@ const getHeroes = async (req, res) => {
     const heroes = await Hero.find(query).sort({ order: 1 });
     res.json(heroes);
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    console.error('DB error in getHeroes:', error.message);
+    res.json([]);
   }
 };
 

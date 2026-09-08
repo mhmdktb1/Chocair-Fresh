@@ -265,15 +265,26 @@
     grid-template-columns: 1fr;
     display: flex;
     flex-direction: column-reverse;
+    gap: 1.5rem;
+  }
+
+  .form-row {
+    grid-template-columns: 1fr;
+    gap: 1rem;
   }
   
   .checkout-steps {
     font-size: 0.8rem;
+    gap: 0.5rem;
   }
   
   .step-line {
     margin: 0 0.5rem;
     margin-bottom: 1.5rem;
+  }
+
+  .checkout-card {
+    padding: 1.5rem 1rem;
   }
 }
 

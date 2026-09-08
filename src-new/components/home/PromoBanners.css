@@ -1,0 +1,217 @@
+/* Modern E-Commerce Promo Micro-Banners */
+.promo-banners-section {
+  padding: 1.5rem 0 0.5rem 0;
+  background: transparent;
+}
+
+.promo-banners-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1.25rem;
+}
+
+.promo-card {
+  position: relative;
+  border-radius: 20px;
+  padding: 1.5rem;
+  overflow: hidden;
+  cursor: pointer;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.04);
+}
+
+.promo-card:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.08);
+}
+
+.promo-card-green {
+  background: linear-gradient(135deg, #ecfdf5 0%, #d1fae5 50%, #a7f3d0 100%);
+  border: 1.5px solid rgba(16, 185, 129, 0.25);
+}
+
+.promo-card-orange {
+  background: linear-gradient(135deg, #fff7ed 0%, #ffedd5 50%, #fed7aa 100%);
+  border: 1.5px solid rgba(249, 115, 22, 0.25);
+}
+
+.promo-card-content {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  z-index: 2;
+  max-width: 78%;
+}
+
+.promo-tag-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.promo-badge-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  font-size: 0.68rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  padding: 0.2rem 0.55rem;
+  border-radius: 20px;
+  background: #065f46;
+  color: #ffffff;
+}
+
+.promo-badge-pill.orange-pill {
+  background: #9a3412;
+}
+
+.badge-flame-icon {
+  color: #fbbf24;
+}
+
+.promo-discount-tag {
+  font-size: 0.72rem;
+  font-weight: 800;
+  color: #047857;
+  background: rgba(255, 255, 255, 0.85);
+  padding: 0.15rem 0.5rem;
+  border-radius: 12px;
+}
+
+.promo-discount-tag.orange-tag {
+  color: #c2410c;
+}
+
+.promo-title {
+  font-size: 1.15rem;
+  font-weight: 800;
+  color: #0f172a;
+  letter-spacing: -0.02em;
+  line-height: 1.25;
+  margin: 0.2rem 0 0 0;
+}
+
+.promo-desc {
+  font-size: 0.82rem;
+  color: #475569;
+  line-height: 1.35;
+  margin: 0;
+}
+
+.promo-cta-row {
+  margin-top: 0.5rem;
+}
+
+.promo-shop-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: #047857;
+}
+
+.promo-card-graphic {
+  position: absolute;
+  right: 1rem;
+  bottom: 0.75rem;
+  opacity: 0.85;
+}
+
+.promo-emoji {
+  font-size: 3.5rem;
+  filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.1));
+}
+
+/* Coupon Copy Box */
+.coupon-copy-box {
+  display: inline-flex;
+  align-items: center;
+  background: #ffffff;
+  border: 1.5px dashed #ea580c;
+  border-radius: 12px;
+  padding: 0.25rem 0.4rem 0.25rem 0.75rem;
+  gap: 0.6rem;
+  margin-top: 0.35rem;
+  align-self: flex-start;
+  box-shadow: 0 2px 6px rgba(234, 88, 12, 0.12);
+}
+
+.coupon-code-text {
+  font-size: 0.88rem;
+  font-weight: 900;
+  letter-spacing: 0.08em;
+  color: #c2410c;
+  font-family: monospace;
+}
+
+.coupon-copy-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  background: #ea580c;
+  color: #ffffff;
+  border: none;
+  font-size: 0.72rem;
+  font-weight: 700;
+  padding: 0.3rem 0.65rem;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.coupon-copy-btn:active {
+  transform: scale(0.94);
+  background: #c2410c;
+}
+
+.copied-icon {
+  color: #ffffff;
+}
+
+/* Responsive for Mobile */
+@media (max-width: 768px) {
+  .promo-banners-section {
+    padding: 0.6rem 0 0.4rem 0;
+  }
+
+  .promo-banners-grid {
+    grid-template-columns: 1fr;
+    gap: 0.75rem;
+  }
+
+  .promo-card {
+    padding: 1rem 1.15rem;
+    border-radius: 18px;
+  }
+
+  .promo-card-content {
+    max-width: 80%;
+  }
+
+  .promo-title {
+    font-size: 1.02rem;
+  }
+
+  .promo-desc {
+    font-size: 0.78rem;
+  }
+
+  .promo-emoji {
+    font-size: 2.8rem;
+  }
+
+  .coupon-code-text {
+    font-size: 0.82rem;
+  }
+
+  .coupon-copy-btn {
+    font-size: 0.7rem;
+    padding: 0.25rem 0.55rem;
+  }
+}

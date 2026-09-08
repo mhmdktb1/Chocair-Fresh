@@ -12,7 +12,12 @@ const protect = asyncHandler(async (req, res, next) => {
     try {
       token = req.headers.authorization.split(' ')[1];
 
-      const decoded = jwt.verify(token, process.env.JWT_SECRET || 'default_secret_key_change_me');
+      const secret = process.env.JWT_SECRET;
+      if (!secret && process.env.NODE_ENV === 'production') {
+        throw new Error('FATAL: JWT_SECRET environment variable is missing.');
+      }
+
+      const decoded = jwt.verify(token, secret || 'test_jwt_secret_fallback');
 
       req.user = await User.findById(decoded.id).select('-password');
 

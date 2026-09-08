@@ -14,9 +14,16 @@ dist-ssr
 
 # Environment variables
 .env
-.env.test
-.env.production
+.env.*
+!.env.example
+*.env
 backend/.env
+backend-clean/.env
+backend-clean/.env.*
+!backend-clean/.env.example
+
+# Unrelated nested projects
+sports-court-app/
 
 # Editor directories and files
 .vscode/*

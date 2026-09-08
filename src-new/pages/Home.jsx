@@ -1,8 +1,11 @@
 import React, { useEffect, useState } from 'react';
 import { useLocation } from 'react-router-dom';
 import Navbar from '../components/layout/Navbar';
+import BottomNav from '../components/layout/BottomNav';
+import MobileTopBar from '../components/home/MobileTopBar';
 import Hero from '../components/home/Hero';
 import CategoryMarquee from '../components/home/CategoryMarquee';
+import PromoBanners from '../components/home/PromoBanners';
 import FeaturesSection from '../components/home/FeaturesSection';
 import DealSection from '../components/home/DealSection';
 import NewsletterSection from '../components/home/NewsletterSection';
@@ -12,17 +15,49 @@ import Footer from '../components/layout/Footer';
 import RecommendationRow from '../components/shop/RecommendationRow';
 import { useCart } from '../context/CartContext';
 import api, { getStoredUser } from '../utils/api';
+import './Home.css';
+
+const defaultHomeConfig = {
+  hero: {
+    title: 'Welcome to Chocair Fresh',
+    subtitle: 'Fresh, Organic, and Delicious',
+    backgroundImage: '/assets/images/hero-bg.jpg',
+  },
+  featuredCategories: [],
+  bundle: {
+    title: 'Limited Time Offer',
+    products: [],
+  },
+  story: {
+    title: 'Our Story',
+    content: 'We are passionate about providing fresh organic products.',
+  },
+  seasonal: {
+    title: 'Seasonal Favorites',
+    products: [],
+  },
+};
 
 const Home = () => {
   const { hash } = useLocation();
   const { cartItems } = useCart();
   const [user, setUser] = useState(null);
-  const [homeConfig, setHomeConfig] = useState(null);
+  const [homeConfig, setHomeConfig] = useState(defaultHomeConfig);
   const [lastViewed, setLastViewed] = useState(null);
 
   useEffect(() => {
     const storedUser = getStoredUser();
     setUser(storedUser);
+
+    try {
+      const cachedHomeConfig = localStorage.getItem('homeConfigCache');
+      if (cachedHomeConfig) {
+        const parsed = JSON.parse(cachedHomeConfig);
+        setHomeConfig(parsed);
+      }
+    } catch (e) {
+      console.error('Failed to read cached home config', e);
+    }
 
     // Get last viewed product
     try {
@@ -37,9 +72,12 @@ const Home = () => {
     const fetchHomeConfig = async () => {
       try {
         const response = await api.get('/home-config');
-        setHomeConfig(response.data);
+        const nextConfig = response?.data || defaultHomeConfig;
+        setHomeConfig(nextConfig);
+        localStorage.setItem('homeConfigCache', JSON.stringify(nextConfig));
       } catch (error) {
-        console.error("Failed to load home config", error);
+        console.error('Failed to load home config', error);
+        setHomeConfig((prev) => prev || defaultHomeConfig);
       }
     };
     fetchHomeConfig();
@@ -54,20 +92,26 @@ const Home = () => {
     }
   }, [hash]);
 
-  if (!homeConfig) return <div className="flex justify-center items-center h-screen">Loading...</div>;
+  const activeHomeConfig = homeConfig || defaultHomeConfig;
 
   return (
     <div className="home-page">
       <Navbar />
       
+      {/* Mobile Top App Bar (Delivery address, speed, instant search, micro perks) */}
+      <MobileTopBar />
+
       {/* 1. Hero */}
-      <Hero data={homeConfig.hero} />
+      <Hero data={activeHomeConfig.hero} />
       
-      {/* 2. Categories Bar */}
+      {/* 2. Categories Bar / Mobile App Category Rail */}
       <CategoryMarquee />
       
-      {/* 3. Recommendation: Top Seller and Trending */}
-      <div className="container" style={{ marginTop: '4rem', marginBottom: '4rem' }}>
+      {/* 3. Promo Micro Banners (Seasonal Box & 1-Tap Coupon) */}
+      <PromoBanners />
+
+      {/* 4. Recommendation: Top Seller and Trending */}
+      <div className="container home-recommendations-container">
         {/* For You Section - Personalized for User, Trending for Guest */}
         <RecommendationRow 
           title={user && user.name ? `Recommended for You, ${user.name.split(' ')[0]}` : "Recommended for You"} 
@@ -92,32 +136,35 @@ const Home = () => {
 
         <RecommendationRow title="Featured Products" type="popular" />
         
-        {homeConfig.seasonal?.products?.length > 0 && (
+        {activeHomeConfig.seasonal?.products?.length > 0 && (
           <RecommendationRow 
-            title={homeConfig.seasonal.title || "Seasonal Favorites"} 
+            title={activeHomeConfig.seasonal.title || "Seasonal Favorites"} 
             type="manual" 
-            items={homeConfig.seasonal.products} 
+            items={activeHomeConfig.seasonal.products} 
           />
         )}
       </div>
 
-      {/* 4. Limited Time Offer */}
-      <DealSection data={homeConfig.bundle} />
+      {/* 5. Limited Time Offer / Flash Deal */}
+      <DealSection data={activeHomeConfig.bundle} />
 
-      {/* 5. Cultivating Goodness and Our Story */}
-      <AboutSection data={homeConfig.story} />
+      {/* 6. Cultivating Goodness and Our Story */}
+      <AboutSection data={activeHomeConfig.story} />
 
-      {/* 6. Why Choose Us */}
+      {/* 7. Why Choose Us */}
       <FeaturesSection />
 
-      {/* 7. Get Fresh Update */}
+      {/* 8. Get Fresh Update */}
       <NewsletterSection />
 
-      {/* 8. Community Discussion */}
+      {/* 9. Community Discussion */}
       <CommentsSection />
 
-      {/* 9. Footer */}
+      {/* 10. Footer */}
       <Footer />
+
+      {/* 11. Mobile App Fixed Bottom Navigation Dock */}
+      <BottomNav />
     </div>
   );
 };

@@ -1,3 +1,15 @@
+.home-recommendations-container {
+  margin-top: 2rem;
+  margin-bottom: 2rem;
+}
+
+@media (max-width: 768px) {
+  .home-recommendations-container {
+    margin-top: 1rem;
+    margin-bottom: 1rem;
+  }
+}
+
 .recommendation-row {
   padding: 4rem 0;
   position: relative;
@@ -188,8 +200,59 @@
 }
 
 @media (max-width: 768px) {
+  .recommendation-row {
+    padding: 0.75rem 0;
+  }
+
+  .row-header {
+    margin-bottom: 0.5rem;
+    padding-bottom: 0.25rem;
+    align-items: center;
+  }
+
+  .row-title {
+    font-size: 1.05rem;
+    letter-spacing: -0.02em;
+    font-weight: 800;
+  }
+
+  .title-underline {
+    height: 2px;
+    width: 24px;
+  }
+
+  .view-all-link {
+    font-size: 0.78rem;
+    font-weight: 700;
+    color: var(--primary-dark);
+  }
+
+  .nav-buttons {
+    display: none; /* Swipe is natural on mobile touch screens */
+  }
+
+  .row-scroll-container {
+    gap: 0.6rem;
+    padding-bottom: 0.25rem;
+    scroll-snap-type: x mandatory;
+    padding-left: 0.1rem;
+    padding-right: 0.1rem;
+  }
+
+  .scroll-item {
+    min-width: 140px;
+    max-width: 140px;
+    flex: 0 0 140px;
+    scroll-snap-align: start;
+  }
+
   .row-grid {
     grid-template-columns: repeat(2, 1fr);
+    gap: 0.6rem;
+  }
+
+  .scroll-progress-track {
+    display: none;
   }
 }
 

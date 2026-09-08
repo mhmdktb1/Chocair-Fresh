@@ -139,8 +139,14 @@
 }
 
 .action-btn.add-cart {
-  background: var(--primary);
-  color: #fff;
+  width: 38px;
+  height: 38px;
+  min-height: 0;
+  min-width: 0;
+  background: #ffffff;
+  color: var(--primary);
+  border: 1.5px solid rgba(46, 204, 113, 0.3);
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.08);
 }
 
 .action-btn:hover {
@@ -152,7 +158,54 @@
 }
 
 .action-btn.add-cart:hover {
-  background: var(--primary-dark);
+  background: #f0fdf4;
+  color: var(--primary-dark);
+  border-color: var(--primary);
+  box-shadow: 0 6px 14px rgba(46, 204, 113, 0.25);
+}
+
+/* Card Stepper for Cart Items */
+.product-card-stepper {
+  display: flex;
+  align-items: center;
+  background: #ffffff;
+  border: 1.5px solid var(--primary);
+  border-radius: 50px;
+  padding: 2px 4px;
+  gap: 4px;
+  box-shadow: 0 4px 12px rgba(46, 204, 113, 0.2);
+}
+
+.card-stepper-btn {
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  border: none;
+  background: #f0fdf4;
+  color: var(--primary-dark);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  padding: 0;
+}
+
+.card-stepper-btn:hover {
+  background: var(--primary);
+  color: #ffffff;
+}
+
+.card-stepper-btn:active {
+  transform: scale(0.9);
+}
+
+.card-stepper-qty {
+  font-size: 0.82rem;
+  font-weight: 800;
+  color: #0f172a;
+  min-width: 18px;
+  text-align: center;
 }
 
 /* Content */
@@ -235,21 +288,162 @@
 
 /* Responsive */
 @media (max-width: 768px) {
+  .product-card {
+    border-radius: 14px;
+    border: 1px solid #f0f0f0;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.03);
+    padding: 0.35rem;
+    background: #ffffff;
+  }
+
+  .product-image-wrapper {
+    border-radius: 10px;
+    margin-bottom: 0.35rem;
+    aspect-ratio: 1;
+    background: #f8f9fa;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .product-image {
+    padding: 0.4rem;
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+  }
+
+  .product-badges {
+    top: 0.3rem;
+    left: 0.3rem;
+    gap: 0.15rem;
+  }
+
+  .badge {
+    padding: 0.15rem 0.4rem;
+    font-size: 0.6rem;
+    border-radius: 20px;
+    letter-spacing: 0.2px;
+  }
+
   .wishlist-btn {
     opacity: 1;
     transform: none;
-    width: 32px;
-    height: 32px;
+    width: 26px;
+    height: 26px;
+    top: 0.3rem;
+    right: 0.3rem;
+    background: rgba(255, 255, 255, 0.92);
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
+  }
+
+  .wishlist-btn svg {
+    width: 12px;
+    height: 12px;
   }
   
   .product-actions-overlay {
+    position: absolute;
+    bottom: 0.3rem;
+    right: 0.3rem;
+    left: auto;
+    transform: none;
     opacity: 1;
-    transform: translateX(-50%) translateY(0);
-    bottom: 0.75rem;
+    gap: 0.2rem;
+    z-index: 3;
+  }
+
+  .action-btn.quick-view {
+    display: none;
   }
   
-  .action-btn {
-    width: 40px;
-    height: 40px;
+  .action-btn.add-cart {
+    width: 26px;
+    height: 26px;
+    min-height: 0;
+    min-width: 0;
+    background: #ffffff;
+    color: var(--primary);
+    border: 1.5px solid rgba(46, 204, 113, 0.35);
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
+  }
+
+  .action-btn.add-cart svg {
+    width: 13px;
+    height: 13px;
+  }
+
+  .action-btn.add-cart:active {
+    background: #f0fdf4;
+    transform: scale(0.92);
+  }
+
+  .product-card-stepper {
+    padding: 1px 3px;
+    gap: 2px;
+    border-width: 1px;
+    box-shadow: 0 2px 6px rgba(46, 204, 113, 0.18);
+  }
+
+  .card-stepper-btn {
+    width: 20px;
+    height: 20px;
+    min-height: 0;
+    min-width: 0;
+  }
+
+  .card-stepper-btn svg {
+    width: 10px;
+    height: 10px;
+  }
+
+  .card-stepper-qty {
+    font-size: 0.72rem;
+    min-width: 14px;
+  }
+
+  .product-content {
+    padding: 0 0.2rem 0.2rem 0.2rem;
+  }
+
+  .product-card .product-rating {
+    margin-bottom: 0.15rem !important;
+    gap: 0.15rem !important;
+  }
+
+  .product-card .star-icon {
+    width: 10px !important;
+    height: 10px !important;
+  }
+
+  .product-card .rating-value {
+    font-size: 0.68rem !important;
+  }
+
+  .product-card .review-count {
+    font-size: 0.65rem !important;
+  }
+
+  .product-card .product-name {
+    font-size: 0.8rem !important;
+    line-height: 1.2 !important;
+    margin-bottom: 0.25rem !important;
+    min-height: 2.1em !important;
+    max-height: 2.1em !important;
+  }
+
+  .product-card .current-price {
+    font-size: 0.9rem !important;
+  }
+
+  .product-card .original-price {
+    font-size: 0.68rem !important;
+  }
+
+  .product-card .unit-label {
+    font-size: 0.65rem !important;
+    padding: 0.1rem 0.35rem !important;
+    border-radius: 4px;
+    background: #f0fdf4;
+    color: var(--primary-dark);
   }
 }

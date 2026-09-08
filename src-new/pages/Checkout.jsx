@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { CheckCircle, CreditCard, Truck, MapPin, X } from 'lucide-react';
 import { useCart } from '../context/CartContext';
 import { useAuth } from '../context/AuthContext';
+import { normalizeLebanesePhoneNumber } from '../utils/phoneUtils';
 import Navbar from '../components/layout/Navbar';
 import Button from '../components/common/Button';
 import LocationPicker from '../components/common/LocationPicker';
@@ -17,6 +18,7 @@ const Checkout = () => {
   const [step, setStep] = useState(1); // 1: Details, 2: Payment
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [orderPlaced, setOrderPlaced] = useState(false);
 
   // OTP State
   const [showOtpModal, setShowOtpModal] = useState(false);
@@ -33,7 +35,7 @@ const Checkout = () => {
     googleMapsLink: ""
   });
 
-  const [paymentMethod, setPaymentMethod] = useState("Credit Card");
+  const [paymentMethod, setPaymentMethod] = useState("Cash on Delivery");
 
   useEffect(() => {
     if (user) {
@@ -109,8 +111,9 @@ const Checkout = () => {
 
       await api.post('/orders', orderData, config);
 
+      setOrderPlaced(true);
       clearCart();
-      navigate('/profile'); // Redirect to Order History
+      navigate('/profile', { state: { activeTab: 'orders' } });
     } catch (err) {
       console.error("Order failed", err);
       setError(err.message || "Failed to place order. Please try again.");
@@ -125,7 +128,7 @@ const Checkout = () => {
     if (user) {
       await createOrder();
     } else {
-      setError("Please log in to place an order.");
+      setError("Please verify your phone number to complete your order.");
       setLoading(false);
     }
   };
@@ -135,37 +138,55 @@ const Checkout = () => {
     setOtpLoading(true);
     setOtpError("");
 
+    const normalizedPhone = normalizeLebanesePhoneNumber(formData.phone) || formData.phone;
+
     try {
-      const res = await api.post('/users/auth/verify-otp', { 
-        phone: formData.phone, 
-        code: otpCode 
-      });
-
-      const data = res.data;
-      let authToken = data.token;
-      let userData = data.user;
-
-      if (data.isNewUser) {
-        // Register the new user
-        const regRes = await api.post('/users/auth/register', {
-          name: formData.name,
-          phone: formData.phone,
-          email: formData.email,
-          location: formData.address
+      if (user) {
+        // User is logged in (e.g. via Google) but needed to verify phone number
+        const res = await api.put('/users/profile/phone', {
+          phone: normalizedPhone,
+          code: otpCode,
         });
-        authToken = regRes.data.token;
-        userData = regRes.data.user;
+
+        if (res.data.success) {
+          login(localStorage.getItem('token'), res.data.user);
+          setShowOtpModal(false);
+          setStep(2);
+        } else {
+          throw new Error(res.data.message || 'Verification failed');
+        }
+      } else {
+        // Guest user verifying OTP
+        const res = await api.post('/users/auth/verify-otp', { 
+          phone: normalizedPhone, 
+          code: otpCode 
+        });
+
+        const data = res.data;
+        let authToken = data.token;
+        let userData = data.user;
+
+        if (data.isNewUser) {
+          // Register the new user
+          const regRes = await api.post('/users/auth/register', {
+            name: formData.name,
+            phone: normalizedPhone,
+            email: formData.email,
+            location: formData.address
+          });
+          authToken = regRes.data.token;
+          userData = regRes.data.user;
+        }
+
+        // Login the user in frontend
+        login(authToken, userData);
+        setShowOtpModal(false);
+        
+        // Proceed to Payment Step
+        setStep(2);
       }
-
-      // Login the user in frontend
-      login(authToken, userData);
-      setShowOtpModal(false);
-      
-      // Proceed to Payment Step
-      setStep(2);
-
     } catch (err) {
-      setOtpError(err.message || "Invalid OTP. Please try again.");
+      setOtpError(err.response?.data?.message || err.message || "Invalid OTP. Please try again.");
       setOtpLoading(false);
     }
   };
@@ -178,20 +199,29 @@ const Checkout = () => {
         setError('Please select your delivery location');
         return;
       }
+
+      const normalizedPhone = normalizeLebanesePhoneNumber(formData.phone);
+      if (!normalizedPhone && !formData.phone) {
+        setError('Please enter a valid Lebanese phone number');
+        return;
+      }
       
-      if (user) {
+      // If user is already logged in AND has a verified phone number matching current input
+      if (user && user.phone) {
         setStep(2);
       } else {
-        // User is NOT logged in - Start OTP Flow BEFORE Payment
+        // User has no verified phone (e.g. Google user first order, or Guest user)
         setLoading(true);
         try {
-          const res = await api.post('/users/auth/send-otp', { phone: formData.phone });
-          if (res.data.otp) {
-            setDevOtp(res.data.otp);
+          const phoneToSend = normalizedPhone || formData.phone;
+          const res = await api.post('/users/auth/send-otp', { phone: phoneToSend });
+          if (res.data.otp && !import.meta.env.PROD) {
+            console.log('DEV OTP:', res.data.otp);
+            toast.info(`DEV OTP: ${res.data.otp}`, { autoClose: 10000 });
           }
           setShowOtpModal(true);
         } catch (err) {
-          setError(err.message || "Failed to send OTP. Please check your phone number.");
+          setError(err.response?.data?.message || err.message || "Failed to send OTP. Please check your phone number.");
         } finally {
           setLoading(false);
         }
@@ -201,7 +231,7 @@ const Checkout = () => {
     }
   };
 
-  if (cartItems.length === 0) {
+  if (cartItems.length === 0 && !orderPlaced) {
     navigate('/cart');
     return null;
   }
@@ -299,39 +329,46 @@ const Checkout = () => {
                   <h2>Payment Method</h2>
                   <div className="payment-options">
                     <div 
-                      className={`payment-option ${paymentMethod === 'Credit Card' ? 'selected' : ''}`}
-                      onClick={() => setPaymentMethod('Credit Card')}
-                    >
-                      <CreditCard size={24} />
-                      <span>Credit Card</span>
-                    </div>
-                    <div 
                       className={`payment-option ${paymentMethod === 'Cash on Delivery' ? 'selected' : ''}`}
                       onClick={() => setPaymentMethod('Cash on Delivery')}
                     >
                       <Truck size={24} />
-                      <span>Cash on Delivery</span>
+                      <div>
+                        <strong>Cash on Delivery (COD)</strong>
+                        <p style={{ margin: '4px 0 0', fontSize: '0.85rem', color: '#64748b' }}>
+                          Pay cash (USD or LBP) upon receiving your delivery
+                        </p>
+                      </div>
+                    </div>
+                    <div 
+                      className={`payment-option ${paymentMethod === 'Whish Money' ? 'selected' : ''}`}
+                      onClick={() => setPaymentMethod('Whish Money')}
+                    >
+                      <CreditCard size={24} />
+                      <div>
+                        <strong>Whish Money / Local Gateway</strong>
+                        <p style={{ margin: '4px 0 0', fontSize: '0.85rem', color: '#64748b' }}>
+                          Transfer directly via Whish Money app or agent
+                        </p>
+                      </div>
                     </div>
                   </div>
                   
-                  {paymentMethod === 'Credit Card' && (
-                    <>
-                      <div className="form-group">
-                        <label>Card Number</label>
-                        <input type="text" placeholder="0000 0000 0000 0000" />
-                      </div>
-                      
-                      <div className="form-row">
-                        <div className="form-group">
-                          <label>Expiry Date</label>
-                          <input type="text" placeholder="MM/YY" />
-                        </div>
-                        <div className="form-group">
-                          <label>CVC</label>
-                          <input type="text" placeholder="123" />
-                        </div>
-                      </div>
-                    </>
+                  {paymentMethod === 'Whish Money' && (
+                    <div style={{
+                      backgroundColor: '#f0fdf4',
+                      border: '1px solid #bbf7d0',
+                      borderRadius: '12px',
+                      padding: '1rem 1.25rem',
+                      marginTop: '1rem',
+                      color: '#166534',
+                      fontSize: '0.9rem'
+                    }}>
+                      <p style={{ margin: '0 0 6px 0', fontWeight: 600 }}>Whish Money Instructions:</p>
+                      <p style={{ margin: 0, lineHeight: 1.5 }}>
+                        Transfer <strong>${finalTotal.toFixed(2)}</strong> to Whish account <strong>+961 70 123 456</strong> (Chocair Fresh). Our dispatcher will verify the transfer upon delivery.
+                      </p>
+                    </div>
                   )}
                   
                   <div className="form-actions">
@@ -392,21 +429,7 @@ const Checkout = () => {
               <X size={24} />
             </button>
             <h2>Verify Phone Number</h2>
-            <p>We sent a code to {formData.phone}</p>
-
-            {devOtp && (
-              <div style={{ 
-                backgroundColor: '#e8f5e9', 
-                color: '#2e7d32', 
-                padding: '10px', 
-                borderRadius: '4px', 
-                marginBottom: '15px',
-                textAlign: 'center',
-                fontWeight: 'bold'
-              }}>
-                Your OTP Code: {devOtp}
-              </div>
-            )}
+            <p>We sent a 6-digit WhatsApp code to {formData.phone}</p>
             
             {otpError && <div className="error-message">{otpError}</div>}
             

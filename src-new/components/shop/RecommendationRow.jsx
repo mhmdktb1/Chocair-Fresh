@@ -1,10 +1,12 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { ArrowRight, ArrowLeft } from 'lucide-react';
 import ProductCard from './ProductCard';
 import api from '../../utils/api';
 import './RecommendationRow.css';
 
 const RecommendationRow = ({ title, type, productId = null, limit = 8, cartItems = [], items = [] }) => {
+  const navigate = useNavigate();
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [scrollProgress, setScrollProgress] = useState(0);
@@ -103,7 +105,7 @@ const RecommendationRow = ({ title, type, productId = null, limit = 8, cartItems
           </div>
           
           <div className="header-controls">
-            <button className="view-all-link">
+            <button className="view-all-link" onClick={() => navigate('/shop')}>
               View All
             </button>
             <div className="nav-buttons">

@@ -2,12 +2,13 @@ import { initializeApp } from "firebase/app";
 import { getAuth, GoogleAuthProvider, signInWithPopup, RecaptchaVerifier, signInWithPhoneNumber } from "firebase/auth";
 
 const firebaseConfig = {
-  apiKey: "AIzaSyA9IQ54C85oN7W0tsu0vApXGMqHTrqK", 
-  authDomain: "chocair-fresh.firebaseapp.com",
-  projectId: "chocair-fresh",
-  storageBucket: "chocair-fresh.appspot.com",
-  messagingSenderId: "787094685309",
-  appId: "1:787094685309:web:3bcf0eb4842409938f9a9a"
+  apiKey: "AIzaSyCCek3X72_256TKtGrutqPttmc0qY3zF3o",
+  authDomain: "choca-8d971.firebaseapp.com",
+  projectId: "choca-8d971",
+  storageBucket: "choca-8d971.firebasestorage.app",
+  messagingSenderId: "486628245227",
+  appId: "1:486628245227:web:77b48c43668bfc49d5c8ae",
+  measurementId: "G-XSSLCREQMR"
 };
 
 const app = initializeApp(firebaseConfig);

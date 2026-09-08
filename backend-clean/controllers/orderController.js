@@ -1,5 +1,8 @@
 import asyncHandler from '../middleware/asyncHandler.js';
 import Order from '../models/orderModel.js';
+import Product from '../models/productModel.js';
+import User from '../models/userModel.js';
+import { sendWhatsAppOrderNotification } from '../utils/whatsappService.js';
 
 // @desc    Create new order
 // @route   POST /api/orders
@@ -14,13 +17,45 @@ const addOrderItems = asyncHandler(async (req, res) => {
     totalPrice,
   } = req.body;
 
-  if (orderItems && orderItems.length === 0) {
+  if (!orderItems || orderItems.length === 0) {
     res.status(400);
     throw new Error('No order items');
-  } else {
+  }
+
+  // Atomically decrement stock for all ordered items
+  const decrementedItems = [];
+  try {
+    for (const item of orderItems) {
+      const productId = item.product || item._id;
+      const qty = Number(item.qty) || 1;
+
+      if (!productId) {
+        throw new Error(`Invalid product reference for item: ${item.name || 'Unknown'}`);
+      }
+
+      const updatedProduct = await Product.findOneAndUpdate(
+        { _id: productId, countInStock: { $gte: qty } },
+        { $inc: { countInStock: -qty } },
+        { new: true }
+      );
+
+      if (!updatedProduct) {
+        throw new Error(
+          `Insufficient stock for "${item.name || 'Product'}". Please reduce quantity.`
+        );
+      }
+
+      decrementedItems.push({ productId, qty });
+    }
+
+    const normalizedOrderItems = orderItems.map((item) => ({
+      ...item,
+      image: item.image || '/assets/images/placeholder-product.jpg',
+    }));
+
     const order = new Order({
-      orderItems,
-      user: req.user._id,
+      orderItems: normalizedOrderItems,
+      user: req.user ? req.user._id : undefined,
       customerInfo,
       paymentMethod,
       itemsPrice,
@@ -30,7 +65,36 @@ const addOrderItems = asyncHandler(async (req, res) => {
 
     const createdOrder = await order.save();
 
+    // Trigger WhatsApp notifications asynchronously (non-blocking)
+    const notificationTargets = [];
+
+    if (customerInfo && customerInfo.phone) {
+      notificationTargets.push({ phone: customerInfo.phone, isAdmin: false });
+    }
+
+    const adminUser = await User.findOne({ isAdmin: true }).lean();
+    if (adminUser && adminUser.phone) {
+      notificationTargets.push({ phone: adminUser.phone, isAdmin: true });
+    }
+
+    for (const target of notificationTargets) {
+      sendWhatsAppOrderNotification(target.phone, createdOrder, { isAdmin: target.isAdmin }).catch((err) =>
+        console.error('WhatsApp notification dispatch failed:', err.message)
+      );
+    }
+
     res.status(201).json(createdOrder);
+  } catch (error) {
+    // Rollback decremented quantities on failure
+    for (const dec of decrementedItems) {
+      await Product.updateOne(
+        { _id: dec.productId },
+        { $inc: { countInStock: dec.qty } }
+      ).catch((err) => console.error('Rollback error:', err.message));
+    }
+
+    res.status(400);
+    throw new Error(error.message || 'Failed to place order due to inventory constraints');
   }
 });
 
@@ -73,10 +137,24 @@ const updateOrderStatus = asyncHandler(async (req, res) => {
   const order = await Order.findById(req.params.id);
 
   if (order) {
-    order.status = req.body.status || order.status;
+    const previousStatus = order.status;
+    const newStatus = req.body.status || order.status;
+    order.status = newStatus;
     
-    if (req.body.status === 'Delivered') {
+    if (newStatus === 'Delivered') {
       order.isDelivered = true;
+    }
+
+    // Restore stock if transitioning to Cancelled
+    if (newStatus === 'Cancelled' && previousStatus !== 'Cancelled') {
+      for (const item of order.orderItems) {
+        if (item.product) {
+          await Product.updateOne(
+            { _id: item.product },
+            { $inc: { countInStock: item.qty } }
+          ).catch((err) => console.error('Restore stock error:', err.message));
+        }
+      }
     }
 
     const updatedOrder = await order.save();
@@ -106,6 +184,11 @@ const deleteOrder = asyncHandler(async (req, res) => {
 // @route   GET /api/orders/myorders
 // @access  Private
 const getMyOrders = asyncHandler(async (req, res) => {
+  if (!req.user) {
+    res.json([]);
+    return;
+  }
+
   // Build query to find orders by phone (normalized or legacy) or email
   const phoneQueries = [{ 'customerInfo.phone': req.user.phone }];
 
@@ -178,6 +261,15 @@ const cancelMyOrder = asyncHandler(async (req, res) => {
     }
 
     order.status = 'Cancelled';
+    for (const item of order.orderItems) {
+      if (item.product) {
+        await Product.updateOne(
+          { _id: item.product },
+          { $inc: { countInStock: item.qty } }
+        ).catch((err) => console.error('Restore stock error on user cancel:', err.message));
+      }
+    }
+
     const updatedOrder = await order.save();
     res.json(updatedOrder);
   } else {

@@ -9,6 +9,7 @@ import Button from '../components/common/Button';
 import Loading from '../components/common/Loading';
 import WeightScale from '../components/shop/WeightScale';
 import RecommendationRow from '../components/shop/RecommendationRow';
+import { toast } from 'react-toastify';
 import './ProductDetails.css';
 
 const ProductDetails = () => {
@@ -88,8 +89,7 @@ const ProductDetails = () => {
   const handleAddToCart = () => {
     if (product) {
       addToCart(product, quantity);
-      // Optional: Show success message or toast
-      alert(`Added ${quantity} ${product.unit || 'items'} to cart!`);
+      toast.success(`Added ${quantity} ${product.unit || 'items'} to cart!`);
     }
   };
 

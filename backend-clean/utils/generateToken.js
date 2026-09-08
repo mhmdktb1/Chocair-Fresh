@@ -1,7 +1,12 @@
 import jwt from 'jsonwebtoken';
 
 const generateToken = (id) => {
-  return jwt.sign({ id }, process.env.JWT_SECRET || 'default_secret_key_change_me', {
+  const secret = process.env.JWT_SECRET;
+  if (!secret && process.env.NODE_ENV === 'production') {
+    throw new Error('FATAL: JWT_SECRET environment variable is missing.');
+  }
+
+  return jwt.sign({ id }, secret || 'test_jwt_secret_fallback', {
     expiresIn: '30d',
   });
 };

@@ -4,6 +4,7 @@ import {
   sendOTP,
   verifyOTP,
   registerUser,
+  googleAuth,
   getUserProfile,
   updateUserProfile,
   updateUserPhone,
@@ -16,6 +17,7 @@ import { protect, admin } from '../middleware/authMiddleware.js';
 router.post('/auth/send-otp', sendOTP);
 router.post('/auth/verify-otp', verifyOTP);
 router.post('/auth/register', registerUser);
+router.post('/auth/google', googleAuth);
 
 // User profile routes
 router.route('/profile').get(protect, getUserProfile).put(protect, updateUserProfile);

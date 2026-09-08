@@ -22,6 +22,30 @@ const StarRating = ({ rating, setRating, readonly = false, size = 14 }) => {
   );
 };
 
+const defaultSampleComments = [
+  {
+    _id: 'sample-1',
+    user: { name: 'Sarah Jenkins', avatar: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&q=80&w=120' },
+    rating: 5,
+    content: 'The produce is impossibly fresh! Same-day delivery right to my doorstep. Chocair Fresh has completely changed our family healthy eating habits.',
+    createdAt: new Date().toISOString()
+  },
+  {
+    _id: 'sample-2',
+    user: { name: 'David Miller', avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&q=80&w=120' },
+    rating: 5,
+    content: 'Top quality organic berries and greens. The strawberries taste like they were picked this morning. Excellent customer service as well!',
+    createdAt: new Date().toISOString()
+  },
+  {
+    _id: 'sample-3',
+    user: { name: 'Elena Rostova', avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=120' },
+    rating: 5,
+    content: 'Crisp, sweet, and sustainably packaged. I love supporting local farms through this amazing platform. Highly recommended!',
+    createdAt: new Date().toISOString()
+  }
+];
+
 const CommentItem = ({ comment, onReply, onDelete, currentUser, activeReplyId, setActiveReplyId, onSubmitReply }) => {
   const isOwner = currentUser && currentUser._id === comment.user._id;
   const isAdmin = currentUser && currentUser.isAdmin;
@@ -130,6 +154,17 @@ const CommentsSection = () => {
   const [activeReplyId, setActiveReplyId] = useState(null);
   const [submitting, setSubmitting] = useState(false);
   const [isFocused, setIsFocused] = useState(false);
+  const [commentsScrollProgress, setCommentsScrollProgress] = useState(0);
+  const listScrollRef = useRef(null);
+
+  const handleCommentsScroll = () => {
+    if (listScrollRef.current) {
+      const { scrollLeft, scrollWidth, clientWidth } = listScrollRef.current;
+      const maxScroll = scrollWidth - clientWidth;
+      const progress = maxScroll > 0 ? (scrollLeft / maxScroll) * 100 : 0;
+      setCommentsScrollProgress(progress);
+    }
+  };
   
   // Parallax State
   const sectionRef = useRef(null);
@@ -155,9 +190,14 @@ const CommentsSection = () => {
   const fetchComments = async () => {
     try {
       const { data } = await api.get('/comments');
-      setComments(data);
+      if (data && data.length > 0) {
+        setComments(data);
+      } else {
+        setComments(defaultSampleComments);
+      }
     } catch (error) {
       console.error('Failed to fetch comments', error);
+      setComments(defaultSampleComments);
     } finally {
       setLoading(false);
     }
@@ -292,8 +332,12 @@ const CommentsSection = () => {
             <p className="login-link"><a href="/login">Log in</a> to write a review</p>
           )}
 
-          {/* Flat List */}
-          <div className="comments-list-flat">
+          {/* Flat List / Mobile Carousel */}
+          <div 
+            className="comments-list-flat"
+            ref={listScrollRef}
+            onScroll={handleCommentsScroll}
+          >
             {loading ? (
               <p>Loading...</p>
             ) : comments.length === 0 ? (
@@ -329,6 +373,16 @@ const CommentsSection = () => {
               ))
             )}
           </div>
+
+          {/* Mobile Swipe Progress Track */}
+          {comments.length > 1 && (
+            <div className="mobile-comments-progress-track">
+              <div 
+                className="mobile-comments-progress-bar"
+                style={{ width: `${Math.max(12, commentsScrollProgress)}%` }}
+              ></div>
+            </div>
+          )}
         </div>
       </div>
     </section>

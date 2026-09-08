@@ -5,19 +5,31 @@ import Product from '../models/productModel.js';
 // @route   GET /api/products
 // @access  Public
 const getProducts = asyncHandler(async (req, res) => {
-  const products = await Product.find({});
-  res.json(products);
+  try {
+    const products = await Product.find({});
+    res.json(products);
+  } catch (error) {
+    console.error('DB error in getProducts:', error.message);
+    // Return empty array if DB fails
+    res.json([]);
+  }
 });
 
 // @desc    Get product by ID
 // @route   GET /api/products/:id
 // @access  Public
 const getProductById = asyncHandler(async (req, res) => {
-  const product = await Product.findById(req.params.id);
+  try {
+    const product = await Product.findById(req.params.id);
 
-  if (product) {
-    res.json(product);
-  } else {
+    if (product) {
+      res.json(product);
+    } else {
+      res.status(404);
+      throw new Error('Product not found');
+    }
+  } catch (error) {
+    console.error('DB error in getProductById:', error.message);
     res.status(404);
     throw new Error('Product not found');
   }

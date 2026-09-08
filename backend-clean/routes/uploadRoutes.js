@@ -1,6 +1,7 @@
 import path from 'path';
 import express from 'express';
 import multer from 'multer';
+import { protect, admin } from '../middleware/authMiddleware.js';
 
 const router = express.Router();
 
@@ -35,7 +36,11 @@ const upload = multer({
   },
 });
 
-router.post('/', upload.single('image'), (req, res) => {
+router.post('/', protect, admin, upload.single('image'), (req, res) => {
+  if (!req.file) {
+    res.status(400);
+    throw new Error('No image file uploaded');
+  }
   res.send(`/${req.file.path.replace(/\\/g, '/')}`);
 });
 

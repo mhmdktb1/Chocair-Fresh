@@ -22,7 +22,9 @@ const getComments = asyncHandler(async (req, res) => {
 // @route   GET /api/comments/all
 // @access  Private/Admin
 const getAllComments = asyncHandler(async (req, res) => {
-  const comments = await Comment.find({}).sort({ createdAt: -1 });
+  const comments = await Comment.find({})
+    .populate('user', 'name email avatar')
+    .sort({ createdAt: -1 });
   res.json(comments);
 });
 
@@ -60,8 +62,12 @@ const deleteComment = asyncHandler(async (req, res) => {
 
   if (comment) {
     // Check if user is admin or owner
-    if (req.user.isAdmin || comment.user._id.toString() === req.user._id.toString()) {
-      
+    const isOwner =
+      comment.user &&
+      ((comment.user._id && comment.user._id.toString() === req.user._id.toString()) ||
+        comment.user.toString() === req.user._id.toString());
+
+    if (req.user.isAdmin || isOwner) {
       // If it's a reply, remove from parent
       if (comment.parentId) {
         const parent = await Comment.findById(comment.parentId);
@@ -72,7 +78,7 @@ const deleteComment = asyncHandler(async (req, res) => {
       }
 
       // Delete all replies to this comment (Cascade delete)
-      if (comment.replies.length > 0) {
+      if (comment.replies && comment.replies.length > 0) {
         await Comment.deleteMany({ _id: { $in: comment.replies } });
       }
 

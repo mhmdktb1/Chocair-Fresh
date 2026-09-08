@@ -29,11 +29,11 @@ const Navbar = () => {
       setScrolled(currentScrollY > 50);
 
       // Smart scroll logic: Hide on scroll down, show on scroll up
-      // Only hide after scrolling down significantly (300px) to avoid hiding on initial scroll
-      if (currentScrollY > lastScrollY && currentScrollY > 300) {
+      // Only hide after scrolling down significantly (200px) and show immediately upon scrolling up
+      if (currentScrollY > lastScrollY && currentScrollY > 200) {
         setIsVisible(false);
         document.body.classList.add('nav-hidden');
-      } else {
+      } else if (currentScrollY < lastScrollY) {
         setIsVisible(true);
         document.body.classList.remove('nav-hidden');
       }
@@ -130,34 +130,35 @@ const Navbar = () => {
           </Link>
 
           <div className={`nav-links ${mobileMenuOpen ? 'active' : ''}`}>
-            <Link to="/" className="nav-link">Home</Link>
-            <Link to="/shop" className="nav-link">Shop</Link>
-            <Link to="/#about" className="nav-link">About</Link>
-            <Link to="/#contact" className="nav-link">Contact</Link>
+            <div className="mobile-drawer-header">
+              <span className="drawer-logo">Chocair <span className="highlight">Fresh</span></span>
+              <button className="close-drawer-btn" onClick={() => setMobileMenuOpen(false)} aria-label="Close menu">
+                <X size={22} />
+              </button>
+            </div>
+
+            <Link to="/" className="nav-link" onClick={() => setMobileMenuOpen(false)}>Home</Link>
+            <Link to="/shop" className="nav-link" onClick={() => setMobileMenuOpen(false)}>Shop</Link>
+            <Link to="/#about" className="nav-link" onClick={() => setMobileMenuOpen(false)}>About</Link>
+            <Link to="/#contact" className="nav-link" onClick={() => setMobileMenuOpen(false)}>Contact</Link>
             
             <div className="mobile-actions">
               {user ? (
                 <>
-                  <Link to="/profile" className="nav-link">My Account</Link>
+                  <Link to="/profile" className="nav-link profile-link" onClick={() => setMobileMenuOpen(false)}>
+                    <User size={18} /> My Account ({user.name ? user.name.split(' ')[0] : 'Profile'})
+                  </Link>
                   <button 
-                    onClick={handleLogout} 
-                    className="nav-link" 
-                    style={{
-                      background: 'none', 
-                      border: 'none', 
-                      textAlign: 'left', 
-                      padding: '0', 
-                      font: 'inherit', 
-                      cursor: 'pointer',
-                      display: 'flex',
-                      alignItems: 'center'
-                    }}
+                    onClick={() => { setMobileMenuOpen(false); handleLogout(); }} 
+                    className="nav-link logout-link"
                   >
-                    Logout
+                    <LogOut size={18} /> Logout
                   </button>
                 </>
               ) : (
-                <Link to="/login" className="nav-link">Login</Link>
+                <Link to="/login" className="nav-link login-link" onClick={() => setMobileMenuOpen(false)}>
+                  <User size={18} /> Login / Register
+                </Link>
               )}
             </div>
           </div>
