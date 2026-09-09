@@ -1,8 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useLocation } from 'react-router-dom';
 import Navbar from '../components/layout/Navbar';
-import BottomNav from '../components/layout/BottomNav';
-import MobileTopBar from '../components/home/MobileTopBar';
 import Hero from '../components/home/Hero';
 import CategoryMarquee from '../components/home/CategoryMarquee';
 import PromoBanners from '../components/home/PromoBanners';
@@ -97,9 +95,6 @@ const Home = () => {
   return (
     <div className="home-page">
       <Navbar />
-      
-      {/* Mobile Top App Bar (Delivery address, speed, instant search, micro perks) */}
-      <MobileTopBar />
 
       {/* 1. Hero */}
       <Hero data={activeHomeConfig.hero} />
