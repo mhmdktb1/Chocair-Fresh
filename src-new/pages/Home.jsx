@@ -162,9 +162,6 @@ const Home = () => {
 
       {/* 10. Footer */}
       <Footer />
-
-      {/* 11. Mobile App Fixed Bottom Navigation Dock */}
-      <BottomNav />
     </div>
   );
 };

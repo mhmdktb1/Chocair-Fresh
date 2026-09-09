@@ -15,6 +15,7 @@ import Login from './pages/Login';
 import Profile from './pages/Profile';
 import AdminDashboard from './pages/admin/AdminDashboard';
 import Loading from './components/common/Loading';
+import BottomNav from './components/layout/BottomNav';
 
 function App() {
   return (
@@ -37,6 +38,9 @@ function App() {
                 {/* Admin Routes */}
                 <Route path="/admin/*" element={<AdminDashboard />} />
               </Routes>
+              
+              {/* Global Mobile Bottom Navigation Dock */}
+              <BottomNav />
             </Router>
           </CartProvider>
         </CMSProvider>
