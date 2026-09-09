@@ -113,7 +113,7 @@ const Hero = ({ data }) => {
 
   return (
     <section 
-      className="modern-hero-section"
+      className={`modern-hero-section theme-${activeSlide.theme}`}
       onMouseEnter={() => setIsPaused(true)}
       onMouseLeave={() => setIsPaused(false)}
       onTouchStart={handleTouchStart}
@@ -121,6 +121,10 @@ const Hero = ({ data }) => {
       onTouchEnd={handleTouchEnd}
       aria-label="Featured showcase"
     >
+      {/* Ambient Background Layers (Covering the entire header & hero) */}
+      <div className="hero-bg-glow" />
+      <div className="hero-bg-mesh" />
+
       <div className="modern-hero-container">
         
         {/* Story Progress Indicators */}
@@ -139,12 +143,8 @@ const Hero = ({ data }) => {
           ))}
         </div>
 
-        {/* Main Interactive Hero Card */}
-        <div className={`hero-showcase-card theme-${activeSlide.theme}`}>
-          
-          {/* Background Ambient Layers */}
-          <div className="card-bg-gradient" />
-          <div className="card-bg-mesh" />
+        {/* Hero Content Grid */}
+        <div className="hero-grid-layout">
 
           {/* Left / Top Content Side */}
           <div className="hero-text-block">
