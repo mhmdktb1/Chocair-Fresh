@@ -4,11 +4,8 @@ import Navbar from '../components/layout/Navbar';
 import Hero from '../components/home/Hero';
 import CategoryMarquee from '../components/home/CategoryMarquee';
 import PromoBanners from '../components/home/PromoBanners';
-import FeaturesSection from '../components/home/FeaturesSection';
-import DealSection from '../components/home/DealSection';
 import NewsletterSection from '../components/home/NewsletterSection';
 import CommentsSection from '../components/home/CommentsSection';
-import AboutSection from '../components/home/AboutSection';
 import Footer from '../components/layout/Footer';
 import RecommendationRow from '../components/shop/RecommendationRow';
 import { useCart } from '../context/CartContext';
@@ -140,22 +137,13 @@ const Home = () => {
         )}
       </div>
 
-      {/* 5. Limited Time Offer / Flash Deal */}
-      <DealSection data={activeHomeConfig.bundle} />
-
-      {/* 6. Cultivating Goodness and Our Story */}
-      <AboutSection data={activeHomeConfig.story} />
-
-      {/* 7. Why Choose Us */}
-      <FeaturesSection />
-
-      {/* 8. Get Fresh Update */}
+      {/* 5. Get Fresh Update */}
       <NewsletterSection />
 
-      {/* 9. Community Discussion */}
+      {/* 6. Community Discussion */}
       <CommentsSection />
 
-      {/* 10. Footer */}
+      {/* 7. Footer */}
       <Footer />
     </div>
   );
