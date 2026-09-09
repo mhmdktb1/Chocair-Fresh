@@ -5,9 +5,18 @@
   width: 100%;
   z-index: 1000;
   padding: 1.25rem 0;
-  transition: all 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+  transition: 
+    transform 0.42s cubic-bezier(0.16, 1, 0.3, 1),
+    opacity 0.35s ease,
+    background 0.35s ease,
+    padding 0.35s cubic-bezier(0.16, 1, 0.3, 1),
+    box-shadow 0.35s ease,
+    border-color 0.35s ease;
   background: transparent;
   border-bottom: 1px solid transparent;
+  will-change: transform, opacity, padding;
+  transform: translateY(0) scale(1);
+  opacity: 1;
 }
 
 /* Default state before scroll (Floating on dark/emerald hero) */
@@ -42,12 +51,12 @@
 
 /* Scrolled state (Past the hero into white pages) */
 .navbar.scrolled {
-  padding: 0.85rem 0;
-  background: rgba(255, 255, 255, 0.94);
-  backdrop-filter: blur(14px);
-  -webkit-backdrop-filter: blur(14px);
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.06);
-  border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+  padding: 0.75rem 0;
+  background: rgba(255, 255, 255, 0.92);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.07);
+  border-bottom: 1px solid rgba(0, 0, 0, 0.06);
 }
 
 .navbar.scrolled .brand-chocair {
@@ -69,8 +78,11 @@
   border: 1px solid rgba(0, 0, 0, 0.05);
 }
 
+/* Fluid hide animation on scroll down */
 .navbar-hidden {
-  transform: translateY(-100%);
+  transform: translateY(-110%) scale(0.97);
+  opacity: 0;
+  pointer-events: none;
 }
 
 .navbar.curtain-active {

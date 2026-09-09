@@ -21,24 +21,43 @@ const Navbar = () => {
 
   useEffect(() => {
     let lastScrollY = window.scrollY;
+    let ticking = false;
 
     const handleScroll = () => {
-      const currentScrollY = window.scrollY;
-      setScrolled(currentScrollY > 50);
+      if (!ticking) {
+        window.requestAnimationFrame(() => {
+          const currentScrollY = window.scrollY;
+          const delta = currentScrollY - lastScrollY;
 
-      // Smart scroll logic: Hide top bar on scroll down, show on scroll up
-      if (currentScrollY > lastScrollY && currentScrollY > 200 && !curtainOpen && !searchOpen) {
-        setIsVisible(false);
-        document.body.classList.add('nav-hidden');
-      } else if (currentScrollY < lastScrollY) {
-        setIsVisible(true);
-        document.body.classList.remove('nav-hidden');
+          // Background blur and solid state threshold
+          setScrolled(currentScrollY > 40);
+
+          // Smart scroll logic with buffer threshold to avoid jitter
+          if (currentScrollY > 180 && !curtainOpen && !searchOpen) {
+            if (delta > 8) {
+              // Scrolling down with clear intent -> hide
+              setIsVisible(false);
+              document.body.classList.add('nav-hidden');
+            } else if (delta < -8) {
+              // Scrolling up with clear intent -> show smoothly
+              setIsVisible(true);
+              document.body.classList.remove('nav-hidden');
+            }
+          } else {
+            // Near the top -> always visible
+            setIsVisible(true);
+            document.body.classList.remove('nav-hidden');
+          }
+
+          lastScrollY = Math.max(0, currentScrollY);
+          ticking = false;
+        });
+
+        ticking = true;
       }
-
-      lastScrollY = currentScrollY;
     };
 
-    window.addEventListener('scroll', handleScroll);
+    window.addEventListener('scroll', handleScroll, { passive: true });
     return () => window.removeEventListener('scroll', handleScroll);
   }, [curtainOpen, searchOpen]);
 
