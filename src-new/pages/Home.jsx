@@ -111,13 +111,12 @@ const Home = () => {
         />
 
         {/* 2. Seasonal Fruits / Harvest Curated by Admin */}
-        {activeHomeConfig.seasonal?.products?.length > 0 && (
-          <RecommendationRow 
-            title={activeHomeConfig.seasonal.title || "Seasonal Harvest Picks"} 
-            type="manual" 
-            items={activeHomeConfig.seasonal.products} 
-          />
-        )}
+        <RecommendationRow 
+          title={activeHomeConfig.seasonal?.title || "Seasonal Harvest Picks"} 
+          type="manual" 
+          items={activeHomeConfig.seasonal?.products || []} 
+          limit={8}
+        />
 
         {/* 3. Complete Your Basket (When items in cart) */}
         {cartItems.length > 0 && (

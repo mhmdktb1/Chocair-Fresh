@@ -7,29 +7,42 @@ import './RecommendationRow.css';
 
 const RecommendationRow = ({ title, type, productId = null, limit = 8, cartItems = [], items = [] }) => {
   const navigate = useNavigate();
-  const [products, setProducts] = useState([]);
+  const [products, setProducts] = useState(items || []);
   const [loading, setLoading] = useState(true);
   const [scrollProgress, setScrollProgress] = useState(0);
   const scrollRef = useRef(null);
 
   useEffect(() => {
+    let isMounted = true;
+
     const fetchRecommendations = async () => {
       try {
         setLoading(true);
         
+        // 1. Manual curation (e.g. Admin Seasonal Picks)
         if (type === 'manual') {
-          setProducts(items);
-          setLoading(false);
+          if (items && items.length > 0) {
+            if (isMounted) {
+              setProducts(items.map(p => ({ ...p, _id: p._id || p.id })));
+              setLoading(false);
+            }
+            return;
+          }
+          // Fallback if manual list is not populated yet
+          const fallbackRes = await api.get(`/products?limit=${limit}`);
+          const fallbackData = Array.isArray(fallbackRes.data) ? fallbackRes.data : fallbackRes.data?.products || [];
+          if (isMounted) {
+            setProducts(fallbackData.map(p => ({ ...p, _id: p._id || p.id })).slice(0, limit));
+            setLoading(false);
+          }
           return;
         }
 
         let response;
-
-        // Add timestamp to prevent caching
         const t = Date.now();
 
         switch (type) {
-          case 'popular': // Best Sellers
+          case 'popular': // Best Sellers / Trending
             response = await api.get(`/recommend/trending?limit=${limit}&t=${t}`);
             break;
           case 'new': // Trending Now
@@ -57,23 +70,53 @@ const RecommendationRow = ({ title, type, productId = null, limit = 8, cartItems
             }
             break;
           default:
-            return;
+            break;
         }
 
-        if (response.data && response.data.success && response.data.data) {
-          // Extract product data from the wrapper object { product: {...}, score: ... }
-          const items = response.data.data.map(item => item.product);
-          setProducts(items);
+        let loadedItems = [];
+        if (response?.data?.success && Array.isArray(response.data.data) && response.data.data.length > 0) {
+          loadedItems = response.data.data
+            .map(item => (item.product ? { ...item.product, _id: item.product._id || item.product.id } : null))
+            .filter(Boolean);
+        } else if (Array.isArray(response?.data)) {
+          loadedItems = response.data.map(p => ({ ...p, _id: p._id || p.id }));
+        }
+
+        // Fallback: If ML recommendations return 0 items (cold start), fetch general catalog products
+        if (loadedItems.length === 0 && (type === 'popular' || type === 'new' || type === 'personalized')) {
+          const fallbackRes = await api.get(`/products?limit=${limit}`);
+          const fallbackData = Array.isArray(fallbackRes.data) ? fallbackRes.data : fallbackRes.data?.products || [];
+          loadedItems = fallbackData.map(p => ({ ...p, _id: p._id || p.id })).slice(0, limit);
+        }
+
+        if (isMounted) {
+          setProducts(loadedItems);
         }
       } catch (error) {
         console.error(`Error fetching ${type} recommendations:`, error);
+        // On error, fallback to general products to ensure content always renders
+        try {
+          const fallbackRes = await api.get(`/products?limit=${limit}`);
+          const fallbackData = Array.isArray(fallbackRes.data) ? fallbackRes.data : fallbackRes.data?.products || [];
+          if (isMounted) {
+            setProducts(fallbackData.map(p => ({ ...p, _id: p._id || p.id })).slice(0, limit));
+          }
+        } catch (e) {
+          console.error('Fallback failed', e);
+        }
       } finally {
-        setLoading(false);
+        if (isMounted) {
+          setLoading(false);
+        }
       }
     };
 
     fetchRecommendations();
-  }, [type, productId, limit]);
+
+    return () => {
+      isMounted = false;
+    };
+  }, [type, productId, limit, JSON.stringify(items)]);
 
   const handleScroll = () => {
     if (scrollRef.current) {
