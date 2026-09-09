@@ -101,37 +101,30 @@ const Home = () => {
       {/* 3. Promo Micro Banners (Seasonal Box & 1-Tap Coupon) */}
       <PromoBanners />
 
-      {/* 4. Recommendation: Top Seller and Trending */}
+      {/* 4. Recommendation Rows: Trending by ML Engine & Seasonal by Admin */}
       <div className="container home-recommendations-container">
-        {/* For You Section - Personalized for User, Trending for Guest */}
+        {/* 1. Trending by Backend Engine */}
         <RecommendationRow 
-          title={user && user.name ? `Recommended for You, ${user.name.split(' ')[0]}` : "Recommended for You"} 
-          type={user ? "personalized" : "new"} 
+          title="Trending Right Now" 
+          type="popular" 
+          limit={8}
         />
 
-        {cartItems.length > 0 && (
-          <RecommendationRow 
-            title="Frequently Bought Together" 
-            type="cart" 
-            cartItems={cartItems}
-          />
-        )}
-
-        {lastViewed && (
-          <RecommendationRow 
-            title={`Similar to ${lastViewed.name}`} 
-            type="related" 
-            productId={lastViewed._id}
-          />
-        )}
-
-        <RecommendationRow title="Featured Products" type="popular" />
-        
+        {/* 2. Seasonal Fruits / Harvest Curated by Admin */}
         {activeHomeConfig.seasonal?.products?.length > 0 && (
           <RecommendationRow 
-            title={activeHomeConfig.seasonal.title || "Seasonal Favorites"} 
+            title={activeHomeConfig.seasonal.title || "Seasonal Harvest Picks"} 
             type="manual" 
             items={activeHomeConfig.seasonal.products} 
+          />
+        )}
+
+        {/* 3. Complete Your Basket (When items in cart) */}
+        {cartItems.length > 0 && (
+          <RecommendationRow 
+            title="Complete Your Fresh Basket" 
+            type="cart" 
+            cartItems={cartItems}
           />
         )}
       </div>
