@@ -4,7 +4,6 @@ import Navbar from '../components/layout/Navbar';
 import Hero from '../components/home/Hero';
 import CategoryMarquee from '../components/home/CategoryMarquee';
 import PromoBanners from '../components/home/PromoBanners';
-import NewsletterSection from '../components/home/NewsletterSection';
 import CommentsSection from '../components/home/CommentsSection';
 import Footer from '../components/layout/Footer';
 import RecommendationRow from '../components/shop/RecommendationRow';
@@ -137,13 +136,10 @@ const Home = () => {
         )}
       </div>
 
-      {/* 5. Get Fresh Update */}
-      <NewsletterSection />
-
-      {/* 6. Community Discussion */}
+      {/* 5. Community Discussion */}
       <CommentsSection />
 
-      {/* 7. Footer */}
+      {/* 6. Modern Footer */}
       <Footer />
     </div>
   );
