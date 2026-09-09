@@ -1,177 +1,377 @@
-﻿import React, { useState, useMemo, useEffect } from 'react';
-import { useSearchParams } from 'react-router-dom';
+﻿import React, { useState, useMemo, useEffect, useRef } from 'react';
+import { useSearchParams, useNavigate } from 'react-router-dom';
+import { 
+  Search, 
+  X, 
+  SlidersHorizontal, 
+  ShoppingBag, 
+  Sparkles, 
+  TrendingUp, 
+  ArrowRight,
+  RotateCcw,
+  Tag,
+  Check
+} from 'lucide-react';
 import Navbar from '../components/layout/Navbar';
-import ShopHero from '../components/shop/ShopHero';
 import ProductCard from '../components/shop/ProductCard';
 import Loading from '../components/common/Loading';
 import { useAdmin } from '../context/AdminContext';
+import { useCart } from '../context/CartContext';
+import { formatCurrency } from '../utils/formatters';
 import './Shop.css';
 
 const Shop = () => {
   const { products, categories: adminCategories, loading, error } = useAdmin();
-  const [searchParams] = useSearchParams();
+  const { cartItems, cartCount, cartTotal } = useCart();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const navigate = useNavigate();
+
   const searchQuery = searchParams.get('search') || '';
-  const [selectedCategoryId, setSelectedCategoryId] = useState('all');
-  const [sortOption, setSortOption] = useState('default');
-  const [isStuck, setIsStuck] = useState(false);
-  const sentinelRef = React.useRef(null);
+  const initialCategory = searchParams.get('category') || 'all';
+  const shouldFocusSearch = searchParams.get('focus') === 'search';
 
+  const [selectedCategory, setSelectedCategory] = useState(initialCategory);
+  const [sortOption, setSortOption] = useState('featured');
+  const [onlyInStock, setOnlyInStock] = useState(false);
+  const [onlyDiscounted, setOnlyDiscounted] = useState(false);
+  const [showFilterDrawer, setShowFilterDrawer] = useState(false);
+  const searchInputRef = useRef(null);
+
+  // Sync category with URL search param
   useEffect(() => {
-    const observer = new IntersectionObserver(
-      ([entry]) => {
-        setIsStuck(!entry.isIntersecting && entry.boundingClientRect.top < 100);
-      },
-      { rootMargin: '-81px 0px 0px 0px', threshold: 1.0 }
-    );
-
-    if (sentinelRef.current) {
-      observer.observe(sentinelRef.current);
+    const cat = searchParams.get('category');
+    if (cat) {
+      setSelectedCategory(cat);
     }
+  }, [searchParams]);
 
-    return () => {
-      if (sentinelRef.current) {
-        observer.unobserve(sentinelRef.current);
-      }
-    };
-  }, []);
+  // Handle focus request from bottom nav
+  useEffect(() => {
+    if (shouldFocusSearch && searchInputRef.current) {
+      searchInputRef.current.focus();
+      searchInputRef.current.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+  }, [shouldFocusSearch]);
 
-  // Prepare Categories for the Rail
-  const categories = useMemo(() => {
-    const allCategory = { 
-      id: 'all', 
-      name: 'All', 
-      image: 'https://images.unsplash.com/photo-1542838132-92c53300491e?auto=format&fit=crop&q=80&w=200' 
-    };
-    
-    const mappedCategories = adminCategories
+  // Categories list with count
+  const categoriesList = useMemo(() => {
+    const allCount = products.length;
+    const allCat = { id: 'all', name: 'All Products', count: allCount };
+
+    const mapped = adminCategories
       .filter(c => c.isVisible !== false)
-      .map(c => ({
-        id: c._id || c.name,
-        name: c.name,
-        image: c.image || 'https://images.unsplash.com/photo-1619566636858-adf3ef46400b?auto=format&fit=crop&q=80&w=200' // Fallback image
-      }));
+      .map(c => {
+        const catName = c.name;
+        const count = products.filter(p => 
+          String(p.category || '').toLowerCase() === String(catName).toLowerCase()
+        ).length;
+        return {
+          id: c._id || catName,
+          name: catName,
+          image: c.image,
+          count
+        };
+      });
 
-    return [allCategory, ...mappedCategories];
-  }, [adminCategories]);
-
-  // Get selected category name for display
-  const selectedCategoryName = useMemo(() => {
-    const cat = categories.find(c => c.id === selectedCategoryId);
-    return cat ? cat.name : 'Fresh Market';
-  }, [categories, selectedCategoryId]);
+    return [allCat, ...mapped];
+  }, [adminCategories, products]);
 
   // Filter & Sort Logic
   const processedProducts = useMemo(() => {
     let result = products;
 
-    // Apply search filter if query exists
+    // 1. Search Query
     if (searchQuery.trim()) {
+      const q = searchQuery.toLowerCase().trim();
       result = result.filter(p => 
-        p.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        p.description?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        (p.category && p.category.toLowerCase().includes(searchQuery.toLowerCase()))
+        (p.name && p.name.toLowerCase().includes(q)) ||
+        (p.description && p.description.toLowerCase().includes(q)) ||
+        (p.category && p.category.toLowerCase().includes(q))
       );
     }
 
-    // Apply category filter
-    result = result.filter(p => {
-      if (selectedCategoryId === 'all') return true;
-      if (!p.category) return false;
-      
-      // Compare IDs
-      return String(p.category) === String(selectedCategoryId);
+    // 2. Category Filter
+    if (selectedCategory !== 'all') {
+      const targetCategory = categoriesList.find(c => c.id === selectedCategory || c.name === selectedCategory)?.name || selectedCategory;
+      result = result.filter(p => 
+        String(p.category || '').toLowerCase() === String(targetCategory).toLowerCase()
+      );
+    }
+
+    // 3. In Stock filter
+    if (onlyInStock) {
+      result = result.filter(p => p.stock === undefined || p.stock > 0);
+    }
+
+    // 4. On Sale filter
+    if (onlyDiscounted) {
+      result = result.filter(p => p.discount > 0);
+    }
+
+    // 5. Sorting
+    const sorted = [...result];
+    if (sortOption === 'price-asc') sorted.sort((a, b) => a.price - b.price);
+    else if (sortOption === 'price-desc') sorted.sort((a, b) => b.price - a.price);
+    else if (sortOption === 'name-asc') sorted.sort((a, b) => a.name.localeCompare(b.name));
+    else if (sortOption === 'discount') sorted.sort((a, b) => (b.discount || 0) - (a.discount || 0));
+
+    return sorted;
+  }, [products, selectedCategory, categoriesList, searchQuery, onlyInStock, onlyDiscounted, sortOption]);
+
+  const handleSearchChange = (e) => {
+    const val = e.target.value;
+    setSearchParams(prev => {
+      const next = new URLSearchParams(prev);
+      if (val.trim()) {
+        next.set('search', val);
+      } else {
+        next.delete('search');
+      }
+      next.delete('focus');
+      return next;
     });
-    
-    // Apply sorting
-    if (sortOption === 'price-asc') result.sort((a, b) => a.price - b.price);
-    if (sortOption === 'price-desc') result.sort((a, b) => b.price - a.price);
-    
-    return result;
-  }, [products, selectedCategoryId, sortOption, searchQuery]);
+  };
+
+  const clearSearch = () => {
+    setSearchParams(prev => {
+      const next = new URLSearchParams(prev);
+      next.delete('search');
+      next.delete('focus');
+      return next;
+    });
+    if (searchInputRef.current) {
+      searchInputRef.current.focus();
+    }
+  };
+
+  const handleCategorySelect = (catId) => {
+    setSelectedCategory(catId);
+    setSearchParams(prev => {
+      const next = new URLSearchParams(prev);
+      if (catId === 'all') {
+        next.delete('category');
+      } else {
+        const catObj = categoriesList.find(c => c.id === catId);
+        next.set('category', catObj ? catObj.name : catId);
+      }
+      return next;
+    });
+  };
+
+  const activeFiltersCount = (onlyInStock ? 1 : 0) + (onlyDiscounted ? 1 : 0) + (selectedCategory !== 'all' ? 1 : 0) + (searchQuery ? 1 : 0);
+
+  const resetAllFilters = () => {
+    setSelectedCategory('all');
+    setOnlyInStock(false);
+    setOnlyDiscounted(false);
+    setSortOption('featured');
+    setSearchParams({});
+  };
+
+  const selectedCategoryObj = categoriesList.find(c => c.id === selectedCategory || c.name === selectedCategory);
+  const currentTitle = searchQuery 
+    ? `Results for "${searchQuery}"` 
+    : selectedCategoryObj?.name === 'All Products' 
+      ? 'All Fresh Produce' 
+      : `${selectedCategoryObj?.name || 'Fresh Market'} Collection`;
 
   return (
-    <div className="shop-page-wrapper">
+    <div className="modern-shop-page">
       <Navbar />
-      
-      <ShopHero 
-        title={selectedCategoryId === 'all' ? 'Fresh Market' : selectedCategoryName}
-        subtitle="Hand-picked quality for your healthy lifestyle"
-      />
 
-      {/* Sentinel to detect sticking */}
-      <div ref={sentinelRef} style={{ height: '1px', width: '100%', visibility: 'hidden', marginTop: '-1px' }} />
-
-      {/* Visual Category Rail - Sticky */}
-      <section className={`category-rail-section sticky-rail ${isStuck ? 'is-stuck' : ''}`}>
-        <div className="category-rail">
-          {categories.map(cat => (
-            <div 
-              key={cat.id} 
-              className={`category-item ${selectedCategoryId === cat.id ? 'active' : ''}`}
-              onClick={() => setSelectedCategoryId(cat.id)}
-            >
-              <div className="cat-image-ring">
-                <img src={cat.image} alt={cat.name} />
+      {/* Modern Shop App Header */}
+      <header className="shop-app-header">
+        <div className="container shop-header-inner">
+          <div className="shop-title-row">
+            <div>
+              <div className="shop-header-badge">
+                <Sparkles size={13} />
+                <span>100% Organic & Farm Harvest</span>
               </div>
-              <span className="cat-name">{cat.name}</span>
+              <h1 className="shop-title">{currentTitle}</h1>
             </div>
-          ))}
-        </div>
-      </section>
+            <span className="shop-count-pill">{processedProducts.length} Items</span>
+          </div>
 
-      <div className="shop-wrapper">
-
-        <div className="shop-content-layout">
-          {/* Main Grid */}
-          <main className="shop-main">
-            <header className="shop-toolbar">
-              <h2 className="section-heading">
-                {searchQuery ? `Search: "${searchQuery}"` : selectedCategoryId === 'all' ? 'Fresh Market' : selectedCategoryName + ' Collection'}
-              </h2>
-              
-              <div className="toolbar-filters">
-                 <label className="filter-pill"><input type="checkbox" /> In Stock</label>
-                 <label className="filter-pill"><input type="checkbox" /> On Sale</label>
-              </div>
-
-              <div className="toolbar-actions">
-                <span className="result-count">{processedProducts.length} Products</span>
-                <div className="sort-wrapper">
-                  <select onChange={(e) => setSortOption(e.target.value)} value={sortOption}>
-                    <option value="default">Sort by: Featured</option>
-                    <option value="price-asc">Price: Low to High</option>
-                    <option value="price-desc">Price: High to Low</option>
-                  </select>
-                </div>
-              </div>
-            </header>
-
-            {loading ? (
-              <Loading fullScreen={false} text="Loading products..." />
-            ) : error ? (
-              <div className="empty-state">Error loading products.</div>
-            ) : processedProducts.length === 0 ? (
-              <div className="empty-state">No products found in this category.</div>
-            ) : (
-              <div className="premium-grid">
-                {processedProducts.map(product => (
-                  <ProductCard 
-                    key={product.id} 
-                    product={{
-                      ...product,
-                      _id: product.id, // Ensure _id is present for ProductCard
-                      rating: product.rating || 5,
-                      reviews: product.reviews || 0,
-                      isNew: product.isNew || false,
-                      discount: product.discount || 0
-                    }} 
-                  />
-                ))}
-              </div>
+          {/* Live Search Bar */}
+          <div className="shop-search-wrapper">
+            <Search className="shop-search-icon" size={20} />
+            <input
+              ref={searchInputRef}
+              type="text"
+              placeholder="Search fruits, vegetables, greens..."
+              value={searchQuery}
+              onChange={handleSearchChange}
+              className="shop-search-input"
+            />
+            {searchQuery && (
+              <button 
+                type="button" 
+                onClick={clearSearch} 
+                className="shop-search-clear"
+                aria-label="Clear search"
+              >
+                <X size={16} />
+              </button>
             )}
-          </main>
+          </div>
         </div>
-      </div>
+      </header>
+
+      {/* Sticky Horizontal Category Rail Chips */}
+      <nav className="shop-categories-dock" aria-label="Product Categories">
+        <div className="container">
+          <div className="categories-scroll-track">
+            {categoriesList.map((cat) => {
+              const isActive = selectedCategory === cat.id || selectedCategory === cat.name;
+              return (
+                <button
+                  key={cat.id}
+                  type="button"
+                  onClick={() => handleCategorySelect(cat.id)}
+                  className={`category-chip ${isActive ? 'active' : ''}`}
+                >
+                  <span className="chip-name">{cat.name}</span>
+                  {cat.count > 0 && <span className="chip-badge">{cat.count}</span>}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      </nav>
+
+      {/* Main Content Area */}
+      <main className="container shop-body-container">
+        {/* Quick Filter & Sort Pill Bar */}
+        <div className="shop-control-bar">
+          <div className="quick-filter-pills">
+            <button
+              type="button"
+              onClick={() => setOnlyDiscounted(!onlyDiscounted)}
+              className={`filter-tag-pill ${onlyDiscounted ? 'active' : ''}`}
+            >
+              <Tag size={14} />
+              <span>On Sale</span>
+              {onlyDiscounted && <Check size={12} />}
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setOnlyInStock(!onlyInStock)}
+              className={`filter-tag-pill ${onlyInStock ? 'active' : ''}`}
+            >
+              <Sparkles size={14} />
+              <span>In Stock</span>
+              {onlyInStock && <Check size={12} />}
+            </button>
+
+            {activeFiltersCount > 0 && (
+              <button
+                type="button"
+                onClick={resetAllFilters}
+                className="filter-reset-pill"
+                title="Reset all filters"
+              >
+                <RotateCcw size={13} />
+                <span>Reset</span>
+              </button>
+            )}
+          </div>
+
+          <div className="sort-control-group">
+            <span className="sort-label">Sort:</span>
+            <select
+              value={sortOption}
+              onChange={(e) => setSortOption(e.target.value)}
+              className="shop-sort-select"
+              aria-label="Sort products"
+            >
+              <option value="featured">Featured</option>
+              <option value="price-asc">Price: Low to High</option>
+              <option value="price-desc">Price: High to Low</option>
+              <option value="discount">Top Discounts</option>
+              <option value="name-asc">Name: A to Z</option>
+            </select>
+          </div>
+        </div>
+
+        {/* Product Grid */}
+        {loading ? (
+          <div className="shop-grid">
+            {[1, 2, 3, 4, 5, 6, 7, 8].map((n) => (
+              <div key={n} className="shop-skeleton-card">
+                <div className="skeleton-img-box" />
+                <div className="skeleton-text-line short" />
+                <div className="skeleton-text-line" />
+              </div>
+            ))}
+          </div>
+        ) : error ? (
+          <div className="shop-empty-state">
+            <div className="empty-state-icon">⚠️</div>
+            <h3>Unable to load fresh inventory</h3>
+            <p>Please check your connection or refresh the page.</p>
+            <button 
+              type="button" 
+              onClick={() => window.location.reload()} 
+              className="empty-state-btn"
+            >
+              Retry
+            </button>
+          </div>
+        ) : processedProducts.length === 0 ? (
+          <div className="shop-empty-state">
+            <div className="empty-state-icon">🧺</div>
+            <h3>No matching harvest found</h3>
+            <p>Try searching for a different item or resetting active filters.</p>
+            <button 
+              type="button" 
+              onClick={resetAllFilters} 
+              className="empty-state-btn"
+            >
+              Show All Products
+            </button>
+          </div>
+        ) : (
+          <div className="shop-grid">
+            {processedProducts.map((product) => (
+              <ProductCard
+                key={product.id || product._id}
+                product={{
+                  ...product,
+                  _id: product.id || product._id,
+                  rating: product.rating || 4.9,
+                  reviews: product.reviews || 16,
+                  isNew: product.isNew || false,
+                  discount: product.discount || 0
+                }}
+              />
+            ))}
+          </div>
+        )}
+      </main>
+
+      {/* Floating Quick Cart Bar on Mobile */}
+      {cartCount > 0 && (
+        <aside className="mobile-floating-cart-bar" aria-label="Cart Overview">
+          <div className="floating-cart-content" onClick={() => navigate('/cart')}>
+            <div className="cart-summary-left">
+              <div className="floating-cart-badge">
+                <ShoppingBag size={18} />
+                <span>{cartCount}</span>
+              </div>
+              <div className="cart-summary-text">
+                <span className="cart-item-count">{cartCount} {cartCount === 1 ? 'item' : 'items'} in basket</span>
+                <strong className="cart-total-amount">{formatCurrency(cartTotal)}</strong>
+              </div>
+            </div>
+            <div className="cart-checkout-action">
+              <span>View Cart</span>
+              <ArrowRight size={16} />
+            </div>
+          </div>
+        </aside>
+      )}
     </div>
   );
 };
