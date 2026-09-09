@@ -1,200 +1,234 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowRight, Sparkles, Truck, Star, ShieldCheck, Leaf } from 'lucide-react';
-import Button from '../common/Button';
-import { parseHighlightedText } from '../../utils/textUtils';
+import { ArrowRight, Sparkles, ChevronLeft, ChevronRight, ShieldCheck, Truck, Star, Zap } from 'lucide-react';
 import './Hero.css';
+
+const defaultSlides = [
+  {
+    id: 'slide-1',
+    badge: '100% Organic & Farm Fresh',
+    badgeIcon: 'sparkle',
+    title: 'Handpicked Nature, Straight to Your Door',
+    subtitle: 'Crisp organic vegetables, luscious seasonal fruits, and aromatic herbs harvested at peak vitality.',
+    ctaText: 'Shop Daily Harvest',
+    ctaLink: '/shop',
+    secondaryText: 'Explore Categories',
+    secondaryLink: '/shop',
+    image: 'https://images.unsplash.com/photo-1610832958506-aa56368176cf?auto=format&fit=crop&w=1200&q=80',
+    accentTag: '⚡ Delivered in 25–35 mins',
+    ratingText: '4.9 ★ (2.5k+ Reviews)',
+    theme: 'emerald'
+  },
+  {
+    id: 'slide-2',
+    badge: 'Direct Farm Harvest',
+    badgeIcon: 'zap',
+    title: 'Pure Goodness with Zero Compromise',
+    subtitle: 'Naturally grown with love, zero artificial chemicals, supporting local sustainable family growers.',
+    ctaText: 'Discover Organic',
+    ctaLink: '/shop',
+    secondaryText: 'Our Story',
+    secondaryLink: '/#about',
+    image: 'https://images.unsplash.com/photo-1542838132-92c53300491e?auto=format&fit=crop&w=1200&q=80',
+    accentTag: '🌱 Chemical Free',
+    ratingText: '100% Certified Organic',
+    theme: 'forest'
+  },
+  {
+    id: 'slide-3',
+    badge: 'Seasonal Box Specials',
+    badgeIcon: 'truck',
+    title: 'Curated Farm Boxes for Healthy Living',
+    subtitle: 'Get seasonal fruit & veggie combinations packed with natural vitamins at special everyday value.',
+    ctaText: 'View Fresh Deals',
+    ctaLink: '/shop',
+    secondaryText: 'Quick Search',
+    secondaryLink: '/shop?focus=search',
+    image: 'https://images.unsplash.com/photo-1619566636858-adf3ef46400b?auto=format&fit=crop&w=1200&q=80',
+    accentTag: '🎁 Best Family Value',
+    ratingText: 'Same-Day Fast Delivery',
+    theme: 'amber'
+  }
+];
 
 const Hero = ({ data }) => {
   const navigate = useNavigate();
-  const heroRef = useRef(null);
-  const [offset, setOffset] = useState({ x: 0, y: 0 });
-  const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
+  const [currentSlide, setCurrentSlide] = useState(0);
+  const [isPaused, setIsPaused] = useState(false);
+  const touchStartX = useRef(0);
+  const touchEndX = useRef(0);
 
-  // Default values if data is missing (e.g. during loading or error)
-  const { 
-    title = "Nature's Best Delivered to You", 
-    subtitle = "Experience the freshest fruits, vegetables, and herbs sourced directly from local farmers.", 
-    backgroundImage = "https://images.unsplash.com/photo-1610832958506-aa56368176cf?ixlib=rb-4.0.3&auto=format&fit=crop&w=1000&q=80",
-    stats = [
-      { label: "Happy Customers", value: "20k+" },
-      { label: "Fresh Products", value: "500+" },
-      { label: "Fast Delivery", value: "24h" }
-    ]
-  } = data || {};
-
-  useEffect(() => {
-    // Detect mobile on resize
-    const handleResize = () => {
-      setIsMobile(window.innerWidth < 768);
+  // If dynamic title / image exists from props, merge it into slide 1
+  const slides = React.useMemo(() => {
+    if (!data) return defaultSlides;
+    const customFirst = {
+      ...defaultSlides[0],
+      title: data.title || defaultSlides[0].title,
+      subtitle: data.subtitle || defaultSlides[0].subtitle,
+      image: data.backgroundImage || defaultSlides[0].image
     };
-    window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
-  }, []);
+    return [customFirst, defaultSlides[1], defaultSlides[2]];
+  }, [data]);
 
+  // Auto-slide every 6 seconds unless user is hovering/interacting
   useEffect(() => {
-    // Only enable parallax on desktop
-    if (isMobile) return;
+    if (isPaused) return;
 
-    const handleMouseMove = (e) => {
-      if (!heroRef.current) return;
-      const { clientX, clientY } = e;
-      const { innerWidth, innerHeight } = window;
-      
-      // Calculate mouse position relative to center (range -1 to 1)
-      const x = (clientX / innerWidth) * 2 - 1;
-      const y = (clientY / innerHeight) * 2 - 1;
-      
-      setOffset({ x, y });
-    };
+    const timer = setInterval(() => {
+      setCurrentSlide((prev) => (prev + 1) % slides.length);
+    }, 6000);
 
-    window.addEventListener('mousemove', handleMouseMove);
-    return () => window.removeEventListener('mousemove', handleMouseMove);
-  }, [isMobile]);
+    return () => clearInterval(timer);
+  }, [isPaused, slides.length]);
+
+  const handleNext = () => {
+    setCurrentSlide((prev) => (prev + 1) % slides.length);
+  };
+
+  const handlePrev = () => {
+    setCurrentSlide((prev) => (prev - 1 + slides.length) % slides.length);
+  };
+
+  const handleTouchStart = (e) => {
+    touchStartX.current = e.touches[0].clientX;
+  };
+
+  const handleTouchMove = (e) => {
+    touchEndX.current = e.touches[0].clientX;
+  };
+
+  const handleTouchEnd = () => {
+    if (!touchStartX.current || !touchEndX.current) return;
+    const diff = touchStartX.current - touchEndX.current;
+    // Swipe left -> next
+    if (diff > 45) {
+      handleNext();
+    }
+    // Swipe right -> prev
+    else if (diff < -45) {
+      handlePrev();
+    }
+    touchStartX.current = 0;
+    touchEndX.current = 0;
+  };
+
+  const activeSlide = slides[currentSlide];
 
   return (
-    <section className="hero" ref={heroRef} role="region" aria-label="Hero banner">
-      <div className="hero-bg-gradient"></div>
-      
-      {/* Parallax Floating Elements - Hidden on Mobile */}
-      {!isMobile && (
-        <div className="floating-elements">
-          <div 
-            className="float-item leaf-1"
-            style={{ transform: `translate(${offset.x * -20}px, ${offset.y * -20}px) rotate(${offset.x * 10}deg)` }}
-            aria-hidden="true"
-          >🍃</div>
-          <div 
-            className="float-item leaf-2"
-            style={{ transform: `translate(${offset.x * 30}px, ${offset.y * 30}px) rotate(${offset.y * -10}deg)` }}
-            aria-hidden="true"
-          >🌿</div>
-          <div 
-            className="float-item leaf-3"
-            style={{ transform: `translate(${offset.x * 25}px, ${offset.y * -25}px) rotate(${offset.x * -15}deg)` }}
-            aria-hidden="true"
-          >🍃</div>
-          <div 
-            className="float-item berry-1"
-            style={{ transform: `translate(${offset.x * -40}px, ${offset.y * 20}px)` }}
-            aria-hidden="true"
-          >🍓</div>
-          <div 
-            className="float-item berry-2"
-            style={{ transform: `translate(${offset.x * -35}px, ${offset.y * 35}px)` }}
-            aria-hidden="true"
-          >🍇</div>
-          <div 
-            className="float-item berry-3"
-            style={{ transform: `translate(${offset.x * 45}px, ${offset.y * -10}px)` }}
-            aria-hidden="true"
-          >🍊</div>
-        </div>
-      )}
-
-      <div className="container hero-container">
-        <div className="hero-content" style={!isMobile ? { transform: `translate(${offset.x * -10}px, ${offset.y * -10}px)` } : {}}>
-          <div className="hero-badge-wrapper">
-            <span className="hero-badge" aria-label="100% Organic and Fresh">
-              <span className="pulse-dot" aria-hidden="true"></span>
-              <Sparkles size={14} className="badge-sparkle-icon" />
-              100% Organic & Farm Fresh
-            </span>
-          </div>
-          
-          <h1 className="hero-title">
-            {parseHighlightedText(title, 'text-gradient')}
-          </h1>
-          
-          <p className="hero-subtitle">
-            {subtitle}
-          </p>
-          
-          <div className="hero-buttons">
-            <Button variant="primary" size="large" onClick={() => navigate('/shop')} className="btn-glow hero-cta-btn">
-              <span>Shop Fresh Now</span>
-              <ArrowRight size={18} className="cta-arrow" />
-            </Button>
-            <Button variant="outline" size="large" onClick={() => navigate('/shop?discount=true')} className="btn-glass hero-sec-btn">
-              Explore Deals
-            </Button>
-          </div>
-          
-          {/* Trust Metric Strip */}
-          <div className="hero-stats" role="list">
-            {stats.map((stat, index) => (
-              <React.Fragment key={index}>
-                <div className="stat-item" role="listitem">
-                  <span className="stat-number">{stat.value}</span>
-                  <span className="stat-label">{stat.label}</span>
-                </div>
-                {index < stats.length - 1 && <div className="stat-divider" aria-hidden="true"></div>}
-              </React.Fragment>
-            ))}
-          </div>
-        </div>
+    <section 
+      className="modern-hero-section"
+      onMouseEnter={() => setIsPaused(true)}
+      onMouseLeave={() => setIsPaused(false)}
+      onTouchStart={handleTouchStart}
+      onTouchMove={handleTouchMove}
+      onTouchEnd={handleTouchEnd}
+      aria-label="Featured showcase"
+    >
+      <div className="modern-hero-container">
         
-        {/* Showcase Image Container */}
-        <div className="hero-image-wrapper">
-          <div className="hero-circle-bg" aria-hidden="true"></div>
-          
-          <img 
-            src={backgroundImage} 
-            alt="Fresh organic produce - Chocair Fresh" 
-            className="hero-img main-img"
-            loading="lazy"
-            style={!isMobile ? { transform: `translate(${offset.x * 15}px, ${offset.y * 15}px) scale(1.05)` } : {}}
-          />
+        {/* Story Progress Indicators */}
+        <div className="story-progress-bar-group" aria-label="Story Progress">
+          {slides.map((_, index) => (
+            <div 
+              key={index} 
+              className={`story-bar-wrapper ${index === currentSlide ? 'active' : index < currentSlide ? 'completed' : ''}`}
+              onClick={() => setCurrentSlide(index)}
+            >
+              <div 
+                className="story-bar-fill" 
+                style={{ animationDuration: isPaused ? '0s' : '6s' }}
+              />
+            </div>
+          ))}
+        </div>
 
-          {/* Mobile Overlay Micro-Badges */}
-          <div className="mobile-hero-pill pill-top">
-            <Star size={13} className="pill-star" />
-            <span>4.9 / 5.0 (2.4k+ Happy Foodies)</span>
+        {/* Main Interactive Hero Card */}
+        <div className={`hero-showcase-card theme-${activeSlide.theme}`}>
+          
+          {/* Background Ambient Layers */}
+          <div className="card-bg-gradient" />
+          <div className="card-bg-mesh" />
+
+          {/* Left / Top Content Side */}
+          <div className="hero-text-block">
+            <div className="hero-micro-pill">
+              {activeSlide.badgeIcon === 'sparkle' && <Sparkles size={14} className="pill-icon" />}
+              {activeSlide.badgeIcon === 'zap' && <Zap size={14} className="pill-icon" />}
+              {activeSlide.badgeIcon === 'truck' && <Truck size={14} className="pill-icon" />}
+              <span>{activeSlide.badge}</span>
+            </div>
+
+            <h1 className="hero-main-title">
+              {activeSlide.title}
+            </h1>
+
+            <p className="hero-main-desc">
+              {activeSlide.subtitle}
+            </p>
+
+            <div className="hero-action-group">
+              <button 
+                className="hero-btn-primary" 
+                onClick={() => navigate(activeSlide.ctaLink)}
+                type="button"
+              >
+                <span>{activeSlide.ctaText}</span>
+                <ArrowRight size={18} className="btn-arrow" />
+              </button>
+
+              <button 
+                className="hero-btn-ghost" 
+                onClick={() => navigate(activeSlide.secondaryLink)}
+                type="button"
+              >
+                <span>{activeSlide.secondaryText}</span>
+              </button>
+            </div>
+
+            {/* Micro Trust Pills */}
+            <div className="hero-bottom-trust-strip">
+              <span className="trust-pill"><Star size={13} className="trust-star" /> {activeSlide.ratingText}</span>
+              <span className="trust-pill"><ShieldCheck size={13} className="trust-check" /> Guaranteed Freshness</span>
+            </div>
           </div>
 
-          <div className="mobile-hero-pill pill-bottom">
-            <Truck size={13} className="pill-truck" />
-            <span>⚡ Same-Day Free Delivery</span>
-          </div>
-          
-          {/* Desktop Floating Cards */}
-          {!isMobile && (
-            <>
-              <div 
-                className="hero-card card-fresh"
-                style={{ transform: `translate(${offset.x * 25}px, ${offset.y * -15}px)` }}
-              >
-                <div className="card-icon-box" aria-hidden="true">🍓</div>
-                <div className="card-text">
-                  <span className="card-title">Fresh Picked</span>
-                  <span className="card-sub">Just Arrived</span>
-                </div>
-              </div>
+          {/* Right / Visual Image Side */}
+          <div className="hero-visual-block">
+            <div className="image-frame-ring">
+              <img 
+                src={activeSlide.image} 
+                alt={activeSlide.title} 
+                className="hero-feature-image" 
+                loading="eager"
+              />
+            </div>
 
-              <div 
-                className="hero-card card-delivery"
-                style={{ transform: `translate(${offset.x * -20}px, ${offset.y * 25}px)` }}
-              >
-                <div className="card-icon-box" aria-hidden="true">🚚</div>
-                <div className="card-text">
-                  <span className="card-title">Free Shipping</span>
-                  <span className="card-sub">On orders $50+</span>
-                </div>
-              </div>
-            </>
-          )}
+            {/* Floating Glass Pill on the Image */}
+            <div className="floating-accent-tag">
+              <span>{activeSlide.accentTag}</span>
+            </div>
+          </div>
+
+          {/* Desktop Arrow Navigation */}
+          <button 
+            className="hero-arrow-btn arrow-prev" 
+            onClick={handlePrev} 
+            aria-label="Previous Slide"
+            type="button"
+          >
+            <ChevronLeft size={22} />
+          </button>
+          
+          <button 
+            className="hero-arrow-btn arrow-next" 
+            onClick={handleNext} 
+            aria-label="Next Slide"
+            type="button"
+          >
+            <ChevronRight size={22} />
+          </button>
         </div>
-      </div>
-      
-      <div className="scroll-indicator" aria-hidden="true">
-        <div className="mouse">
-          <div className="wheel"></div>
-        </div>
-        <div className="arrow-scroll">
-          <span></span>
-          <span></span>
-          <span></span>
-        </div>
+
       </div>
     </section>
   );
