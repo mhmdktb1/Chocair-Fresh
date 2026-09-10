@@ -1,0 +1,444 @@
+/* Visual Harvest Basket Styles */
+.visual-harvest-basket-container {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  margin: 0.5rem auto 2rem;
+  padding: 1.5rem 1rem 1rem;
+  max-width: 580px;
+  width: 100%;
+  background: linear-gradient(180deg, rgba(240, 253, 244, 0.6) 0%, rgba(255, 255, 255, 0.95) 100%);
+  border-radius: 24px;
+  border: 1px solid rgba(46, 125, 50, 0.12);
+  box-shadow: 0 10px 30px -10px rgba(46, 125, 50, 0.08);
+  overflow: visible;
+  user-select: none;
+}
+
+/* Ambient glow */
+.basket-ambient-glow {
+  position: absolute;
+  top: 20%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 280px;
+  height: 160px;
+  background: radial-gradient(circle, rgba(74, 222, 128, 0.18) 0%, rgba(255, 255, 255, 0) 70%);
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* Stage Dimensions */
+.basket-stage {
+  position: relative;
+  width: 330px;
+  height: 210px;
+  display: flex;
+  justify-content: center;
+  align-items: flex-end;
+}
+
+/* Floating decorative leaves */
+.basket-leaf {
+  position: absolute;
+  color: #16a34a;
+  opacity: 0.75;
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.1));
+  pointer-events: none;
+  z-index: 50;
+  animation: leafFloat 4s ease-in-out infinite alternate;
+}
+
+.basket-leaf.leaf-left {
+  top: 15px;
+  left: 10px;
+  transform: rotate(-25deg);
+}
+
+.basket-leaf.leaf-right {
+  top: 25px;
+  right: 15px;
+  transform: rotate(35deg);
+  animation-delay: -2s;
+}
+
+@keyframes leafFloat {
+  0% { transform: translateY(0px) rotate(-25deg); }
+  100% { transform: translateY(-6px) rotate(-15deg); }
+}
+
+/* 1. Back Basket Layer */
+.basket-layer-back {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 5;
+  pointer-events: none;
+}
+
+.basket-back-svg {
+  width: 100%;
+  height: 100%;
+  filter: drop-shadow(0 4px 6px rgba(0, 0, 0, 0.15));
+}
+
+.basket-handle-back {
+  filter: drop-shadow(0 3px 4px rgba(0, 0, 0, 0.25));
+}
+
+/* 2. Middle Dynamic Produce Canvas */
+.basket-produce-canvas {
+  position: absolute;
+  bottom: 58px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 88%;
+  height: 130px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 15;
+  pointer-events: auto;
+}
+
+/* Produce Item Node */
+.basket-produce-item {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1), z-index 0.2s;
+  animation: produceDropIn 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+}
+
+.basket-produce-item:hover,
+.basket-produce-item.is-active {
+  transform: translate(calc(-50% + 0px), calc(-50% - 14px)) scale(1.15) rotate(0deg) !important;
+}
+
+/* Stacking peek for multi-quantity */
+.produce-peek-ghost {
+  position: absolute;
+  top: -8px;
+  left: -8px;
+  width: 62px;
+  height: 62px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.85);
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.12);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1;
+  opacity: 0.7;
+  filter: brightness(0.92);
+  pointer-events: none;
+}
+
+.produce-disc {
+  position: relative;
+  width: 66px;
+  height: 66px;
+  background: radial-gradient(circle at 35% 30%, #ffffff 0%, #f7faf8 80%, #e2e8f0 100%);
+  border-radius: 50%;
+  padding: 5px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 
+    0 8px 16px -2px rgba(0, 0, 0, 0.2),
+    0 2px 5px rgba(0, 0, 0, 0.08),
+    inset 0 1px 2px rgba(255, 255, 255, 0.9);
+  border: 2px solid rgba(255, 255, 255, 0.95);
+  z-index: 2;
+  transition: box-shadow 0.25s ease;
+}
+
+.basket-produce-item:hover .produce-disc,
+.basket-produce-item.is-active .produce-disc {
+  box-shadow: 
+    0 14px 22px -2px rgba(46, 125, 50, 0.3),
+    0 4px 8px rgba(0, 0, 0, 0.12),
+    inset 0 1px 2px #fff;
+  border-color: #4ade80;
+}
+
+.produce-img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  border-radius: 50%;
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.15));
+}
+
+.ghost-img {
+  transform: rotate(-10deg) scale(0.9);
+}
+
+/* Quantity Badge */
+.produce-qty-pill {
+  position: absolute;
+  bottom: -2px;
+  right: -4px;
+  background: linear-gradient(135deg, #16a34a 0%, #15803d 100%);
+  color: #ffffff;
+  font-size: 0.72rem;
+  font-weight: 800;
+  padding: 2px 7px;
+  border-radius: 12px;
+  border: 1.5px solid #ffffff;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.25);
+  letter-spacing: -0.2px;
+}
+
+/* Hover / Tap tooltip bubble */
+.produce-hover-label {
+  position: absolute;
+  top: -34px;
+  left: 50%;
+  transform: translateX(-50%) translateY(4px);
+  background: #1e293b;
+  color: #ffffff;
+  padding: 4px 10px;
+  border-radius: 8px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  white-space: nowrap;
+  pointer-events: none;
+  opacity: 0;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  z-index: 100;
+}
+
+.produce-hover-label::after {
+  content: '';
+  position: absolute;
+  bottom: -4px;
+  left: 50%;
+  transform: translateX(-50%);
+  border-width: 4px 4px 0 4px;
+  border-style: solid;
+  border-color: #1e293b transparent transparent transparent;
+}
+
+.produce-label-qty {
+  color: #86efac;
+  font-size: 0.7rem;
+}
+
+.basket-produce-item:hover .produce-hover-label,
+.basket-produce-item.is-active .produce-hover-label {
+  opacity: 1;
+  transform: translateX(-50%) translateY(0);
+}
+
+/* 3. Front Basket Layer */
+.basket-layer-front {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  height: 125px;
+  z-index: 30;
+  pointer-events: none;
+}
+
+.basket-front-svg {
+  width: 100%;
+  height: 100%;
+}
+
+.basket-body-shape {
+  filter: drop-shadow(0 6px 14px rgba(0, 0, 0, 0.25));
+}
+
+.basket-rim-braid {
+  filter: drop-shadow(0 3px 5px rgba(0, 0, 0, 0.3));
+}
+
+/* Wooden Badge on Basket */
+.basket-brand-badge {
+  position: absolute;
+  bottom: 22px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: linear-gradient(180deg, #fef3c7 0%, #fde68a 100%);
+  border: 1.5px solid #d97706;
+  border-radius: 14px;
+  padding: 3px 10px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.15), inset 0 1px 1px #fff;
+  font-size: 0.7rem;
+  font-weight: 800;
+  color: #78350f;
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+}
+
+.badge-sparkle {
+  color: #d97706;
+}
+
+/* Ground shadow beneath basket */
+.basket-ground-shadow {
+  position: absolute;
+  bottom: -6px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 78%;
+  height: 16px;
+  background: radial-gradient(ellipse at center, rgba(0, 0, 0, 0.25) 0%, rgba(0, 0, 0, 0) 75%);
+  border-radius: 50%;
+  z-index: 1;
+  pointer-events: none;
+}
+
+/* Status Bar under Basket */
+.basket-status-bar {
+  margin-top: 1.25rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  z-index: 40;
+}
+
+.basket-count-chip {
+  display: inline-flex;
+  align-items: center;
+  background: #dcfce7;
+  color: #166534;
+  font-size: 0.85rem;
+  font-weight: 700;
+  padding: 4px 12px;
+  border-radius: 20px;
+  border: 1px solid rgba(22, 101, 52, 0.15);
+}
+
+.basket-hint-chip {
+  display: inline-flex;
+  align-items: center;
+  background: #f1f5f9;
+  color: #475569;
+  font-size: 0.8rem;
+  font-weight: 500;
+  padding: 4px 10px;
+  border-radius: 20px;
+}
+
+/* Drop-in Animation */
+@keyframes produceDropIn {
+  0% {
+    opacity: 0;
+    transform: translate(calc(-50% + 0px), -120px) scale(0.3) rotate(-30deg);
+  }
+  70% {
+    opacity: 1;
+    transform: translate(calc(-50% + 0px), 10px) scale(1.08) rotate(5deg);
+  }
+  100% {
+    opacity: 1;
+  }
+}
+
+/* Responsive adjustments for mobile & small screens */
+@media (max-width: 480px) {
+  .visual-harvest-basket-container {
+    margin: 0 auto 1.5rem;
+    padding: 1rem 0.5rem 0.75rem;
+    border-radius: 18px;
+  }
+
+  .basket-stage {
+    width: 290px;
+    height: 185px;
+  }
+
+  .basket-layer-front {
+    height: 110px;
+  }
+
+  .produce-disc {
+    width: 54px;
+    height: 54px;
+    padding: 3px;
+  }
+
+  .produce-peek-ghost {
+    width: 50px;
+    height: 50px;
+    top: -6px;
+    left: -6px;
+  }
+
+  .basket-produce-canvas {
+    bottom: 50px;
+    height: 115px;
+  }
+
+  .produce-qty-pill {
+    font-size: 0.65rem;
+    padding: 1px 5px;
+  }
+
+  .basket-brand-badge {
+    bottom: 18px;
+    font-size: 0.62rem;
+    padding: 2px 7px;
+  }
+
+  .basket-status-bar {
+    margin-top: 0.85rem;
+    flex-direction: column;
+    gap: 0.25rem;
+  }
+
+  .basket-count-chip {
+    font-size: 0.78rem;
+  }
+
+  .basket-hint-chip {
+    font-size: 0.72rem;
+  }
+}
+
+@media (min-width: 768px) {
+  .basket-stage {
+    width: 370px;
+    height: 230px;
+  }
+
+  .basket-layer-front {
+    height: 135px;
+  }
+
+  .produce-disc {
+    width: 72px;
+    height: 72px;
+  }
+
+  .produce-peek-ghost {
+    width: 66px;
+    height: 66px;
+  }
+
+  .basket-produce-canvas {
+    bottom: 64px;
+    height: 140px;
+  }
+}

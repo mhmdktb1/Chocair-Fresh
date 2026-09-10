@@ -4,6 +4,7 @@ import { Trash2, Plus, Minus, ArrowRight, ShoppingBag } from 'lucide-react';
 import { useCart } from '../context/CartContext';
 import Navbar from '../components/layout/Navbar';
 import Button from '../components/common/Button';
+import VisualBasket from '../components/shop/VisualBasket';
 import CartRecommendations from '../components/shop/CartRecommendations';
 import { formatCurrency } from '../utils/formatters';
 import './Cart.css';
@@ -43,6 +44,9 @@ const Cart = () => {
       </div>
 
       <div className="container cart-container">
+        {/* Dynamic Visual Harvest Basket */}
+        <VisualBasket cartItems={cartItems} />
+
         <div className="cart-grid">
           {/* Cart Items List */}
           <div className="cart-items">
