@@ -1,58 +1,83 @@
-import React, { useMemo, useState } from 'react';
-import { Sparkles, Leaf } from 'lucide-react';
+import React, { useMemo, useState, useCallback } from 'react';
+import { Sparkles, Leaf, Volume2, VolumeX } from 'lucide-react';
+import { ProduceGameSprite } from './produceGameArt';
 import './VisualBasket.css';
 
 /**
- * Deterministic hash-based placement generator to ensure stable positions for items
- * across re-renders while giving an organic, hand-arranged harvest basket feel.
+ * Lightweight procedural sound synthesizer using Web Audio API.
+ * Generates fresh "pop / plop" game sounds with zero external audio assets or bloat.
  */
-const getSeed = (str) => {
+const playPopSound = (pitch = 440) => {
+  try {
+    const AudioCtx = window.AudioContext || window.webkitAudioContext;
+    if (!AudioCtx) return;
+    const ctx = new AudioCtx();
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(pitch, ctx.currentTime);
+    osc.frequency.exponentialRampToValueAtTime(pitch * 1.8, ctx.currentTime + 0.08);
+
+    gain.gain.setValueAtTime(0.12, ctx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.12);
+
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+
+    osc.start();
+    osc.stop(ctx.currentTime + 0.12);
+  } catch (e) {
+    // Ignore audio error if user blocked auto-play
+  }
+};
+
+const getDeterministicSeed = (str) => {
   if (!str) return 42;
   return String(str).split('').reduce((acc, char, i) => acc + char.charCodeAt(0) * (i + 1), 0);
 };
 
 const calculateSlotPlacement = (index, total) => {
-  // Compute normalized horizontal angle [-1 to 1]
   const t = total <= 1 ? 0 : (index / (total - 1)) * 2 - 1;
-  
-  // Arch curve formula: items in the center sit lower, edges flare outward slightly
-  const xOffset = t * (total > 5 ? 120 : total > 3 ? 95 : 60);
-  const yOffset = (t * t) * 18 - 8; // gentle parabola
-  const rotation = t * 14; // natural tilt outward
-  const baseScale = total > 6 ? 0.82 : total > 4 ? 0.9 : 1.0;
-  
+  const xOffset = t * (total > 5 ? 124 : total > 3 ? 98 : 64);
+  const yOffset = (t * t) * 16 - 12; // Natural parabolic curve into the straw bed
+  const rotation = t * 15;
+  const scale = total > 6 ? 0.85 : total > 4 ? 0.92 : 1.0;
+
   return {
     x: Math.round(xOffset),
     y: Math.round(yOffset),
     rotation: Math.round(rotation),
-    scale: baseScale,
-    zIndex: Math.round(20 + (1 - Math.abs(t)) * 10) // center items can stack naturally
+    scale: Number(scale.toFixed(2)),
+    zIndex: Math.round(20 + (1 - Math.abs(t)) * 10)
   };
 };
 
 const VisualBasket = ({ cartItems = [] }) => {
   const [activeItemId, setActiveItemId] = useState(null);
+  const [soundEnabled, setSoundEnabled] = useState(true);
 
-  const totalCount = useMemo(() => {
+  const totalItemCount = useMemo(() => {
     return cartItems.reduce((acc, item) => acc + (item.quantity || 1), 0);
   }, [cartItems]);
 
-  // Generate visual representations for cart items with organic staggering
+  // Capacity calculation (standard crate holds 8 items)
+  const capacityPercent = Math.min(100, Math.round((totalItemCount / 8) * 100));
+
   const visualProduce = useMemo(() => {
     if (!cartItems.length) return [];
     
-    // Sort items deterministically so they don't jump on quantity change
+    // Sort items deterministically by ID/Name to prevent re-position hopping
     const sorted = [...cartItems].sort((a, b) => (a._id || a.name).localeCompare(b._id || b.name));
     
     return sorted.map((item, idx) => {
-      const seed = getSeed(item._id || item.name);
+      const seed = getDeterministicSeed(item._id || item.name);
       const slot = calculateSlotPlacement(idx, sorted.length);
       
-      // Add subtle micro-jitter from seed
-      const jitterX = ((seed % 11) - 5);
-      const jitterY = ((seed % 9) - 4);
-      const jitterRot = ((seed % 13) - 6);
-      
+      const jitterX = (seed % 9) - 4;
+      const jitterY = (seed % 7) - 3;
+      const jitterRot = (seed % 11) - 5;
+
       return {
         ...item,
         uniqueKey: item._id || `${item.name}-${idx}`,
@@ -67,179 +92,155 @@ const VisualBasket = ({ cartItems = [] }) => {
     });
   }, [cartItems]);
 
+  const handleProduceClick = useCallback((id, name) => {
+    if (soundEnabled) {
+      const seed = getDeterministicSeed(name || 'fruit');
+      const pitch = 380 + (seed % 260);
+      playPopSound(pitch);
+    }
+    setActiveItemId(prev => prev === id ? null : id);
+  }, [soundEnabled]);
+
   if (!cartItems.length) return null;
 
   return (
-    <div className="visual-harvest-basket-container" aria-label="Visual Harvest Basket">
-      {/* Background Ambience Glow */}
-      <div className="basket-ambient-glow" />
+    <div className="game-harvest-crate-container" aria-label="Interactive 3D Farm Harvest Crate">
+      {/* Background Soft Sunshine Radial Glow */}
+      <div className="crate-sunshine-glow" />
 
-      <div className="basket-stage">
-        {/* Decorative Floating Fresh Leaves */}
-        <div className="basket-leaf leaf-left">
-          <Leaf size={18} />
-        </div>
-        <div className="basket-leaf leaf-right">
-          <Leaf size={15} />
-        </div>
+      {/* Floating Organic Leaves */}
+      <div className="crate-leaf leaf-left" aria-hidden="true">
+        <Leaf size={18} />
+      </div>
+      <div className="crate-leaf leaf-right" aria-hidden="true">
+        <Leaf size={15} />
+      </div>
 
-        {/* 1. Back Basket Layer (Inner cavity & Back handles/rim) */}
-        <div className="basket-layer-back">
-          <svg viewBox="0 0 340 120" className="basket-back-svg" preserveAspectRatio="none">
-            <defs>
-              <linearGradient id="basketBackGrad" x1="0%" y1="0%" x2="0%" y2="100%">
-                <stop offset="0%" stopColor="#4a2e12" />
-                <stop offset="60%" stopColor="#382109" />
-                <stop offset="100%" stopColor="#241403" />
-              </linearGradient>
-              <linearGradient id="handleGrad" x1="0%" y1="0%" x2="100%" y2="0%">
-                <stop offset="0%" stopColor="#8c5828" />
-                <stop offset="50%" stopColor="#b3783e" />
-                <stop offset="100%" stopColor="#6e4219" />
-              </linearGradient>
-            </defs>
-            {/* Woven Back Handle Arch */}
-            <path
-              d="M 60 85 C 60 -15, 280 -15, 280 85"
-              fill="none"
-              stroke="url(#handleGrad)"
-              strokeWidth="14"
-              strokeLinecap="round"
-              className="basket-handle-back"
-            />
-            {/* Back Inner Shadow Bowl */}
-            <ellipse cx="170" cy="88" rx="145" ry="32" fill="url(#basketBackGrad)" />
-          </svg>
+      {/* Main 3D Stage */}
+      <div className="crate-3d-stage">
+        
+        {/* Layer 1: Crate Back Wall & Interior Shadow */}
+        <div className="crate-back-wall">
+          <div className="crate-interior-shadow" />
+          <div className="crate-back-wood-slats" />
         </div>
 
-        {/* 2. Middle Layer: Dynamic Interactive Produce */}
-        <div className="basket-produce-canvas">
+        {/* Layer 2: Golden Straw / Hay Bedding Tufts */}
+        <div className="crate-straw-bedding" aria-hidden="true">
+          <span className="straw-tuft tuft-1" />
+          <span className="straw-tuft tuft-2" />
+          <span className="straw-tuft tuft-3" />
+          <span className="straw-tuft tuft-4" />
+          <span className="straw-tuft tuft-5" />
+        </div>
+
+        {/* Layer 3: Dynamic 3D Game Produce Stage */}
+        <div className="crate-produce-stage">
           {visualProduce.map((item) => {
             const { x, y, rotation, scale, zIndex } = item.placement;
-            const hasMultiQty = (item.quantity || 1) > 1;
+            const quantity = item.quantity || 1;
+            const hasClusteredPeeks = quantity > 1;
             const isActive = activeItemId === item._id;
 
             return (
               <div
                 key={item.uniqueKey}
-                className={`basket-produce-item ${isActive ? 'is-active' : ''}`}
+                className={`crate-produce-node ${isActive ? 'is-active' : ''}`}
                 style={{
                   transform: `translate(calc(-50% + ${x}px), calc(-50% + ${y}px)) rotate(${rotation}deg) scale(${scale})`,
-                  zIndex: isActive ? 60 : zIndex
+                  zIndex: isActive ? 80 : zIndex
                 }}
-                onClick={() => setActiveItemId(isActive ? null : item._id)}
-                title={`${item.name} (${item.quantity} ${item.unit || 'qty'})`}
+                onClick={() => handleProduceClick(item._id, item.name)}
+                title={`${item.name} (${quantity} ${item.unit || 'qty'})`}
               >
-                {/* Visual Stack Shadow if quantity > 1 */}
-                {hasMultiQty && (
-                  <div className="produce-peek-ghost" aria-hidden="true">
-                    <img
-                      src={item.image}
-                      alt=""
-                      className="produce-img ghost-img"
-                      onError={(e) => {
-                        e.target.style.display = 'none';
-                      }}
+                {/* Secondary Clustered Produce Peeks (Physical game-stacking when quantity > 1) */}
+                {hasClusteredPeeks && (
+                  <div className="produce-cluster-shadow-item" aria-hidden="true">
+                    <ProduceGameSprite
+                      name={item.name}
+                      category={item.category}
+                      image={item.image}
+                      className="game-sprite-ghost"
                     />
                   </div>
                 )}
 
-                {/* Primary Produce Image */}
-                <div className="produce-disc">
-                  <img
-                    src={item.image}
-                    alt={item.name}
-                    className="produce-img"
-                    onError={(e) => {
-                      e.target.src = '/assets/images/products/apple-red.jpg';
-                    }}
+                {/* Primary Game Vector Produce Sprite */}
+                <div className="produce-sprite-wrapper">
+                  <ProduceGameSprite
+                    name={item.name}
+                    category={item.category}
+                    image={item.image}
+                    className="game-sprite-main"
                   />
-                  {hasMultiQty && (
-                    <span className="produce-qty-pill">
-                      ×{item.quantity}
+                  {quantity > 1 && (
+                    <span className="produce-game-badge">
+                      ×{quantity}
                     </span>
                   )}
                 </div>
 
-                {/* Item Mini Tooltip Bubble on tap / hover */}
-                <div className="produce-hover-label">
-                  <span className="produce-label-name">{item.name}</span>
-                  <span className="produce-label-qty">Qty: {item.quantity}</span>
+                {/* Tactical Game Tooltip Popup */}
+                <div className="produce-game-tooltip">
+                  <span className="tooltip-title">{item.name}</span>
+                  <span className="tooltip-qty">{quantity} in crate</span>
                 </div>
               </div>
             );
           })}
         </div>
 
-        {/* 3. Front Basket Layer (Woven Wicker Body & Front Rim Lip) */}
-        <div className="basket-layer-front">
-          <svg viewBox="0 0 340 160" className="basket-front-svg" preserveAspectRatio="none">
-            <defs>
-              <linearGradient id="basketFrontGrad" x1="0%" y1="0%" x2="0%" y2="100%">
-                <stop offset="0%" stopColor="#d89b53" />
-                <stop offset="35%" stopColor="#ba7d38" />
-                <stop offset="85%" stopColor="#8d561d" />
-                <stop offset="100%" stopColor="#63390d" />
-              </linearGradient>
-              
-              <linearGradient id="rimHighlightGrad" x1="0%" y1="0%" x2="0%" y2="100%">
-                <stop offset="0%" stopColor="#ffdda1" />
-                <stop offset="50%" stopColor="#c58842" />
-                <stop offset="100%" stopColor="#824f1b" />
-              </linearGradient>
+        {/* Layer 4: 3D Front Wood Crate Face with Brass Corner Brackets & Engraved Plaque */}
+        <div className="crate-front-facade">
+          {/* Top Beveled Lip */}
+          <div className="crate-top-lip" />
 
-              <pattern id="wickerWeave" width="24" height="20" patternUnits="userSpaceOnUse">
-                <path d="M 0 10 Q 6 0, 12 10 T 24 10" fill="none" stroke="#683d12" strokeWidth="2.5" opacity="0.45" />
-                <path d="M 0 20 Q 6 10, 12 20 T 24 20" fill="none" stroke="#683d12" strokeWidth="2.5" opacity="0.45" />
-                <path d="M 6 0 L 6 20 M 18 0 L 18 20" fill="none" stroke="#522f0c" strokeWidth="1.8" opacity="0.3" />
-              </pattern>
-            </defs>
+          {/* Front Timber Slats */}
+          <div className="crate-front-slats">
+            <div className="wood-slat slat-top" />
+            <div className="wood-slat-gap" />
+            <div className="wood-slat slat-bottom" />
+          </div>
 
-            {/* Front Basket Shell */}
-            <path
-              d="M 12 24 C 18 100, 48 152, 170 152 C 292 152, 322 100, 328 24 C 280 40, 60 40, 12 24 Z"
-              fill="url(#basketFrontGrad)"
-              className="basket-body-shape"
-            />
+          {/* Brass Metal Corner Brackets & Rivets */}
+          <div className="brass-bracket bracket-top-left"><span className="rivet" /></div>
+          <div className="brass-bracket bracket-top-right"><span className="rivet" /></div>
+          <div className="brass-bracket bracket-bottom-left"><span className="rivet" /></div>
+          <div className="brass-bracket bracket-bottom-right"><span className="rivet" /></div>
 
-            {/* Wicker Pattern Texture */}
-            <path
-              d="M 14 26 C 20 98, 48 148, 170 148 C 292 148, 320 98, 326 26 C 280 40, 60 40, 14 26 Z"
-              fill="url(#wickerWeave)"
-            />
-
-            {/* Front Lip Braided Rim */}
-            <ellipse
-              cx="170"
-              cy="24"
-              rx="158"
-              ry="16"
-              fill="none"
-              stroke="url(#rimHighlightGrad)"
-              strokeWidth="9"
-              className="basket-rim-braid"
-            />
-          </svg>
-
-          {/* Wooden Store Tag Badge */}
-          <div className="basket-brand-badge">
-            <Sparkles size={13} className="badge-sparkle" />
-            <span>Farm Harvest</span>
+          {/* Artisan Stenciled Brand Badge */}
+          <div className="crate-brand-plaque">
+            <Sparkles size={11} className="plaque-sparkle" />
+            <span>Chocair Harvest</span>
           </div>
         </div>
 
-        {/* Floor Shadow Under Basket */}
-        <div className="basket-ground-shadow" />
+        {/* Layer 5: Ground Ambient Occlusion Shadow */}
+        <div className="crate-ground-shadow" />
       </div>
 
-      {/* Responsive Freshness Status Bar */}
-      <div className="basket-status-bar">
-        <span className="basket-count-chip">
-          🧺 {totalCount} {totalCount === 1 ? 'item' : 'items'} in your fresh basket
-        </span>
-        <span className="basket-hint-chip">
-          Packed with organic care
-        </span>
+      {/* Crate Interactive Controls & Harvest Status Bar */}
+      <div className="crate-control-bar">
+        <div className="crate-status-pill">
+          <span className="crate-icon">🧺</span>
+          <span className="crate-fill-text">
+            <strong>{totalItemCount} {totalItemCount === 1 ? 'item' : 'items'}</strong> in crate
+          </span>
+          <div className="crate-mini-gauge" title={`Crate capacity: ${capacityPercent}%`}>
+            <div className="gauge-fill" style={{ width: `${capacityPercent}%` }} />
+          </div>
+        </div>
+
+        {/* Mini Sound Toggle for Tactile Plop Audio */}
+        <button
+          type="button"
+          className={`sound-toggle-btn ${soundEnabled ? 'on' : 'off'}`}
+          onClick={() => setSoundEnabled(!soundEnabled)}
+          title={soundEnabled ? 'Mute harvest sound FX' : 'Enable harvest sound FX'}
+          aria-label="Toggle sound"
+        >
+          {soundEnabled ? <Volume2 size={14} /> : <VolumeX size={14} />}
+        </button>
       </div>
     </div>
   );

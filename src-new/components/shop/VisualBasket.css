@@ -1,112 +1,152 @@
-/* Visual Harvest Basket Styles */
-.visual-harvest-basket-container {
+/* =========================================================
+   3D ARTISAN FARM HARVEST CRATE & VECTOR GAME ASSETS
+   Zero-bloat, Hardware-Accelerated 60fps CSS 3D Transforms
+   ========================================================= */
+
+.game-harvest-crate-container {
   position: relative;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  margin: 0.5rem auto 2rem;
+  margin: 0.5rem auto 1.75rem;
   padding: 1.5rem 1rem 1rem;
   max-width: 580px;
   width: 100%;
-  background: linear-gradient(180deg, rgba(240, 253, 244, 0.6) 0%, rgba(255, 255, 255, 0.95) 100%);
+  background: linear-gradient(180deg, rgba(236, 253, 243, 0.7) 0%, rgba(255, 255, 255, 0.96) 100%);
   border-radius: 24px;
-  border: 1px solid rgba(46, 125, 50, 0.12);
-  box-shadow: 0 10px 30px -10px rgba(46, 125, 50, 0.08);
+  border: 1.5px solid rgba(46, 125, 50, 0.15);
+  box-shadow: 
+    0 16px 36px -12px rgba(46, 125, 50, 0.12),
+    inset 0 1px 0 rgba(255, 255, 255, 0.9);
   overflow: visible;
   user-select: none;
+  perspective: 900px;
 }
 
-/* Ambient glow */
-.basket-ambient-glow {
+/* Sunshine Radial Glow */
+.crate-sunshine-glow {
   position: absolute;
-  top: 20%;
+  top: 25%;
   left: 50%;
   transform: translate(-50%, -50%);
-  width: 280px;
-  height: 160px;
-  background: radial-gradient(circle, rgba(74, 222, 128, 0.18) 0%, rgba(255, 255, 255, 0) 70%);
+  width: 320px;
+  height: 180px;
+  background: radial-gradient(circle, rgba(74, 222, 128, 0.22) 0%, rgba(250, 204, 21, 0.08) 50%, rgba(255, 255, 255, 0) 75%);
   pointer-events: none;
   z-index: 0;
 }
 
-/* Stage Dimensions */
-.basket-stage {
-  position: relative;
-  width: 330px;
-  height: 210px;
-  display: flex;
-  justify-content: center;
-  align-items: flex-end;
-}
-
-/* Floating decorative leaves */
-.basket-leaf {
+/* Floating Farm Leaves */
+.crate-leaf {
   position: absolute;
   color: #16a34a;
-  opacity: 0.75;
-  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.1));
+  opacity: 0.8;
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.12));
   pointer-events: none;
   z-index: 50;
-  animation: leafFloat 4s ease-in-out infinite alternate;
+  animation: crateLeafFloat 4.5s ease-in-out infinite alternate;
 }
 
-.basket-leaf.leaf-left {
-  top: 15px;
-  left: 10px;
+.crate-leaf.leaf-left {
+  top: 14px;
+  left: 12px;
   transform: rotate(-25deg);
 }
 
-.basket-leaf.leaf-right {
-  top: 25px;
-  right: 15px;
+.crate-leaf.leaf-right {
+  top: 22px;
+  right: 14px;
   transform: rotate(35deg);
-  animation-delay: -2s;
+  animation-delay: -2.2s;
 }
 
-@keyframes leafFloat {
+@keyframes crateLeafFloat {
   0% { transform: translateY(0px) rotate(-25deg); }
-  100% { transform: translateY(-6px) rotate(-15deg); }
+  100% { transform: translateY(-7px) rotate(-12deg); }
 }
 
-/* 1. Back Basket Layer */
-.basket-layer-back {
+/* 3D Stage */
+.crate-3d-stage {
+  position: relative;
+  width: 340px;
+  height: 215px;
+  display: flex;
+  justify-content: center;
+  align-items: flex-end;
+  transform-style: preserve-3d;
+}
+
+/* 1. Crate Back Wall & Interior Shadow */
+.crate-back-wall {
   position: absolute;
-  top: 0;
-  left: 0;
+  top: 10px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 90%;
+  height: 160px;
+  background: linear-gradient(180deg, #3d2314 0%, #29150a 60%, #170b04 100%);
+  border-radius: 12px 12px 24px 24px;
+  z-index: 5;
+  box-shadow: inset 0 16px 28px rgba(0, 0, 0, 0.6);
+  border: 2px solid #543319;
+  border-bottom: none;
+}
+
+.crate-back-wood-slats {
   width: 100%;
   height: 100%;
-  z-index: 5;
+  opacity: 0.25;
+  background: repeating-linear-gradient(
+    180deg,
+    transparent 0px,
+    transparent 28px,
+    #000000 28px,
+    #000000 32px
+  );
+}
+
+/* 2. Golden Straw / Hay Bedding Tufts */
+.crate-straw-bedding {
+  position: absolute;
+  bottom: 80px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 86%;
+  height: 35px;
+  z-index: 12;
   pointer-events: none;
 }
 
-.basket-back-svg {
-  width: 100%;
-  height: 100%;
-  filter: drop-shadow(0 4px 6px rgba(0, 0, 0, 0.15));
-}
-
-.basket-handle-back {
-  filter: drop-shadow(0 3px 4px rgba(0, 0, 0, 0.25));
-}
-
-/* 2. Middle Dynamic Produce Canvas */
-.basket-produce-canvas {
+.straw-tuft {
   position: absolute;
-  bottom: 58px;
+  background: linear-gradient(135deg, #fef08a 0%, #ca8a04 100%);
+  border-radius: 2px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.15);
+}
+
+.straw-tuft.tuft-1 { width: 32px; height: 4px; left: 10%; top: 12px; transform: rotate(18deg); }
+.straw-tuft.tuft-2 { width: 28px; height: 3.5px; left: 30%; top: 6px; transform: rotate(-22deg); }
+.straw-tuft.tuft-3 { width: 36px; height: 4px; left: 52%; top: 15px; transform: rotate(8deg); }
+.straw-tuft.tuft-4 { width: 30px; height: 3.5px; left: 74%; top: 8px; transform: rotate(-15deg); }
+.straw-tuft.tuft-5 { width: 26px; height: 4px; left: 88%; top: 18px; transform: rotate(25deg); }
+
+/* 3. Produce Stage & Game Sprites */
+.crate-produce-stage {
+  position: absolute;
+  bottom: 60px;
   left: 50%;
   transform: translateX(-50%);
   width: 88%;
-  height: 130px;
+  height: 140px;
   display: flex;
   justify-content: center;
   align-items: center;
-  z-index: 15;
+  z-index: 20;
   pointer-events: auto;
 }
 
-/* Produce Item Node */
-.basket-produce-item {
+.crate-produce-node {
   position: absolute;
   top: 50%;
   left: 50%;
@@ -115,114 +155,114 @@
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  transition: transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1), z-index 0.2s;
-  animation: produceDropIn 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+  transition: transform 0.42s cubic-bezier(0.34, 1.56, 0.64, 1), z-index 0.2s;
+  animation: gameItemDropSquash 0.55s cubic-bezier(0.34, 1.56, 0.64, 1) both;
 }
 
-.basket-produce-item:hover,
-.basket-produce-item.is-active {
-  transform: translate(calc(-50% + 0px), calc(-50% - 14px)) scale(1.15) rotate(0deg) !important;
+.crate-produce-node:hover,
+.crate-produce-node.is-active {
+  transform: translate(calc(-50% + 0px), calc(-50% - 18px)) scale(1.18) rotate(0deg) !important;
 }
 
-/* Stacking peek for multi-quantity */
-.produce-peek-ghost {
+/* Secondary ghost sprite for clustered produce (quantity > 1) */
+.produce-cluster-shadow-item {
   position: absolute;
-  top: -8px;
-  left: -8px;
+  top: -12px;
+  left: -12px;
+  width: 60px;
+  height: 60px;
+  opacity: 0.65;
+  filter: brightness(0.85);
+  transform: rotate(-16deg) scale(0.9);
+  pointer-events: none;
+  z-index: 1;
+}
+
+.produce-sprite-wrapper {
+  position: relative;
+  width: 72px;
+  height: 72px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 2;
+  transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.crate-produce-node:active .produce-sprite-wrapper {
+  transform: scale(0.92, 1.1);
+}
+
+.game-produce-svg {
+  width: 100%;
+  height: 100%;
+  filter: drop-shadow(0 6px 8px rgba(0, 0, 0, 0.3));
+}
+
+/* Fallback 3D Produce Badge */
+.game-produce-fallback-badge {
   width: 62px;
   height: 62px;
   border-radius: 50%;
-  background: rgba(255, 255, 255, 0.85);
-  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.12);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 1;
-  opacity: 0.7;
-  filter: brightness(0.92);
-  pointer-events: none;
+  background: radial-gradient(circle at 35% 30%, #ffffff 0%, #f1f5f9 100%);
+  padding: 4px;
+  box-shadow: 0 6px 12px rgba(0, 0, 0, 0.25), inset 0 1px 2px #fff;
+  border: 2px solid #86efac;
 }
 
-.produce-disc {
-  position: relative;
-  width: 66px;
-  height: 66px;
-  background: radial-gradient(circle at 35% 30%, #ffffff 0%, #f7faf8 80%, #e2e8f0 100%);
+.fallback-badge-rim {
+  width: 100%;
+  height: 100%;
   border-radius: 50%;
-  padding: 5px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  box-shadow: 
-    0 8px 16px -2px rgba(0, 0, 0, 0.2),
-    0 2px 5px rgba(0, 0, 0, 0.08),
-    inset 0 1px 2px rgba(255, 255, 255, 0.9);
-  border: 2px solid rgba(255, 255, 255, 0.95);
-  z-index: 2;
-  transition: box-shadow 0.25s ease;
+  overflow: hidden;
 }
 
-.basket-produce-item:hover .produce-disc,
-.basket-produce-item.is-active .produce-disc {
-  box-shadow: 
-    0 14px 22px -2px rgba(46, 125, 50, 0.3),
-    0 4px 8px rgba(0, 0, 0, 0.12),
-    inset 0 1px 2px #fff;
-  border-color: #4ade80;
-}
-
-.produce-img {
+.fallback-badge-img {
   width: 100%;
   height: 100%;
   object-fit: contain;
-  border-radius: 50%;
-  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.15));
 }
 
-.ghost-img {
-  transform: rotate(-10deg) scale(0.9);
-}
-
-/* Quantity Badge */
-.produce-qty-pill {
+/* Organic Game Multiplier Badge */
+.produce-game-badge {
   position: absolute;
-  bottom: -2px;
-  right: -4px;
-  background: linear-gradient(135deg, #16a34a 0%, #15803d 100%);
+  bottom: 0px;
+  right: -2px;
+  background: linear-gradient(135deg, #15803d 0%, #166534 100%);
   color: #ffffff;
   font-size: 0.72rem;
   font-weight: 800;
   padding: 2px 7px;
   border-radius: 12px;
-  border: 1.5px solid #ffffff;
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.25);
+  border: 2px solid #ffffff;
+  box-shadow: 0 3px 6px rgba(0, 0, 0, 0.3);
   letter-spacing: -0.2px;
 }
 
-/* Hover / Tap tooltip bubble */
-.produce-hover-label {
+/* Interactive Game Tooltip */
+.produce-game-tooltip {
   position: absolute;
-  top: -34px;
+  top: -36px;
   left: 50%;
-  transform: translateX(-50%) translateY(4px);
-  background: #1e293b;
+  transform: translateX(-50%) translateY(6px);
+  background: #0f172a;
   color: #ffffff;
   padding: 4px 10px;
   border-radius: 8px;
-  font-size: 0.75rem;
-  font-weight: 600;
+  font-size: 0.74rem;
+  font-weight: 700;
   white-space: nowrap;
   pointer-events: none;
   opacity: 0;
-  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
+  transition: all 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.3);
   display: flex;
   align-items: center;
   gap: 6px;
   z-index: 100;
 }
 
-.produce-hover-label::after {
+.produce-game-tooltip::after {
   content: '';
   position: absolute;
   bottom: -4px;
@@ -230,215 +270,281 @@
   transform: translateX(-50%);
   border-width: 4px 4px 0 4px;
   border-style: solid;
-  border-color: #1e293b transparent transparent transparent;
+  border-color: #0f172a transparent transparent transparent;
 }
 
-.produce-label-qty {
-  color: #86efac;
+.tooltip-qty {
+  color: #4ade80;
   font-size: 0.7rem;
 }
 
-.basket-produce-item:hover .produce-hover-label,
-.basket-produce-item.is-active .produce-hover-label {
+.crate-produce-node:hover .produce-game-tooltip,
+.crate-produce-node.is-active .produce-game-tooltip {
   opacity: 1;
   transform: translateX(-50%) translateY(0);
 }
 
-/* 3. Front Basket Layer */
-.basket-layer-front {
+/* 4. Front Timber Crate Facade */
+.crate-front-facade {
   position: absolute;
   bottom: 0;
-  left: 0;
-  width: 100%;
-  height: 125px;
-  z-index: 30;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 95%;
+  height: 120px;
+  z-index: 35;
   pointer-events: none;
+  filter: drop-shadow(0 10px 20px rgba(0, 0, 0, 0.25));
 }
 
-.basket-front-svg {
+.crate-top-lip {
   width: 100%;
-  height: 100%;
+  height: 12px;
+  background: linear-gradient(180deg, #d99b55 0%, #b47330 100%);
+  border-radius: 6px 6px 0 0;
+  border: 1.5px solid #824f1b;
+  box-shadow: 0 3px 6px rgba(0, 0, 0, 0.25), inset 0 1px 1px #fed7aa;
 }
 
-.basket-body-shape {
-  filter: drop-shadow(0 6px 14px rgba(0, 0, 0, 0.25));
+.crate-front-slats {
+  width: 100%;
+  height: calc(100% - 12px);
+  display: flex;
+  flex-direction: column;
 }
 
-.basket-rim-braid {
-  filter: drop-shadow(0 3px 5px rgba(0, 0, 0, 0.3));
+.wood-slat {
+  flex: 1;
+  background: linear-gradient(180deg, #b87a38 0%, #945821 50%, #784213 100%);
+  border: 1.5px solid #5a310c;
+  border-top: none;
+  box-shadow: inset 0 2px 4px rgba(255, 255, 255, 0.15), inset 0 -3px 6px rgba(0, 0, 0, 0.3);
 }
 
-/* Wooden Badge on Basket */
-.basket-brand-badge {
+.wood-slat.slat-bottom {
+  border-radius: 0 0 18px 18px;
+}
+
+.wood-slat-gap {
+  height: 6px;
+  background: #2b1406;
+  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.8);
+}
+
+/* Brass Corner Brackets */
+.brass-bracket {
   position: absolute;
-  bottom: 22px;
+  width: 18px;
+  height: 18px;
+  background: linear-gradient(135deg, #fef08a 0%, #ca8a04 50%, #854d0e 100%);
+  border: 1px solid #713f12;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.bracket-top-left { top: 0; left: 0; border-radius: 4px 0 0 0; }
+.bracket-top-right { top: 0; right: 0; border-radius: 0 4px 0 0; }
+.bracket-bottom-left { bottom: 0; left: 0; border-radius: 0 0 0 16px; }
+.bracket-bottom-right { bottom: 0; right: 0; border-radius: 0 0 16px 0; }
+
+.rivet {
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: #451a03;
+  box-shadow: inset 0 1px 1px #fff;
+}
+
+/* Stenciled Brand Plaque */
+.crate-brand-plaque {
+  position: absolute;
+  bottom: 24px;
   left: 50%;
   transform: translateX(-50%);
   background: linear-gradient(180deg, #fef3c7 0%, #fde68a 100%);
-  border: 1.5px solid #d97706;
-  border-radius: 14px;
-  padding: 3px 10px;
+  border: 1.5px solid #b45309;
+  border-radius: 12px;
+  padding: 3px 12px;
   display: flex;
   align-items: center;
-  gap: 4px;
-  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.15), inset 0 1px 1px #fff;
-  font-size: 0.7rem;
+  gap: 5px;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2), inset 0 1px 1px #ffffff;
+  font-size: 0.72rem;
   font-weight: 800;
   color: #78350f;
   text-transform: uppercase;
-  letter-spacing: 0.6px;
+  letter-spacing: 0.8px;
 }
 
-.badge-sparkle {
+.plaque-sparkle {
   color: #d97706;
 }
 
-/* Ground shadow beneath basket */
-.basket-ground-shadow {
+/* Ground Occlusion Shadow */
+.crate-ground-shadow {
   position: absolute;
-  bottom: -6px;
+  bottom: -8px;
   left: 50%;
   transform: translateX(-50%);
-  width: 78%;
-  height: 16px;
-  background: radial-gradient(ellipse at center, rgba(0, 0, 0, 0.25) 0%, rgba(0, 0, 0, 0) 75%);
+  width: 82%;
+  height: 18px;
+  background: radial-gradient(ellipse at center, rgba(0, 0, 0, 0.32) 0%, rgba(0, 0, 0, 0) 75%);
   border-radius: 50%;
   z-index: 1;
   pointer-events: none;
 }
 
-/* Status Bar under Basket */
-.basket-status-bar {
+/* Interactive Control Bar & Gauge */
+.crate-control-bar {
   margin-top: 1.25rem;
   display: flex;
   align-items: center;
-  justify-content: center;
-  flex-wrap: wrap;
-  gap: 0.5rem;
+  justify-content: space-between;
+  width: 100%;
+  max-width: 360px;
   z-index: 40;
 }
 
-.basket-count-chip {
+.crate-status-pill {
   display: inline-flex;
   align-items: center;
-  background: #dcfce7;
-  color: #166534;
-  font-size: 0.85rem;
-  font-weight: 700;
-  padding: 4px 12px;
+  gap: 0.5rem;
+  background: #ffffff;
+  padding: 5px 12px;
   border-radius: 20px;
   border: 1px solid rgba(22, 101, 52, 0.15);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.04);
 }
 
-.basket-hint-chip {
-  display: inline-flex;
-  align-items: center;
+.crate-icon {
+  font-size: 0.95rem;
+}
+
+.crate-fill-text {
+  font-size: 0.82rem;
+  color: #166534;
+}
+
+.crate-mini-gauge {
+  width: 48px;
+  height: 6px;
   background: #f1f5f9;
-  color: #475569;
-  font-size: 0.8rem;
-  font-weight: 500;
-  padding: 4px 10px;
-  border-radius: 20px;
+  border-radius: 4px;
+  overflow: hidden;
 }
 
-/* Drop-in Animation */
-@keyframes produceDropIn {
+.gauge-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #4ade80 0%, #16a34a 100%);
+  border-radius: 4px;
+  transition: width 0.4s ease;
+}
+
+.sound-toggle-btn {
+  background: #ffffff;
+  color: #64748b;
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid #e2e8f0;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.04);
+  transition: all 0.2s ease;
+}
+
+.sound-toggle-btn:hover {
+  color: #16a34a;
+  border-color: #86efac;
+}
+
+.sound-toggle-btn.off {
+  color: #94a3b8;
+  opacity: 0.65;
+}
+
+/* Game Drop & Squash Keyframe */
+@keyframes gameItemDropSquash {
   0% {
     opacity: 0;
-    transform: translate(calc(-50% + 0px), -120px) scale(0.3) rotate(-30deg);
+    transform: translate(calc(-50% + 0px), -140px) scale(0.4, 1.4) rotate(-25deg);
   }
-  70% {
+  65% {
     opacity: 1;
-    transform: translate(calc(-50% + 0px), 10px) scale(1.08) rotate(5deg);
+    transform: translate(calc(-50% + 0px), 12px) scale(1.22, 0.8) rotate(4deg);
+  }
+  85% {
+    transform: translate(calc(-50% + 0px), -4px) scale(0.95, 1.05) rotate(-2deg);
   }
   100% {
     opacity: 1;
   }
 }
 
-/* Responsive adjustments for mobile & small screens */
+/* Mobile Responsive */
 @media (max-width: 480px) {
-  .visual-harvest-basket-container {
-    margin: 0 auto 1.5rem;
+  .game-harvest-crate-container {
+    margin: 0 auto 1.25rem;
     padding: 1rem 0.5rem 0.75rem;
     border-radius: 18px;
   }
 
-  .basket-stage {
-    width: 290px;
+  .crate-3d-stage {
+    width: 295px;
     height: 185px;
   }
 
-  .basket-layer-front {
-    height: 110px;
+  .crate-front-facade {
+    height: 105px;
   }
 
-  .produce-disc {
-    width: 54px;
-    height: 54px;
-    padding: 3px;
+  .produce-sprite-wrapper {
+    width: 58px;
+    height: 58px;
   }
 
-  .produce-peek-ghost {
+  .produce-cluster-shadow-item {
     width: 50px;
     height: 50px;
-    top: -6px;
-    left: -6px;
   }
 
-  .basket-produce-canvas {
-    bottom: 50px;
-    height: 115px;
+  .crate-produce-stage {
+    bottom: 52px;
+    height: 120px;
   }
 
-  .produce-qty-pill {
+  .produce-game-badge {
     font-size: 0.65rem;
     padding: 1px 5px;
   }
 
-  .basket-brand-badge {
-    bottom: 18px;
-    font-size: 0.62rem;
-    padding: 2px 7px;
-  }
-
-  .basket-status-bar {
-    margin-top: 0.85rem;
-    flex-direction: column;
-    gap: 0.25rem;
-  }
-
-  .basket-count-chip {
-    font-size: 0.78rem;
-  }
-
-  .basket-hint-chip {
-    font-size: 0.72rem;
+  .crate-brand-plaque {
+    bottom: 20px;
+    font-size: 0.64rem;
+    padding: 2px 8px;
   }
 }
 
 @media (min-width: 768px) {
-  .basket-stage {
-    width: 370px;
-    height: 230px;
+  .crate-3d-stage {
+    width: 380px;
+    height: 235px;
   }
 
-  .basket-layer-front {
-    height: 135px;
+  .crate-front-facade {
+    height: 130px;
   }
 
-  .produce-disc {
-    width: 72px;
-    height: 72px;
+  .produce-sprite-wrapper {
+    width: 78px;
+    height: 78px;
   }
 
-  .produce-peek-ghost {
-    width: 66px;
-    height: 66px;
-  }
-
-  .basket-produce-canvas {
+  .crate-produce-stage {
     bottom: 64px;
-    height: 140px;
+    height: 145px;
   }
 }
