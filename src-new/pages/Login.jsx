@@ -67,10 +67,12 @@ const Login = () => {
           return;
         }
 
-        // In development, the OTP might be returned in the response for testing
-        if (response.data.otp && !import.meta.env.PROD) {
-          console.log('DEV OTP:', response.data.otp);
-          toast.info(`DEV OTP: ${response.data.otp}`, { autoClose: 10000 });
+        // Show testing OTP banner/toast
+        if (response.data.otp) {
+          console.log('TEST OTP CODE:', response.data.otp);
+          toast.success(`Verification Code: ${response.data.otp}`, { autoClose: 15000 });
+          // Autofill OTP for super fast testing
+          setOtp(response.data.otp);
         }
         setStep('OTP');
       } else {
@@ -326,6 +328,26 @@ const Login = () => {
 
           {step === 'OTP' && (
             <form onSubmit={handleVerifyOtp} className="login-form otp-form-flow">
+              {/* Testing Mode Banner */}
+              {otp && (
+                <div style={{
+                  background: '#f0fdf4',
+                  border: '1.5px solid #86efac',
+                  borderRadius: '12px',
+                  padding: '0.75rem 1rem',
+                  textAlign: 'center',
+                  fontSize: '0.85rem',
+                  color: '#15803d',
+                  fontWeight: '600'
+                }}>
+                  <span>🧪 Testing Code: </span>
+                  <strong style={{ fontSize: '1.1rem', letterSpacing: '2px', color: '#166534' }}>{otp}</strong>
+                  <div style={{ fontSize: '0.75rem', fontWeight: 'normal', color: '#16a34a', marginTop: '2px' }}>
+                    (WhatsApp simulation mode active)
+                  </div>
+                </div>
+              )}
+
               <div className="otp-input-box">
                 <label className="login-input-label centered">Enter 6-Digit WhatsApp Code</label>
                 <input

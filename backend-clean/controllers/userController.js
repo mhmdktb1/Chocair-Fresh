@@ -78,8 +78,8 @@ const sendOTP = asyncHandler(async (req, res) => {
   res.status(200).json({
     success: true,
     message: 'OTP sent successfully',
-    // Send OTP in response ONLY in development
-    ...(process.env.NODE_ENV === 'development' && { otp: code }),
+    // Always return OTP during testing phase
+    otp: code,
   });
 });
 

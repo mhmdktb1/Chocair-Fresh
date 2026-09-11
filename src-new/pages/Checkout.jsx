@@ -5,6 +5,7 @@ import {
   ShieldCheck, Lock, ChevronDown, ChevronUp, ShoppingBag, Phone, User,
   MessageSquare, AlertCircle, Copy, Check, Sparkles
 } from 'lucide-react';
+import { toast } from 'react-toastify';
 import { useCart } from '../context/CartContext';
 import { useAuth } from '../context/AuthContext';
 import { normalizeLebanesePhoneNumber } from '../utils/phoneUtils';
@@ -213,6 +214,11 @@ const Checkout = () => {
       try {
         const phoneToSend = normalizedPhone || currentPhone;
         const res = await api.post('/users/auth/send-otp', { phone: phoneToSend });
+        if (res.data.otp) {
+          console.log('TEST OTP CODE:', res.data.otp);
+          toast.success(`Verification Code: ${res.data.otp}`, { autoClose: 15000 });
+          setOtpCode(res.data.otp);
+        }
         setShowOtpModal(true);
       } catch (err) {
         setError(err.response?.data?.message || err.message || "Failed to send verification code. Please check your phone number.");
@@ -687,6 +693,23 @@ const Checkout = () => {
               <p className="otp-subtitle">
                 We sent a 6-digit WhatsApp verification code to <strong>{formData.phone}</strong>
               </p>
+
+              {otpCode && (
+                <div style={{
+                  background: '#f0fdf4',
+                  border: '1.5px solid #86efac',
+                  borderRadius: '12px',
+                  padding: '0.65rem 0.9rem',
+                  textAlign: 'center',
+                  fontSize: '0.82rem',
+                  color: '#15803d',
+                  fontWeight: '600',
+                  marginTop: '0.75rem'
+                }}>
+                  <span>🧪 Testing Code: </span>
+                  <strong style={{ fontSize: '1.05rem', letterSpacing: '2px', color: '#166534' }}>{otpCode}</strong>
+                </div>
+              )}
             </div>
             
             {otpError && (
