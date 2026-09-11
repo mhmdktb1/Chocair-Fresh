@@ -1,11 +1,14 @@
 import React, { useEffect, useMemo, useRef, useState, useCallback } from "react";
 import { GoogleMap, useJsApiLoader } from "@react-google-maps/api";
-import { MapPin, Navigation, ChevronRight, X, Check, Building } from "lucide-react";
+import { 
+  MapPin, Navigation, ChevronRight, X, Check, Building, 
+  Layers, Compass, Edit3, Plus, ArrowRight
+} from "lucide-react";
 import { toast } from "react-toastify";
 import "./LocationPicker.css";
 
 /**
- * Toters-Style Clean Location Picker
+ * Toters-Style Clean Location & Building Details Selector
  * Props:
  * - onLocationSelect: (payload) => void
  *   payload = { address: string, lat: number|null, lng: number|null, source: "map"|"gps"|"manual" }
@@ -24,10 +27,19 @@ const LocationPicker = ({ onLocationSelect, initialLocation }) => {
     landmark: "",
   });
 
-  // Modal map state
+  // Modals state
   const [showMapModal, setShowMapModal] = useState(false);
+  const [showBuildingModal, setShowBuildingModal] = useState(false);
+  
+  // Temp states for modals
   const [tempCoords, setTempCoords] = useState(defaultCenter);
   const [tempAddress, setTempAddress] = useState("");
+  const [tempDetails, setTempDetails] = useState({
+    building: "",
+    floor: "",
+    apartment: "",
+    landmark: "",
+  });
   const [isLocating, setIsLocating] = useState(false);
 
   const mapRef = useRef(null);
@@ -51,6 +63,20 @@ const LocationPicker = ({ onLocationSelect, initialLocation }) => {
     if (details.landmark) parts.push(`Landmark: ${details.landmark}`);
     return parts.join(", ");
   }, []);
+
+  // Check if building details are filled
+  const hasBuildingDetails = Boolean(
+    buildingDetails.building || buildingDetails.floor || buildingDetails.apartment || buildingDetails.landmark
+  );
+
+  const buildingSummaryText = useMemo(() => {
+    const parts = [];
+    if (buildingDetails.building) parts.push(`Bldg: ${buildingDetails.building}`);
+    if (buildingDetails.floor) parts.push(`Floor ${buildingDetails.floor}`);
+    if (buildingDetails.apartment) parts.push(`Apt ${buildingDetails.apartment}`);
+    if (buildingDetails.landmark) parts.push(`Near: ${buildingDetails.landmark}`);
+    return parts.join(" • ");
+  }, [buildingDetails]);
 
   // Parse initialLocation on mount/change
   useEffect(() => {
@@ -159,7 +185,7 @@ const LocationPicker = ({ onLocationSelect, initialLocation }) => {
     );
   }, [reverseGeocode]);
 
-  // Confirm Location from Modal
+  // Confirm Location from Map Modal -> Opens building details modal for seamless Toters flow
   const handleConfirmLocation = () => {
     setSelectedCoords(tempCoords);
     const chosenArea = tempAddress || `${tempCoords.lat.toFixed(4)}, ${tempCoords.lng.toFixed(4)}`;
@@ -173,14 +199,27 @@ const LocationPicker = ({ onLocationSelect, initialLocation }) => {
       lng: tempCoords.lng,
       source: "map",
     });
+
+    // Seamlessly prompt for building details if not yet filled
+    if (!hasBuildingDetails) {
+      setTempDetails(buildingDetails);
+      setShowBuildingModal(true);
+    }
   };
 
-  // Building detail field updates
-  const handleDetailChange = (field, value) => {
-    const updated = { ...buildingDetails, [field]: value };
-    setBuildingDetails(updated);
+  // Open building details modal
+  const handleOpenBuildingModal = () => {
+    setTempDetails(buildingDetails);
+    setShowBuildingModal(true);
+  };
 
-    const full = composeFullAddress(areaAddress, updated);
+  // Save building details from modal
+  const handleSaveBuildingDetails = (e) => {
+    if (e) e.preventDefault();
+    setBuildingDetails(tempDetails);
+    setShowBuildingModal(false);
+
+    const full = composeFullAddress(areaAddress, tempDetails);
     onLocationSelect?.({
       address: full,
       lat: selectedCoords?.lat ?? null,
@@ -227,10 +266,10 @@ const LocationPicker = ({ onLocationSelect, initialLocation }) => {
           </div>
           <div className="toters-card-text">
             <span className="toters-card-label">
-              {areaAddress ? "Delivery Pin Set" : "Pin Location on Map"}
+              {areaAddress ? "Delivery Pin Set" : "1. Pin Location on Map"}
             </span>
             <div className={`toters-card-address ${!areaAddress ? "placeholder" : ""}`}>
-              {areaAddress || "Tap to select your exact location..."}
+              {areaAddress || "Tap to select your area on map..."}
             </div>
             <span className="toters-card-hint">
               {selectedCoords ? "📍 Exact GPS coordinates saved" : "Opens full interactive map"}
@@ -247,45 +286,38 @@ const LocationPicker = ({ onLocationSelect, initialLocation }) => {
         </div>
       </div>
 
-      {/* 2. Structured Building & Floor Form */}
-      <div className="toters-details-form-box">
-        <span className="details-box-title">
-          <Building size={14} /> Building & Apartment Details
-        </span>
-        
-        <div className="details-grid-row">
-          <div className="details-input-wrap">
-            <label className="details-mini-label">Building / Street Name</label>
-            <input
-              type="text"
-              placeholder="e.g. Al-Rida Bldg, St. 14"
-              value={buildingDetails.building}
-              onChange={(e) => handleDetailChange("building", e.target.value)}
-              className="details-input"
-            />
+      {/* 2. Toters-Style Clean Building & Apartment Card */}
+      <div 
+        className={`toters-location-card toters-building-card ${hasBuildingDetails ? "has-selected" : ""}`}
+        onClick={handleOpenBuildingModal}
+        role="button"
+        tabIndex={0}
+      >
+        <div className="toters-card-left">
+          <div className="toters-pin-icon-wrap building-icon-wrap">
+            <Building size={20} />
           </div>
-
-          <div className="details-input-wrap">
-            <label className="details-mini-label">Floor & Apt # (Optional)</label>
-            <input
-              type="text"
-              placeholder="e.g. 3rd Floor, Apt 5"
-              value={buildingDetails.floor}
-              onChange={(e) => handleDetailChange("floor", e.target.value)}
-              className="details-input"
-            />
+          <div className="toters-card-text">
+            <span className="toters-card-label">
+              {hasBuildingDetails ? "Building & Floor Set" : "2. Building & Floor Details"}
+            </span>
+            <div className={`toters-card-address ${!hasBuildingDetails ? "placeholder" : ""}`}>
+              {hasBuildingDetails ? buildingSummaryText : "Add building, floor, apt & landmark..."}
+            </div>
+            <span className="toters-card-hint">
+              {hasBuildingDetails ? "✅ Details saved for driver" : "Tap to add apartment details"}
+            </span>
           </div>
         </div>
 
-        <div className="details-input-wrap">
-          <label className="details-mini-label">Nearest Landmark / Delivery Instructions</label>
-          <input
-            type="text"
-            placeholder="e.g. Near Al-Nour Pharmacy, gray gate"
-            value={buildingDetails.landmark}
-            onChange={(e) => handleDetailChange("landmark", e.target.value)}
-            className="details-input"
-          />
+        <div className="toters-card-right">
+          {hasBuildingDetails ? (
+            <span className="toters-change-pill edit-pill">Edit Details</span>
+          ) : (
+            <span className="toters-add-pill">
+              <Plus size={14} /> Add
+            </span>
+          )}
         </div>
       </div>
 
@@ -297,7 +329,7 @@ const LocationPicker = ({ onLocationSelect, initialLocation }) => {
             {/* Modal Header */}
             <div className="toters-modal-header">
               <div className="modal-header-info">
-                <h3 className="modal-header-title">Set Delivery Location</h3>
+                <h3 className="modal-header-title">Pin Delivery Location</h3>
                 <span className="modal-header-sub">Drag map to position pin at your exact door</span>
               </div>
               <button 
@@ -379,9 +411,111 @@ const LocationPicker = ({ onLocationSelect, initialLocation }) => {
                 onClick={handleConfirmLocation}
               >
                 <Check size={18} />
-                <span>Confirm Delivery Location</span>
+                <span>Confirm Pin & Add Details</span>
               </button>
             </div>
+
+          </div>
+        </div>
+      )}
+
+      {/* 4. Toters-Style Building & Floor Details Modal */}
+      {showBuildingModal && (
+        <div className="toters-map-modal-overlay">
+          <div className="toters-building-modal-card">
+            
+            {/* Modal Header */}
+            <div className="toters-modal-header">
+              <div className="modal-header-info">
+                <h3 className="modal-header-title">Building & Apartment Details</h3>
+                <span className="modal-header-sub">Helps our courier deliver straight to your door</span>
+              </div>
+              <button 
+                type="button" 
+                className="toters-modal-close-btn"
+                onClick={() => setShowBuildingModal(false)}
+                aria-label="Close"
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            {/* Area Reminder Banner */}
+            {areaAddress && (
+              <div className="building-modal-area-banner">
+                <MapPin size={16} className="banner-icon" />
+                <div className="banner-text">
+                  <span className="banner-label">Delivering around:</span>
+                  <strong className="banner-addr">{areaAddress}</strong>
+                </div>
+              </div>
+            )}
+
+            {/* Form Fields */}
+            <form onSubmit={handleSaveBuildingDetails} className="building-modal-form">
+              <div className="modal-input-field">
+                <label className="modal-field-label">
+                  <Building size={14} /> Building or Street Name
+                </label>
+                <input
+                  type="text"
+                  placeholder="e.g. Al-Rida Bldg, Facing Bank X"
+                  value={tempDetails.building}
+                  onChange={(e) => setTempDetails({ ...tempDetails, building: e.target.value })}
+                  className="modal-field-input"
+                  autoFocus
+                />
+              </div>
+
+              <div className="modal-fields-grid-two">
+                <div className="modal-input-field">
+                  <label className="modal-field-label">
+                    <Layers size={14} /> Floor #
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="e.g. 3rd Floor"
+                    value={tempDetails.floor}
+                    onChange={(e) => setTempDetails({ ...tempDetails, floor: e.target.value })}
+                    className="modal-field-input"
+                  />
+                </div>
+
+                <div className="modal-input-field">
+                  <label className="modal-field-label">Apartment #</label>
+                  <input
+                    type="text"
+                    placeholder="e.g. Apt 5 / Right"
+                    value={tempDetails.apartment}
+                    onChange={(e) => setTempDetails({ ...tempDetails, apartment: e.target.value })}
+                    className="modal-field-input"
+                  />
+                </div>
+              </div>
+
+              <div className="modal-input-field">
+                <label className="modal-field-label">
+                  <Compass size={14} /> Landmark / Gate Instructions (Optional)
+                </label>
+                <input
+                  type="text"
+                  placeholder="e.g. Next to Pharmacy, gray building gate"
+                  value={tempDetails.landmark}
+                  onChange={(e) => setTempDetails({ ...tempDetails, landmark: e.target.value })}
+                  className="modal-field-input"
+                />
+              </div>
+
+              <div className="building-modal-footer">
+                <button 
+                  type="submit"
+                  className="toters-confirm-location-btn"
+                >
+                  <Check size={18} />
+                  <span>Save Building Details</span>
+                </button>
+              </div>
+            </form>
 
           </div>
         </div>

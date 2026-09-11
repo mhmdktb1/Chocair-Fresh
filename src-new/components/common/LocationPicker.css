@@ -9,7 +9,7 @@
   width: 100%;
 }
 
-/* 1. Toters-Style Main Location Action Card */
+/* 1. Toters-Style Main Location & Building Action Cards */
 .toters-location-card {
   display: flex;
   align-items: center;
@@ -37,6 +37,15 @@
   background: #fafdfb;
 }
 
+.toters-building-card {
+  border-color: #edf2f7;
+}
+
+.toters-building-card.has-selected {
+  border-color: #93c5fd;
+  background: #f8fafc;
+}
+
 .toters-card-left {
   display: flex;
   align-items: center;
@@ -59,10 +68,14 @@
   transition: transform 0.2s ease;
 }
 
+.toters-pin-icon-wrap.building-icon-wrap {
+  background: #eff6ff;
+  color: #2563eb;
+  border-color: #dbeafe;
+}
+
 .toters-location-card:hover .toters-pin-icon-wrap {
   transform: scale(1.05);
-  background: #16a34a;
-  color: #ffffff;
 }
 
 .toters-card-text {
@@ -80,6 +93,10 @@
   font-weight: 700;
   color: #16a34a;
   line-height: 1;
+}
+
+.toters-building-card .toters-card-label {
+  color: #2563eb;
 }
 
 .toters-card-address {
@@ -121,6 +138,24 @@
   border-radius: 20px;
 }
 
+.toters-change-pill.edit-pill {
+  color: #1d4ed8;
+  background: #dbeafe;
+}
+
+.toters-add-pill {
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: #2563eb;
+  background: #eff6ff;
+  border: 1px solid #bfdbfe;
+  padding: 4px 10px;
+  border-radius: 20px;
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+}
+
 .toters-arrow-icon {
   color: #94a3b8;
   transition: transform 0.15s ease;
@@ -131,66 +166,8 @@
   color: #16a34a;
 }
 
-/* 2. Structured Building & Floor Details Form */
-.toters-details-form-box {
-  background: #f8fafc;
-  border: 1px solid #edf2f7;
-  border-radius: 14px;
-  padding: 0.85rem 1rem;
-  display: flex;
-  flex-direction: column;
-  gap: 0.65rem;
-}
-
-.details-box-title {
-  display: flex;
-  align-items: center;
-  gap: 0.4rem;
-  font-size: 0.76rem;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.4px;
-  color: #475569;
-}
-
-.details-grid-row {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 0.65rem;
-}
-
-.details-input-wrap {
-  display: flex;
-  flex-direction: column;
-  gap: 0.3rem;
-}
-
-.details-mini-label {
-  font-size: 0.72rem;
-  font-weight: 600;
-  color: #64748b;
-}
-
-.details-input {
-  width: 100%;
-  background: #ffffff;
-  border: 1px solid #cbd5e1;
-  border-radius: 9px;
-  padding: 0.55rem 0.75rem;
-  font-size: 0.82rem;
-  color: #0f172a;
-  box-sizing: border-box;
-  transition: all 0.2s ease;
-}
-
-.details-input:focus {
-  outline: none;
-  border-color: #16a34a;
-  box-shadow: 0 0 0 2.5px rgba(22, 163, 74, 0.12);
-}
-
 /* ---------------------------------------------------------
-   3. FULLSCREEN / BOTTOM SHEET MAP MODAL
+   2. FULLSCREEN / BOTTOM SHEET MAP & BUILDING MODALS
    --------------------------------------------------------- */
 .toters-map-modal-overlay {
   position: fixed;
@@ -220,6 +197,19 @@
   max-width: 640px;
   height: 85vh;
   max-height: 720px;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+  animation: mapModalScale 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.toters-building-modal-card {
+  position: relative;
+  background: #ffffff;
+  border-radius: 24px;
+  width: 100%;
+  max-width: 500px;
   display: flex;
   flex-direction: column;
   overflow: hidden;
@@ -280,6 +270,95 @@
   color: #ef4444;
 }
 
+/* Area Banner inside Building Modal */
+.building-modal-area-banner {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  background: #f0fdf4;
+  border-bottom: 1px solid #dcfce7;
+  padding: 0.75rem 1.25rem;
+}
+
+.banner-icon {
+  color: #16a34a;
+  flex-shrink: 0;
+}
+
+.banner-text {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.banner-label {
+  font-size: 0.65rem;
+  text-transform: uppercase;
+  color: #15803d;
+  font-weight: 700;
+  letter-spacing: 0.4px;
+}
+
+.banner-addr {
+  font-size: 0.85rem;
+  color: #0f172a;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Building Modal Form Fields */
+.building-modal-form {
+  padding: 1.25rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.modal-input-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.modal-field-label {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: #334155;
+}
+
+.modal-field-input {
+  width: 100%;
+  background: #f8fafc;
+  border: 1.5px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 0.75rem 0.95rem;
+  font-size: 0.88rem;
+  color: #0f172a;
+  box-sizing: border-box;
+  transition: all 0.2s ease;
+}
+
+.modal-field-input:focus {
+  outline: none;
+  background: #ffffff;
+  border-color: #16a34a;
+  box-shadow: 0 0 0 3px rgba(22, 163, 74, 0.12);
+}
+
+.modal-fields-grid-two {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.85rem;
+}
+
+.building-modal-footer {
+  margin-top: 0.5rem;
+}
+
 /* Modal Map Canvas Stage */
 .toters-map-viewport {
   position: relative;
@@ -289,7 +368,7 @@
   background: #e2e8f0;
 }
 
-/* Floating Center Target Pin (App Style) */
+/* Floating Center Target Pin */
 .toters-center-pin-marker {
   position: absolute;
   top: 50%;
@@ -333,7 +412,7 @@
   filter: blur(1px);
 }
 
-/* Floating GPS Locate Button on Map */
+/* Floating GPS Locate Button */
 .toters-floating-locate-btn {
   position: absolute;
   bottom: 16px;
@@ -468,7 +547,7 @@
 }
 
 /* ---------------------------------------------------------
-   4. MOBILE SPECIFIC MODAL (BOTTOM SHEET)
+   3. MOBILE SPECIFIC MODALS (BOTTOM SHEETS)
    --------------------------------------------------------- */
 @media (max-width: 768px) {
   .toters-map-modal-overlay {
@@ -483,13 +562,20 @@
     animation: mapModalSlideUp 0.25s cubic-bezier(0.16, 1, 0.3, 1);
   }
 
+  .toters-building-modal-card {
+    border-radius: 24px 24px 0 0;
+    max-width: 100%;
+    animation: mapModalSlideUp 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+
   @keyframes mapModalSlideUp {
     0% { transform: translateY(100%); }
     100% { transform: translateY(0); }
   }
 
-  .details-grid-row {
+  .modal-fields-grid-two {
     grid-template-columns: 1fr;
+    gap: 0.75rem;
   }
 
   .toters-location-card {
