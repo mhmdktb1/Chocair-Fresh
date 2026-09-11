@@ -1,22 +1,35 @@
 import React, { useEffect, useMemo, useRef, useState, useCallback } from "react";
-import { GoogleMap, MarkerF, useJsApiLoader } from "@react-google-maps/api";
-import { MapPin, Navigation } from "lucide-react";
+import { GoogleMap, useJsApiLoader } from "@react-google-maps/api";
+import { MapPin, Navigation, ChevronRight, X, Check, Building } from "lucide-react";
 import { toast } from "react-toastify";
+import "./LocationPicker.css";
 
 /**
+ * Toters-Style Clean Location Picker
  * Props:
  * - onLocationSelect: (payload) => void
  *   payload = { address: string, lat: number|null, lng: number|null, source: "map"|"gps"|"manual" }
- * - initialLocation:
- *   - string (address)
- *   - or { address?: string, lat?: number, lng?: number }
+ * - initialLocation: string | { address?: string, lat?: number, lng?: number }
  */
 const LocationPicker = ({ onLocationSelect, initialLocation }) => {
-  const defaultCenter = useMemo(() => ({ lat: 33.8938, lng: 35.5018 }), []);
-  const [selected, setSelected] = useState(null); // {lat, lng} | null
-  const [address, setAddress] = useState("");
+  const defaultCenter = useMemo(() => ({ lat: 33.8938, lng: 35.5018 }), []); // Beirut default
+  const [selectedCoords, setSelectedCoords] = useState(null); // { lat, lng }
+  const [areaAddress, setAreaAddress] = useState(""); // Base location from map (e.g., "Verdun, Beirut")
+  
+  // Structured building & floor details (standard for delivery in Lebanon)
+  const [buildingDetails, setBuildingDetails] = useState({
+    building: "",
+    floor: "",
+    apartment: "",
+    landmark: "",
+  });
+
+  // Modal map state
+  const [showMapModal, setShowMapModal] = useState(false);
+  const [tempCoords, setTempCoords] = useState(defaultCenter);
+  const [tempAddress, setTempAddress] = useState("");
   const [isLocating, setIsLocating] = useState(false);
-  const [isManualEdit, setIsManualEdit] = useState(false);
+
   const mapRef = useRef(null);
   const geocoderRef = useRef(null);
   const lastGeocodeIdRef = useRef(0);
@@ -26,15 +39,25 @@ const LocationPicker = ({ onLocationSelect, initialLocation }) => {
 
   const { isLoaded, loadError } = useJsApiLoader({
     googleMapsApiKey,
-    // libraries: ["places"], // only if you use Places features
   });
 
-  // Normalize initialLocation
+  // Helper to compose the full formatted address
+  const composeFullAddress = useCallback((baseArea, details) => {
+    const parts = [];
+    if (baseArea) parts.push(baseArea);
+    if (details.building) parts.push(`Bldg: ${details.building}`);
+    if (details.floor) parts.push(`Floor ${details.floor}`);
+    if (details.apartment) parts.push(`Apt ${details.apartment}`);
+    if (details.landmark) parts.push(`Landmark: ${details.landmark}`);
+    return parts.join(", ");
+  }, []);
+
+  // Parse initialLocation on mount/change
   useEffect(() => {
     if (!initialLocation) return;
 
     if (typeof initialLocation === "string") {
-      setAddress(initialLocation);
+      setAreaAddress(initialLocation);
       onLocationSelect?.({
         address: initialLocation,
         lat: null,
@@ -48,82 +71,69 @@ const LocationPicker = ({ onLocationSelect, initialLocation }) => {
     const initLat = typeof initialLocation.lat === "number" ? initialLocation.lat : null;
     const initLng = typeof initialLocation.lng === "number" ? initialLocation.lng : null;
 
-    if (initAddr) setAddress(initAddr);
+    if (initAddr) setAreaAddress(initAddr);
 
     if (initLat != null && initLng != null) {
       const loc = { lat: initLat, lng: initLng };
-      setSelected(loc);
+      setSelectedCoords(loc);
+      setTempCoords(loc);
       onLocationSelect?.({
         address: initAddr || "",
         lat: initLat,
         lng: initLng,
         source: "map",
       });
-    } else if (initAddr) {
-      onLocationSelect?.({
-        address: initAddr,
-        lat: null,
-        lng: null,
-        source: "manual",
-      });
     }
   }, [initialLocation, onLocationSelect]);
 
-  const reverseGeocode = useCallback(
-    (loc, source) => {
-      if (!geocoderRef.current || !window.google?.maps) {
-        const coordAddress = `Lat: ${loc.lat.toFixed(5)}, Lng: ${loc.lng.toFixed(5)}`;
-        setAddress(coordAddress);
-        onLocationSelect?.({ address: coordAddress, lat: loc.lat, lng: loc.lng, source });
-        return;
+  // Reverse geocoding helper
+  const reverseGeocode = useCallback((loc, callback) => {
+    if (!geocoderRef.current && window.google?.maps) {
+      geocoderRef.current = new window.google.maps.Geocoder();
+    }
+
+    if (!geocoderRef.current) {
+      const coordStr = `${loc.lat.toFixed(4)}, ${loc.lng.toFixed(4)}`;
+      callback?.(coordStr);
+      return;
+    }
+
+    const geocodeId = ++lastGeocodeIdRef.current;
+    geocoderRef.current.geocode({ location: loc }, (results, status) => {
+      if (geocodeId !== lastGeocodeIdRef.current) return;
+
+      if (status === "OK" && results?.[0]?.formatted_address) {
+        callback?.(results[0].formatted_address);
+      } else {
+        const coordStr = `${loc.lat.toFixed(4)}, ${loc.lng.toFixed(4)}`;
+        callback?.(coordStr);
       }
+    });
+  }, []);
 
-      const geocodeId = ++lastGeocodeIdRef.current;
-
-      geocoderRef.current.geocode({ location: loc }, (results, status) => {
-        if (geocodeId !== lastGeocodeIdRef.current) return;
-
-        if (status === "OK" && results?.[0]?.formatted_address) {
-          const formatted = results[0].formatted_address;
-          setAddress(formatted);
-          onLocationSelect?.({ address: formatted, lat: loc.lat, lng: loc.lng, source });
-        } else {
-          const coordAddress = `Lat: ${loc.lat.toFixed(5)}, Lng: ${loc.lng.toFixed(5)}`;
-          setAddress(coordAddress);
-          onLocationSelect?.({ address: coordAddress, lat: loc.lat, lng: loc.lng, source });
-        }
-      });
-    },
-    [onLocationSelect]
-  );
-
-  const pickLocation = useCallback(
-    (loc, source) => {
-      setSelected(loc);
-      reverseGeocode(loc, source);
-    },
-    [reverseGeocode]
-  );
-
+  // Map load callback
   const onMapLoad = useCallback((map) => {
     mapRef.current = map;
     geocoderRef.current = new window.google.maps.Geocoder();
+    const initialPos = selectedCoords || defaultCenter;
+    map.panTo(initialPos);
+    map.setZoom(16);
+    reverseGeocode(initialPos, (addr) => setTempAddress(addr));
+  }, [selectedCoords, defaultCenter, reverseGeocode]);
 
-    if (selected) {
-      map.panTo(selected);
-      map.setZoom(15);
-    }
-  }, [selected]);
+  // Map center change handler (smooth center-pin dragging)
+  const onCameraIdle = useCallback(() => {
+    if (!mapRef.current) return;
+    const center = mapRef.current.getCenter();
+    if (!center) return;
 
-  const onMapClick = useCallback(
-    (e) => {
-      if (!e?.latLng) return;
-      pickLocation({ lat: e.latLng.lat(), lng: e.latLng.lng() }, "map");
-    },
-    [pickLocation]
-  );
+    const newLoc = { lat: center.lat(), lng: center.lng() };
+    setTempCoords(newLoc);
+    reverseGeocode(newLoc, (addr) => setTempAddress(addr));
+  }, [reverseGeocode]);
 
-  const handleGetCurrentLocation = useCallback(() => {
+  // GPS Locate Action inside Modal
+  const handleGpsLocate = useCallback(() => {
     if (!navigator.geolocation) {
       toast.warn("Geolocation is not supported in this browser.");
       return;
@@ -134,183 +144,248 @@ const LocationPicker = ({ onLocationSelect, initialLocation }) => {
       (pos) => {
         setIsLocating(false);
         const loc = { lat: pos.coords.latitude, lng: pos.coords.longitude };
-        pickLocation(loc, "gps");
+        setTempCoords(loc);
         mapRef.current?.panTo(loc);
         mapRef.current?.setZoom(17);
+        reverseGeocode(loc, (addr) => setTempAddress(addr));
       },
       (err) => {
         setIsLocating(false);
-        let msg = "Failed to get your location.";
-        if (err.code === 1) msg = "Location permission denied. Allow it from the browser settings.";
-        if (err.code === 2) msg = "Location unavailable. Check device/location settings.";
-        if (err.code === 3) msg = "Location request timed out. Try again.";
+        let msg = "Failed to detect current GPS location.";
+        if (err.code === 1) msg = "Location permission denied. Please allow location access.";
         toast.error(msg);
       },
-      { enableHighAccuracy: false, timeout: 20000, maximumAge: 0 }
+      { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 }
     );
-  }, [pickLocation]);
+  }, [reverseGeocode]);
 
-  const center = useMemo(() => selected ?? defaultCenter, [selected, defaultCenter]);
+  // Confirm Location from Modal
+  const handleConfirmLocation = () => {
+    setSelectedCoords(tempCoords);
+    const chosenArea = tempAddress || `${tempCoords.lat.toFixed(4)}, ${tempCoords.lng.toFixed(4)}`;
+    setAreaAddress(chosenArea);
+    setShowMapModal(false);
 
-  // Fallback: if map fails to load, provide manual entry
+    const full = composeFullAddress(chosenArea, buildingDetails);
+    onLocationSelect?.({
+      address: full,
+      lat: tempCoords.lat,
+      lng: tempCoords.lng,
+      source: "map",
+    });
+  };
+
+  // Building detail field updates
+  const handleDetailChange = (field, value) => {
+    const updated = { ...buildingDetails, [field]: value };
+    setBuildingDetails(updated);
+
+    const full = composeFullAddress(areaAddress, updated);
+    onLocationSelect?.({
+      address: full,
+      lat: selectedCoords?.lat ?? null,
+      lng: selectedCoords?.lng ?? null,
+      source: "manual",
+    });
+  };
+
+  // Fallback for manual typing if Google map loader fails
   if (loadError) {
     return (
-      <div className="location-picker-error">
-        <div className="form-group">
-          <label>
-            Location <span style={{ color: "red" }}>*</span>
-          </label>
-          <input
-            type="text"
-            placeholder="Enter your address manually"
-            value={address}
-            onChange={(e) => {
-              const v = e.target.value;
-              setAddress(v);
-              onLocationSelect?.({ address: v, lat: null, lng: null, source: "manual" });
-            }}
-            style={{
-              width: "100%",
-              padding: "10px",
-              border: "1px solid #ddd",
-              borderRadius: "8px",
-            }}
-          />
-          <small style={{ color: "orange", marginTop: "5px", display: "block" }}>
-            Map could not be loaded. Check API key, billing, and referrer restrictions.
-          </small>
-        </div>
+      <div className="location-picker-card-container">
+        <input
+          type="text"
+          placeholder="Enter delivery address (Area, Building, Floor)..."
+          value={areaAddress}
+          onChange={(e) => {
+            const v = e.target.value;
+            setAreaAddress(v);
+            onLocationSelect?.({ address: v, lat: null, lng: null, source: "manual" });
+          }}
+          className="details-input"
+        />
       </div>
     );
   }
 
   return (
-    <div className="location-picker">
-      <div
-        style={{
-          marginBottom: 10,
-          display: "flex",
-          justifyContent: "space-between",
-          alignItems: "center",
-          gap: 10,
+    <div className="location-picker-card-container">
+      {/* 1. Toters-Style Main Location Selector Card */}
+      <div 
+        className={`toters-location-card ${areaAddress ? "has-selected" : ""}`}
+        onClick={() => {
+          setTempCoords(selectedCoords || defaultCenter);
+          setTempAddress(areaAddress || "Beirut, Lebanon");
+          setShowMapModal(true);
         }}
+        role="button"
+        tabIndex={0}
       >
-        <label style={{ fontWeight: 600, color: "#333" }}>Pin your delivery location</label>
-
-        <button
-          type="button"
-          onClick={handleGetCurrentLocation}
-          disabled={!isLoaded || isLocating}
-          style={{
-            background: "none",
-            border: "none",
-            color: "#2e7d32",
-            cursor: isLoaded ? "pointer" : "not-allowed",
-            display: "flex",
-            alignItems: "center",
-            gap: 6,
-            fontSize: "0.9rem",
-            fontWeight: 600,
-            opacity: isLoaded ? 1 : 0.6,
-          }}
-        >
-          <Navigation size={16} />
-          {isLocating ? "Locating..." : "Use Current Location"}
-        </button>
-      </div>
-
-      <div
-        style={{
-          width: "100%",
-          height: 320,
-          borderRadius: 12,
-          overflow: "hidden",
-          border: "2px solid #e0e0e0",
-          position: "relative",
-        }}
-      >
-        {!isLoaded ? (
-          <div style={{ padding: 12 }}>Loading map...</div>
-        ) : (
-          <GoogleMap
-            mapContainerStyle={{ width: "100%", height: "100%" }}
-            center={center}
-            zoom={selected ? 15 : 13}
-            onLoad={onMapLoad}
-            onClick={onMapClick}
-            options={{
-              fullscreenControl: false,
-              streetViewControl: false,
-              mapTypeControl: false,
-              clickableIcons: false,
-            }}
-          >
-            <MarkerF
-              position={selected ?? defaultCenter}
-              draggable
-              onDragEnd={(e) => {
-                if (!e?.latLng) return;
-                pickLocation({ lat: e.latLng.lat(), lng: e.latLng.lng() }, "map");
-              }}
-            />
-          </GoogleMap>
-        )}
-      </div>
-
-      <div className="form-group" style={{ marginTop: 12 }}>
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6 }}>
-          <label style={{ fontSize: "0.85rem", color: "#666", fontWeight: 600 }}>Selected Address Details:</label>
-          <button
-            type="button"
-            onClick={() => setIsManualEdit(!isManualEdit)}
-            style={{
-              background: "none",
-              border: "none",
-              color: "#2e7d32",
-              fontSize: "0.8rem",
-              cursor: "pointer",
-              textDecoration: "underline",
-              padding: 0
-            }}
-          >
-            {isManualEdit ? "Lock Address" : "Edit / Refine Manually"}
-          </button>
+        <div className="toters-card-left">
+          <div className="toters-pin-icon-wrap">
+            <MapPin size={20} />
+          </div>
+          <div className="toters-card-text">
+            <span className="toters-card-label">
+              {areaAddress ? "Delivery Pin Set" : "Pin Location on Map"}
+            </span>
+            <div className={`toters-card-address ${!areaAddress ? "placeholder" : ""}`}>
+              {areaAddress || "Tap to select your exact location..."}
+            </div>
+            <span className="toters-card-hint">
+              {selectedCoords ? "📍 Exact GPS coordinates saved" : "Opens full interactive map"}
+            </span>
+          </div>
         </div>
-        <div style={{ position: "relative" }}>
+
+        <div className="toters-card-right">
+          {areaAddress ? (
+            <span className="toters-change-pill">Change Pin</span>
+          ) : (
+            <ChevronRight size={18} className="toters-arrow-icon" />
+          )}
+        </div>
+      </div>
+
+      {/* 2. Structured Building & Floor Form */}
+      <div className="toters-details-form-box">
+        <span className="details-box-title">
+          <Building size={14} /> Building & Apartment Details
+        </span>
+        
+        <div className="details-grid-row">
+          <div className="details-input-wrap">
+            <label className="details-mini-label">Building / Street Name</label>
+            <input
+              type="text"
+              placeholder="e.g. Al-Rida Bldg, St. 14"
+              value={buildingDetails.building}
+              onChange={(e) => handleDetailChange("building", e.target.value)}
+              className="details-input"
+            />
+          </div>
+
+          <div className="details-input-wrap">
+            <label className="details-mini-label">Floor & Apt # (Optional)</label>
+            <input
+              type="text"
+              placeholder="e.g. 3rd Floor, Apt 5"
+              value={buildingDetails.floor}
+              onChange={(e) => handleDetailChange("floor", e.target.value)}
+              className="details-input"
+            />
+          </div>
+        </div>
+
+        <div className="details-input-wrap">
+          <label className="details-mini-label">Nearest Landmark / Delivery Instructions</label>
           <input
             type="text"
-            value={address}
-            readOnly={!isManualEdit}
-            onChange={(e) => {
-              const val = e.target.value;
-              setAddress(val);
-              onLocationSelect?.({
-                address: val,
-                lat: selected?.lat ?? null,
-                lng: selected?.lng ?? null,
-                source: "manual",
-              });
-            }}
-            placeholder="Click map or type your full delivery address (building, floor, landmark)..."
-            style={{
-              width: "100%",
-              padding: "10px 10px 10px 35px",
-              border: "1px solid #ddd",
-              borderRadius: "8px",
-              backgroundColor: isManualEdit ? "#fff" : "#f9f9f9",
-            }}
-          />
-          <MapPin
-            size={18}
-            color="#2e7d32"
-            style={{ position: "absolute", left: 10, top: "50%", transform: "translateY(-50%)" }}
+            placeholder="e.g. Near Al-Nour Pharmacy, gray gate"
+            value={buildingDetails.landmark}
+            onChange={(e) => handleDetailChange("landmark", e.target.value)}
+            className="details-input"
           />
         </div>
-
-        <small style={{ display: "block", marginTop: 6, opacity: 0.75 }}>
-          Tip: Click the map or drag the pin to adjust, or click "Edit / Refine Manually" to add building details.
-        </small>
       </div>
+
+      {/* 3. Toters Fullscreen / Bottom Sheet Map Modal */}
+      {showMapModal && (
+        <div className="toters-map-modal-overlay">
+          <div className="toters-map-modal-card">
+            
+            {/* Modal Header */}
+            <div className="toters-modal-header">
+              <div className="modal-header-info">
+                <h3 className="modal-header-title">Set Delivery Location</h3>
+                <span className="modal-header-sub">Drag map to position pin at your exact door</span>
+              </div>
+              <button 
+                type="button" 
+                className="toters-modal-close-btn"
+                onClick={() => setShowMapModal(false)}
+                aria-label="Close Map"
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            {/* Map Canvas Viewport */}
+            <div className="toters-map-viewport">
+              {/* Top Hint Badge */}
+              <div className="toters-map-hint-pill">
+                📍 Drag map under center pin
+              </div>
+
+              {/* Floating Center Pin Marker */}
+              <div className="toters-center-pin-marker">
+                <div className="center-pin-icon-box">
+                  <div className="center-pin-inner">
+                    <MapPin size={22} />
+                  </div>
+                </div>
+                <div className="center-pin-pulse-shadow" />
+              </div>
+
+              {/* Floating Locate Me GPS button */}
+              <button 
+                type="button" 
+                className={`toters-floating-locate-btn ${isLocating ? "locating" : ""}`}
+                onClick={handleGpsLocate}
+                disabled={isLocating}
+              >
+                <Navigation size={15} className="gps-icon" />
+                <span>{isLocating ? "Locating..." : "Locate Me"}</span>
+              </button>
+
+              {/* Google Map */}
+              {isLoaded ? (
+                <GoogleMap
+                  mapContainerStyle={{ width: "100%", height: "100%" }}
+                  center={tempCoords}
+                  zoom={16}
+                  onLoad={onMapLoad}
+                  onIdle={onCameraIdle}
+                  options={{
+                    fullscreenControl: false,
+                    streetViewControl: false,
+                    mapTypeControl: false,
+                    zoomControl: true,
+                    clickableIcons: false,
+                  }}
+                />
+              ) : (
+                <div style={{ display: "flex", alignItems: "center", justifyContent: "center", height: "100%", color: "#64748b" }}>
+                  Loading map...
+                </div>
+              )}
+            </div>
+
+            {/* Modal Bottom Confirm Sheet */}
+            <div className="toters-modal-footer">
+              <div className="modal-address-preview-row">
+                <MapPin size={20} className="preview-pin-icon" />
+                <div className="preview-address-col">
+                  <span className="preview-address-label">Selected Location</span>
+                  <span className="preview-address-text">
+                    {tempAddress || "Detecting address..."}
+                  </span>
+                </div>
+              </div>
+
+              <button 
+                type="button"
+                className="toters-confirm-location-btn"
+                onClick={handleConfirmLocation}
+              >
+                <Check size={18} />
+                <span>Confirm Delivery Location</span>
+              </button>
+            </div>
+
+          </div>
+        </div>
+      )}
     </div>
   );
 };

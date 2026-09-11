@@ -1,0 +1,507 @@
+/* =========================================================
+   TOTERS-STYLE CLEAN LOCATION SELECTOR & MAP MODAL
+   ========================================================= */
+
+.location-picker-card-container {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  width: 100%;
+}
+
+/* 1. Toters-Style Main Location Action Card */
+.toters-location-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: #ffffff;
+  border: 1.5px solid #e2e8f0;
+  border-radius: 16px;
+  padding: 0.9rem 1rem;
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.02);
+  user-select: none;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.toters-location-card:hover {
+  border-color: #16a34a;
+  box-shadow: 0 4px 14px rgba(22, 163, 74, 0.08);
+  transform: translateY(-1px);
+}
+
+.toters-location-card.has-selected {
+  border-color: #86efac;
+  background: #fafdfb;
+}
+
+.toters-card-left {
+  display: flex;
+  align-items: center;
+  gap: 0.85rem;
+  flex: 1;
+  min-width: 0;
+}
+
+.toters-pin-icon-wrap {
+  width: 42px;
+  height: 42px;
+  border-radius: 12px;
+  background: #f0fdf4;
+  color: #16a34a;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  border: 1px solid #dcfce7;
+  transition: transform 0.2s ease;
+}
+
+.toters-location-card:hover .toters-pin-icon-wrap {
+  transform: scale(1.05);
+  background: #16a34a;
+  color: #ffffff;
+}
+
+.toters-card-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  flex: 1;
+  min-width: 0;
+}
+
+.toters-card-label {
+  font-size: 0.68rem;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  font-weight: 700;
+  color: #16a34a;
+  line-height: 1;
+}
+
+.toters-card-address {
+  font-size: 0.92rem;
+  font-weight: 700;
+  color: #0f172a;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  line-height: 1.3;
+}
+
+.toters-card-address.placeholder {
+  color: #64748b;
+  font-weight: 600;
+}
+
+.toters-card-hint {
+  font-size: 0.72rem;
+  color: #94a3b8;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.toters-card-right {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-shrink: 0;
+}
+
+.toters-change-pill {
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: #15803d;
+  background: #dcfce7;
+  padding: 4px 10px;
+  border-radius: 20px;
+}
+
+.toters-arrow-icon {
+  color: #94a3b8;
+  transition: transform 0.15s ease;
+}
+
+.toters-location-card:hover .toters-arrow-icon {
+  transform: translateX(2px);
+  color: #16a34a;
+}
+
+/* 2. Structured Building & Floor Details Form */
+.toters-details-form-box {
+  background: #f8fafc;
+  border: 1px solid #edf2f7;
+  border-radius: 14px;
+  padding: 0.85rem 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+}
+
+.details-box-title {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.76rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  color: #475569;
+}
+
+.details-grid-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.65rem;
+}
+
+.details-input-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+}
+
+.details-mini-label {
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: #64748b;
+}
+
+.details-input {
+  width: 100%;
+  background: #ffffff;
+  border: 1px solid #cbd5e1;
+  border-radius: 9px;
+  padding: 0.55rem 0.75rem;
+  font-size: 0.82rem;
+  color: #0f172a;
+  box-sizing: border-box;
+  transition: all 0.2s ease;
+}
+
+.details-input:focus {
+  outline: none;
+  border-color: #16a34a;
+  box-shadow: 0 0 0 2.5px rgba(22, 163, 74, 0.12);
+}
+
+/* ---------------------------------------------------------
+   3. FULLSCREEN / BOTTOM SHEET MAP MODAL
+   --------------------------------------------------------- */
+.toters-map-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.7);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10000;
+  padding: 1rem;
+  box-sizing: border-box;
+  animation: mapModalFade 0.2s ease;
+}
+
+@keyframes mapModalFade {
+  0% { opacity: 0; }
+  100% { opacity: 1; }
+}
+
+.toters-map-modal-card {
+  position: relative;
+  background: #ffffff;
+  border-radius: 24px;
+  width: 100%;
+  max-width: 640px;
+  height: 85vh;
+  max-height: 720px;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+  animation: mapModalScale 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes mapModalScale {
+  0% { transform: scale(0.96) translateY(10px); }
+  100% { transform: scale(1) translateY(0); }
+}
+
+/* Modal Top Bar */
+.toters-modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.9rem 1.25rem;
+  background: #ffffff;
+  border-bottom: 1px solid #f1f5f9;
+  z-index: 10;
+}
+
+.modal-header-info {
+  display: flex;
+  flex-direction: column;
+}
+
+.modal-header-title {
+  font-size: 1.05rem;
+  font-weight: 800;
+  color: #0f172a;
+  margin: 0;
+  line-height: 1.2;
+}
+
+.modal-header-sub {
+  font-size: 0.75rem;
+  color: #64748b;
+}
+
+.toters-modal-close-btn {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  background: #f1f5f9;
+  color: #64748b;
+  border: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.toters-modal-close-btn:hover {
+  background: #fee2e2;
+  color: #ef4444;
+}
+
+/* Modal Map Canvas Stage */
+.toters-map-viewport {
+  position: relative;
+  flex: 1;
+  width: 100%;
+  min-height: 250px;
+  background: #e2e8f0;
+}
+
+/* Floating Center Target Pin (App Style) */
+.toters-center-pin-marker {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -100%);
+  pointer-events: none;
+  z-index: 100;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  transition: transform 0.15s ease;
+}
+
+.center-pin-icon-box {
+  width: 44px;
+  height: 44px;
+  border-radius: 50% 50% 50% 0;
+  transform: rotate(-45deg);
+  background: linear-gradient(135deg, #22c55e 0%, #15803d 100%);
+  border: 3px solid #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #ffffff;
+  box-shadow: 0 8px 20px rgba(22, 163, 74, 0.4);
+}
+
+.center-pin-inner {
+  transform: rotate(45deg);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.center-pin-pulse-shadow {
+  width: 14px;
+  height: 6px;
+  background: rgba(0, 0, 0, 0.35);
+  border-radius: 50%;
+  margin-top: 4px;
+  filter: blur(1px);
+}
+
+/* Floating GPS Locate Button on Map */
+.toters-floating-locate-btn {
+  position: absolute;
+  bottom: 16px;
+  right: 16px;
+  background: #ffffff;
+  color: #0f172a;
+  border: 1px solid rgba(0, 0, 0, 0.1);
+  padding: 8px 14px;
+  border-radius: 30px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.8rem;
+  font-weight: 700;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
+  cursor: pointer;
+  z-index: 50;
+  transition: all 0.2s ease;
+}
+
+.toters-floating-locate-btn:hover {
+  background: #f0fdf4;
+  color: #16a34a;
+  transform: translateY(-2px);
+}
+
+.toters-floating-locate-btn.locating {
+  opacity: 0.8;
+  cursor: wait;
+}
+
+.toters-floating-locate-btn .gps-icon {
+  color: #16a34a;
+}
+
+/* Floating Top Search Hint Badge */
+.toters-map-hint-pill {
+  position: absolute;
+  top: 14px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(15, 23, 42, 0.85);
+  color: #ffffff;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  padding: 5px 14px;
+  border-radius: 20px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  pointer-events: none;
+  z-index: 50;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+  white-space: nowrap;
+}
+
+/* Modal Bottom Action Footer */
+.toters-modal-footer {
+  padding: 1rem 1.25rem;
+  background: #ffffff;
+  border-top: 1px solid #edf2f7;
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+  z-index: 10;
+}
+
+.modal-address-preview-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.65rem;
+}
+
+.preview-pin-icon {
+  color: #16a34a;
+  margin-top: 2px;
+  flex-shrink: 0;
+}
+
+.preview-address-col {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  flex: 1;
+  min-width: 0;
+}
+
+.preview-address-label {
+  font-size: 0.68rem;
+  text-transform: uppercase;
+  color: #64748b;
+  font-weight: 700;
+  letter-spacing: 0.4px;
+}
+
+.preview-address-text {
+  font-size: 0.88rem;
+  font-weight: 700;
+  color: #0f172a;
+  line-height: 1.3;
+  white-space: normal;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.toters-confirm-location-btn {
+  width: 100%;
+  background: linear-gradient(135deg, #16a34a 0%, #15803d 100%);
+  color: #ffffff;
+  border: none;
+  padding: 0.9rem 1.25rem;
+  border-radius: 14px;
+  font-size: 0.95rem;
+  font-weight: 700;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  box-shadow: 0 4px 16px rgba(22, 163, 74, 0.25);
+  transition: all 0.2s ease;
+}
+
+.toters-confirm-location-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 20px rgba(22, 163, 74, 0.35);
+}
+
+.toters-confirm-location-btn:active {
+  transform: scale(0.98);
+}
+
+/* ---------------------------------------------------------
+   4. MOBILE SPECIFIC MODAL (BOTTOM SHEET)
+   --------------------------------------------------------- */
+@media (max-width: 768px) {
+  .toters-map-modal-overlay {
+    padding: 0;
+    align-items: flex-end;
+  }
+
+  .toters-map-modal-card {
+    height: 92vh;
+    max-height: 92vh;
+    border-radius: 24px 24px 0 0;
+    animation: mapModalSlideUp 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+
+  @keyframes mapModalSlideUp {
+    0% { transform: translateY(100%); }
+    100% { transform: translateY(0); }
+  }
+
+  .details-grid-row {
+    grid-template-columns: 1fr;
+  }
+
+  .toters-location-card {
+    padding: 0.8rem 0.85rem;
+  }
+
+  .toters-pin-icon-wrap {
+    width: 38px;
+    height: 38px;
+  }
+
+  .toters-card-address {
+    font-size: 0.88rem;
+  }
+}
