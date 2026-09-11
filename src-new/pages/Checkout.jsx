@@ -3,7 +3,7 @@ import { useNavigate, Link } from 'react-router-dom';
 import { 
   CheckCircle, CreditCard, Truck, MapPin, X, ArrowLeft, ArrowRight,
   ShieldCheck, Lock, ChevronDown, ChevronUp, ShoppingBag, Phone, User,
-  Mail, MessageSquare, AlertCircle, Copy, Check
+  MessageSquare, AlertCircle, Copy, Check, Sparkles
 } from 'lucide-react';
 import { useCart } from '../context/CartContext';
 import { useAuth } from '../context/AuthContext';
@@ -36,7 +36,6 @@ const Checkout = () => {
 
   const [formData, setFormData] = useState({
     name: "",
-    email: "",
     phone: "",
     address: "",
     googleMapsLink: ""
@@ -49,13 +48,11 @@ const Checkout = () => {
       setFormData(prev => ({
         ...prev,
         name: user.name || '',
-        email: user.email || '',
         phone: user.phone || '',
       }));
     } else {
       setFormData({
         name: "",
-        email: "",
         phone: "",
         address: "",
         googleMapsLink: ""
@@ -104,9 +101,9 @@ const Checkout = () => {
           product: item._id || item.id
         })),
         customerInfo: {
-          name: formData.name,
-          email: formData.email,
-          phone: formData.phone,
+          name: user?.name || formData.name,
+          email: user?.email || '',
+          phone: user?.phone || formData.phone,
           address: formData.address,
           googleMapsLink: formData.googleMapsLink
         },
@@ -167,7 +164,6 @@ const Checkout = () => {
           const regRes = await api.post('/users/auth/register', {
             name: formData.name,
             phone: normalizedPhone,
-            email: formData.email,
             location: formData.address
           });
           authToken = regRes.data.token;
@@ -188,7 +184,10 @@ const Checkout = () => {
     e.preventDefault();
     setError("");
 
-    if (!formData.name.trim()) {
+    const currentName = user?.name || formData.name;
+    const currentPhone = user?.phone || formData.phone;
+
+    if (!currentName || !currentName.trim()) {
       setError('Please enter your full name');
       return;
     }
@@ -198,21 +197,21 @@ const Checkout = () => {
       return;
     }
 
-    const normalizedPhone = normalizeLebanesePhoneNumber(formData.phone);
-    if (!normalizedPhone && !formData.phone) {
+    const normalizedPhone = normalizeLebanesePhoneNumber(currentPhone);
+    if (!normalizedPhone && !currentPhone) {
       setError('Please enter a valid Lebanese phone number');
       return;
     }
     
-    // If user is already logged in AND has a verified phone number matching current input
+    // If user is already logged in AND has a verified phone number
     if (user && user.phone) {
       setLoading(true);
       await createOrder();
     } else {
-      // Prompt for WhatsApp OTP verification
+      // Prompt for WhatsApp OTP verification (e.g. Google user without phone or Guest)
       setLoading(true);
       try {
-        const phoneToSend = normalizedPhone || formData.phone;
+        const phoneToSend = normalizedPhone || currentPhone;
         const res = await api.post('/users/auth/send-otp', { phone: phoneToSend });
         setShowOtpModal(true);
       } catch (err) {
@@ -227,6 +226,10 @@ const Checkout = () => {
     navigate('/cart');
     return null;
   }
+
+  // Determine if user has a verified account & phone
+  const isFullyVerifiedUser = Boolean(user && user.phone);
+  const isGoogleUserNeedingPhone = Boolean(user && !user.phone);
 
   return (
     <div className="checkout-page">
@@ -324,7 +327,7 @@ const Checkout = () => {
           <div className="checkout-header-content">
             <div>
               <h1 className="checkout-title">Checkout</h1>
-              <p className="checkout-subtitle">Fill in your delivery details and choose your payment method.</p>
+              <p className="checkout-subtitle">Review delivery details and choose your payment method.</p>
             </div>
             <div className="desktop-secure-badge">
               <Lock size={15} /> 256-Bit SSL Encrypted
@@ -345,44 +348,42 @@ const Checkout = () => {
             )}
 
             <form onSubmit={handleSubmit} id="checkout-main-form" className="checkout-single-page-form">
-              {/* SECTION 1: Customer Contact & Delivery Details */}
-              <div className="checkout-section-box">
-                <div className="section-box-header">
-                  <div className="section-header-icon-wrap">
-                    <MapPin size={20} />
-                  </div>
-                  <div>
-                    <h2 className="section-box-title">Delivery & Contact Information</h2>
-                    <p className="section-box-subtitle">Where should we deliver your fresh produce?</p>
+              
+              {/* BOX 1: User Account / Contact Details (Conditional) */}
+              {isFullyVerifiedUser ? (
+                /* Authenticated & Verified user -> Clean compact summary chip */
+                <div className="checkout-user-logged-banner">
+                  <div className="user-logged-left">
+                    <div className="user-avatar-icon">
+                      <User size={18} />
+                    </div>
+                    <div className="user-logged-info">
+                      <span className="user-ordering-label">Ordering Account</span>
+                      <strong className="user-logged-name">{user.name || 'Valued Customer'}</strong>
+                      <span className="user-logged-phone">
+                        <Phone size={12} /> {user.phone}
+                        <span className="verified-pill"><CheckCircle size={11} /> Verified</span>
+                      </span>
+                    </div>
                   </div>
                 </div>
-
-                <div className="form-card-inner">
-                  <div className="form-input-group">
-                    <label htmlFor="name" className="modern-label">
-                      <User size={15} /> Full Name <span className="req-star">*</span>
-                    </label>
-                    <input 
-                      id="name"
-                      type="text" 
-                      name="name"
-                      required 
-                      placeholder="e.g. John Doe" 
-                      value={formData.name}
-                      onChange={handleInputChange}
-                      className="modern-input"
-                    />
+              ) : isGoogleUserNeedingPhone ? (
+                /* Google User without phone number -> Show phone number input only */
+                <div className="checkout-section-box">
+                  <div className="section-box-header">
+                    <div className="section-header-icon-wrap user-icon">
+                      <Phone size={20} />
+                    </div>
+                    <div>
+                      <h2 className="section-box-title">WhatsApp Phone Number</h2>
+                      <p className="section-box-subtitle">Hi {user.name || 'there'}, please enter your WhatsApp number for order updates.</p>
+                    </div>
                   </div>
 
-                  <div className="form-grid-two">
+                  <div className="form-card-inner">
                     <div className="form-input-group">
                       <label htmlFor="phone" className="modern-label">
                         <Phone size={15} /> Phone Number (WhatsApp) <span className="req-star">*</span>
-                        {user && user.phone && user.phone === formData.phone && (
-                          <span className="verified-badge">
-                            <CheckCircle size={12} /> Verified
-                          </span>
-                        )}
                       </label>
                       <input 
                         id="phone"
@@ -393,39 +394,83 @@ const Checkout = () => {
                         value={formData.phone}
                         onChange={handleInputChange}
                         className="modern-input"
-                      />
-                    </div>
-
-                    <div className="form-input-group">
-                      <label htmlFor="email" className="modern-label">
-                        <Mail size={15} /> Email Address <span className="opt-label">(Optional)</span>
-                      </label>
-                      <input 
-                        id="email"
-                        type="email" 
-                        name="email"
-                        placeholder="john@example.com" 
-                        value={formData.email}
-                        onChange={handleInputChange}
-                        className="modern-input"
+                        autoFocus
                       />
                     </div>
                   </div>
-
-                  {/* Clean Toters-style Location & Building Cards */}
-                  <div className="location-picker-group">
-                    <label className="modern-label">
-                      <MapPin size={15} /> Delivery Address & Location <span className="req-star">*</span>
-                    </label>
-                    <LocationPicker 
-                      onLocationSelect={handleLocationSelect} 
-                      initialLocation={formData.address} 
-                    />
+                </div>
+              ) : (
+                /* Guest User -> Show Name & Phone inputs */
+                <div className="checkout-section-box">
+                  <div className="section-box-header">
+                    <div className="section-header-icon-wrap user-icon">
+                      <User size={20} />
+                    </div>
+                    <div>
+                      <h2 className="section-box-title">Contact Information</h2>
+                      <p className="section-box-subtitle">Enter your name and WhatsApp number for delivery tracking.</p>
+                    </div>
                   </div>
+
+                  <div className="form-card-inner">
+                    <div className="form-grid-two">
+                      <div className="form-input-group">
+                        <label htmlFor="name" className="modern-label">
+                          <User size={15} /> Full Name <span className="req-star">*</span>
+                        </label>
+                        <input 
+                          id="name"
+                          type="text" 
+                          name="name"
+                          required 
+                          placeholder="e.g. John Doe" 
+                          value={formData.name}
+                          onChange={handleInputChange}
+                          className="modern-input"
+                        />
+                      </div>
+
+                      <div className="form-input-group">
+                        <label htmlFor="phone" className="modern-label">
+                          <Phone size={15} /> Phone Number (WhatsApp) <span className="req-star">*</span>
+                        </label>
+                        <input 
+                          id="phone"
+                          type="tel" 
+                          name="phone"
+                          required 
+                          placeholder="e.g. 70 123 456 or +961 70 123456" 
+                          value={formData.phone}
+                          onChange={handleInputChange}
+                          className="modern-input"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* BOX 2: Dedicated Delivery Address & Location Section */}
+              <div className="checkout-section-box">
+                <div className="section-box-header">
+                  <div className="section-header-icon-wrap">
+                    <MapPin size={20} />
+                  </div>
+                  <div>
+                    <h2 className="section-box-title">Delivery Location & Address</h2>
+                    <p className="section-box-subtitle">Select your area on the map and add building details.</p>
+                  </div>
+                </div>
+
+                <div className="form-card-inner">
+                  <LocationPicker 
+                    onLocationSelect={handleLocationSelect} 
+                    initialLocation={formData.address} 
+                  />
                 </div>
               </div>
 
-              {/* SECTION 2: Payment Method */}
+              {/* BOX 3: Dedicated Payment Method Section */}
               <div className="checkout-section-box">
                 <div className="section-box-header">
                   <div className="section-header-icon-wrap payment">
@@ -433,12 +478,11 @@ const Checkout = () => {
                   </div>
                   <div>
                     <h2 className="section-box-title">Payment Method</h2>
-                    <p className="section-box-subtitle">Choose how you prefer to settle your order.</p>
+                    <p className="section-box-subtitle">Choose how you prefer to pay for your fresh harvest.</p>
                   </div>
                 </div>
 
                 <div className="form-card-inner">
-                  {/* Modern Payment Selector */}
                   <div className="modern-payment-options">
                     {/* Cash on Delivery */}
                     <div 

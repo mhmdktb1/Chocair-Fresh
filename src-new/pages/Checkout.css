@@ -156,6 +156,81 @@
   gap: 1.25rem;
 }
 
+/* Compact Logged-in User Card Banner */
+.checkout-user-logged-banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%);
+  border: 1.5px solid #86efac;
+  border-radius: 18px;
+  padding: 0.95rem 1.25rem;
+  box-shadow: 0 4px 12px rgba(22, 163, 74, 0.06);
+}
+
+.user-logged-left {
+  display: flex;
+  align-items: center;
+  gap: 0.85rem;
+}
+
+.user-avatar-icon {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: #16a34a;
+  color: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  box-shadow: 0 2px 6px rgba(22, 163, 74, 0.2);
+}
+
+.user-logged-info {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.user-ordering-label {
+  font-size: 0.68rem;
+  text-transform: uppercase;
+  font-weight: 700;
+  color: #15803d;
+  letter-spacing: 0.5px;
+  line-height: 1;
+}
+
+.user-logged-name {
+  font-size: 0.98rem;
+  font-weight: 800;
+  color: #0f172a;
+}
+
+.user-logged-phone {
+  font-size: 0.78rem;
+  color: #334155;
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.verified-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  color: #15803d;
+  font-size: 0.68rem;
+  font-weight: 700;
+  background: #ffffff;
+  padding: 1px 6px;
+  border-radius: 6px;
+  border: 1px solid #86efac;
+  margin-left: 4px;
+}
+
 .section-box-header {
   display: flex;
   align-items: center;
@@ -175,6 +250,12 @@
   justify-content: center;
   flex-shrink: 0;
   border: 1px solid #dcfce7;
+}
+
+.section-header-icon-wrap.user-icon {
+  background: #f0fdf4;
+  color: #16a34a;
+  border-color: #dcfce7;
 }
 
 .section-header-icon-wrap.payment {
