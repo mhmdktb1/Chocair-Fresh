@@ -579,15 +579,36 @@
   }
 
   .toters-location-card {
-    padding: 0.8rem 0.85rem;
+    padding: 0.65rem 0.75rem;
+    border-radius: 12px;
   }
 
   .toters-pin-icon-wrap {
-    width: 38px;
-    height: 38px;
+    width: 34px;
+    height: 34px;
+    border-radius: 9px;
+  }
+
+  .toters-pin-icon-wrap svg {
+    width: 17px;
+    height: 17px;
+  }
+
+  .toters-card-label {
+    font-size: 0.62rem;
   }
 
   .toters-card-address {
-    font-size: 0.88rem;
+    font-size: 0.82rem;
+  }
+
+  .toters-card-hint {
+    font-size: 0.68rem;
+  }
+
+  .toters-change-pill,
+  .toters-add-pill {
+    font-size: 0.68rem;
+    padding: 3px 8px;
   }
 }
