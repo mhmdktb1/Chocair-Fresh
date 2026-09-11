@@ -1,6 +1,6 @@
 /* =========================================================
-   CHOCAIR FRESH - MOBILE-FIRST PREMIUM CHECKOUT
-   Clean, Fast, Responsive 2-Step Checkout Experience
+   CHOCAIR FRESH - SEAMLESS MODERN UNIFIED CHECKOUT
+   Single-Page, Frictionless, Mobile-First UX
    ========================================================= */
 
 .checkout-page {
@@ -20,7 +20,7 @@
   background: #ffffff;
   padding: 7.5rem 0 1.5rem;
   border-bottom: 1px solid #edf2f7;
-  margin-bottom: 1.5rem;
+  margin-bottom: 1.75rem;
 }
 
 .checkout-breadcrumb {
@@ -29,7 +29,7 @@
   gap: 0.5rem;
   font-size: 0.85rem;
   color: #94a3b8;
-  margin-bottom: 0.75rem;
+  margin-bottom: 0.6rem;
 }
 
 .breadcrumb-link {
@@ -55,106 +55,46 @@
 .checkout-header-content {
   display: flex;
   justify-content: space-between;
-  align-items: center;
+  align-items: flex-end;
   gap: 1.5rem;
 }
 
 .checkout-title {
-  font-size: 2rem;
+  font-size: 2.1rem;
   font-weight: 800;
   color: #0f172a;
   letter-spacing: -0.025em;
   margin: 0;
+  line-height: 1.2;
 }
 
-/* 2-Step Segmented Bar on Desktop */
-.checkout-step-pills {
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-  background: #f8fafc;
-  padding: 6px 12px;
-  border-radius: 999px;
-  border: 1px solid #e2e8f0;
-}
-
-.step-pill {
-  display: flex;
-  align-items: center;
-  gap: 0.6rem;
-  padding: 6px 12px;
-  border-radius: 999px;
-  color: #94a3b8;
-  cursor: pointer;
-  transition: all 0.2s ease;
-}
-
-.step-pill.active {
-  background: #ffffff;
-  color: #0f172a;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
-}
-
-.step-pill.completed {
-  color: #16a34a;
-}
-
-.pill-num {
-  width: 24px;
-  height: 24px;
-  border-radius: 50%;
-  background: #e2e8f0;
+.checkout-subtitle {
   color: #64748b;
-  display: flex;
+  font-size: 0.95rem;
+  margin-top: 0.35rem;
+}
+
+.desktop-secure-badge {
+  display: inline-flex;
   align-items: center;
-  justify-content: center;
-  font-size: 0.78rem;
+  gap: 0.4rem;
+  background: #f0fdf4;
+  color: #15803d;
+  border: 1px solid #86efac;
+  padding: 6px 14px;
+  border-radius: 999px;
+  font-size: 0.82rem;
   font-weight: 700;
-}
-
-.step-pill.active .pill-num {
-  background: #16a34a;
-  color: #ffffff;
-}
-
-.step-pill.completed .pill-num {
-  background: #dcfce7;
-  color: #16a34a;
-}
-
-.pill-text {
-  display: flex;
-  flex-direction: column;
-}
-
-.pill-label {
-  font-size: 0.65rem;
-  text-transform: uppercase;
-  font-weight: 700;
-  letter-spacing: 0.5px;
-}
-
-.pill-name {
-  font-size: 0.85rem;
-  font-weight: 700;
-}
-
-.step-pill-arrow {
-  color: #cbd5e1;
 }
 
 /* ---------------------------------------------------------
-   2. MOBILE HEADER & SUMMARY ACCORDION
+   2. MOBILE TOP HEADER (STICKY)
    --------------------------------------------------------- */
 .checkout-mobile-header {
   display: none;
 }
 
 .mobile-order-summary-toggle-bar {
-  display: none;
-}
-
-.mobile-step-pill-banner {
   display: none;
 }
 
@@ -180,6 +120,12 @@
   width: 100%;
 }
 
+.checkout-single-page-form {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
 .checkout-alert-error {
   background: #fef2f2;
   border: 1px solid #fca5a5;
@@ -198,20 +144,27 @@
   flex-shrink: 0;
 }
 
-.checkout-step-block {
+/* Section Box Wrapper */
+.checkout-section-box {
+  background: #ffffff;
+  border-radius: 20px;
+  padding: 1.5rem;
+  border: 1px solid #edf2f7;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.03);
   display: flex;
   flex-direction: column;
   gap: 1.25rem;
 }
 
-.step-block-header {
+.section-box-header {
   display: flex;
   align-items: center;
   gap: 0.85rem;
-  margin-bottom: 0.25rem;
+  border-bottom: 1px solid #f1f5f9;
+  padding-bottom: 1rem;
 }
 
-.step-header-icon-wrap {
+.section-header-icon-wrap {
   width: 42px;
   height: 42px;
   border-radius: 12px;
@@ -224,27 +177,28 @@
   border: 1px solid #dcfce7;
 }
 
-.step-block-title {
-  font-size: 1.3rem;
+.section-header-icon-wrap.payment {
+  background: #eff6ff;
+  color: #2563eb;
+  border-color: #dbeafe;
+}
+
+.section-box-title {
+  font-size: 1.15rem;
   font-weight: 800;
   color: #0f172a;
   margin: 0;
   line-height: 1.2;
 }
 
-.step-block-subtitle {
-  font-size: 0.85rem;
+.section-box-subtitle {
+  font-size: 0.82rem;
   color: #64748b;
   margin: 2px 0 0;
 }
 
-/* Form Card Boxes */
-.form-card-box {
-  background: #ffffff;
-  border-radius: 18px;
-  padding: 1.35rem 1.25rem;
-  border: 1px solid #edf2f7;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.03);
+/* Form Inner Inputs */
+.form-card-inner {
   display: flex;
   flex-direction: column;
   gap: 1rem;
@@ -318,95 +272,16 @@
   font-size: 0.85rem;
 }
 
-/* Location Box */
-.location-box {
-  padding: 1.25rem;
-}
-
-.map-label {
-  margin-bottom: 2px;
-}
-
-.location-hint {
-  font-size: 0.78rem;
-  color: #64748b;
-  margin: 0 0 0.5rem;
-  line-height: 1.4;
-}
-
-.location-picker-wrapper {
-  border-radius: 12px;
-  overflow: hidden;
+.location-picker-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin-top: 0.25rem;
 }
 
 /* ---------------------------------------------------------
-   5. STEP 2: PAYMENT METHOD RADIO CARDS
+   5. PAYMENT METHOD RADIO CARDS
    --------------------------------------------------------- */
-.delivery-location-summary-card {
-  display: flex;
-  align-items: center;
-  background: #f0fdf4;
-  border: 1px solid #86efac;
-  border-radius: 14px;
-  padding: 0.85rem 1rem;
-  gap: 0.75rem;
-}
-
-.loc-summary-icon {
-  color: #16a34a;
-  flex-shrink: 0;
-}
-
-.loc-summary-text {
-  flex: 1;
-  min-width: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 1px;
-}
-
-.loc-summary-label {
-  font-size: 0.68rem;
-  text-transform: uppercase;
-  color: #15803d;
-  font-weight: 700;
-  letter-spacing: 0.4px;
-}
-
-.loc-summary-val {
-  font-size: 0.88rem;
-  color: #0f172a;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.loc-summary-addr {
-  font-size: 0.78rem;
-  color: #334155;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.loc-edit-btn {
-  background: #ffffff;
-  border: 1px solid #86efac;
-  color: #15803d;
-  font-size: 0.76rem;
-  font-weight: 700;
-  padding: 4px 10px;
-  border-radius: 8px;
-  cursor: pointer;
-  flex-shrink: 0;
-  transition: all 0.15s ease;
-}
-
-.loc-edit-btn:hover {
-  background: #16a34a;
-  color: #ffffff;
-}
-
 .modern-payment-options {
   display: flex;
   flex-direction: column;
@@ -539,6 +414,7 @@
   border-radius: 16px;
   padding: 1.1rem;
   box-shadow: 0 4px 12px rgba(37, 99, 235, 0.05);
+  margin-top: 0.5rem;
 }
 
 .whish-header {
@@ -611,12 +487,13 @@
   display: flex;
   align-items: center;
   gap: 0.6rem;
-  background: #ffffff;
+  background: #f0fdf4;
   padding: 0.85rem 1rem;
-  border-radius: 12px;
-  border: 1px solid #edf2f7;
-  font-size: 0.8rem;
-  color: #475569;
+  border-radius: 14px;
+  border: 1px solid #dcfce7;
+  font-size: 0.82rem;
+  color: #166534;
+  font-weight: 600;
 }
 
 .shield-icon {
@@ -624,27 +501,24 @@
   flex-shrink: 0;
 }
 
-.step-actions {
-  display: flex;
-  gap: 1rem;
-  margin-top: 1rem;
+.desktop-submit-action {
+  margin-top: 0.5rem;
 }
 
-.step-back-btn {
-  background: #ffffff !important;
-  color: #475569 !important;
-  border: 1.5px solid #e2e8f0 !important;
-  border-radius: 14px !important;
-  font-weight: 700 !important;
-}
-
-.step-primary-btn {
-  flex: 1;
+.desktop-place-order-btn {
+  width: 100%;
   justify-content: center;
-  padding: 0.95rem;
-  font-size: 1.05rem;
-  font-weight: 700;
-  border-radius: 14px;
+  padding: 1.05rem 1.5rem;
+  font-size: 1.1rem;
+  font-weight: 800;
+  border-radius: 16px;
+  box-shadow: 0 6px 20px rgba(22, 163, 74, 0.3);
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.desktop-place-order-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 28px rgba(22, 163, 74, 0.4);
 }
 
 /* ---------------------------------------------------------
@@ -1201,6 +1075,7 @@
     color: #15803d;
   }
 
+  /* Mobile Mini Summary Accordion Items */
   .mobile-summary-calc-box {
     display: flex;
     flex-direction: column;
@@ -1232,72 +1107,15 @@
     margin: 2px 0;
   }
 
-  /* Mobile Mini Step Tabs */
-  .mobile-step-pill-banner {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    background: #ffffff;
-    border-radius: 12px;
-    padding: 6px 12px;
-    margin-bottom: 1rem;
-    border: 1px solid #edf2f7;
-    gap: 1rem;
-  }
-
-  .mobile-step-tab {
-    display: flex;
-    align-items: center;
-    gap: 0.4rem;
-    font-size: 0.78rem;
-    font-weight: 700;
-    color: #94a3b8;
-  }
-
-  .mobile-step-tab.active {
-    color: #16a34a;
-  }
-
-  .mobile-step-tab.completed {
-    color: #15803d;
-  }
-
-  .step-circle {
-    width: 20px;
-    height: 20px;
-    border-radius: 50%;
-    background: #f1f5f9;
-    color: #64748b;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 0.72rem;
-  }
-
-  .mobile-step-tab.active .step-circle {
-    background: #16a34a;
-    color: #ffffff;
-  }
-
-  .mobile-step-tab.completed .step-circle {
-    background: #dcfce7;
-    color: #16a34a;
-  }
-
-  .mobile-step-sep {
-    width: 24px;
-    height: 2px;
-    background: #e2e8f0;
-  }
-
   .form-grid-two {
     grid-template-columns: 1fr;
     gap: 0.85rem;
   }
 
-  .form-card-box {
-    padding: 1rem;
-    border-radius: 16px;
+  .checkout-section-box {
+    padding: 1.15rem 1rem;
+    border-radius: 18px;
+    gap: 1rem;
   }
 
   /* Floating Bottom Checkout Dock */
@@ -1337,153 +1155,15 @@
   }
 
   .mobile-dock-btn {
-    padding: 0.7rem 1.25rem !important;
-    font-size: 0.92rem !important;
+    padding: 0.75rem 1.4rem !important;
+    font-size: 0.95rem !important;
     font-weight: 700;
-    border-radius: 10px;
+    border-radius: 12px;
     display: inline-flex;
     align-items: center;
     gap: 6px;
-  }
-
-  .mobile-dock-btn.pay {
     background: linear-gradient(135deg, #16a34a 0%, #15803d 100%) !important;
-    box-shadow: 0 4px 12px rgba(22, 163, 74, 0.3) !important;
+    box-shadow: 0 4px 14px rgba(22, 163, 74, 0.3) !important;
   }
-}
-
-
-.summary-item-info h4 {
-  font-size: 0.9rem;
-  margin-bottom: 0.25rem;
-}
-
-.summary-item-info span {
-  font-size: 0.8rem;
-  color: var(--text-light);
-}
-
-.summary-item-price {
-  font-weight: 600;
-}
-
-/* Success Page */
-.success-container {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  min-height: 60vh;
-  padding-top: 6rem;
-}
-
-.success-card {
-  background: white;
-  padding: 3rem;
-  border-radius: var(--radius-lg);
-  box-shadow: var(--shadow-lg);
-  text-align: center;
-  max-width: 500px;
-  width: 100%;
-}
-
-.success-icon {
-  width: 80px;
-  height: 80px;
-  background: #f0fdf4;
-  color: var(--primary);
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  margin: 0 auto 1.5rem;
-}
-
-.success-card h1 {
-  font-size: 1.75rem;
-  margin-bottom: 1rem;
-  color: var(--text-main);
-}
-
-.success-card p {
-  color: var(--text-light);
-  margin-bottom: 0.5rem;
-}
-
-.email-note {
-  font-size: 0.9rem;
-  margin-bottom: 2rem;
-}
-
-@media (max-width: 768px) {
-  .checkout-grid {
-    grid-template-columns: 1fr;
-    display: flex;
-    flex-direction: column-reverse;
-    gap: 1.5rem;
-  }
-
-  .form-row {
-    grid-template-columns: 1fr;
-    gap: 1rem;
-  }
-  
-  .checkout-steps {
-    font-size: 0.8rem;
-    gap: 0.5rem;
-  }
-  
-  .step-line {
-    margin: 0 0.5rem;
-    margin-bottom: 1.5rem;
-  }
-
-  .checkout-card {
-    padding: 1.5rem 1rem;
-  }
-}
-
-/* Modal Styles */
-.modal-overlay {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background-color: rgba(0, 0, 0, 0.5);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 1000;
-}
-
-.modal-content {
-  background: white;
-  padding: 2rem;
-  border-radius: var(--radius-lg);
-  width: 90%;
-  max-width: 400px;
-  position: relative;
-  box-shadow: var(--shadow-lg);
-}
-
-.modal-close {
-  position: absolute;
-  top: 1rem;
-  right: 1rem;
-  background: none;
-  border: none;
-  cursor: pointer;
-  color: var(--text-light);
-}
-
-.modal-content h2 {
-  margin-bottom: 1rem;
-  text-align: center;
-}
-
-.modal-content p {
-  text-align: center;
-  margin-bottom: 1.5rem;
-  color: var(--text-light);
 }
 

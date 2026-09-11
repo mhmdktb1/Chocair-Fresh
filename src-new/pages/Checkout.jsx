@@ -20,7 +20,6 @@ const Checkout = () => {
   const { cartItems, cartTotal, clearCart, cartCount } = useCart();
   const { user, login } = useAuth();
   const navigate = useNavigate();
-  const [step, setStep] = useState(1); // 1: Shipping, 2: Payment
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [orderPlaced, setOrderPlaced] = useState(false);
@@ -133,18 +132,6 @@ const Checkout = () => {
     }
   };
 
-  const handlePlaceOrder = async () => {
-    setLoading(true);
-    setError("");
-
-    if (user) {
-      await createOrder();
-    } else {
-      setError("Please verify your phone number to complete your order.");
-      setLoading(false);
-    }
-  };
-
   const handleVerifyOtp = async (e) => {
     e.preventDefault();
     setOtpLoading(true);
@@ -162,7 +149,7 @@ const Checkout = () => {
         if (res.data.success) {
           login(localStorage.getItem('token'), res.data.user);
           setShowOtpModal(false);
-          setStep(2);
+          await createOrder();
         } else {
           throw new Error(res.data.message || 'Verification failed');
         }
@@ -189,11 +176,10 @@ const Checkout = () => {
 
         login(authToken, userData);
         setShowOtpModal(false);
-        setStep(2);
+        await createOrder(authToken);
       }
     } catch (err) {
       setOtpError(err.response?.data?.message || err.message || "Invalid OTP. Please try again.");
-    } finally {
       setOtpLoading(false);
     }
   };
@@ -202,40 +188,38 @@ const Checkout = () => {
     e.preventDefault();
     setError("");
 
-    if (step === 1) {
-      if (!formData.name.trim()) {
-        setError('Please enter your full name');
-        return;
-      }
+    if (!formData.name.trim()) {
+      setError('Please enter your full name');
+      return;
+    }
 
-      if (!formData.address || formData.address.trim() === '') {
-        setError('Please select or pin your delivery location');
-        return;
-      }
+    if (!formData.address || formData.address.trim() === '') {
+      setError('Please select or pin your delivery location');
+      return;
+    }
 
-      const normalizedPhone = normalizeLebanesePhoneNumber(formData.phone);
-      if (!normalizedPhone && !formData.phone) {
-        setError('Please enter a valid Lebanese phone number');
-        return;
+    const normalizedPhone = normalizeLebanesePhoneNumber(formData.phone);
+    if (!normalizedPhone && !formData.phone) {
+      setError('Please enter a valid Lebanese phone number');
+      return;
+    }
+    
+    // If user is already logged in AND has a verified phone number matching current input
+    if (user && user.phone) {
+      setLoading(true);
+      await createOrder();
+    } else {
+      // Prompt for WhatsApp OTP verification
+      setLoading(true);
+      try {
+        const phoneToSend = normalizedPhone || formData.phone;
+        const res = await api.post('/users/auth/send-otp', { phone: phoneToSend });
+        setShowOtpModal(true);
+      } catch (err) {
+        setError(err.response?.data?.message || err.message || "Failed to send verification code. Please check your phone number.");
+      } finally {
+        setLoading(false);
       }
-      
-      if (user && user.phone) {
-        setStep(2);
-        window.scrollTo({ top: 0, behavior: 'smooth' });
-      } else {
-        setLoading(true);
-        try {
-          const phoneToSend = normalizedPhone || formData.phone;
-          const res = await api.post('/users/auth/send-otp', { phone: phoneToSend });
-          setShowOtpModal(true);
-        } catch (err) {
-          setError(err.response?.data?.message || err.message || "Failed to send verification code. Please check your phone number.");
-        } finally {
-          setLoading(false);
-        }
-      }
-    } else if (step === 2) {
-      handlePlaceOrder();
     }
   };
 
@@ -258,18 +242,15 @@ const Checkout = () => {
         <button 
           type="button" 
           className="checkout-mobile-back-btn" 
-          onClick={() => {
-            if (step === 2) setStep(1);
-            else navigate('/cart');
-          }}
-          aria-label="Go Back"
+          onClick={() => navigate('/cart')}
+          aria-label="Back to Cart"
         >
           <ArrowLeft size={20} />
         </button>
         <div className="checkout-mobile-title-wrap">
-          <h1 className="checkout-mobile-title">Secure Checkout</h1>
+          <h1 className="checkout-mobile-title">Checkout</h1>
           <span className="checkout-mobile-secure-badge">
-            <Lock size={12} /> 256-Bit Encrypted
+            <Lock size={12} /> Secure & Encrypted
           </span>
         </div>
         <div style={{ width: 34 }} />
@@ -285,7 +266,7 @@ const Checkout = () => {
           <div className="toggle-left">
             <ShoppingBag size={18} className="toggle-bag-icon" />
             <span className="toggle-text">
-              {showOrderSummary ? 'Hide Order Summary' : 'Show Order Summary'}
+              {showOrderSummary ? 'Hide Order Summary' : `Order Summary (${cartCount} items)`}
             </span>
             {showOrderSummary ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
           </div>
@@ -314,7 +295,7 @@ const Checkout = () => {
 
             <div className="mobile-summary-calc-box">
               <div className="calc-row">
-                <span>Subtotal ({cartCount} items)</span>
+                <span>Subtotal</span>
                 <span>{formatCurrency(cartTotal)}</span>
               </div>
               <div className="calc-row">
@@ -341,55 +322,20 @@ const Checkout = () => {
           </div>
 
           <div className="checkout-header-content">
-            <h1 className="checkout-title">Checkout</h1>
-            
-            {/* 2-Step Segmented Bar */}
-            <div className="checkout-step-pills">
-              <div 
-                className={`step-pill ${step >= 1 ? 'active' : ''} ${step > 1 ? 'completed' : ''}`}
-                onClick={() => step === 2 && setStep(1)}
-              >
-                <div className="pill-num">
-                  {step > 1 ? <Check size={14} /> : '1'}
-                </div>
-                <div className="pill-text">
-                  <span className="pill-label">Step 1</span>
-                  <span className="pill-name">Delivery Address</span>
-                </div>
-              </div>
-
-              <div className="step-pill-arrow">
-                <ArrowRight size={16} />
-              </div>
-
-              <div className={`step-pill ${step === 2 ? 'active' : ''}`}>
-                <div className="pill-num">2</div>
-                <div className="pill-text">
-                  <span className="pill-label">Step 2</span>
-                  <span className="pill-name">Payment & Place</span>
-                </div>
-              </div>
+            <div>
+              <h1 className="checkout-title">Checkout</h1>
+              <p className="checkout-subtitle">Fill in your delivery details and choose your payment method.</p>
+            </div>
+            <div className="desktop-secure-badge">
+              <Lock size={15} /> 256-Bit SSL Encrypted
             </div>
           </div>
         </div>
       </div>
 
       <div className="container checkout-container">
-        {/* Mobile Mini Step Progress Ribbon */}
-        <div className="mobile-step-pill-banner">
-          <div className={`mobile-step-tab ${step === 1 ? 'active' : 'completed'}`} onClick={() => step === 2 && setStep(1)}>
-            <span className="step-circle">{step > 1 ? <Check size={12} /> : '1'}</span>
-            <span>Delivery</span>
-          </div>
-          <div className="mobile-step-sep" />
-          <div className={`mobile-step-tab ${step === 2 ? 'active' : ''}`}>
-            <span className="step-circle">2</span>
-            <span>Payment</span>
-          </div>
-        </div>
-
         <div className="checkout-grid">
-          {/* Main Form Section */}
+          {/* Main Unified Form Section */}
           <div className="checkout-form-section">
             {error && (
               <div className="checkout-alert-error">
@@ -398,135 +344,100 @@ const Checkout = () => {
               </div>
             )}
 
-            <form onSubmit={handleSubmit} id="checkout-main-form">
-              {step === 1 ? (
-                <div className="checkout-step-block">
-                  <div className="step-block-header">
-                    <div className="step-header-icon-wrap">
-                      <MapPin size={20} />
-                    </div>
-                    <div>
-                      <h2 className="step-block-title">Delivery Details</h2>
-                      <p className="step-block-subtitle">Where should we deliver your farm-fresh harvest?</p>
-                    </div>
+            <form onSubmit={handleSubmit} id="checkout-main-form" className="checkout-single-page-form">
+              {/* SECTION 1: Customer Contact & Delivery Details */}
+              <div className="checkout-section-box">
+                <div className="section-box-header">
+                  <div className="section-header-icon-wrap">
+                    <MapPin size={20} />
+                  </div>
+                  <div>
+                    <h2 className="section-box-title">Delivery & Contact Information</h2>
+                    <p className="section-box-subtitle">Where should we deliver your fresh produce?</p>
+                  </div>
+                </div>
+
+                <div className="form-card-inner">
+                  <div className="form-input-group">
+                    <label htmlFor="name" className="modern-label">
+                      <User size={15} /> Full Name <span className="req-star">*</span>
+                    </label>
+                    <input 
+                      id="name"
+                      type="text" 
+                      name="name"
+                      required 
+                      placeholder="e.g. John Doe" 
+                      value={formData.name}
+                      onChange={handleInputChange}
+                      className="modern-input"
+                    />
                   </div>
 
-                  {/* Contact Fields */}
-                  <div className="form-card-box">
+                  <div className="form-grid-two">
                     <div className="form-input-group">
-                      <label htmlFor="name" className="modern-label">
-                        <User size={15} /> Full Name <span className="req-star">*</span>
+                      <label htmlFor="phone" className="modern-label">
+                        <Phone size={15} /> Phone Number (WhatsApp) <span className="req-star">*</span>
+                        {user && user.phone && user.phone === formData.phone && (
+                          <span className="verified-badge">
+                            <CheckCircle size={12} /> Verified
+                          </span>
+                        )}
                       </label>
                       <input 
-                        id="name"
-                        type="text" 
-                        name="name"
+                        id="phone"
+                        type="tel" 
+                        name="phone"
                         required 
-                        placeholder="e.g. John Doe" 
-                        value={formData.name}
+                        placeholder="e.g. 70 123 456 or +961 70 123456" 
+                        value={formData.phone}
                         onChange={handleInputChange}
                         className="modern-input"
                       />
                     </div>
 
-                    <div className="form-grid-two">
-                      <div className="form-input-group">
-                        <label htmlFor="phone" className="modern-label">
-                          <Phone size={15} /> Phone (WhatsApp) <span className="req-star">*</span>
-                          {user && user.phone && user.phone === formData.phone && (
-                            <span className="verified-badge">
-                              <CheckCircle size={12} /> Verified
-                            </span>
-                          )}
-                        </label>
-                        <input 
-                          id="phone"
-                          type="tel" 
-                          name="phone"
-                          required 
-                          placeholder="e.g. 70 123 456 or +961 70 123456" 
-                          value={formData.phone}
-                          onChange={handleInputChange}
-                          className="modern-input"
-                        />
-                      </div>
-
-                      <div className="form-input-group">
-                        <label htmlFor="email" className="modern-label">
-                          <Mail size={15} /> Email <span className="opt-label">(Optional)</span>
-                        </label>
-                        <input 
-                          id="email"
-                          type="email" 
-                          name="email"
-                          placeholder="john@example.com" 
-                          value={formData.email}
-                          onChange={handleInputChange}
-                          className="modern-input"
-                        />
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Location Picker Box */}
-                  <div className="form-card-box location-box">
-                    <label className="modern-label map-label">
-                      <MapPin size={15} /> Pin Your Delivery Location <span className="req-star">*</span>
-                    </label>
-                    <p className="location-hint">
-                      Use GPS or tap the map to ensure our courier arrives at your exact building/doorstep.
-                    </p>
-                    <div className="location-picker-wrapper">
-                      <LocationPicker 
-                        onLocationSelect={handleLocationSelect} 
-                        initialLocation={formData.address} 
+                    <div className="form-input-group">
+                      <label htmlFor="email" className="modern-label">
+                        <Mail size={15} /> Email Address <span className="opt-label">(Optional)</span>
+                      </label>
+                      <input 
+                        id="email"
+                        type="email" 
+                        name="email"
+                        placeholder="john@example.com" 
+                        value={formData.email}
+                        onChange={handleInputChange}
+                        className="modern-input"
                       />
                     </div>
                   </div>
 
-                  <div className="step-actions desktop-only">
-                    <Button 
-                      variant="primary" 
-                      type="submit" 
-                      className="step-primary-btn" 
-                      disabled={loading}
-                    >
-                      {loading ? 'Validating...' : 'Continue to Payment'}
-                      <ArrowRight size={18} style={{ marginLeft: 8 }} />
-                    </Button>
+                  {/* Clean Toters-style Location & Building Cards */}
+                  <div className="location-picker-group">
+                    <label className="modern-label">
+                      <MapPin size={15} /> Delivery Address & Location <span className="req-star">*</span>
+                    </label>
+                    <LocationPicker 
+                      onLocationSelect={handleLocationSelect} 
+                      initialLocation={formData.address} 
+                    />
                   </div>
                 </div>
-              ) : (
-                <div className="checkout-step-block">
-                  <div className="step-block-header">
-                    <div className="step-header-icon-wrap">
-                      <CreditCard size={20} />
-                    </div>
-                    <div>
-                      <h2 className="step-block-title">Payment Method</h2>
-                      <p className="step-block-subtitle">Choose how you would like to pay for your harvest.</p>
-                    </div>
-                  </div>
+              </div>
 
-                  {/* Delivery Location Summary Badge */}
-                  <div className="delivery-location-summary-card">
-                    <div className="loc-summary-icon">
-                      <MapPin size={18} />
-                    </div>
-                    <div className="loc-summary-text">
-                      <span className="loc-summary-label">Delivering to:</span>
-                      <strong className="loc-summary-val">{formData.name} • {formData.phone}</strong>
-                      <span className="loc-summary-addr">{formData.address}</span>
-                    </div>
-                    <button 
-                      type="button" 
-                      className="loc-edit-btn"
-                      onClick={() => setStep(1)}
-                    >
-                      Change
-                    </button>
+              {/* SECTION 2: Payment Method */}
+              <div className="checkout-section-box">
+                <div className="section-box-header">
+                  <div className="section-header-icon-wrap payment">
+                    <CreditCard size={20} />
                   </div>
+                  <div>
+                    <h2 className="section-box-title">Payment Method</h2>
+                    <p className="section-box-subtitle">Choose how you prefer to settle your order.</p>
+                  </div>
+                </div>
 
+                <div className="form-card-inner">
                   {/* Modern Payment Selector */}
                   <div className="modern-payment-options">
                     {/* Cash on Delivery */}
@@ -543,10 +454,10 @@ const Checkout = () => {
                       <div className="payment-card-info">
                         <div className="payment-title-row">
                           <strong className="payment-title">Cash on Delivery (COD)</strong>
-                          <span className="popular-badge">Most Popular</span>
+                          <span className="popular-badge">Cash</span>
                         </div>
                         <p className="payment-desc">
-                          Pay cash (USD or LBP at market rate) directly to our courier upon doorstep delivery.
+                          Pay in cash (USD or Lebanese Pounds at market rate) upon delivery at your door.
                         </p>
                       </div>
                     </div>
@@ -568,7 +479,7 @@ const Checkout = () => {
                           <span className="instant-badge">⚡ Instant</span>
                         </div>
                         <p className="payment-desc">
-                          Transfer directly via Whish Money mobile app or any authorized agent.
+                          Transfer directly via Whish Money mobile app or any authorized Whish agent.
                         </p>
                       </div>
                     </div>
@@ -596,38 +507,32 @@ const Checkout = () => {
                         <span className="whish-holder">Chocair Fresh</span>
                       </div>
                       <p className="whish-note">
-                        Transfer exact amount: <strong>{formatCurrency(finalTotal)}</strong>. Our dispatcher verifies the transaction automatically.
+                        Transfer exact total: <strong>{formatCurrency(finalTotal)}</strong>. Our dispatcher verifies the transaction upon order dispatch.
                       </p>
                     </div>
                   )}
-
-                  {/* Trust note */}
-                  <div className="checkout-guarantee-box">
-                    <ShieldCheck size={18} className="shield-icon" />
-                    <span>Your order is backed by Chocair Fresh 100% Quality Guarantee.</span>
-                  </div>
-
-                  <div className="step-actions desktop-only">
-                    <Button 
-                      variant="secondary" 
-                      onClick={() => setStep(1)} 
-                      type="button"
-                      className="step-back-btn"
-                    >
-                      ← Back to Address
-                    </Button>
-                    <Button 
-                      variant="primary" 
-                      type="submit" 
-                      className="step-primary-btn" 
-                      disabled={loading}
-                    >
-                      <Lock size={16} style={{ marginRight: 6 }} />
-                      {loading ? 'Processing Order...' : `Place Order • ${formatCurrency(finalTotal)}`}
-                    </Button>
-                  </div>
                 </div>
-              )}
+              </div>
+
+              {/* Quality Guarantee Box */}
+              <div className="checkout-guarantee-box">
+                <ShieldCheck size={20} className="shield-icon" />
+                <span>100% Satisfaction & Farm Fresh Quality Guaranteed with every order.</span>
+              </div>
+
+              {/* Desktop Submit Action */}
+              <div className="desktop-submit-action desktop-only">
+                <Button 
+                  variant="primary" 
+                  type="submit" 
+                  className="desktop-place-order-btn" 
+                  disabled={loading}
+                >
+                  <Lock size={17} style={{ marginRight: 8 }} />
+                  {loading ? 'Processing Order...' : `Place Order • ${formatCurrency(finalTotal)}`}
+                  <ArrowRight size={18} style={{ marginLeft: 8 }} />
+                </Button>
+              </div>
             </form>
           </div>
 
@@ -679,7 +584,7 @@ const Checkout = () => {
                 
                 <div className="sidebar-calc-row total-row">
                   <div className="total-label-col">
-                    <span className="total-main-label">Total</span>
+                    <span className="total-main-label">Total Amount</span>
                     <span className="tax-hint">VAT Included</span>
                   </div>
                   <span className="total-final-val">{formatCurrency(finalTotal)}</span>
@@ -702,34 +607,19 @@ const Checkout = () => {
           <span className="dock-total-price">{formatCurrency(finalTotal)}</span>
         </div>
         
-        {step === 1 ? (
-          <Button 
-            variant="primary" 
-            className="mobile-dock-btn"
-            disabled={loading}
-            onClick={() => {
-              const form = document.getElementById('checkout-main-form');
-              if (form) form.requestSubmit();
-            }}
-          >
-            {loading ? 'Validating...' : 'Continue to Payment'}
-            <ArrowRight size={16} />
-          </Button>
-        ) : (
-          <Button 
-            variant="primary" 
-            className="mobile-dock-btn pay"
-            disabled={loading}
-            onClick={() => {
-              const form = document.getElementById('checkout-main-form');
-              if (form) form.requestSubmit();
-            }}
-          >
-            <Lock size={15} style={{ marginRight: 4 }} />
-            {loading ? 'Processing...' : 'Place Order'}
-            <ArrowRight size={16} />
-          </Button>
-        )}
+        <Button 
+          variant="primary" 
+          className="mobile-dock-btn"
+          disabled={loading}
+          onClick={() => {
+            const form = document.getElementById('checkout-main-form');
+            if (form) form.requestSubmit();
+          }}
+        >
+          <Lock size={15} style={{ marginRight: 4 }} />
+          {loading ? 'Processing...' : 'Place Order'}
+          <ArrowRight size={16} />
+        </Button>
       </div>
 
       {/* Modern WhatsApp OTP Modal */}
@@ -782,7 +672,7 @@ const Checkout = () => {
                 disabled={otpLoading || otpCode.length < 4} 
                 className="otp-verify-btn"
               >
-                {otpLoading ? 'Verifying Code...' : 'Confirm & Proceed to Payment'}
+                {otpLoading ? 'Verifying Code...' : 'Confirm & Place Order'}
               </Button>
 
               <button 
