@@ -451,8 +451,16 @@ const LocationPicker = ({ onLocationSelect, initialLocation }) => {
               </div>
             )}
 
-            {/* Form Fields */}
-            <form onSubmit={handleSaveBuildingDetails} className="building-modal-form">
+            {/* Form Fields (div container to prevent nested form submissions) */}
+            <div 
+              className="building-modal-form"
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  e.preventDefault();
+                  handleSaveBuildingDetails();
+                }
+              }}
+            >
               <div className="modal-input-field">
                 <label className="modal-field-label">
                   <Building size={14} /> Building or Street Name
@@ -508,14 +516,15 @@ const LocationPicker = ({ onLocationSelect, initialLocation }) => {
 
               <div className="building-modal-footer">
                 <button 
-                  type="submit"
+                  type="button"
                   className="toters-confirm-location-btn"
+                  onClick={handleSaveBuildingDetails}
                 >
                   <Check size={18} />
                   <span>Save Building Details</span>
                 </button>
               </div>
-            </form>
+            </div>
 
           </div>
         </div>
