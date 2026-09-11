@@ -1,6 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { Phone, ArrowRight, CheckCircle, Loader2, User, MapPin, Mail, Calendar } from 'lucide-react';
+import { useNavigate, Link } from 'react-router-dom';
+import { 
+  Phone, ArrowRight, ArrowLeft, CheckCircle, Loader2, User, 
+  MapPin, Mail, Calendar, ShieldCheck, Sparkles, Lock, MessageSquare, AlertCircle
+} from 'lucide-react';
 import { normalizeLebanesePhoneNumber, formatPhoneNumber } from '../utils/phoneUtils';
 import Navbar from '../components/layout/Navbar';
 import Button from '../components/common/Button';
@@ -49,7 +52,7 @@ const Login = () => {
       } else {
         normalizedPhone = normalizeLebanesePhoneNumber(phoneNumber);
         if (!normalizedPhone) {
-          throw new Error('Invalid phone number format. Please use a valid Lebanese number (e.g., 70 123 456 or 03 123 456).');
+          throw new Error('Please enter a valid Lebanese phone number (e.g., 70 123 456 or 03 123 456).');
         }
       }
 
@@ -71,11 +74,11 @@ const Login = () => {
         }
         setStep('OTP');
       } else {
-        throw new Error(response.data.message || 'Failed to send OTP');
+        throw new Error(response.data.message || 'Failed to send verification code');
       }
     } catch (err) {
       console.error(err);
-      setError(err.message || 'Failed to send OTP. Please check your number.');
+      setError(err.message || 'Failed to send OTP. Please check your phone number.');
     } finally {
       setLoading(false);
     }
@@ -128,7 +131,6 @@ const Login = () => {
         if (response.data.isNewUser) {
           setStep('REGISTER');
         } else {
-          // Login success
           login(response.data.token, response.data.user);
           navigate('/');
         }
@@ -137,7 +139,7 @@ const Login = () => {
       }
     } catch (err) {
       console.error(err);
-      setError(err.message || 'Invalid OTP. Please try again.');
+      setError(err.message || 'Invalid OTP code. Please try again.');
     } finally {
       setLoading(false);
     }
@@ -158,7 +160,7 @@ const Login = () => {
 
     try {
       if (!regData.name || !regData.location) {
-        throw new Error('Name and Location are required');
+        throw new Error('Name and Delivery Location are required');
       }
 
       const normalizedPhone = normalizeLebanesePhoneNumber(phoneNumber);
@@ -172,27 +174,22 @@ const Login = () => {
       });
 
       if (response.data.success) {
-        // Login first and save to localStorage
         login(response.data.token, response.data.user);
-        
-        // Force page reload to ensure fresh state
         window.location.href = '/profile';
       } else {
         throw new Error(response.data.message || 'Registration failed');
       }
     } catch (err) {
       console.error(err);
-      
       const msg = err.response?.data?.message || err.message || 'Registration failed.';
       setError(msg);
       
       if (msg.includes('User already exists')) {
         setTimeout(() => {
-            if(window.confirm("It looks like this account was just created. Would you like to log in now?")) {
-                setStep('PHONE');
-                setPhoneNumber(phoneNumber); 
-                setError('');
-            }
+          if (window.confirm("It looks like this account was already created. Would you like to log in now?")) {
+            setStep('PHONE');
+            setError('');
+          }
         }, 500);
       }
     } finally {
@@ -202,31 +199,68 @@ const Login = () => {
 
   return (
     <div className="login-page">
-      <Navbar />
+      {/* Desktop Navigation */}
+      <div className="login-desktop-nav">
+        <Navbar />
+      </div>
+
+      {/* Mobile Streamlined Top Header */}
+      <header className="login-mobile-header">
+        <button 
+          type="button" 
+          className="login-mobile-back-btn" 
+          onClick={() => {
+            if (step === 'OTP' || step === 'REGISTER') setStep('PHONE');
+            else navigate(-1);
+          }}
+          aria-label="Go back"
+        >
+          <ArrowLeft size={20} />
+        </button>
+        <div className="login-mobile-title-wrap">
+          <span className="login-mobile-brand">Chocair Fresh</span>
+        </div>
+        <div style={{ width: 36 }} />
+      </header>
+
       <div className="container login-container">
         <div className={`login-card ${step === 'REGISTER' ? 'wide-card' : ''}`}>
+          
+          {/* Brand Logo & Header */}
           <div className="login-header">
+            <div className="login-brand-avatar">
+              <span className="brand-leaf-icon">🌱</span>
+            </div>
+            
             <h1 className="login-title">
-              {step === 'PHONE' && 'Welcome Back'}
-              {step === 'OTP' && 'Verify Phone'}
-              {step === 'REGISTER' && 'Complete Profile'}
+              {step === 'PHONE' && 'Welcome to Freshness'}
+              {step === 'OTP' && 'Verify Your Phone'}
+              {step === 'REGISTER' && 'Complete Your Profile'}
             </h1>
             <p className="login-subtitle">
-              {step === 'PHONE' && 'Enter your phone number to continue'}
-              {step === 'OTP' && `Enter the code sent to ${formatPhoneNumber(normalizeLebanesePhoneNumber(phoneNumber))}`}
-              {step === 'REGISTER' && 'Tell us a bit about yourself'}
+              {step === 'PHONE' && 'Login or register in seconds with your WhatsApp number'}
+              {step === 'OTP' && `Enter the 6-digit WhatsApp code sent to ${formatPhoneNumber(normalizeLebanesePhoneNumber(phoneNumber)) || phoneNumber}`}
+              {step === 'REGISTER' && 'Set up your delivery details for 1-tap ordering'}
             </p>
           </div>
 
-          {error && <div className="error-message">{error}</div>}
+          {error && (
+            <div className="login-alert-error">
+              <AlertCircle size={16} className="alert-error-icon" />
+              <span>{error}</span>
+            </div>
+          )}
 
           {step === 'PHONE' && (
-            <>
+            <div className="login-body-flow">
               <form onSubmit={handleSendOtp} className="login-form">
                 <div className="form-group">
-                  <label>Phone Number</label>
-                  <div className="phone-input-wrapper">
-                    <Phone size={20} className="input-icon" />
+                  <label className="login-input-label">Phone Number (WhatsApp)</label>
+                  <div className="modern-phone-wrapper">
+                    <div className="phone-country-pill">
+                      <span className="flag-emoji">🇱🇧</span>
+                      <span className="country-code">+961</span>
+                    </div>
                     <input
                       type="tel"
                       placeholder="70 123 456"
@@ -234,25 +268,30 @@ const Login = () => {
                       onChange={(e) => setPhoneNumber(e.target.value)}
                       disabled={loading}
                       autoFocus
+                      className="modern-phone-input"
                     />
                   </div>
-                  <p className="input-hint">
-                    Accepted formats: 70123456, 03123456, 01 123 456
-                    {import.meta.env.DEV && ' (Dev admin shortcut: "tookm")'}
-                  </p>
+                  <span className="login-input-hint">
+                    Instant login without passwords via WhatsApp OTP
+                  </span>
                 </div>
-                <Button variant="primary" type="submit" className="login-btn" disabled={loading}>
-                  {loading ? <Loader2 className="animate-spin" /> : <>Send WhatsApp Code <ArrowRight size={20} /></>}
+
+                <Button variant="primary" type="submit" className="login-submit-btn" disabled={loading || !phoneNumber.trim()}>
+                  {loading ? (
+                    <><Loader2 className="animate-spin" size={18} /> Sending Code...</>
+                  ) : (
+                    <>Continue with WhatsApp <ArrowRight size={18} style={{ marginLeft: 6 }} /></>
+                  )}
                 </Button>
               </form>
 
               <div className="auth-divider">
-                <span>or continue with</span>
+                <span>or</span>
               </div>
 
               <button
                 type="button"
-                className="google-auth-btn"
+                className="modern-google-btn"
                 onClick={handleGoogleLogin}
                 disabled={loading}
               >
@@ -276,79 +315,93 @@ const Login = () => {
                 </svg>
                 Continue with Google
               </button>
-            </>
+
+              {/* Trust Footer Badges */}
+              <div className="login-trust-footer">
+                <span className="trust-pill"><ShieldCheck size={14} /> 100% Secure</span>
+                <span className="trust-pill"><Sparkles size={14} /> Direct Farm Access</span>
+              </div>
+            </div>
           )}
 
           {step === 'OTP' && (
-            <form onSubmit={handleVerifyOtp} className="login-form">
-              <div className="form-group">
-                <label>Verification Code</label>
-                <div className="otp-input-wrapper">
-                  <input
-                    type="text"
-                    placeholder="123456"
-                    value={otp}
-                    onChange={(e) => setOtp(e.target.value)}
-                    maxLength={6}
-                    className="otp-input"
-                    disabled={loading}
-                    autoFocus
-                  />
-                </div>
+            <form onSubmit={handleVerifyOtp} className="login-form otp-form-flow">
+              <div className="otp-input-box">
+                <label className="login-input-label centered">Enter 6-Digit WhatsApp Code</label>
+                <input
+                  type="text"
+                  placeholder="• • • • • •"
+                  value={otp}
+                  onChange={(e) => setOtp(e.target.value)}
+                  maxLength={6}
+                  className="modern-otp-input"
+                  disabled={loading}
+                  autoFocus
+                />
               </div>
-              <Button variant="primary" type="submit" className="login-btn" disabled={loading}>
-                {loading ? <Loader2 className="animate-spin" /> : 'Verify & Login'}
+
+              <Button variant="primary" type="submit" className="login-submit-btn" disabled={loading || otp.length < 4}>
+                {loading ? (
+                  <><Loader2 className="animate-spin" size={18} /> Verifying...</>
+                ) : (
+                  'Verify & Continue'
+                )}
               </Button>
-              <button 
-                type="button" 
-                className="back-link" 
-                onClick={() => setStep('PHONE')}
-                disabled={loading}
-              >
-                Change Phone Number
-              </button>
+
+              <div className="otp-actions-row">
+                <button 
+                  type="button" 
+                  className="login-text-btn" 
+                  onClick={() => setStep('PHONE')}
+                  disabled={loading}
+                >
+                  Change Number
+                </button>
+                <button 
+                  type="button" 
+                  className="login-text-btn resend" 
+                  onClick={handleSendOtp}
+                  disabled={loading}
+                >
+                  Resend Code
+                </button>
+              </div>
             </form>
           )}
 
           {step === 'REGISTER' && (
-            <form onSubmit={handleRegister} className="login-form register-grid animate-fade-in">
-              <div className="register-left-col">
-                <h3 className="section-title">Personal Details</h3>
-                <div className="form-group">
-                  <label>Full Name <span className="required-star">*</span></label>
-                  <div className="input-wrapper">
-                    <User size={20} className="input-icon" />
+            <form onSubmit={handleRegister} className="login-form register-form-flow animate-fade-in">
+              <div className="register-sections-wrap">
+                {/* 1. Personal Info Card */}
+                <div className="register-sub-card">
+                  <h3 className="sub-card-title"><User size={16} /> Personal Information</h3>
+                  
+                  <div className="form-group">
+                    <label className="login-input-label">Full Name <span className="req-star">*</span></label>
                     <input
                       type="text"
-                      placeholder="John Doe"
+                      placeholder="e.g. John Doe"
                       value={regData.name}
                       onChange={(e) => setRegData({...regData, name: e.target.value})}
                       required
-                      className="form-input with-icon"
+                      className="modern-text-input"
                     />
                   </div>
-                </div>
 
-                <div className="form-group">
-                  <label>Email Address <span className="optional-text">(Optional)</span></label>
-                  <div className="input-wrapper">
-                    <Mail size={20} className="input-icon" />
+                  <div className="form-group">
+                    <label className="login-input-label">Email Address <span className="opt-tag">(Optional)</span></label>
                     <input
                       type="email"
                       placeholder="john@example.com"
                       value={regData.email}
                       onChange={(e) => setRegData({...regData, email: e.target.value})}
-                      className="form-input with-icon"
+                      className="modern-text-input"
                     />
                   </div>
-                  <p className="input-hint">We'll send order updates here.</p>
-                </div>
 
-                <div className="form-row">
-                  <div className="form-group half-width">
-                    <label>Age <span className="optional-text">(Optional)</span></label>
-                    <div className="input-wrapper">
-                      <Calendar size={20} className="input-icon" />
+                  <div className="form-grid-two">
+                    <div className="form-group">
+                      <label className="login-input-label">Age <span className="opt-tag">(Optional)</span></label>
                       <input
                         type="number"
                         placeholder="25"
@@ -356,18 +409,16 @@ const Login = () => {
                         onChange={(e) => setRegData({...regData, age: e.target.value})}
                         min="13"
                         max="120"
-                        className="form-input with-icon"
+                        className="modern-text-input"
                       />
                     </div>
-                  </div>
-                  <div className="form-group half-width">
-                    <label>Gender <span className="optional-text">(Optional)</span></label>
-                    <div className="input-wrapper">
-                      <User size={20} className="input-icon" />
+                    
+                    <div className="form-group">
+                      <label className="login-input-label">Gender <span className="opt-tag">(Optional)</span></label>
                       <select
                         value={regData.gender}
                         onChange={(e) => setRegData({...regData, gender: e.target.value})}
-                        className="form-input with-icon"
+                        className="modern-text-input select-input"
                       >
                         <option value="select" disabled>Select</option>
                         <option value="Male">Male</option>
@@ -377,26 +428,22 @@ const Login = () => {
                     </div>
                   </div>
                 </div>
-              </div>
-              
-              <div className="register-right-col">
-                <h3 className="section-title">Delivery Location</h3>
-                <div className="form-group location-group">
-                  <label>Pin your location <span className="required-star">*</span></label>
-                  <div className="location-picker-wrapper">
-                    <LocationPicker onLocationSelect={handleLocationSelect} initialLocation={regData.location} />
-                  </div>
+
+                {/* 2. Delivery Location Card (Toters Style) */}
+                <div className="register-sub-card">
+                  <h3 className="sub-card-title"><MapPin size={16} /> Default Delivery Location</h3>
+                  <LocationPicker onLocationSelect={handleLocationSelect} initialLocation={regData.location} />
                 </div>
               </div>
 
-              <div className="register-actions">
-                <Button variant="primary" type="submit" className="login-btn complete-profile-btn" disabled={loading}>
-                  {loading ? <Loader2 className="animate-spin" /> : 'Complete Registration'}
+              <div className="register-submit-actions">
+                <Button variant="primary" type="submit" className="login-submit-btn" disabled={loading}>
+                  {loading ? <><Loader2 className="animate-spin" size={18} /> Setting up account...</> : 'Complete Profile & Start Shopping'}
                 </Button>
                 
                 <button 
                   type="button" 
-                  className="back-link" 
+                  className="login-text-btn cancel-btn" 
                   onClick={() => setStep('PHONE')}
                   disabled={loading}
                 >
@@ -405,6 +452,7 @@ const Login = () => {
               </div>
             </form>
           )}
+
         </div>
       </div>
     </div>
