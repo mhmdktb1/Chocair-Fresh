@@ -559,12 +559,17 @@
     height: 92vh;
     max-height: 92vh;
     border-radius: 24px 24px 0 0;
+    width: 100% !important;
+    max-width: 100% !important;
+    box-sizing: border-box !important;
     animation: mapModalSlideUp 0.25s cubic-bezier(0.16, 1, 0.3, 1);
   }
 
   .toters-building-modal-card {
     border-radius: 24px 24px 0 0;
-    max-width: 100%;
+    width: 100% !important;
+    max-width: 100% !important;
+    box-sizing: border-box !important;
     animation: mapModalSlideUp 0.25s cubic-bezier(0.16, 1, 0.3, 1);
   }
 
@@ -576,39 +581,32 @@
   .modal-fields-grid-two {
     grid-template-columns: 1fr;
     gap: 0.75rem;
+    width: 100%;
+    box-sizing: border-box;
+  }
+
+  .building-modal-form {
+    padding: 1rem 0.95rem;
+    width: 100%;
+    box-sizing: border-box;
   }
 
   .toters-location-card {
-    padding: 0.65rem 0.75rem;
-    border-radius: 12px;
+    padding: 0.75rem 0.8rem;
+    width: 100%;
+    box-sizing: border-box;
+  }
+
+  .toters-card-left {
+    gap: 0.65rem;
   }
 
   .toters-pin-icon-wrap {
-    width: 34px;
-    height: 34px;
-    border-radius: 9px;
-  }
-
-  .toters-pin-icon-wrap svg {
-    width: 17px;
-    height: 17px;
-  }
-
-  .toters-card-label {
-    font-size: 0.62rem;
+    width: 36px;
+    height: 36px;
   }
 
   .toters-card-address {
-    font-size: 0.82rem;
-  }
-
-  .toters-card-hint {
-    font-size: 0.68rem;
-  }
-
-  .toters-change-pill,
-  .toters-add-pill {
-    font-size: 0.68rem;
-    padding: 3px 8px;
+    font-size: 0.86rem;
   }
 }
