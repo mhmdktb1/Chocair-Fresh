@@ -2,8 +2,7 @@ import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { 
   Trash2, Plus, Minus, ArrowRight, ShoppingBag, ArrowLeft, 
-  Sparkles, Truck, ShieldCheck, Clock, CheckCircle, LayoutGrid, List,
-  Tag, Lock, MessageSquare, AlertCircle, Check
+  Truck, CheckCircle, Tag, Lock, MessageSquare, AlertCircle, Check
 } from 'lucide-react';
 import { useCart } from '../context/CartContext';
 import Navbar from '../components/layout/Navbar';
@@ -32,7 +31,6 @@ const Cart = () => {
   const navigate = useNavigate();
   
   // UI States
-  const [viewMode, setViewMode] = useState('list'); // 'list' is default for clean shopping cart
   const [promoInput, setPromoInput] = useState('');
   const [appliedPromo, setAppliedPromo] = useState(null);
   const [promoError, setPromoError] = useState('');
@@ -224,17 +222,17 @@ const Cart = () => {
         <div className="shipping-progress-card">
           <div className="shipping-progress-info">
             <div className="shipping-icon-wrap">
-              <Truck size={20} className="shipping-truck-icon" />
+              <Truck size={18} className="shipping-truck-icon" />
             </div>
             <div className="shipping-text">
               {isShippingFree ? (
                 <span className="shipping-unlocked">
-                  <CheckCircle size={16} color="#16a34a" /> 
-                  <strong>Free Standard Delivery Unlocked!</strong>
+                  <CheckCircle size={15} color="#16a34a" /> 
+                  <strong>Free Delivery Unlocked!</strong>
                 </span>
               ) : (
                 <span>
-                  Add <strong>${amountNeeded}</strong> more for <strong>FREE Delivery</strong> ($50 threshold)
+                  Add <strong>${amountNeeded}</strong> more for <strong>FREE Delivery</strong>
                 </span>
               )}
             </div>
@@ -254,70 +252,56 @@ const Cart = () => {
           {/* Left Column: Items Section */}
           <div className="cart-products-section">
             
-            {/* View Mode Bar & Header */}
+            {/* Header */}
             <div className="cart-section-bar">
               <div className="section-title-wrap">
                 <h2 className="section-heading">Basket Items</h2>
-                <span className="section-item-counter">{cartItems.length} unique items</span>
-              </div>
-
-              <div className="view-toggle-btns">
-                <button 
-                  type="button"
-                  className={`view-btn ${viewMode === 'list' ? 'active' : ''}`}
-                  onClick={() => setViewMode('list')}
-                  title="List View"
-                  aria-label="List View"
-                >
-                  <List size={16} />
-                  <span className="view-label">List</span>
-                </button>
-                <button 
-                  type="button"
-                  className={`view-btn ${viewMode === 'grid' ? 'active' : ''}`}
-                  onClick={() => setViewMode('grid')}
-                  title="Grid View"
-                  aria-label="Grid View"
-                >
-                  <LayoutGrid size={16} />
-                  <span className="view-label">Grid</span>
-                </button>
+                <span className="section-item-counter">({cartCount} {cartCount === 1 ? 'item' : 'items'})</span>
               </div>
             </div>
 
-            {/* View Mode: Modern List View */}
-            {viewMode === 'list' ? (
-              <div className="cart-modern-list">
-                {cartItems.map((item) => (
-                  <div key={item._id} className="cart-modern-item">
-                    <Link to={`/product/${item._id}`} className="modern-item-image-wrap">
-                      <img 
-                        src={item.image || 'https://images.unsplash.com/photo-1610832958506-aa56368176cf?w=400&auto=format&fit=crop&q=80'} 
-                        alt={item.name} 
-                        className="modern-item-img" 
-                      />
-                    </Link>
+            {/* Streamlined Responsive Cart Items List */}
+            <div className="cart-modern-list">
+              {cartItems.map((item) => (
+                <div key={item._id} className="cart-item-card">
+                  {/* Left: Product Thumbnail */}
+                  <Link to={`/product/${item._id}`} className="cart-item-thumb-link">
+                    <img 
+                      src={item.image || 'https://images.unsplash.com/photo-1610832958506-aa56368176cf?w=400&auto=format&fit=crop&q=80'} 
+                      alt={item.name} 
+                      className="cart-item-thumb-img" 
+                    />
+                  </Link>
 
-                    <div className="modern-item-main">
-                      <div className="modern-item-meta">
+                  {/* Right: Content & Controls */}
+                  <div className="cart-item-body">
+                    {/* Top Row: Title, Category & Remove */}
+                    <div className="cart-item-header-row">
+                      <div className="cart-item-title-col">
                         {item.category && (
-                          <span className="modern-item-category">{item.category}</span>
+                          <span className="cart-item-cat">{item.category}</span>
                         )}
-                        <span className="fresh-pick-pill">🌱 Fresh Harvest</span>
+                        <Link to={`/product/${item._id}`} className="cart-item-name">
+                          {item.name}
+                        </Link>
+                        <span className="cart-item-unit-rate">
+                          {formatCurrency(item.price)} {item.unit ? `/ ${item.unit}` : ''}
+                        </span>
                       </div>
-                      
-                      <Link to={`/product/${item._id}`} className="modern-item-title">
-                        {item.name}
-                      </Link>
 
-                      <div className="modern-item-pricing-hint">
-                        <span className="unit-price-tag">{formatCurrency(item.price)}</span>
-                        {item.unit && <span className="unit-label">/ {item.unit}</span>}
-                      </div>
+                      <button 
+                        type="button"
+                        className="cart-item-remove-btn"
+                        onClick={() => removeFromCart(item._id)}
+                        aria-label={`Remove ${item.name}`}
+                        title="Remove Item"
+                      >
+                        <Trash2 size={16} />
+                      </button>
                     </div>
 
-                    <div className="modern-item-controls">
-                      {/* Quantity Stepper */}
+                    {/* Bottom Row: Stepper & Subtotal */}
+                    <div className="cart-item-footer-row">
                       <div className="clean-qty-stepper">
                         <button 
                           type="button"
@@ -338,91 +322,19 @@ const Cart = () => {
                         </button>
                       </div>
 
-                      {/* Line Item Total */}
-                      <div className="modern-item-subtotal">
-                        <span className="subtotal-val">{formatCurrency(item.price * item.quantity)}</span>
+                      <div className="cart-item-price-col">
+                        <span className="cart-item-total-price">
+                          {formatCurrency(item.price * item.quantity)}
+                        </span>
                       </div>
-
-                      {/* Remove Button */}
-                      <button 
-                        type="button"
-                        className="modern-item-delete-btn"
-                        onClick={() => removeFromCart(item._id)}
-                        aria-label={`Remove ${item.name}`}
-                        title="Remove Item"
-                      >
-                        <Trash2 size={16} />
-                      </button>
                     </div>
                   </div>
-                ))}
-              </div>
-            ) : (
-              /* View Mode: Modern Grid View */
-              <div className="cart-modern-grid">
-                {cartItems.map((item) => (
-                  <div key={item._id} className="grid-produce-card">
-                    <button 
-                      type="button"
-                      className="grid-remove-btn"
-                      onClick={() => removeFromCart(item._id)}
-                      aria-label="Remove item"
-                      title="Remove"
-                    >
-                      <Trash2 size={14} />
-                    </button>
-                    
-                    <Link to={`/product/${item._id}`} className="grid-image-box">
-                      <img 
-                        src={item.image || 'https://images.unsplash.com/photo-1610832958506-aa56368176cf?w=400&auto=format&fit=crop&q=80'} 
-                        alt={item.name} 
-                        className="grid-item-img" 
-                      />
-                    </Link>
+                </div>
+              ))}
+            </div>
 
-                    <div className="grid-card-info">
-                      <span className="grid-category">{item.category || 'Produce'}</span>
-                      <Link to={`/product/${item._id}`} className="grid-title">
-                        {item.name}
-                      </Link>
-                      <span className="grid-unit-price">
-                        {formatCurrency(item.price)} {item.unit ? `/ ${item.unit}` : ''}
-                      </span>
-                    </div>
-
-                    <div className="grid-bottom-row">
-                      <div className="clean-qty-stepper compact">
-                        <button 
-                          type="button"
-                          className="stepper-action-btn minus"
-                          onClick={() => updateQuantity(item._id, item.quantity - 1)}
-                          aria-label="Decrease quantity"
-                        >
-                          <Minus size={12} />
-                        </button>
-                        <span className="stepper-number">{item.quantity}</span>
-                        <button 
-                          type="button"
-                          className="stepper-action-btn plus"
-                          onClick={() => updateQuantity(item._id, item.quantity + 1)}
-                          aria-label="Increase quantity"
-                        >
-                          <Plus size={12} />
-                        </button>
-                      </div>
-
-                      <span className="grid-item-total">
-                        {formatCurrency(item.price * item.quantity)}
-                      </span>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-
-            {/* Additional Order Notes & Coupon for Mobile / Items area */}
+            {/* Additional Delivery Notes */}
             <div className="cart-extra-options">
-              {/* Special Delivery Note Toggle */}
               <div className="order-note-wrapper">
                 <button 
                   type="button"
@@ -430,17 +342,17 @@ const Cart = () => {
                   onClick={() => setShowNoteInput(!showNoteInput)}
                 >
                   <MessageSquare size={16} />
-                  <span>{showNoteInput ? 'Hide delivery instructions' : 'Add special delivery instructions'}</span>
+                  <span>{showNoteInput ? 'Hide delivery instructions' : 'Add delivery instructions / notes'}</span>
                 </button>
                 
                 {showNoteInput && (
                   <div className="order-note-input-wrap">
                     <textarea 
                       className="order-note-textarea"
-                      placeholder="e.g. Please pick slightly green bananas, leave by front porch gate, call upon arrival..."
+                      placeholder="e.g. Leave by front door, call upon arrival..."
                       value={orderNote}
                       onChange={(e) => setOrderNote(e.target.value)}
-                      rows={3}
+                      rows={2}
                     />
                     <span className="note-hint">Our harvest team will follow your packaging notes.</span>
                   </div>
@@ -451,39 +363,6 @@ const Cart = () => {
             {/* Quick Add / Cart Recommendations */}
             <div className="cart-recommendations-box">
               <CartRecommendations limit={4} />
-            </div>
-
-            {/* Trust & Farm Guarantee Badges */}
-            <div className="cart-trust-ribbon">
-              <div className="trust-item">
-                <div className="trust-icon-wrap">
-                  <Sparkles size={20} className="trust-icon" />
-                </div>
-                <div>
-                  <strong>100% Farm Fresh</strong>
-                  <span>Handpicked organic produce</span>
-                </div>
-              </div>
-              
-              <div className="trust-item">
-                <div className="trust-icon-wrap">
-                  <Clock size={20} className="trust-icon" />
-                </div>
-                <div>
-                  <strong>Express Delivery</strong>
-                  <span>Temperature-controlled packaging</span>
-                </div>
-              </div>
-              
-              <div className="trust-item">
-                <div className="trust-icon-wrap">
-                  <ShieldCheck size={20} className="trust-icon" />
-                </div>
-                <div>
-                  <strong>Quality Guaranteed</strong>
-                  <span>Instant replacement or refund</span>
-                </div>
-              </div>
             </div>
           </div>
 
@@ -564,7 +443,7 @@ const Cart = () => {
                 </div>
 
                 <div className="summary-row eco-fee-row">
-                  <span>Eco-Packaging & Taxes</span>
+                  <span>Packaging & Taxes</span>
                   <span className="row-amount free-tax-tag">Included</span>
                 </div>
               </div>
@@ -593,19 +472,19 @@ const Cart = () => {
                 ← Continue Shopping
               </Link>
 
-              {/* Delivery Guarantee hint */}
+              {/* Fast Delivery Info */}
               <div className="delivery-speed-card">
                 <span className="delivery-speed-icon">⚡</span>
-                <p><strong>Fast Dispatch:</strong> Orders placed now are freshly packed and arrive today within 2–3 hours.</p>
+                <p><strong>Fast Dispatch:</strong> Orders placed now arrive today within 2–3 hours.</p>
               </div>
 
-              {/* Accepted Payment Icons */}
+              {/* Accepted Payments */}
               <div className="accepted-payments-wrap">
                 <span className="payments-label">Guaranteed Safe & Secure Checkout</span>
                 <div className="payment-badges">
                   <span className="payment-pill">💵 Cash on Delivery</span>
-                  <span className="payment-pill">💳 Credit / Debit Card</span>
-                  <span className="payment-pill">📱 Whish Money</span>
+                  <span className="payment-pill">💳 Card</span>
+                  <span className="payment-pill">📱 Whish</span>
                 </div>
               </div>
             </div>
