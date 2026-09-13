@@ -27,7 +27,12 @@ const Profile = () => {
   const { addToCart, setIsCartOpen } = useCart();
 
   const [user, setUser] = useState(null);
-  const [activeTab, setActiveTab] = useState('overview'); // 'overview' | 'orders' | 'addresses' | 'settings'
+  const [openSections, setOpenSections] = useState({
+    profile: false,
+    orders: true,
+    addresses: false,
+    preferences: false,
+  });
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(false);
   const [initialLoading, setInitialLoading] = useState(true);
@@ -65,6 +70,26 @@ const Profile = () => {
   // Logout Confirm Modal
   const [showLogoutModal, setShowLogoutModal] = useState(false);
 
+  const toggleSection = (sectionKey) => {
+    setOpenSections(prev => ({
+      ...prev,
+      [sectionKey]: !prev[sectionKey]
+    }));
+  };
+
+  const expandAndScrollToSection = (sectionKey) => {
+    setOpenSections(prev => ({
+      ...prev,
+      [sectionKey]: true
+    }));
+    setTimeout(() => {
+      const el = document.getElementById(`section-${sectionKey}`);
+      if (el) {
+        el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
+    }, 100);
+  };
+
   // Preferences State
   const [preferences, setPreferences] = useState(() => {
     try {
@@ -92,7 +117,11 @@ const Profile = () => {
   // Handle query or location navigation state
   useEffect(() => {
     if (location.state?.activeTab) {
-      setActiveTab(location.state.activeTab);
+      const tab = location.state.activeTab;
+      if (tab === 'overview') expandAndScrollToSection('profile');
+      else if (tab === 'orders') expandAndScrollToSection('orders');
+      else if (tab === 'addresses') expandAndScrollToSection('addresses');
+      else if (tab === 'settings') expandAndScrollToSection('preferences');
     }
   }, [location.state]);
 
@@ -1324,7 +1353,7 @@ const Profile = () => {
 
           {/* Quick Stat Counter Cards */}
           <div className="hero-stats-row">
-            <div className="hero-stat-card" onClick={() => { setActiveTab('orders'); setOrderFilter('all'); }}>
+            <div className="hero-stat-card" onClick={() => { setOrderFilter('all'); expandAndScrollToSection('orders'); }}>
               <div className="stat-icon-wrap orders">
                 <Package size={18} />
               </div>
@@ -1334,7 +1363,7 @@ const Profile = () => {
               </div>
             </div>
 
-            <div className="hero-stat-card" onClick={() => { setActiveTab('orders'); setOrderFilter('active'); }}>
+            <div className="hero-stat-card" onClick={() => { setOrderFilter('active'); expandAndScrollToSection('orders'); }}>
               <div className="stat-icon-wrap active-orders">
                 <Truck size={18} />
               </div>
@@ -1344,7 +1373,7 @@ const Profile = () => {
               </div>
             </div>
 
-            <div className="hero-stat-card">
+            <div className="hero-stat-card" onClick={() => expandAndScrollToSection('preferences')}>
               <div className="stat-icon-wrap spent">
                 <Award size={18} />
               </div>
@@ -1354,72 +1383,193 @@ const Profile = () => {
               </div>
             </div>
 
-            <div className="hero-stat-card">
+            <div className="hero-stat-card" onClick={() => expandAndScrollToSection('addresses')}>
               <div className="stat-icon-wrap total">
-                <Sparkles size={18} />
+                <MapPin size={18} />
               </div>
               <div className="stat-numbers">
-                <span className="stat-value">{formatCurrency(totalSpent)}</span>
-                <span className="stat-label">Total Saved</span>
+                <span className="stat-value">{user.addresses?.length || 1}</span>
+                <span className="stat-label">Saved Spots</span>
               </div>
             </div>
           </div>
         </div>
 
         {/* ==========================================
-            SEGMENTED TABS NAVIGATION BAR
+            EXPANDABLE ACCORDION SECTIONS
             ========================================== */}
-        <nav className="profile-tabs-bar" aria-label="Account Tabs">
-          <button 
-            type="button"
-            className={`tab-item-btn ${activeTab === 'overview' ? 'active' : ''}`}
-            onClick={() => setActiveTab('overview')}
-          >
-            <User size={16} />
-            <span>Profile Details</span>
-          </button>
-          
-          <button 
-            type="button"
-            className={`tab-item-btn ${activeTab === 'orders' ? 'active' : ''}`}
-            onClick={() => setActiveTab('orders')}
-          >
-            <Package size={16} />
-            <span>Orders & Deliveries</span>
-            {orders.length > 0 && <span className="tab-badge-count">{orders.length}</span>}
-          </button>
+        <div className="profile-accordion-container">
 
-          <button 
-            type="button"
-            className={`tab-item-btn ${activeTab === 'addresses' ? 'active' : ''}`}
-            onClick={() => setActiveTab('addresses')}
-          >
-            <MapPin size={16} />
-            <span>Saved Addresses</span>
-            {(user.addresses?.length || 0) > 0 && (
-              <span className="tab-badge-count secondary">{user.addresses.length}</span>
+          {/* 1. Profile Information Accordion */}
+          <section id="section-profile" className={`accordion-card ${openSections.profile ? 'is-open' : ''}`}>
+            <div 
+              className="accordion-trigger-header"
+              onClick={() => toggleSection('profile')}
+              role="button"
+              tabIndex={0}
+              aria-expanded={openSections.profile}
+            >
+              <div className="accordion-trigger-left">
+                <div className="accordion-icon-box profile">
+                  <User size={20} />
+                </div>
+                <div className="accordion-title-col">
+                  <div className="accordion-title-row">
+                    <h2 className="accordion-section-title">Personal Details & WhatsApp</h2>
+                    {user.phone && <span className="accordion-mini-chip verified"><CheckCircle2 size={11} /> Verified</span>}
+                  </div>
+                  <p className="accordion-summary-text">
+                    {user.name || 'Fresh Customer'} • {user.phone ? formatPhoneNumber(user.phone) : 'No phone linked'}
+                  </p>
+                </div>
+              </div>
+
+              <div className="accordion-trigger-right">
+                <span className="accordion-state-hint">{openSections.profile ? 'Close' : 'View / Edit'}</span>
+                <div className="accordion-chevron">
+                  {openSections.profile ? <ChevronUp size={20} /> : <ChevronDown size={20} />}
+                </div>
+              </div>
+            </div>
+
+            {openSections.profile && (
+              <div className="accordion-body-content fade-in">
+                {renderOverview()}
+              </div>
             )}
-          </button>
+          </section>
 
-          <button 
-            type="button"
-            className={`tab-item-btn ${activeTab === 'settings' ? 'active' : ''}`}
-            onClick={() => setActiveTab('settings')}
-          >
-            <Settings size={16} />
-            <span>Preferences</span>
-          </button>
-        </nav>
+          {/* 2. Orders & Deliveries Accordion */}
+          <section id="section-orders" className={`accordion-card ${openSections.orders ? 'is-open' : ''}`}>
+            <div 
+              className="accordion-trigger-header"
+              onClick={() => toggleSection('orders')}
+              role="button"
+              tabIndex={0}
+              aria-expanded={openSections.orders}
+            >
+              <div className="accordion-trigger-left">
+                <div className="accordion-icon-box orders">
+                  <Package size={20} />
+                </div>
+                <div className="accordion-title-col">
+                  <div className="accordion-title-row">
+                    <h2 className="accordion-section-title">Orders & Live Deliveries</h2>
+                    {activeOrdersCount > 0 ? (
+                      <span className="accordion-mini-chip active-chip">
+                        <Truck size={11} /> {activeOrdersCount} In Transit
+                      </span>
+                    ) : (
+                      <span className="accordion-mini-chip neutral">
+                        {orders.length} Total
+                      </span>
+                    )}
+                  </div>
+                  <p className="accordion-summary-text">
+                    {orders.length === 0 
+                      ? 'No orders placed yet' 
+                      : `Latest order #${orders[0]?._id?.slice(-6).toUpperCase()} • Total spent ${formatCurrency(totalSpent)}`}
+                  </p>
+                </div>
+              </div>
 
-        {/* ==========================================
-            DYNAMIC TAB CONTENT AREA
-            ========================================== */}
-        <main className="profile-content-area">
-          {activeTab === 'overview' && renderOverview()}
-          {activeTab === 'orders' && renderOrders()}
-          {activeTab === 'addresses' && renderAddresses()}
-          {activeTab === 'settings' && renderSettings()}
-        </main>
+              <div className="accordion-trigger-right">
+                <span className="accordion-state-hint">{openSections.orders ? 'Close' : 'Track & Manage'}</span>
+                <div className="accordion-chevron">
+                  {openSections.orders ? <ChevronUp size={20} /> : <ChevronDown size={20} />}
+                </div>
+              </div>
+            </div>
+
+            {openSections.orders && (
+              <div className="accordion-body-content fade-in">
+                {renderOrders()}
+              </div>
+            )}
+          </section>
+
+          {/* 3. Saved Addresses Accordion */}
+          <section id="section-addresses" className={`accordion-card ${openSections.addresses ? 'is-open' : ''}`}>
+            <div 
+              className="accordion-trigger-header"
+              onClick={() => toggleSection('addresses')}
+              role="button"
+              tabIndex={0}
+              aria-expanded={openSections.addresses}
+            >
+              <div className="accordion-trigger-left">
+                <div className="accordion-icon-box addresses">
+                  <MapPin size={20} />
+                </div>
+                <div className="accordion-title-col">
+                  <div className="accordion-title-row">
+                    <h2 className="accordion-section-title">Saved Delivery Addresses</h2>
+                    <span className="accordion-mini-chip neutral">
+                      {(user.addresses?.length || 0)} Saved
+                    </span>
+                  </div>
+                  <p className="accordion-summary-text">
+                    {user.location 
+                      ? (user.location.startsWith('Lat:') ? 'Map Pinned Location' : user.location.slice(0, 36) + (user.location.length > 36 ? '...' : '')) 
+                      : 'Manage multiple drop-off spots & building info'}
+                  </p>
+                </div>
+              </div>
+
+              <div className="accordion-trigger-right">
+                <span className="accordion-state-hint">{openSections.addresses ? 'Close' : 'Manage'}</span>
+                <div className="accordion-chevron">
+                  {openSections.addresses ? <ChevronUp size={20} /> : <ChevronDown size={20} />}
+                </div>
+              </div>
+            </div>
+
+            {openSections.addresses && (
+              <div className="accordion-body-content fade-in">
+                {renderAddresses()}
+              </div>
+            )}
+          </section>
+
+          {/* 4. Preferences & Settings Accordion */}
+          <section id="section-preferences" className={`accordion-card ${openSections.preferences ? 'is-open' : ''}`}>
+            <div 
+              className="accordion-trigger-header"
+              onClick={() => toggleSection('preferences')}
+              role="button"
+              tabIndex={0}
+              aria-expanded={openSections.preferences}
+            >
+              <div className="accordion-trigger-left">
+                <div className="accordion-icon-box preferences">
+                  <Settings size={20} />
+                </div>
+                <div className="accordion-title-col">
+                  <div className="accordion-title-row">
+                    <h2 className="accordion-section-title">Preferences, Delivery Window & Security</h2>
+                  </div>
+                  <p className="accordion-summary-text">
+                    {preferences.deliveryWindow === 'morning' ? 'Morning window (9 AM - 1 PM)' : 'Afternoon window (3 PM - 8 PM)'} • WhatsApp alerts active
+                  </p>
+                </div>
+              </div>
+
+              <div className="accordion-trigger-right">
+                <span className="accordion-state-hint">{openSections.preferences ? 'Close' : 'Configure'}</span>
+                <div className="accordion-chevron">
+                  {openSections.preferences ? <ChevronUp size={20} /> : <ChevronDown size={20} />}
+                </div>
+              </div>
+            </div>
+
+            {openSections.preferences && (
+              <div className="accordion-body-content fade-in">
+                {renderSettings()}
+              </div>
+            )}
+          </section>
+
+        </div>
       </div>
 
       {/* ==========================================
