@@ -13,6 +13,9 @@
   --text-light: #7f8c8d;
   --bg-body: #f8f9fa;
   --bg-white: #ffffff;
+  --bg-card: #ffffff;
+  --bg-input: #f8fafc;
+  --border-color: #e2e8f0;
   --bg-glass: rgba(255, 255, 255, 0.8);
   
   /* Accents */
@@ -33,3 +36,46 @@
   --radius-lg: 1rem;
   --radius-full: 9999px;
 }
+
+/* =========================================================
+   DARK THEME VARIABLES
+   ========================================================= */
+[data-theme="dark"],
+.dark-theme {
+  --text-main: #f1f5f9;
+  --text-light: #94a3b8;
+  --bg-body: #090d16;
+  --bg-white: #111827;
+  --bg-card: #162032;
+  --bg-input: #1e293b;
+  --border-color: #273549;
+  --bg-glass: rgba(17, 24, 39, 0.85);
+
+  --cf-dark-900: #f8fafc;
+  --cf-dark-800: #e2e8f0;
+  --cf-slate-600: #cbd5e1;
+  --cf-slate-500: #94a3b8;
+  --cf-slate-400: #64748b;
+  --cf-slate-200: #273549;
+  --cf-slate-100: #1e293b;
+  --cf-slate-50: #111827;
+  
+  --cf-green-50: #064e3b33;
+  --cf-green-100: #065f4655;
+  --cf-green-200: #047857;
+}
+
+/* =========================================================
+   RTL ARABIC SUPPORT
+   ========================================================= */
+[dir="rtl"],
+.rtl-mode {
+  font-family: 'Segoe UI', Tahoma, 'Arial', sans-serif, 'Inter';
+  text-align: right;
+}
+
+[dir="rtl"] .accordion-chevron,
+[dir="rtl"] .choice-arrow {
+  transform: scaleX(-1);
+}
+

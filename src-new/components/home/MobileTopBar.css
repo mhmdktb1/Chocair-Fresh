@@ -73,6 +73,44 @@
     font-weight: 700;
   }
 
+  .mobile-top-actions-group {
+    display: flex;
+    align-items: center;
+    gap: 0.35rem;
+  }
+
+  .mobile-lang-pill-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 3px;
+    padding: 0.3rem 0.55rem;
+    background: #f1f5f9;
+    color: #1e293b;
+    border-radius: 50px;
+    font-size: 0.72rem;
+    font-weight: 800;
+    border: 1px solid #e2e8f0;
+    cursor: pointer;
+    transition: all 0.2s ease;
+  }
+
+  .mobile-lang-pill-btn:hover {
+    background: #e2e8f0;
+  }
+
+  .mobile-theme-pill-btn {
+    width: 26px;
+    height: 26px;
+    border-radius: 50%;
+    background: #f1f5f9;
+    color: #475569;
+    border: 1px solid #e2e8f0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+  }
+
   .mobile-top-badge {
     display: flex;
     align-items: center;

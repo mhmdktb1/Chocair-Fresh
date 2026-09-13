@@ -6,13 +6,15 @@ import {
   AlertCircle, Phone, Camera, Upload, Plus, ShieldCheck, Clock, Truck, 
   ArrowLeft, ArrowRight, CheckCircle, Sparkles, RefreshCw, Copy, Check, 
   MessageSquare, Home, Briefcase, Trash2, Bell, Heart, ExternalLink, 
-  Award, Search, Filter, Shield, CheckCircle2, MapPinned
+  Award, Search, Filter, Shield, CheckCircle2, MapPinned, Globe, Moon, Sun, Palette
 } from 'lucide-react';
 import Navbar from '../components/layout/Navbar';
 import LocationPicker from '../components/common/LocationPicker';
 import api, { getStoredUser, clearAuthData, saveAuthData, getAssetUrl } from '../utils/api';
 import { useAuth } from '../context/AuthContext';
 import { useCart } from '../context/CartContext';
+import { useTheme } from '../context/ThemeContext';
+import { translations } from '../utils/translations';
 import Button from '../components/common/Button';
 import Loading from '../components/common/Loading';
 import { normalizeLebanesePhoneNumber, formatPhoneNumber } from '../utils/phoneUtils';
@@ -25,6 +27,8 @@ const Profile = () => {
   const location = useLocation();
   const { user: authUser, updateUser, logout: authLogout, isAdmin } = useAuth();
   const { addToCart, setIsCartOpen } = useCart();
+  const { language, setLanguage, toggleLanguage, theme, setTheme, toggleTheme, isDark } = useTheme();
+  const t = translations[language] || translations.en;
 
   const [user, setUser] = useState(null);
   const [openSections, setOpenSections] = useState({
@@ -1142,21 +1146,79 @@ const Profile = () => {
     <div className="profile-section-card fade-in">
       <div className="section-header-row">
         <div>
-          <h2 className="section-title">Preferences & Security</h2>
-          <p className="section-subtitle">Customize notifications, delivery timing, and security</p>
+          <h2 className="section-title">{t.preferencesSecurity}</h2>
+          <p className="section-subtitle">Customize language, dark mode, delivery timing, and security</p>
         </div>
       </div>
 
       <div className="settings-groups-stack">
+        {/* Appearance & Language Selection */}
+        <div className="settings-group-card">
+          <h3 className="settings-group-title">
+            <Palette size={18} /> {t.themeOption} & {t.languageOption}
+          </h3>
+
+          {/* Language Selector */}
+          <div className="settings-toggle-row">
+            <div className="toggle-text-col">
+              <span className="toggle-title"><Globe size={14} style={{ display: 'inline', marginRight: 4 }} /> {t.languageOption}</span>
+              <span className="toggle-desc">Switch between English and Arabic (with right-to-left alignment).</span>
+            </div>
+            <div className="segmented-choice-pill">
+              <button 
+                type="button" 
+                className={`choice-btn ${language === 'en' ? 'active' : ''}`}
+                onClick={() => setLanguage('en')}
+              >
+                English
+              </button>
+              <button 
+                type="button" 
+                className={`choice-btn ${language === 'ar' ? 'active' : ''}`}
+                onClick={() => setLanguage('ar')}
+              >
+                العربية
+              </button>
+            </div>
+          </div>
+
+          {/* Theme Selector */}
+          <div className="settings-toggle-row">
+            <div className="toggle-text-col">
+              <span className="toggle-title">
+                {isDark ? <Moon size={14} style={{ display: 'inline', marginRight: 4 }} /> : <Sun size={14} style={{ display: 'inline', marginRight: 4 }} />}
+                {t.themeOption}
+              </span>
+              <span className="toggle-desc">Choose between vibrant fresh daylight theme or modern dark mode.</span>
+            </div>
+            <div className="segmented-choice-pill">
+              <button 
+                type="button" 
+                className={`choice-btn ${theme === 'light' ? 'active' : ''}`}
+                onClick={() => setTheme('light')}
+              >
+                <Sun size={13} /> {t.lightMode}
+              </button>
+              <button 
+                type="button" 
+                className={`choice-btn ${theme === 'dark' ? 'active' : ''}`}
+                onClick={() => setTheme('dark')}
+              >
+                <Moon size={13} /> {t.darkMode}
+              </button>
+            </div>
+          </div>
+        </div>
+
         {/* Notification Preferences */}
         <div className="settings-group-card">
           <h3 className="settings-group-title">
-            <Bell size={18} /> Notification Preferences
+            <Bell size={18} /> {t.notificationPrefs}
           </h3>
           
           <div className="settings-toggle-row">
             <div className="toggle-text-col">
-              <span className="toggle-title">WhatsApp Order Status & Live Receipts</span>
+              <span className="toggle-title">{t.whatsAppAlerts}</span>
               <span className="toggle-desc">Receive real-time driver updates and dispatch confirmations on WhatsApp.</span>
             </div>
             <label className="toggle-switch">
@@ -1171,7 +1233,7 @@ const Profile = () => {
 
           <div className="settings-toggle-row">
             <div className="toggle-text-col">
-              <span className="toggle-title">Weekly Fresh Harvest & Seasonal Specials</span>
+              <span className="toggle-title">{t.harvestAlerts}</span>
               <span className="toggle-desc">Get notified when new seasonal fruits, fresh berries, or flash sales drop.</span>
             </div>
             <label className="toggle-switch">
@@ -1188,7 +1250,7 @@ const Profile = () => {
         {/* Delivery Schedule Preferences */}
         <div className="settings-group-card">
           <h3 className="settings-group-title">
-            <Clock size={18} /> Preferred Delivery Window
+            <Clock size={18} /> {t.deliveryWindow}
           </h3>
           <p className="settings-group-desc">Choose when our refrigerated farm vans should prioritize your orders.</p>
 
@@ -1202,7 +1264,7 @@ const Profile = () => {
                 onChange={() => setPreferences({...preferences, deliveryWindow: 'morning'})}
               />
               <div className="window-radio-content">
-                <span className="window-title">Morning Harvest (9:00 AM – 1:00 PM)</span>
+                <span className="window-title">{t.morningWindow}</span>
                 <span className="window-sub">Ideal for early fresh kitchen prep and daily cooking</span>
               </div>
             </label>
@@ -1216,7 +1278,7 @@ const Profile = () => {
                 onChange={() => setPreferences({...preferences, deliveryWindow: 'afternoon'})}
               />
               <div className="window-radio-content">
-                <span className="window-title">Afternoon / Evening (3:00 PM – 8:00 PM)</span>
+                <span className="window-title">{t.afternoonWindow}</span>
                 <span className="window-sub">Fresh delivery right after work or school</span>
               </div>
             </label>
@@ -1244,12 +1306,12 @@ const Profile = () => {
         {/* Account Security & Signout */}
         <div className="settings-group-card danger-zone">
           <h3 className="settings-group-title danger">
-            <Shield size={18} /> Account Session
+            <Shield size={18} /> {t.accountSession}
           </h3>
           <div className="danger-zone-row">
             <div className="danger-text-col">
               <span className="danger-title">Sign Out of Chocair Fresh</span>
-              <span className="danger-desc">Securely log out of this browser session. Your orders and saved addresses remain saved.</span>
+              <span className="danger-desc">{t.signOutDesc}</span>
             </div>
             <button 
               type="button" 
@@ -1257,7 +1319,7 @@ const Profile = () => {
               onClick={() => setShowLogoutModal(true)}
             >
               <LogOut size={15} />
-              <span>Sign Out</span>
+              <span>{t.logout}</span>
             </button>
           </div>
         </div>
@@ -1285,16 +1347,35 @@ const Profile = () => {
           <ArrowLeft size={18} />
         </button>
         <div className="profile-mobile-title-wrap">
-          <h1 className="profile-mobile-title">My Account</h1>
+          <h1 className="profile-mobile-title">{t.profileTitle}</h1>
         </div>
-        <button 
-          type="button" 
-          className="profile-mobile-logout-icon-btn"
-          onClick={() => setShowLogoutModal(true)}
-          title="Sign Out"
-        >
-          <LogOut size={17} />
-        </button>
+        <div className="profile-header-actions">
+          <button 
+            type="button" 
+            className="profile-mobile-lang-btn"
+            onClick={toggleLanguage}
+            title={language === 'en' ? 'عربي' : 'EN'}
+          >
+            <Globe size={13} />
+            <span>{language === 'en' ? 'عربي' : 'EN'}</span>
+          </button>
+          <button 
+            type="button" 
+            className="profile-mobile-theme-btn"
+            onClick={toggleTheme}
+            title={isDark ? 'Light' : 'Dark'}
+          >
+            {isDark ? <Sun size={14} /> : <Moon size={14} />}
+          </button>
+          <button 
+            type="button" 
+            className="profile-mobile-logout-icon-btn"
+            onClick={() => setShowLogoutModal(true)}
+            title="Sign Out"
+          >
+            <LogOut size={16} />
+          </button>
+        </div>
       </header>
 
       <div className="container profile-container">
@@ -1415,8 +1496,8 @@ const Profile = () => {
                 </div>
                 <div className="accordion-title-col">
                   <div className="accordion-title-row">
-                    <h2 className="accordion-section-title">Personal Details & WhatsApp</h2>
-                    {user.phone && <span className="accordion-mini-chip verified"><CheckCircle2 size={11} /> Verified</span>}
+                    <h2 className="accordion-section-title">{t.personalDetails}</h2>
+                    {user.phone && <span className="accordion-mini-chip verified"><CheckCircle2 size={11} /> {t.verified}</span>}
                   </div>
                   <p className="accordion-summary-text">
                     {user.name || 'Fresh Customer'} • {user.phone ? formatPhoneNumber(user.phone) : 'No phone linked'}
@@ -1425,7 +1506,7 @@ const Profile = () => {
               </div>
 
               <div className="accordion-trigger-right">
-                <span className="accordion-state-hint">{openSections.profile ? 'Close' : 'View / Edit'}</span>
+                <span className="accordion-state-hint">{openSections.profile ? t.close : t.viewEdit}</span>
                 <div className="accordion-chevron">
                   {openSections.profile ? <ChevronUp size={20} /> : <ChevronDown size={20} />}
                 </div>
@@ -1454,14 +1535,14 @@ const Profile = () => {
                 </div>
                 <div className="accordion-title-col">
                   <div className="accordion-title-row">
-                    <h2 className="accordion-section-title">Orders & Live Deliveries</h2>
+                    <h2 className="accordion-section-title">{t.ordersDeliveries}</h2>
                     {activeOrdersCount > 0 ? (
                       <span className="accordion-mini-chip active-chip">
-                        <Truck size={11} /> {activeOrdersCount} In Transit
+                        <Truck size={11} /> {activeOrdersCount} {t.inTransit}
                       </span>
                     ) : (
                       <span className="accordion-mini-chip neutral">
-                        {orders.length} Total
+                        {orders.length} {t.all}
                       </span>
                     )}
                   </div>
@@ -1474,7 +1555,7 @@ const Profile = () => {
               </div>
 
               <div className="accordion-trigger-right">
-                <span className="accordion-state-hint">{openSections.orders ? 'Close' : 'Track & Manage'}</span>
+                <span className="accordion-state-hint">{openSections.orders ? t.close : t.trackManage}</span>
                 <div className="accordion-chevron">
                   {openSections.orders ? <ChevronUp size={20} /> : <ChevronDown size={20} />}
                 </div>
@@ -1503,9 +1584,9 @@ const Profile = () => {
                 </div>
                 <div className="accordion-title-col">
                   <div className="accordion-title-row">
-                    <h2 className="accordion-section-title">Saved Delivery Addresses</h2>
+                    <h2 className="accordion-section-title">{t.savedAddresses}</h2>
                     <span className="accordion-mini-chip neutral">
-                      {(user.addresses?.length || 0)} Saved
+                      {(user.addresses?.length || 0)} {t.savedSpots}
                     </span>
                   </div>
                   <p className="accordion-summary-text">
@@ -1517,7 +1598,7 @@ const Profile = () => {
               </div>
 
               <div className="accordion-trigger-right">
-                <span className="accordion-state-hint">{openSections.addresses ? 'Close' : 'Manage'}</span>
+                <span className="accordion-state-hint">{openSections.addresses ? t.close : t.manage}</span>
                 <div className="accordion-chevron">
                   {openSections.addresses ? <ChevronUp size={20} /> : <ChevronDown size={20} />}
                 </div>
@@ -1546,16 +1627,16 @@ const Profile = () => {
                 </div>
                 <div className="accordion-title-col">
                   <div className="accordion-title-row">
-                    <h2 className="accordion-section-title">Preferences, Delivery Window & Security</h2>
+                    <h2 className="accordion-section-title">{t.preferencesSecurity}</h2>
                   </div>
                   <p className="accordion-summary-text">
-                    {preferences.deliveryWindow === 'morning' ? 'Morning window (9 AM - 1 PM)' : 'Afternoon window (3 PM - 8 PM)'} • WhatsApp alerts active
+                    {language === 'ar' ? 'اللغة العربية' : 'English'} • {isDark ? t.darkMode : t.lightMode} • {preferences.deliveryWindow === 'morning' ? t.morningWindow : t.afternoonWindow}
                   </p>
                 </div>
               </div>
 
               <div className="accordion-trigger-right">
-                <span className="accordion-state-hint">{openSections.preferences ? 'Close' : 'Configure'}</span>
+                <span className="accordion-state-hint">{openSections.preferences ? t.close : t.configure}</span>
                 <div className="accordion-chevron">
                   {openSections.preferences ? <ChevronUp size={20} /> : <ChevronDown size={20} />}
                 </div>

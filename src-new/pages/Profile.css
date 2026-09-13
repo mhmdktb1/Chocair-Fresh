@@ -1566,6 +1566,70 @@
 /* =========================================================
    6. PREFERENCES & SETTINGS
    ========================================================= */
+.profile-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.profile-mobile-lang-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  padding: 0.25rem 0.55rem;
+  background: var(--cf-slate-100);
+  color: var(--cf-dark-900);
+  border-radius: 50px;
+  font-size: 0.72rem;
+  font-weight: 800;
+  border: 1px solid var(--cf-slate-200);
+  cursor: pointer;
+}
+
+.profile-mobile-theme-btn {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: var(--cf-slate-100);
+  color: var(--cf-dark-900);
+  border: 1px solid var(--cf-slate-200);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+
+.segmented-choice-pill {
+  display: flex;
+  background: var(--cf-slate-100);
+  padding: 3px;
+  border-radius: 12px;
+  border: 1px solid var(--cf-slate-200);
+  gap: 3px;
+}
+
+.segmented-choice-pill .choice-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 0.45rem 0.85rem;
+  border-radius: 9px;
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: var(--cf-slate-600);
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+}
+
+.segmented-choice-pill .choice-btn.active {
+  background: var(--cf-green-600);
+  color: #ffffff;
+  box-shadow: 0 2px 6px rgba(22, 163, 74, 0.25);
+}
+
 .settings-groups-stack {
   display: flex;
   flex-direction: column;

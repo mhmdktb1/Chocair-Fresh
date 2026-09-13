@@ -1,10 +1,14 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { MapPin, Search, ChevronDown, Clock, Sparkles, Tag, ShieldCheck } from 'lucide-react';
+import { MapPin, Search, ChevronDown, Clock, Sparkles, Tag, ShieldCheck, Globe, Moon, Sun } from 'lucide-react';
+import { useTheme } from '../../context/ThemeContext';
+import { translations } from '../../utils/translations';
 import './MobileTopBar.css';
 
 const MobileTopBar = () => {
   const navigate = useNavigate();
+  const { language, toggleLanguage, theme, toggleTheme, isDark } = useTheme();
+  const t = translations[language] || translations.en;
   const [searchValue, setSearchValue] = useState('');
 
   const handleSearchSubmit = (e) => {
@@ -22,7 +26,7 @@ const MobileTopBar = () => {
 
   return (
     <div className="mobile-top-bar-wrapper">
-      {/* Location & Speed Header */}
+      {/* Location, Speed & Quick Lang/Theme Strip */}
       <div className="mobile-location-strip">
         <div className="location-info">
           <div className="location-pin-box">
@@ -30,19 +34,40 @@ const MobileTopBar = () => {
           </div>
           <div className="location-text-group">
             <div className="location-title">
-              <span>Deliver to <strong>Organic City, CA</strong></span>
+              <span>{t.deliverTo} <strong>Beirut, Lebanon</strong></span>
               <ChevronDown size={13} className="location-chevron" />
             </div>
             <div className="delivery-time-pill">
               <Clock size={10} />
-              <span>25–35 mins</span>
+              <span>25–35 {t.mins}</span>
             </div>
           </div>
         </div>
 
-        <div className="mobile-top-badge" onClick={() => navigate('/shop?discount=true')}>
-          <Sparkles size={12} />
-          <span>Offers</span>
+        <div className="mobile-top-actions-group">
+          <button 
+            type="button" 
+            className="mobile-lang-pill-btn"
+            onClick={toggleLanguage}
+            title={language === 'en' ? 'Switch to Arabic' : 'Switch to English'}
+          >
+            <Globe size={11} />
+            <span>{language === 'en' ? 'عربي' : 'EN'}</span>
+          </button>
+
+          <button 
+            type="button" 
+            className="mobile-theme-pill-btn"
+            onClick={toggleTheme}
+            title={isDark ? 'Light mode' : 'Dark mode'}
+          >
+            {isDark ? <Sun size={12} /> : <Moon size={12} />}
+          </button>
+
+          <div className="mobile-top-badge" onClick={() => navigate('/shop?discount=true')}>
+            <Sparkles size={12} />
+            <span>{t.offers}</span>
+          </div>
         </div>
       </div>
 
@@ -53,7 +78,7 @@ const MobileTopBar = () => {
           <input
             type="text"
             className="mobile-search-input"
-            placeholder="Search 'fresh strawberries', 'avocados', 'milk'..."
+            placeholder={t.searchPlaceholder}
             value={searchValue}
             onChange={(e) => setSearchValue(e.target.value)}
             aria-label="Search products"
@@ -68,7 +93,7 @@ const MobileTopBar = () => {
             </button>
           ) : (
             <button type="submit" className="search-submit-pill">
-              Go
+              {t.search}
             </button>
           )}
         </div>
@@ -78,6 +103,26 @@ const MobileTopBar = () => {
       <div className="mobile-perks-ticker" role="region" aria-label="Store Benefits">
         <div className="ticker-track">
           <div className="perk-pill">
+            <span className="perk-icon">⚡</span>
+            <span>Same-Day 30m Express</span>
+          </div>
+          <div className="perk-pill">
+            <span className="perk-icon">🌿</span>
+            <span>100% Farm Fresh Direct</span>
+          </div>
+          <div className="perk-pill">
+            <span className="perk-icon">🏷️</span>
+            <span>Use <strong>FRESH30</strong> for 30% Off</span>
+          </div>
+          <div className="perk-pill">
+            <span className="perk-icon">🛡️</span>
+            <span>Money-Back Freshness Guarantee</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
             <span className="perk-icon">⚡</span>
             <span>Same-Day 30m Express</span>
           </div>

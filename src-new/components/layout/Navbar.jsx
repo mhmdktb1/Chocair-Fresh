@@ -1,8 +1,10 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { ShoppingBag, User, X, Search, ArrowRight, Sparkles, MessageCircle, Info, Package, ChevronRight } from 'lucide-react';
+import { ShoppingBag, User, X, Search, ArrowRight, Sparkles, MessageCircle, Info, Package, ChevronRight, Globe, Moon, Sun } from 'lucide-react';
 import { useCart } from '../../context/CartContext';
 import { useAuth } from '../../context/AuthContext';
+import { useTheme } from '../../context/ThemeContext';
+import { translations } from '../../utils/translations';
 import api from '../../utils/api';
 import './Navbar.css';
 
@@ -17,6 +19,8 @@ const Navbar = () => {
   const searchInputRef = useRef(null);
   const { cartCount } = useCart();
   const { user, logout } = useAuth();
+  const { language, toggleLanguage, theme, toggleTheme, isDark } = useTheme();
+  const t = translations[language] || translations.en;
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -169,14 +173,35 @@ const Navbar = () => {
 
           {/* Desktop Full Navigation Links */}
           <div className="nav-links desktop-only">
-            <Link to="/" className="nav-link">Home</Link>
-            <Link to="/shop" className="nav-link">Shop</Link>
-            <Link to="/#about" className="nav-link">About</Link>
-            <Link to="/#contact" className="nav-link">Contact</Link>
+            <Link to="/" className="nav-link">{t.home}</Link>
+            <Link to="/shop" className="nav-link">{t.shop}</Link>
+            <Link to="/#about" className="nav-link">{t.about}</Link>
+            <Link to="/#contact" className="nav-link">{t.contact}</Link>
           </div>
 
-          {/* Right Action Icons (Cart & Account) */}
+          {/* Right Action Icons (Language, Theme, Cart & Account) */}
           <div className="nav-actions">
+            {/* Quick Language Toggle */}
+            <button 
+              type="button" 
+              className="icon-btn desktop-only lang-toggle-pill"
+              onClick={toggleLanguage}
+              title={language === 'en' ? 'Switch to Arabic' : 'Switch to English'}
+            >
+              <Globe size={15} />
+              <span>{language === 'en' ? 'عربي' : 'EN'}</span>
+            </button>
+
+            {/* Quick Dark/Light Mode Toggle */}
+            <button 
+              type="button" 
+              className="icon-btn desktop-only theme-toggle-btn"
+              onClick={toggleTheme}
+              title={isDark ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
+            >
+              {isDark ? <Sun size={18} /> : <Moon size={18} />}
+            </button>
+
             {user ? (
               <Link to="/profile" className="icon-btn desktop-only" title="My Account">
                 <User size={22} fill="#2e7d32" color="#2e7d32" />
