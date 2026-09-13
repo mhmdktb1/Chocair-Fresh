@@ -3,26 +3,49 @@ import { useSearchParams, useNavigate } from 'react-router-dom';
 import { 
   Search, 
   X, 
-  SlidersHorizontal, 
   ShoppingBag, 
   Sparkles, 
-  TrendingUp, 
   ArrowRight,
   RotateCcw,
   Tag,
-  Check
+  Check,
+  ChevronRight,
+  SlidersHorizontal,
+  Flame,
+  LayoutGrid,
+  List,
+  Clock,
+  ArrowLeft
 } from 'lucide-react';
 import Navbar from '../components/layout/Navbar';
 import ProductCard from '../components/shop/ProductCard';
 import Loading from '../components/common/Loading';
 import { useAdmin } from '../context/AdminContext';
 import { useCart } from '../context/CartContext';
+import { useTheme } from '../context/ThemeContext';
+import { translations } from '../utils/translations';
 import { formatCurrency } from '../utils/formatters';
 import './Shop.css';
+
+const getCategoryEmoji = (name = '') => {
+  const n = name.toLowerCase();
+  if (n.includes('fruit') || n.includes('apple') || n.includes('berry')) return '🍎';
+  if (n.includes('veg') || n.includes('greens') || n.includes('salad')) return '🥦';
+  if (n.includes('herb') || n.includes('mint') || n.includes('organic')) return '🌿';
+  if (n.includes('dairy') || n.includes('milk') || n.includes('cheese') || n.includes('egg')) return '🥛';
+  if (n.includes('snack') || n.includes('nut') || n.includes('chip')) return '🍿';
+  if (n.includes('bakery') || n.includes('bread')) return '🥐';
+  if (n.includes('beverage') || n.includes('juice') || n.includes('drink')) return '🧃';
+  if (n.includes('meat') || n.includes('poultry')) return '🥩';
+  if (n.includes('deal') || n.includes('offer')) return '🔥';
+  return '🧺';
+};
 
 const Shop = () => {
   const { products, categories: adminCategories, loading, error } = useAdmin();
   const { cartItems, cartCount, cartTotal } = useCart();
+  const { language } = useTheme();
+  const t = translations[language] || translations.en;
   const [searchParams, setSearchParams] = useSearchParams();
   const navigate = useNavigate();
 
@@ -31,17 +54,22 @@ const Shop = () => {
   const shouldFocusSearch = searchParams.get('focus') === 'search';
 
   const [selectedCategory, setSelectedCategory] = useState(initialCategory);
+  const [activeSpyCategory, setActiveSpyCategory] = useState('all');
   const [sortOption, setSortOption] = useState('featured');
   const [onlyInStock, setOnlyInStock] = useState(false);
   const [onlyDiscounted, setOnlyDiscounted] = useState(false);
   const [showFilterDrawer, setShowFilterDrawer] = useState(false);
   const searchInputRef = useRef(null);
+  const categoryTrackRef = useRef(null);
+  const sectionRefs = useRef({});
 
   // Sync category with URL search param
   useEffect(() => {
     const cat = searchParams.get('category');
     if (cat) {
       setSelectedCategory(cat);
+    } else {
+      setSelectedCategory('all');
     }
   }, [searchParams]);
 
@@ -56,7 +84,7 @@ const Shop = () => {
   // Categories list with count
   const categoriesList = useMemo(() => {
     const allCount = products.length;
-    const allCat = { id: 'all', name: 'All Products', count: allCount };
+    const allCat = { id: 'all', name: 'All Products', count: allCount, emoji: '✨' };
 
     const mapped = adminCategories
       .filter(c => c.isVisible !== false)
@@ -69,6 +97,7 @@ const Shop = () => {
           id: c._id || catName,
           name: catName,
           image: c.image,
+          emoji: getCategoryEmoji(catName),
           count
         };
       });
@@ -76,8 +105,8 @@ const Shop = () => {
     return [allCat, ...mapped];
   }, [adminCategories, products]);
 
-  // Filter & Sort Logic
-  const processedProducts = useMemo(() => {
+  // Filter & Sort Logic for full/filtered list
+  const filteredProducts = useMemo(() => {
     let result = products;
 
     // 1. Search Query
@@ -90,25 +119,17 @@ const Shop = () => {
       );
     }
 
-    // 2. Category Filter
-    if (selectedCategory !== 'all') {
-      const targetCategory = categoriesList.find(c => c.id === selectedCategory || c.name === selectedCategory)?.name || selectedCategory;
-      result = result.filter(p => 
-        String(p.category || '').toLowerCase() === String(targetCategory).toLowerCase()
-      );
-    }
-
-    // 3. In Stock filter
+    // 2. In Stock filter
     if (onlyInStock) {
       result = result.filter(p => p.stock === undefined || p.stock > 0);
     }
 
-    // 4. On Sale filter
+    // 3. On Sale filter
     if (onlyDiscounted) {
       result = result.filter(p => p.discount > 0);
     }
 
-    // 5. Sorting
+    // 4. Sorting
     const sorted = [...result];
     if (sortOption === 'price-asc') sorted.sort((a, b) => a.price - b.price);
     else if (sortOption === 'price-desc') sorted.sort((a, b) => b.price - a.price);
@@ -116,7 +137,62 @@ const Shop = () => {
     else if (sortOption === 'discount') sorted.sort((a, b) => (b.discount || 0) - (a.discount || 0));
 
     return sorted;
-  }, [products, selectedCategory, categoriesList, searchQuery, onlyInStock, onlyDiscounted, sortOption]);
+  }, [products, searchQuery, onlyInStock, onlyDiscounted, sortOption]);
+
+  // Group products by category for the Toters horizontal rows
+  const categorizedSections = useMemo(() => {
+    const realCategories = categoriesList.filter(c => c.id !== 'all' && c.count > 0);
+    
+    return realCategories.map(cat => {
+      const items = filteredProducts.filter(p => 
+        String(p.category || '').toLowerCase() === String(cat.name).toLowerCase()
+      );
+      return {
+        ...cat,
+        items
+      };
+    }).filter(sec => sec.items.length > 0);
+  }, [categoriesList, filteredProducts]);
+
+  // ScrollSpy to track active section while scrolling in "All" view
+  useEffect(() => {
+    if (selectedCategory !== 'all' || searchQuery) return;
+
+    const handleScroll = () => {
+      const scrollPosition = window.scrollY + 180;
+      let currentSection = 'all';
+
+      for (const section of categorizedSections) {
+        const el = document.getElementById(`cat-section-${section.id}`);
+        if (el) {
+          const top = el.offsetTop;
+          const height = el.offsetHeight;
+          if (scrollPosition >= top && scrollPosition < top + height) {
+            currentSection = section.id;
+            break;
+          }
+        }
+      }
+
+      setActiveSpyCategory(currentSection);
+
+      // Auto scroll the category tabs rail horizontally
+      const activeBtn = document.getElementById(`tab-btn-${currentSection}`);
+      if (activeBtn && categoryTrackRef.current) {
+        const track = categoryTrackRef.current;
+        const btnLeft = activeBtn.offsetLeft;
+        const btnWidth = activeBtn.offsetWidth;
+        const trackWidth = track.offsetWidth;
+        track.scrollTo({
+          left: btnLeft - (trackWidth / 2) + (btnWidth / 2),
+          behavior: 'smooth'
+        });
+      }
+    };
+
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, [selectedCategory, searchQuery, categorizedSections]);
 
   const handleSearchChange = (e) => {
     const val = e.target.value;
@@ -144,18 +220,40 @@ const Shop = () => {
     }
   };
 
-  const handleCategorySelect = (catId) => {
-    setSelectedCategory(catId);
-    setSearchParams(prev => {
-      const next = new URLSearchParams(prev);
+  const handleCategoryTabClick = (catId) => {
+    if (selectedCategory !== 'all' || searchQuery) {
+      // Direct category filter mode
+      setSelectedCategory(catId);
+      setSearchParams(prev => {
+        const next = new URLSearchParams(prev);
+        if (catId === 'all') {
+          next.delete('category');
+        } else {
+          const catObj = categoriesList.find(c => c.id === catId);
+          next.set('category', catObj ? catObj.name : catId);
+        }
+        return next;
+      });
+    } else {
+      // Toters ScrollSpy mode: smooth scroll to section
       if (catId === 'all') {
-        next.delete('category');
+        window.scrollTo({ top: 0, behavior: 'smooth' });
       } else {
-        const catObj = categoriesList.find(c => c.id === catId);
-        next.set('category', catObj ? catObj.name : catId);
+        const el = document.getElementById(`cat-section-${catId}`);
+        if (el) {
+          const yOffset = -140; // sticky header + rail offset
+          const y = el.getBoundingClientRect().top + window.pageYOffset + yOffset;
+          window.scrollTo({ top: y, behavior: 'smooth' });
+        }
       }
-      return next;
-    });
+      setActiveSpyCategory(catId);
+    }
+  };
+
+  const handleSeeAllCategory = (catId, catName) => {
+    setSelectedCategory(catId);
+    setSearchParams({ category: catName });
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   const activeFiltersCount = (onlyInStock ? 1 : 0) + (onlyDiscounted ? 1 : 0) + (selectedCategory !== 'all' ? 1 : 0) + (searchQuery ? 1 : 0);
@@ -166,206 +264,392 @@ const Shop = () => {
     setOnlyDiscounted(false);
     setSortOption('featured');
     setSearchParams({});
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
+  const isSpecificView = selectedCategory !== 'all' || Boolean(searchQuery);
+
   const selectedCategoryObj = categoriesList.find(c => c.id === selectedCategory || c.name === selectedCategory);
-  const currentTitle = searchQuery 
-    ? `Results for "${searchQuery}"` 
-    : selectedCategoryObj?.name === 'All Products' 
-      ? 'All Fresh Produce' 
-      : `${selectedCategoryObj?.name || 'Fresh Market'} Collection`;
+  const specificProducts = useMemo(() => {
+    if (!isSpecificView) return [];
+    if (selectedCategory === 'all') return filteredProducts;
+    const target = selectedCategoryObj?.name || selectedCategory;
+    return filteredProducts.filter(p => 
+      String(p.category || '').toLowerCase() === String(target).toLowerCase()
+    );
+  }, [isSpecificView, selectedCategory, selectedCategoryObj, filteredProducts]);
 
   return (
-    <div className="modern-shop-page">
+    <div className="modern-shop-page toters-layout">
       <Navbar />
 
-      {/* Modern Shop App Header */}
-      <header className="shop-app-header">
-        <div className="container shop-header-inner">
-          <div className="shop-title-row">
-            <div>
-              <div className="shop-header-badge">
-                <Sparkles size={13} />
-                <span>100% Organic & Farm Harvest</span>
-              </div>
-              <h1 className="shop-title">{currentTitle}</h1>
-            </div>
-            <span className="shop-count-pill">{processedProducts.length} Items</span>
-          </div>
-
-          {/* Live Search Bar */}
-          <div className="shop-search-wrapper">
-            <Search className="shop-search-icon" size={20} />
-            <input
-              ref={searchInputRef}
-              type="text"
-              placeholder="Search fruits, vegetables, greens..."
-              value={searchQuery}
-              onChange={handleSearchChange}
-              className="shop-search-input"
-            />
-            {searchQuery && (
+      {/* ==========================================
+          1. STICKY TOP APP HEADER & SEARCH BAR
+          ========================================== */}
+      <header className="toters-shop-top-header">
+        <div className="container toters-header-inner">
+          <div className="toters-search-row">
+            {isSpecificView && (
               <button 
                 type="button" 
-                onClick={clearSearch} 
-                className="shop-search-clear"
-                aria-label="Clear search"
+                className="toters-back-pill-btn" 
+                onClick={resetAllFilters}
+                aria-label="Back to all categories"
+                title="View all aisles"
               >
-                <X size={16} />
+                <ArrowLeft size={18} />
               </button>
             )}
+
+            <div className="toters-search-box">
+              <Search className="toters-search-icon" size={17} />
+              <input
+                ref={searchInputRef}
+                type="text"
+                placeholder={t.searchPlaceholder || "Search farm fresh items..."}
+                value={searchQuery}
+                onChange={handleSearchChange}
+                className="toters-search-input"
+              />
+              {searchQuery && (
+                <button 
+                  type="button" 
+                  onClick={clearSearch} 
+                  className="toters-search-clear"
+                  aria-label="Clear search"
+                >
+                  <X size={14} />
+                </button>
+              )}
+            </div>
+
+            <button
+              type="button"
+              className={`toters-filter-trigger-btn ${activeFiltersCount > 0 ? 'active' : ''}`}
+              onClick={() => setShowFilterDrawer(true)}
+              title="Filter & Sort Options"
+            >
+              <SlidersHorizontal size={17} />
+              {activeFiltersCount > 0 && <span className="filter-badge-dot">{activeFiltersCount}</span>}
+            </button>
           </div>
         </div>
       </header>
 
-      {/* Sticky Horizontal Category Rail Chips */}
-      <nav className="shop-categories-dock" aria-label="Product Categories">
-        <div className="container">
-          <div className="categories-scroll-track">
-            {categoriesList.map((cat) => {
-              const isActive = selectedCategory === cat.id || selectedCategory === cat.name;
-              return (
-                <button
-                  key={cat.id}
-                  type="button"
-                  onClick={() => handleCategorySelect(cat.id)}
-                  className={`category-chip ${isActive ? 'active' : ''}`}
-                >
-                  <span className="chip-name">{cat.name}</span>
-                  {cat.count > 0 && <span className="chip-badge">{cat.count}</span>}
-                </button>
-              );
-            })}
-          </div>
+      {/* ==========================================
+          2. TOTERS STICKY CATEGORY SNAP RAIL
+          ========================================== */}
+      <nav className="toters-category-snap-rail" aria-label="Aisle Categories">
+        <div className="toters-rail-scroll-track" ref={categoryTrackRef}>
+          {categoriesList.map((cat) => {
+            const isSelected = isSpecificView 
+              ? (selectedCategory === cat.id || selectedCategory === cat.name)
+              : (activeSpyCategory === cat.id);
+
+            return (
+              <button
+                key={cat.id}
+                id={`tab-btn-${cat.id}`}
+                type="button"
+                onClick={() => handleCategoryTabClick(cat.id)}
+                className={`toters-category-tab ${isSelected ? 'active' : ''}`}
+              >
+                <span className="tab-emoji">{cat.emoji}</span>
+                <span className="tab-name">{cat.name}</span>
+                {cat.count > 0 && <span className="tab-count-pill">{cat.count}</span>}
+              </button>
+            );
+          })}
         </div>
       </nav>
 
-      {/* Main Content Area */}
-      <main className="container shop-body-container">
-        {/* Quick Filter & Sort Pill Bar */}
-        <div className="shop-control-bar">
-          <div className="quick-filter-pills">
+      {/* ==========================================
+          3. QUICK TOUCH FILTER CHIPS BAR
+          ========================================== */}
+      <div className="toters-quick-filter-strip">
+        <div className="container filter-strip-inner">
+          <div className="quick-filter-scroll">
             <button
               type="button"
               onClick={() => setOnlyDiscounted(!onlyDiscounted)}
-              className={`filter-tag-pill ${onlyDiscounted ? 'active' : ''}`}
+              className={`touch-filter-chip ${onlyDiscounted ? 'active' : ''}`}
             >
-              <Tag size={14} />
+              <Flame size={13} className="chip-icon fire" />
               <span>On Sale</span>
-              {onlyDiscounted && <Check size={12} />}
+              {onlyDiscounted && <Check size={11} />}
             </button>
 
             <button
               type="button"
               onClick={() => setOnlyInStock(!onlyInStock)}
-              className={`filter-tag-pill ${onlyInStock ? 'active' : ''}`}
+              className={`touch-filter-chip ${onlyInStock ? 'active' : ''}`}
             >
-              <Sparkles size={14} />
+              <Sparkles size={13} className="chip-icon star" />
               <span>In Stock</span>
-              {onlyInStock && <Check size={12} />}
+              {onlyInStock && <Check size={11} />}
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setSortOption(sortOption === 'price-asc' ? 'price-desc' : 'price-asc')}
+              className={`touch-filter-chip ${sortOption.startsWith('price') ? 'active' : ''}`}
+            >
+              <span>{sortOption === 'price-asc' ? 'Price: Low ↑' : sortOption === 'price-desc' ? 'Price: High ↓' : 'Price'}</span>
             </button>
 
             {activeFiltersCount > 0 && (
               <button
                 type="button"
                 onClick={resetAllFilters}
-                className="filter-reset-pill"
+                className="touch-filter-reset"
                 title="Reset all filters"
               >
-                <RotateCcw size={13} />
+                <RotateCcw size={12} />
                 <span>Reset</span>
               </button>
             )}
           </div>
-
-          <div className="sort-control-group">
-            <span className="sort-label">Sort:</span>
-            <select
-              value={sortOption}
-              onChange={(e) => setSortOption(e.target.value)}
-              className="shop-sort-select"
-              aria-label="Sort products"
-            >
-              <option value="featured">Featured</option>
-              <option value="price-asc">Price: Low to High</option>
-              <option value="price-desc">Price: High to Low</option>
-              <option value="discount">Top Discounts</option>
-              <option value="name-asc">Name: A to Z</option>
-            </select>
-          </div>
         </div>
+      </div>
 
-        {/* Product Grid */}
+      {/* ==========================================
+          4. MAIN TOTERS SHOP AISLE FEED
+          ========================================== */}
+      <main className="container toters-shop-main-feed">
         {loading ? (
-          <div className="shop-grid">
-            {[1, 2, 3, 4, 5, 6, 7, 8].map((n) => (
-              <div key={n} className="shop-skeleton-card">
-                <div className="skeleton-img-box" />
-                <div className="skeleton-text-line short" />
-                <div className="skeleton-text-line" />
+          <div className="toters-loading-state">
+            {[1, 2, 3].map(n => (
+              <div key={n} className="toters-skeleton-section">
+                <div className="skeleton-header-bar" />
+                <div className="skeleton-row-track">
+                  {[1, 2, 3, 4].map(k => (
+                    <div key={k} className="skeleton-card" />
+                  ))}
+                </div>
               </div>
             ))}
           </div>
         ) : error ? (
-          <div className="shop-empty-state">
-            <div className="empty-state-icon">⚠️</div>
-            <h3>Unable to load fresh inventory</h3>
-            <p>Please check your connection or refresh the page.</p>
-            <button 
-              type="button" 
-              onClick={() => window.location.reload()} 
-              className="empty-state-btn"
-            >
-              Retry
+          <div className="toters-empty-state-card">
+            <div className="empty-icon-wrap">⚠️</div>
+            <h3>Unable to load fresh aisles</h3>
+            <p>Please check your connection or tap below to refresh.</p>
+            <button type="button" onClick={() => window.location.reload()} className="toters-refresh-btn">
+              Retry Harvest
             </button>
           </div>
-        ) : processedProducts.length === 0 ? (
-          <div className="shop-empty-state">
-            <div className="empty-state-icon">🧺</div>
-            <h3>No matching harvest found</h3>
-            <p>Try searching for a different item or resetting active filters.</p>
-            <button 
-              type="button" 
-              onClick={resetAllFilters} 
-              className="empty-state-btn"
-            >
-              Show All Products
-            </button>
+        ) : isSpecificView ? (
+          /* SINGLE CATEGORY OR SEARCH RESULTS: MULTI-COLUMN GRID */
+          <div className="toters-specific-grid-view fade-in">
+            <div className="specific-view-header">
+              <div className="header-left">
+                <h2 className="specific-title">
+                  {searchQuery 
+                    ? `Results for "${searchQuery}"` 
+                    : `${selectedCategoryObj?.emoji || '🧺'} ${selectedCategoryObj?.name || 'Fresh Market'}`}
+                </h2>
+                <span className="specific-count-tag">{specificProducts.length} items available</span>
+              </div>
+              <button type="button" className="see-all-aisles-btn" onClick={resetAllFilters}>
+                View All Aisles
+              </button>
+            </div>
+
+            {specificProducts.length === 0 ? (
+              <div className="toters-empty-state-card">
+                <div className="empty-icon-wrap">🧺</div>
+                <h3>No fresh items found</h3>
+                <p>Try searching with another keyword or reset the active filter tags.</p>
+                <button type="button" onClick={resetAllFilters} className="toters-refresh-btn">
+                  Browse All Categories
+                </button>
+              </div>
+            ) : (
+              <div className="toters-grid-2col">
+                {specificProducts.map((product) => (
+                  <ProductCard
+                    key={product.id || product._id}
+                    product={{
+                      ...product,
+                      _id: product.id || product._id,
+                      rating: product.rating || 4.9,
+                      reviews: product.reviews || 16,
+                      isNew: product.isNew || false,
+                      discount: product.discount || 0
+                    }}
+                  />
+                ))}
+              </div>
+            )}
           </div>
         ) : (
-          <div className="shop-grid">
-            {processedProducts.map((product) => (
-              <ProductCard
-                key={product.id || product._id}
-                product={{
-                  ...product,
-                  _id: product.id || product._id,
-                  rating: product.rating || 4.9,
-                  reviews: product.reviews || 16,
-                  isNew: product.isNew || false,
-                  discount: product.discount || 0
-                }}
-              />
-            ))}
+          /* TOTERS HORIZONTAL AISLES STREAM (BY CATEGORY) */
+          <div className="toters-aisles-stream">
+            {categorizedSections.length === 0 ? (
+              <div className="toters-empty-state-card">
+                <div className="empty-icon-wrap">🧺</div>
+                <h3>No harvest currently available</h3>
+                <p>Try resetting the filter tags to explore our full seasonal catalog.</p>
+                <button type="button" onClick={resetAllFilters} className="toters-refresh-btn">
+                  Show All Produce
+                </button>
+              </div>
+            ) : (
+              categorizedSections.map((section) => (
+                <section 
+                  key={section.id} 
+                  id={`cat-section-${section.id}`} 
+                  className="toters-category-row-section"
+                >
+                  {/* Category Header Row */}
+                  <div className="toters-section-header">
+                    <div className="section-title-wrap">
+                      <span className="section-emoji-badge">{section.emoji}</span>
+                      <div className="section-headings">
+                        <h2 className="section-category-title">{section.name}</h2>
+                        <span className="section-items-badge">{section.items.length} {section.items.length === 1 ? 'item' : 'items'}</span>
+                      </div>
+                    </div>
+                    
+                    <button 
+                      type="button" 
+                      className="toters-see-all-action"
+                      onClick={() => handleSeeAllCategory(section.id, section.name)}
+                    >
+                      <span>See all</span>
+                      <ChevronRight size={15} />
+                    </button>
+                  </div>
+
+                  {/* Horizontal Touch Scroll Row */}
+                  <div className="toters-horizontal-products-track">
+                    {section.items.map((product) => (
+                      <div key={product.id || product._id} className="toters-horizontal-card-item">
+                        <ProductCard
+                          product={{
+                            ...product,
+                            _id: product.id || product._id,
+                            rating: product.rating || 4.9,
+                            reviews: product.reviews || 16,
+                            isNew: product.isNew || false,
+                            discount: product.discount || 0
+                          }}
+                        />
+                      </div>
+                    ))}
+                  </div>
+                </section>
+              ))
+            )}
           </div>
         )}
       </main>
 
-      {/* Floating Quick Cart Bar on Mobile */}
-      {cartCount > 0 && (
-        <aside className="mobile-floating-cart-bar" aria-label="Cart Overview">
-          <div className="floating-cart-content" onClick={() => navigate('/cart')}>
-            <div className="cart-summary-left">
-              <div className="floating-cart-badge">
-                <ShoppingBag size={18} />
-                <span>{cartCount}</span>
+      {/* ==========================================
+          5. BOTTOM SHEET FILTER & SORT MODAL
+          ========================================== */}
+      {showFilterDrawer && (
+        <div className="toters-modal-overlay" onClick={() => setShowFilterDrawer(false)}>
+          <div className="toters-bottom-sheet-drawer" onClick={(e) => e.stopPropagation()}>
+            <div className="drawer-handle-bar" />
+            
+            <div className="drawer-header-row">
+              <h3 className="drawer-title">Filter & Sort Harvest</h3>
+              <button 
+                type="button" 
+                className="drawer-close-icon"
+                onClick={() => setShowFilterDrawer(false)}
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            <div className="drawer-body-scroll">
+              {/* Sort By Section */}
+              <div className="drawer-group">
+                <label className="drawer-group-label">Sort Products By</label>
+                <div className="drawer-options-grid">
+                  {[
+                    { id: 'featured', label: 'Featured Picks' },
+                    { id: 'price-asc', label: 'Price: Low to High' },
+                    { id: 'price-desc', label: 'Price: High to Low' },
+                    { id: 'discount', label: 'Biggest Discount' },
+                    { id: 'name-asc', label: 'Name: A to Z' }
+                  ].map(opt => (
+                    <button
+                      key={opt.id}
+                      type="button"
+                      className={`drawer-option-pill ${sortOption === opt.id ? 'active' : ''}`}
+                      onClick={() => setSortOption(opt.id)}
+                    >
+                      {opt.label}
+                    </button>
+                  ))}
+                </div>
               </div>
-              <div className="cart-summary-text">
-                <span className="cart-item-count">{cartCount} {cartCount === 1 ? 'item' : 'items'} in basket</span>
-                <strong className="cart-total-amount">{formatCurrency(cartTotal)}</strong>
+
+              {/* Toggles Section */}
+              <div className="drawer-group">
+                <label className="drawer-group-label">Product Availability</label>
+                
+                <div className="drawer-toggle-row" onClick={() => setOnlyDiscounted(!onlyDiscounted)}>
+                  <div className="toggle-label-text">
+                    <Flame size={16} className="fire-color" />
+                    <span>Special Deals & Offers Only</span>
+                  </div>
+                  <input type="checkbox" checked={onlyDiscounted} readOnly />
+                </div>
+
+                <div className="drawer-toggle-row" onClick={() => setOnlyInStock(!onlyInStock)}>
+                  <div className="toggle-label-text">
+                    <Sparkles size={16} className="green-color" />
+                    <span>In Stock Only</span>
+                  </div>
+                  <input type="checkbox" checked={onlyInStock} readOnly />
+                </div>
               </div>
             </div>
-            <div className="cart-checkout-action">
+
+            <div className="drawer-footer-actions">
+              <button 
+                type="button" 
+                className="drawer-reset-btn"
+                onClick={resetAllFilters}
+              >
+                Reset All
+              </button>
+              <button 
+                type="button" 
+                className="drawer-apply-btn"
+                onClick={() => setShowFilterDrawer(false)}
+              >
+                Show Results
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ==========================================
+          6. FLOATING SLEEK CART BAR (MOBILE ONLY)
+          ========================================== */}
+      {cartCount > 0 && (
+        <aside className="toters-floating-cart-dock" aria-label="Shopping Cart Summary">
+          <div className="floating-cart-inner-pill" onClick={() => navigate('/cart')}>
+            <div className="cart-left-meta">
+              <div className="cart-icon-bubble">
+                <ShoppingBag size={17} />
+                <span className="cart-badge-number">{cartCount}</span>
+              </div>
+              <div className="cart-pricing-col">
+                <span className="cart-items-count-text">
+                  {cartCount} {cartCount === 1 ? 'fresh item' : 'fresh items'}
+                </span>
+                <strong className="cart-subtotal-val">{formatCurrency(cartTotal)}</strong>
+              </div>
+            </div>
+
+            <div className="cart-right-action">
               <span>View Cart</span>
               <ArrowRight size={16} />
             </div>
