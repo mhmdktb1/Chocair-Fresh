@@ -81,26 +81,45 @@ const Shop = () => {
     }
   }, [shouldFocusSearch]);
 
-  // Categories list with count
+  // Categories list with count - dynamically derived from products AND adminCategories
   const categoriesList = useMemo(() => {
     const allCount = products.length;
     const allCat = { id: 'all', name: 'All Products', count: allCount, emoji: '✨' };
 
-    const mapped = adminCategories
+    // 1. Collect all category names from products
+    const productCatNames = Array.from(
+      new Set(
+        products
+          .map(p => p.category ? String(p.category).trim() : null)
+          .filter(Boolean)
+      )
+    );
+
+    // 2. Collect category names from adminCategories
+    const adminCatNames = (adminCategories || [])
       .filter(c => c.isVisible !== false)
-      .map(c => {
-        const catName = c.name;
-        const count = products.filter(p => 
-          String(p.category || '').toLowerCase() === String(catName).toLowerCase()
-        ).length;
-        return {
-          id: c._id || catName,
-          name: catName,
-          image: c.image,
-          emoji: getCategoryEmoji(catName),
-          count
-        };
-      });
+      .map(c => String(c.name).trim())
+      .filter(Boolean);
+
+    // 3. Union of all unique category names
+    const allUniqueNames = Array.from(new Set([...adminCatNames, ...productCatNames]));
+
+    const mapped = allUniqueNames.map(catName => {
+      const adminCat = (adminCategories || []).find(
+        c => String(c.name).trim().toLowerCase() === catName.toLowerCase()
+      );
+      const count = products.filter(p => 
+        String(p.category || '').trim().toLowerCase() === catName.toLowerCase()
+      ).length;
+
+      return {
+        id: adminCat?._id || catName,
+        name: catName,
+        image: adminCat?.image,
+        emoji: getCategoryEmoji(catName),
+        count
+      };
+    }).filter(c => c.count > 0);
 
     return [allCat, ...mapped];
   }, [adminCategories, products]);
@@ -141,17 +160,37 @@ const Shop = () => {
 
   // Group products by category for the Toters horizontal rows
   const categorizedSections = useMemo(() => {
-    const realCategories = categoriesList.filter(c => c.id !== 'all' && c.count > 0);
+    const realCategories = categoriesList.filter(c => c.id !== 'all');
     
-    return realCategories.map(cat => {
+    const sections = realCategories.map(cat => {
       const items = filteredProducts.filter(p => 
-        String(p.category || '').toLowerCase() === String(cat.name).toLowerCase()
+        String(p.category || '').trim().toLowerCase() === String(cat.name).trim().toLowerCase()
       );
       return {
         ...cat,
         items
       };
     }).filter(sec => sec.items.length > 0);
+
+    // If there are leftover products not matching any listed category, include them
+    const categorizedProductIds = new Set(
+      sections.flatMap(s => s.items.map(p => p._id || p.id))
+    );
+    const uncatItems = filteredProducts.filter(
+      p => !categorizedProductIds.has(p._id || p.id)
+    );
+
+    if (uncatItems.length > 0) {
+      sections.push({
+        id: 'other',
+        name: 'Fresh Harvest & More',
+        emoji: '🌿',
+        items: uncatItems,
+        count: uncatItems.length
+      });
+    }
+
+    return sections;
   }, [categoriesList, filteredProducts]);
 
   // ScrollSpy to track active section while scrolling in "All" view
@@ -269,13 +308,15 @@ const Shop = () => {
 
   const isSpecificView = selectedCategory !== 'all' || Boolean(searchQuery);
 
-  const selectedCategoryObj = categoriesList.find(c => c.id === selectedCategory || c.name === selectedCategory);
+  const selectedCategoryObj = categoriesList.find(
+    c => c.id === selectedCategory || c.name?.toLowerCase() === selectedCategory?.toLowerCase()
+  );
   const specificProducts = useMemo(() => {
     if (!isSpecificView) return [];
     if (selectedCategory === 'all') return filteredProducts;
     const target = selectedCategoryObj?.name || selectedCategory;
     return filteredProducts.filter(p => 
-      String(p.category || '').toLowerCase() === String(target).toLowerCase()
+      String(p.category || '').trim().toLowerCase() === String(target).trim().toLowerCase()
     );
   }, [isSpecificView, selectedCategory, selectedCategoryObj, filteredProducts]);
 
@@ -485,7 +526,7 @@ const Shop = () => {
         ) : (
           /* TOTERS HORIZONTAL AISLES STREAM (BY CATEGORY) */
           <div className="toters-aisles-stream">
-            {categorizedSections.length === 0 ? (
+            {filteredProducts.length === 0 ? (
               <div className="toters-empty-state-card">
                 <div className="empty-icon-wrap">🧺</div>
                 <h3>No harvest currently available</h3>
@@ -493,6 +534,22 @@ const Shop = () => {
                 <button type="button" onClick={resetAllFilters} className="toters-refresh-btn">
                   Show All Produce
                 </button>
+              </div>
+            ) : categorizedSections.length === 0 ? (
+              <div className="toters-grid-2col">
+                {filteredProducts.map((product) => (
+                  <ProductCard
+                    key={product.id || product._id}
+                    product={{
+                      ...product,
+                      _id: product.id || product._id,
+                      rating: product.rating || 4.9,
+                      reviews: product.reviews || 16,
+                      isNew: product.isNew || false,
+                      discount: product.discount || 0
+                    }}
+                  />
+                ))}
               </div>
             ) : (
               categorizedSections.map((section) => (

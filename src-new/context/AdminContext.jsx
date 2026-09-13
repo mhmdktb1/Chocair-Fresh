@@ -24,14 +24,15 @@ export const AdminProvider = ({ children }) => {
 
   // Helper to normalize backend product to UI shape
   const mapProduct = (p) => ({
-    id: p._id,
+    id: p._id || p.id,
+    _id: p._id || p.id,
     name: p.name,
     category: p.category ? String(p.category).trim() : "Uncategorized",
-    categories: [p.category], // Backend only has single category
+    categories: [p.category ? String(p.category).trim() : "Uncategorized"], // Backend only has single category
     price: p.price,
     priceUnit: p.unit || "kg", 
     unit: p.unit || "kg",
-    stock: p.countInStock,
+    stock: p.countInStock !== undefined ? p.countInStock : p.stock,
     image: p.image,
     description: p.description,
     brand: p.brand,
