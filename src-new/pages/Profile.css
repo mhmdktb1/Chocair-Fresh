@@ -2212,7 +2212,7 @@ input:checked + .slider:before {
 }
 
 /* =========================================================
-   8. MOBILE RESPONSIVENESS (< 768px)
+   8. MOBILE RESPONSIVENESS (< 768px) - SLIM, SLEEK & TACTILE
    ========================================================= */
 @media (max-width: 768px) {
   .profile-desktop-nav {
@@ -2221,27 +2221,28 @@ input:checked + .slider:before {
 
   .profile-page {
     padding-top: 0;
-    padding-bottom: 7.5rem; /* Room for BottomNav Dock */
+    padding-bottom: 7rem; /* Room for BottomNav Dock */
     background: #f8fafc;
   }
 
+  /* Compact Mobile Sticky Top Header */
   .profile-mobile-header {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: 0.75rem 1rem;
+    padding: 0.65rem 1rem;
     background: #ffffff;
     border-bottom: 1px solid var(--cf-slate-200);
     position: sticky;
     top: 0;
     z-index: 100;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.03);
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.03);
   }
 
   .profile-mobile-back-btn,
   .profile-mobile-logout-icon-btn {
-    width: 36px;
-    height: 36px;
+    width: 32px;
+    height: 32px;
     background: var(--cf-slate-100);
     border-radius: 50%;
     display: flex;
@@ -2257,120 +2258,403 @@ input:checked + .slider:before {
   }
 
   .profile-mobile-title {
-    font-size: 1.05rem;
+    font-size: 0.98rem;
     font-weight: 800;
     color: var(--cf-dark-900);
     margin: 0;
   }
 
   .profile-container {
-    padding: 1rem 12px 2.5rem !important;
-    gap: 1rem !important;
+    padding: 0.75rem 10px 2rem !important;
+    gap: 0.75rem !important;
   }
 
+  /* Compact Slim Hero Identity Card */
   .profile-hero-card {
-    padding: 1.15rem;
-    gap: 1.15rem;
-    border-radius: var(--cf-radius-md);
+    padding: 0.85rem 1rem;
+    gap: 0.75rem;
+    border-radius: 16px;
   }
 
   .hero-card-left {
-    gap: 1rem;
+    gap: 0.85rem;
   }
 
   .hero-avatar {
-    width: 68px;
-    height: 68px;
+    width: 54px;
+    height: 54px;
+    border-width: 2.5px;
   }
 
   .avatar-letter {
-    font-size: 1.7rem;
+    font-size: 1.4rem;
+  }
+
+  .avatar-camera-overlay {
+    width: 20px;
+    height: 20px;
+    border-width: 2px;
+  }
+
+  .avatar-camera-overlay svg {
+    width: 10px;
+    height: 10px;
   }
 
   .hero-user-name {
-    font-size: 1.2rem;
+    font-size: 1.08rem;
   }
 
   .hero-contact-row {
-    font-size: 0.78rem;
-    gap: 0.5rem;
+    font-size: 0.74rem;
+    gap: 0.4rem;
   }
 
+  .hero-contact-row svg {
+    width: 11px;
+    height: 11px;
+  }
+
+  .hero-tier-tag-wrap {
+    margin-top: 2px;
+    gap: 0.35rem;
+  }
+
+  .hero-tier-tag, .hero-loc-tag {
+    font-size: 0.68rem;
+    padding: 2px 7px;
+    border-radius: 6px;
+  }
+
+  /* 4-in-1 Compact Stats Bar */
   .hero-stats-row {
-    grid-template-columns: repeat(2, 1fr);
-    gap: 0.65rem;
-    padding-top: 1rem;
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 0.35rem;
+    padding-top: 0.65rem;
+    border-top: 1px solid var(--cf-slate-100);
   }
 
   .hero-stat-card {
-    padding: 0.65rem 0.75rem;
-    gap: 0.5rem;
+    padding: 0.45rem 0.25rem;
+    gap: 0.35rem;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    border-radius: 10px;
+    border-color: var(--cf-slate-100);
+    background: var(--cf-slate-50);
   }
 
   .stat-icon-wrap {
-    width: 32px;
-    height: 32px;
+    width: 24px;
+    height: 24px;
+    border-radius: 6px;
+  }
+
+  .stat-icon-wrap svg {
+    width: 13px;
+    height: 13px;
   }
 
   .stat-value {
-    font-size: 0.95rem;
+    font-size: 0.82rem;
+    line-height: 1.1;
   }
 
   .stat-label {
-    font-size: 0.68rem;
+    font-size: 0.58rem;
+    white-space: nowrap;
   }
 
-  .profile-tabs-bar {
-    padding: 4px;
-    gap: 4px;
+  /* =========================================================
+     COMPACT SLIM ACCORDION BARS FOR MOBILE
+     ========================================================= */
+  .profile-accordion-container {
+    gap: 0.55rem;
   }
 
-  .tab-item-btn {
+  .accordion-card {
+    border-radius: 14px;
+    border-width: 1px;
+  }
+
+  .accordion-trigger-header {
     padding: 0.65rem 0.85rem;
-    font-size: 0.8rem;
-    gap: 5px;
+    gap: 0.65rem;
+    min-height: 52px;
+    box-sizing: border-box;
   }
 
-  .profile-section-card {
-    padding: 1.15rem;
-    border-radius: var(--cf-radius-md);
+  .accordion-trigger-left {
+    gap: 0.65rem;
+  }
+
+  .accordion-icon-box {
+    width: 34px;
+    height: 34px;
+    border-radius: 9px;
+  }
+
+  .accordion-icon-box svg {
+    width: 17px;
+    height: 17px;
+  }
+
+  .accordion-title-row {
+    gap: 0.35rem;
+  }
+
+  .accordion-section-title {
+    font-size: 0.88rem;
+    font-weight: 750;
+    line-height: 1.25;
+  }
+
+  .accordion-summary-text {
+    font-size: 0.7rem;
+    color: var(--cf-slate-500);
+    line-height: 1.2;
+    margin-top: 1px;
+  }
+
+  .accordion-mini-chip {
+    padding: 1px 6px;
+    font-size: 0.64rem;
+    border-radius: 4px;
+  }
+
+  .accordion-mini-chip svg {
+    width: 9px;
+    height: 9px;
+  }
+
+  .accordion-trigger-right {
+    gap: 0.4rem;
+  }
+
+  .accordion-state-hint {
+    display: none; /* Keep mobile bar clean and uncluttered */
+  }
+
+  .accordion-chevron {
+    width: 26px;
+    height: 26px;
+  }
+
+  .accordion-chevron svg {
+    width: 15px;
+    height: 15px;
+  }
+
+  .accordion-body-content {
+    padding: 0.85rem 0.75rem;
+  }
+
+  /* Inner Sections Padding & Sizing */
+  .section-header-row {
+    margin-bottom: 0.85rem;
+    padding-bottom: 0.65rem;
+  }
+
+  .section-title {
+    font-size: 1rem;
+  }
+
+  .section-subtitle {
+    font-size: 0.72rem;
+  }
+
+  .account-action-pill-btn {
+    padding: 0.4rem 0.75rem;
+    font-size: 0.76rem;
   }
 
   .profile-fields-grid {
     grid-template-columns: 1fr;
+    gap: 0.75rem;
   }
 
   .profile-field-box.full-width {
     grid-column: span 1;
   }
 
-  .saved-addresses-grid {
-    grid-template-columns: 1fr;
+  .profile-field-input {
+    padding: 0.65rem 0.75rem;
+    font-size: 0.86rem;
+    border-radius: 10px;
   }
 
-  .delivery-window-options {
-    grid-template-columns: 1fr;
+  .change-phone-btn {
+    padding: 0.65rem 0.75rem;
+    font-size: 0.76rem;
+    border-radius: 10px;
   }
 
-  .order-meta-info-grid {
-    grid-template-columns: 1fr;
+  .location-preview-card {
+    padding: 0.75rem;
+    border-radius: 12px;
+    gap: 0.65rem;
   }
 
-  .order-progress-tracker {
-    padding: 0.65rem 0.5rem;
+  .location-pin-icon-wrap {
+    width: 32px;
+    height: 32px;
   }
 
-  .step-label {
-    font-size: 0.62rem;
+  .location-pin-icon-wrap svg {
+    width: 17px;
+    height: 17px;
+  }
+
+  .location-main-text {
+    font-size: 0.82rem;
+  }
+
+  .location-sub-text {
+    font-size: 0.68rem;
+  }
+
+  .edit-addr-quick-btn {
+    padding: 0.35rem 0.65rem;
+    font-size: 0.72rem;
+  }
+
+  /* Orders inside mobile */
+  .orders-section-header {
+    margin-bottom: 0.75rem;
   }
 
   .orders-toolbar-wrap {
     flex-direction: column;
     align-items: stretch;
+    gap: 0.5rem;
+    margin-bottom: 0.75rem;
+  }
+
+  .order-filter-chips {
+    gap: 0.25rem;
+    overflow-x: auto;
+    padding-bottom: 2px;
+  }
+
+  .filter-chip {
+    padding: 0.35rem 0.7rem;
+    font-size: 0.72rem;
   }
 
   .order-search-box {
     width: 100%;
+    min-width: unset;
+  }
+
+  .order-search-box input {
+    padding: 0.45rem 1.8rem 0.45rem 1.8rem;
+    font-size: 0.78rem;
+  }
+
+  .redesigned-order-card {
+    padding: 0.75rem;
+    border-radius: 12px;
+  }
+
+  .order-id-label {
+    font-size: 0.78rem;
+  }
+
+  .order-status-pill {
+    padding: 2px 7px;
+    font-size: 0.64rem;
+  }
+
+  .order-progress-tracker {
+    padding: 0.5rem 0.35rem;
+    margin-top: 0.65rem;
+  }
+
+  .step-dot {
+    width: 18px;
+    height: 18px;
+  }
+
+  .step-dot svg {
+    width: 10px;
+    height: 10px;
+  }
+
+  .step-label {
+    font-size: 0.58rem;
+  }
+
+  .order-card-mid-summary {
+    margin-top: 0.65rem;
+    padding-top: 0.65rem;
+  }
+
+  .total-value {
+    font-size: 0.98rem;
+  }
+
+  .line-item-card {
+    padding: 0.5rem;
+  }
+
+  .item-img-frame {
+    width: 34px;
+    height: 34px;
+  }
+
+  .item-title {
+    font-size: 0.78rem;
+  }
+
+  .item-qty-rate {
+    font-size: 0.68rem;
+  }
+
+  .item-row-total {
+    font-size: 0.8rem;
+  }
+
+  .order-meta-info-grid {
+    grid-template-columns: 1fr;
+    gap: 0.5rem;
+  }
+
+  .meta-info-card {
+    padding: 0.55rem 0.7rem;
+  }
+
+  .meta-card-text {
+    font-size: 0.76rem;
+  }
+
+  .order-actions-bar {
+    gap: 0.4rem;
+  }
+
+  .reorder-action-btn, .whatsapp-help-btn, .cancel-order-pill-btn {
+    padding: 0.5rem 0.75rem;
+    font-size: 0.74rem;
+  }
+
+  .saved-addresses-grid {
+    grid-template-columns: 1fr;
+    gap: 0.65rem;
+  }
+
+  .address-card {
+    padding: 0.75rem;
+    border-radius: 12px;
+  }
+
+  .delivery-window-options {
+    grid-template-columns: 1fr;
+    gap: 0.5rem;
+  }
+
+  .window-radio-option {
+    padding: 0.65rem 0.75rem;
   }
 
   .admin-card-inner {
@@ -2390,6 +2674,15 @@ input:checked + .slider:before {
   .danger-signout-btn {
     width: 100%;
     justify-content: center;
+  }
+
+  .modal-overlay {
+    padding: 10px;
+  }
+
+  .modal-content-card {
+    padding: 1.25rem 1rem;
+    border-radius: 18px;
   }
 }
 
