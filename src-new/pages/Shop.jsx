@@ -407,21 +407,6 @@ const Shop = () => {
           </div>
         </nav>
       </div>
-              <button
-                key={cat.id}
-                id={`tab-btn-${cat.id}`}
-                type="button"
-                onClick={() => handleCategoryTabClick(cat.id)}
-                className={`toters-category-tab ${isSelected ? 'active' : ''}`}
-              >
-                <span className="tab-emoji">{cat.emoji}</span>
-                <span className="tab-name">{cat.name}</span>
-                {cat.count > 0 && <span className="tab-count-pill">{cat.count}</span>}
-              </button>
-            );
-          })}
-        </div>
-      </nav>
 
       {/* ==========================================
           3. QUICK TOUCH FILTER CHIPS BAR
