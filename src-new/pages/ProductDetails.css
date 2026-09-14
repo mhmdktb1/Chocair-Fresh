@@ -17,86 +17,6 @@
   padding-right: 1.25rem;
 }
 
-/* =========================================================
-   MOBILE TOPBAR (App-like Header)
-   ========================================================= */
-.mobile-product-topbar {
-  display: none; /* Visible only on mobile / small screens */
-  position: sticky;
-  top: 0;
-  z-index: 90;
-  align-items: center;
-  justify-content: space-between;
-  padding: 0.75rem 1rem;
-  background: rgba(255, 255, 255, 0.85);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
-  border-bottom: 1px solid rgba(0, 0, 0, 0.06);
-}
-
-[data-theme="dark"] .mobile-product-topbar {
-  background: rgba(17, 24, 39, 0.88);
-  border-bottom-color: rgba(255, 255, 255, 0.08);
-}
-
-.topbar-circle-btn {
-  width: 40px;
-  height: 40px;
-  border-radius: 50%;
-  border: 1px solid var(--border-color, #e2e8f0);
-  background: var(--bg-white, #ffffff);
-  color: var(--text-main, #1e293b);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  position: relative;
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.04);
-}
-
-.topbar-circle-btn:active {
-  transform: scale(0.92);
-}
-
-.topbar-category-chip {
-  font-size: 0.85rem;
-  font-weight: 700;
-  color: var(--primary-dark, #27ae60);
-  background: rgba(46, 204, 113, 0.12);
-  padding: 0.35rem 0.85rem;
-  border-radius: 50px;
-  letter-spacing: 0.5px;
-  text-transform: uppercase;
-  max-width: 140px;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.topbar-actions {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-}
-
-.topbar-badge-count {
-  position: absolute;
-  top: -4px;
-  right: -4px;
-  background: #e74c3c;
-  color: #fff;
-  font-size: 0.7rem;
-  font-weight: 800;
-  width: 19px;
-  height: 19px;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border: 2px solid var(--bg-white, #ffffff);
-}
-
 .favorite-active {
   border-color: #fecaca !important;
   background-color: #fef2f2 !important;
@@ -190,7 +110,7 @@
 }
 
 /* =========================================================
-   GALLERY SECTION
+   GALLERY SECTION & FLOATING CONTROLS
    ========================================================= */
 .product-gallery-section {
   display: flex;
@@ -239,15 +159,43 @@
   transform: scale(1.06) rotate(1deg);
 }
 
-/* Floating Badges */
-.image-floating-badges {
+/* Floating Top-Left Items */
+.image-floating-top-left {
   position: absolute;
   top: 1rem;
   left: 1rem;
   display: flex;
   flex-direction: column;
+  align-items: flex-start;
   gap: 0.5rem;
-  z-index: 10;
+  z-index: 15;
+}
+
+.image-float-back-btn {
+  display: none; /* Shown on mobile */
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.9);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  color: var(--text-main, #1e293b);
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  transition: all 0.2s ease;
+}
+
+[data-theme="dark"] .image-float-back-btn {
+  background: rgba(30, 41, 59, 0.9);
+  border-color: rgba(255, 255, 255, 0.12);
+  color: #f1f5f9;
+}
+
+.image-float-back-btn:active {
+  transform: scale(0.92);
 }
 
 .badge-freshness {
@@ -292,15 +240,53 @@
   border: 1px solid #ffcdd2;
 }
 
-/* Quick Action Overlay Icons */
+/* Floating Quick Actions on Top-Right */
 .image-quick-actions {
   position: absolute;
   top: 1rem;
   right: 1rem;
   display: flex;
-  flex-direction: column;
+  align-items: center;
   gap: 0.5rem;
-  z-index: 10;
+  z-index: 15;
+}
+
+.image-action-circle-btn {
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.9);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  color: var(--text-main, #334155);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  transition: all 0.2s ease;
+}
+
+[data-theme="dark"] .image-action-circle-btn {
+  background: rgba(30, 41, 59, 0.9);
+  border-color: rgba(255, 255, 255, 0.12);
+  color: #e2e8f0;
+}
+
+.image-action-circle-btn:hover {
+  transform: translateY(-2px);
+  background: #ffffff;
+  color: var(--primary-dark, #27ae60);
+}
+
+[data-theme="dark"] .image-action-circle-btn:hover {
+  background: #334155;
+  color: #4ade80;
+}
+
+.image-action-circle-btn:active {
+  transform: scale(0.92);
 }
 
 .image-action-btn {
@@ -336,13 +322,6 @@
 [data-theme="dark"] .image-action-btn:hover {
   background: #334155;
   color: #4ade80;
-}
-
-.image-action-btn.preview-action {
-  width: 38px;
-  height: 38px;
-  padding: 0;
-  border-radius: 50%;
 }
 
 /* Trust Grid */
@@ -1206,12 +1185,18 @@
 }
 
 @media (max-width: 768px) {
-  .mobile-product-topbar {
-    display: flex;
+  /* Remove top site navbar on mobile for clean immersion */
+  .product-details-page .navbar {
+    display: none !important;
   }
 
   .desktop-breadcrumb {
     display: none;
+  }
+
+  /* Show floating back button directly over image */
+  .image-float-back-btn {
+    display: flex;
   }
 
   .mobile-sticky-bottom-bar {
@@ -1219,19 +1204,33 @@
   }
 
   .product-details-container {
-    padding-top: 1rem;
-    padding-left: 0.85rem;
-    padding-right: 0.85rem;
+    padding-top: 0.75rem;
+    padding-left: 0.75rem;
+    padding-right: 0.75rem;
   }
 
   .product-showcase-card {
-    padding: 1.25rem;
+    padding: 1rem;
     border-radius: 20px;
     box-shadow: 0 4px 16px rgba(0, 0, 0, 0.04);
   }
 
   .gallery-main-card {
     border-radius: 18px;
+    aspect-ratio: 1 / 1;
+  }
+
+  .image-floating-top-left,
+  .image-quick-actions {
+    top: 0.75rem;
+  }
+
+  .image-floating-top-left {
+    left: 0.75rem;
+  }
+
+  .image-quick-actions {
+    right: 0.75rem;
   }
 
   .quick-trust-grid {
@@ -1268,11 +1267,11 @@
 
 @media (max-width: 480px) {
   .product-showcase-card {
-    padding: 1rem;
+    padding: 0.85rem;
   }
 
   .product-main-title {
-    font-size: 1.4rem;
+    font-size: 1.35rem;
   }
 
   .pricing-main-block {

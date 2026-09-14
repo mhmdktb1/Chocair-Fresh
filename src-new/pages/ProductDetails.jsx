@@ -193,30 +193,6 @@ const ProductDetails = () => {
     <div className="product-details-page">
       <Navbar />
 
-      {/* Modern Mobile Top Action Bar */}
-      <div className="mobile-product-topbar">
-        <button className="topbar-circle-btn" onClick={() => navigate(-1)} aria-label="Go Back">
-          <ArrowLeft size={20} />
-        </button>
-        <div className="topbar-category-chip">{categoryName}</div>
-        <div className="topbar-actions">
-          <button className="topbar-circle-btn" onClick={handleShare} aria-label="Share">
-            <Share2 size={18} />
-          </button>
-          <button 
-            className={`topbar-circle-btn ${isFavorite ? 'favorite-active' : ''}`} 
-            onClick={toggleWishlist} 
-            aria-label="Wishlist"
-          >
-            <Heart size={18} fill={isFavorite ? '#e74c3c' : 'none'} color={isFavorite ? '#e74c3c' : 'currentColor'} />
-          </button>
-          <button className="topbar-circle-btn cart-btn-badge" onClick={() => setIsCartOpen(true)} aria-label="Cart">
-            <ShoppingCart size={18} />
-            {cartCount > 0 && <span className="topbar-badge-count">{cartCount}</span>}
-          </button>
-        </div>
-      </div>
-
       <div className="container product-details-container">
         {/* Desktop Breadcrumb Navigation */}
         <div className="desktop-breadcrumb">
@@ -237,8 +213,16 @@ const ProductDetails = () => {
           {/* Gallery Section */}
           <div className="product-gallery-section">
             <div className="gallery-main-card">
-              {/* Badges on image */}
-              <div className="image-floating-badges">
+              {/* Floating Top Nav / Badges over Image */}
+              <div className="image-floating-top-left">
+                <button 
+                  className="image-float-back-btn" 
+                  onClick={() => navigate(-1)} 
+                  aria-label="Go Back"
+                  title="Back"
+                >
+                  <ArrowLeft size={20} />
+                </button>
                 <span className="badge-freshness">
                   <Leaf size={14} /> 100% Fresh
                 </span>
@@ -251,8 +235,24 @@ const ProductDetails = () => {
                 )}
               </div>
 
-              {/* Floating Quick Action Icons */}
+              {/* Floating Quick Action Icons on Top Right */}
               <div className="image-quick-actions">
+                <button 
+                  className={`image-action-circle-btn ${isFavorite ? 'favorite-active' : ''}`} 
+                  onClick={toggleWishlist} 
+                  aria-label="Wishlist"
+                  title="Save to favorites"
+                >
+                  <Heart size={18} fill={isFavorite ? '#e74c3c' : 'none'} color={isFavorite ? '#e74c3c' : 'currentColor'} />
+                </button>
+                <button 
+                  className="image-action-circle-btn" 
+                  onClick={handleShare} 
+                  aria-label="Share"
+                  title="Share product"
+                >
+                  <Share2 size={18} />
+                </button>
                 {isWeightBased && (
                   <button 
                     className="image-action-btn scale-action" 
@@ -265,7 +265,7 @@ const ProductDetails = () => {
                   </button>
                 )}
                 <button 
-                  className="image-action-btn preview-action" 
+                  className="image-action-circle-btn" 
                   onClick={() => setIsLightboxOpen(true)}
                   title="Expand Fullscreen"
                   aria-label="Zoom Photo"
