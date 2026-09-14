@@ -328,7 +328,7 @@ const Shop = () => {
       </div>
 
       {/* ==========================================
-          UNIFIED STICKY SHOPPING DOCK (SEARCH + CATEGORIES)
+          UNIFIED STICKY SHOPPING DOCK (SEARCH + CATEGORIES + QUICK FILTERS)
           ========================================== */}
       <div className="toters-unified-sticky-dock">
         {/* Tier 1: Search Bar & Filter Controls */}
@@ -406,53 +406,51 @@ const Shop = () => {
             })}
           </div>
         </nav>
-      </div>
 
-      {/* ==========================================
-          3. QUICK TOUCH FILTER CHIPS BAR
-          ========================================== */}
-      <div className="toters-quick-filter-strip">
-        <div className="container filter-strip-inner">
-          <div className="quick-filter-scroll">
-            <button
-              type="button"
-              onClick={() => setOnlyDiscounted(!onlyDiscounted)}
-              className={`touch-filter-chip ${onlyDiscounted ? 'active' : ''}`}
-            >
-              <Flame size={13} className="chip-icon fire" />
-              <span>On Sale</span>
-              {onlyDiscounted && <Check size={11} />}
-            </button>
-
-            <button
-              type="button"
-              onClick={() => setOnlyInStock(!onlyInStock)}
-              className={`touch-filter-chip ${onlyInStock ? 'active' : ''}`}
-            >
-              <Sparkles size={13} className="chip-icon star" />
-              <span>In Stock</span>
-              {onlyInStock && <Check size={11} />}
-            </button>
-
-            <button
-              type="button"
-              onClick={() => setSortOption(sortOption === 'price-asc' ? 'price-desc' : 'price-asc')}
-              className={`touch-filter-chip ${sortOption.startsWith('price') ? 'active' : ''}`}
-            >
-              <span>{sortOption === 'price-asc' ? 'Price: Low ↑' : sortOption === 'price-desc' ? 'Price: High ↓' : 'Price'}</span>
-            </button>
-
-            {activeFiltersCount > 0 && (
+        {/* Tier 3: Quick Touch Filter Chips Bar */}
+        <div className="toters-quick-filter-strip">
+          <div className="container filter-strip-inner">
+            <div className="quick-filter-scroll">
               <button
                 type="button"
-                onClick={resetAllFilters}
-                className="touch-filter-reset"
-                title="Reset all filters"
+                onClick={() => setOnlyDiscounted(!onlyDiscounted)}
+                className={`touch-filter-chip ${onlyDiscounted ? 'active' : ''}`}
               >
-                <RotateCcw size={12} />
-                <span>Reset</span>
+                <Flame size={13} className="chip-icon fire" />
+                <span>On Sale</span>
+                {onlyDiscounted && <Check size={11} />}
               </button>
-            )}
+
+              <button
+                type="button"
+                onClick={() => setOnlyInStock(!onlyInStock)}
+                className={`touch-filter-chip ${onlyInStock ? 'active' : ''}`}
+              >
+                <Sparkles size={13} className="chip-icon star" />
+                <span>In Stock</span>
+                {onlyInStock && <Check size={11} />}
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setSortOption(sortOption === 'price-asc' ? 'price-desc' : 'price-asc')}
+                className={`touch-filter-chip ${sortOption.startsWith('price') ? 'active' : ''}`}
+              >
+                <span>{sortOption === 'price-asc' ? 'Price: Low ↑' : sortOption === 'price-desc' ? 'Price: High ↓' : 'Price'}</span>
+              </button>
+
+              {activeFiltersCount > 0 && (
+                <button
+                  type="button"
+                  onClick={resetAllFilters}
+                  className="touch-filter-reset"
+                  title="Reset all filters"
+                >
+                  <RotateCcw size={12} />
+                  <span>Reset</span>
+                </button>
+              )}
+            </div>
           </div>
         </div>
       </div>

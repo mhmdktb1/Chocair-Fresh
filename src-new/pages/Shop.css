@@ -10,7 +10,7 @@
   padding-bottom: 7.5rem;
   color: #1e293b;
   position: relative;
-  overflow-x: hidden;
+  overflow-x: clip;
 }
 
 /* Desktop Navbar Wrapper: Visible on Desktop, Hidden on Mobile */
@@ -19,10 +19,11 @@
 }
 
 /* =========================================================
-   1. UNIFIED STICKY DOCK (SEARCH + CATEGORIES)
+   1. UNIFIED STICKY DOCK (SEARCH + CATEGORIES + FILTERS)
    Pinned at top: 0 with zero gap and zero layout jitter
    ========================================================= */
 .toters-unified-sticky-dock {
+  position: -webkit-sticky;
   position: sticky;
   top: 0;
   z-index: 100;
@@ -227,52 +228,11 @@
   background: #e2e8f0;
   color: #64748b;
 }
-  padding: 0.45rem 0.85rem;
-  border-radius: 50px;
-  background: #f1f5f9;
-  border: 1px solid transparent;
-  color: #475569;
-  font-size: 0.82rem;
-  font-weight: 700;
-  cursor: pointer;
-  white-space: nowrap;
-  user-select: none;
-  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
-  flex-shrink: 0;
-}
-
-.toters-category-tab:hover {
-  background: #e2e8f0;
-  color: #0f172a;
-}
-
-.toters-category-tab.active {
-  background: #0f172a;
-  color: #ffffff;
-  box-shadow: 0 2px 8px rgba(15, 23, 42, 0.2);
-}
-
-.tab-emoji {
-  font-size: 0.95rem;
-}
-
-.tab-count-pill {
-  font-size: 0.68rem;
-  font-weight: 800;
-  background: rgba(255, 255, 255, 0.25);
-  color: inherit;
-  padding: 1px 5px;
-  border-radius: 10px;
-}
-
-.toters-category-tab:not(.active) .tab-count-pill {
-  background: #e2e8f0;
-  color: #64748b;
-}
 
 /* 3. Quick Touch Filter Strip */
 .toters-quick-filter-strip {
-  padding: 0.5rem 0;
+  padding: 0.35rem 0 0.5rem;
+  border-top: 1px solid #f1f5f9;
 }
 
 .filter-strip-inner {
@@ -350,6 +310,7 @@
   display: flex;
   flex-direction: column;
   gap: 0.75rem;
+  scroll-margin-top: 155px;
 }
 
 .toters-section-header {
@@ -853,17 +814,27 @@
 
   /* Pinned sticky search dock right at the very top of mobile viewport */
   .toters-unified-sticky-dock {
+    position: -webkit-sticky !important;
+    position: sticky !important;
     top: 0 !important;
     padding-top: calc(env(safe-area-inset-top, 0px) + 0.35rem);
     background: rgba(255, 255, 255, 0.98);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    z-index: 100;
   }
 
   .toters-search-tier {
-    padding: 0.45rem 0 0.25rem;
+    padding: 0.35rem 0 0.2rem;
   }
 
   .toters-category-snap-rail {
-    padding: 0.25rem 0 0.45rem;
+    padding: 0.2rem 0 0.35rem;
+  }
+
+  .toters-quick-filter-strip {
+    padding: 0.2rem 0 0.4rem;
+    border-top: 1px solid #f1f5f9;
   }
 
   .toters-search-input {
@@ -897,6 +868,7 @@
 
   .toters-category-row-section {
     gap: 0.5rem;
+    scroll-margin-top: 140px;
   }
 
   .section-category-title {
