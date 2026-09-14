@@ -1,35 +1,51 @@
 import { useAdmin } from "../../context/AdminContext";
-import { Package, ShoppingBag, Users, DollarSign, TrendingUp, Clock, CheckCircle, Truck } from "lucide-react";
+import { 
+  Package, 
+  ShoppingBag, 
+  Users, 
+  DollarSign, 
+  TrendingUp, 
+  Clock, 
+  CheckCircle, 
+  Truck,
+  XCircle,
+  Activity
+} from "lucide-react";
+import './AdminComponents.css';
 
 function AdminOverview() {
-  const { getStats } = useAdmin();
+  const { getStats, orders } = useAdmin();
   const stats = getStats();
 
   const statCards = [
-    { label: "Total Products", value: stats.totalProducts, icon: Package, color: "#2e7d32", bg: "#e8f5e9" },
-    { label: "Total Orders", value: stats.totalOrders, icon: ShoppingBag, color: "#1976d2", bg: "#e3f2fd" },
-    { label: "Total Users", value: stats.totalUsers, icon: Users, color: "#f57c00", bg: "#fff3e0" },
-    { label: "Total Revenue", value: `$${stats.totalRevenue.toFixed(2)}`, icon: DollarSign, color: "#7b1fa2", bg: "#f3e5f5" },
+    { label: "Total Revenue", value: `$${(stats.totalRevenue || 0).toFixed(2)}`, icon: DollarSign, color: "#16a34a", bg: "#f0fdf4" },
+    { label: "Total Orders", value: stats.totalOrders, icon: ShoppingBag, color: "#0284c7", bg: "#e0f2fe" },
+    { label: "Total Products", value: stats.totalProducts, icon: Package, color: "#7c3aed", bg: "#f5f3ff" },
+    { label: "Total Users", value: stats.totalUsers, icon: Users, color: "#ea580c", bg: "#ffedd5" },
   ];
 
-  const orderStats = [
-    { label: "Pending Orders", value: stats.pendingOrders, icon: Clock, color: "#f57c00" },
-    { label: "Preparing", value: stats.preparingOrders, icon: Truck, color: "#1976d2" },
-    { label: "Delivered", value: stats.deliveredOrders, icon: CheckCircle, color: "#2e7d32" },
-  ];
+  const totalOrdersCount = stats.totalOrders || 1;
+  const pendingPct = Math.round((stats.pendingOrders / totalOrdersCount) * 100) || 0;
+  const preparingPct = Math.round((stats.preparingOrders / totalOrdersCount) * 100) || 0;
+  const deliveredPct = Math.round((stats.deliveredOrders / totalOrdersCount) * 100) || 0;
 
   return (
-    <div>
-      <h2 style={{ fontSize: '1.8rem', marginBottom: '20px', color: '#333', fontWeight: 700 }}>
-        Dashboard Overview
-      </h2>
+    <div className="admin-analytics-page">
+      <div className="admin-page-header">
+        <div className="admin-page-title-group">
+          <h2>Store Analytics & Performance</h2>
+          <p className="admin-page-subtitle">
+            Real-time sales, order breakdown, and catalog health metrics
+          </p>
+        </div>
+      </div>
 
       {/* Main Stats Grid */}
       <div style={{
         display: 'grid',
-        gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))',
-        gap: '20px',
-        marginBottom: '30px'
+        gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))',
+        gap: '0.85rem',
+        marginBottom: '1.25rem'
       }}>
         {statCards.map((stat, index) => {
           const Icon = stat.icon;
@@ -37,115 +53,107 @@ function AdminOverview() {
             <div
               key={index}
               style={{
-                background: '#fff',
-                borderRadius: '16px',
-                padding: '25px',
-                boxShadow: '0 4px 12px rgba(0,0,0,0.08)',
+                background: '#ffffff',
+                border: '1px solid #e2e8f0',
+                borderRadius: '14px',
+                padding: '1.1rem',
+                boxShadow: '0 1px 3px rgba(0,0,0,0.03)',
                 display: 'flex',
-                alignItems: 'center',
-                gap: '15px',
-                transition: 'transform 0.3s ease, box-shadow 0.3s ease',
-                cursor: 'pointer'
-              }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.transform = 'translateY(-5px)';
-                e.currentTarget.style.boxShadow = '0 8px 20px rgba(0,0,0,0.12)';
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.transform = 'translateY(0)';
-                e.currentTarget.style.boxShadow = '0 4px 12px rgba(0,0,0,0.08)';
+                flexDirection: 'column',
+                gap: '0.65rem'
               }}
             >
-              <div style={{
-                width: '60px',
-                height: '60px',
-                borderRadius: '12px',
-                background: stat.bg,
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                flexShrink: 0
-              }}>
-                <Icon size={28} color={stat.color} strokeWidth={2.5} />
-              </div>
-              <div>
-                <p style={{ margin: 0, fontSize: '0.9rem', color: '#666', fontWeight: 500 }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                <span style={{ fontSize: '0.82rem', color: '#64748b', fontWeight: 600 }}>
                   {stat.label}
-                </p>
-                <p style={{ margin: '5px 0 0 0', fontSize: '1.8rem', fontWeight: 700, color: '#333' }}>
-                  {stat.value}
-                </p>
+                </span>
+                <div style={{
+                  width: '36px',
+                  height: '36px',
+                  borderRadius: '10px',
+                  background: stat.bg,
+                  color: stat.color,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center'
+                }}>
+                  <Icon size={18} />
+                </div>
+              </div>
+              <div style={{ fontSize: '1.45rem', fontWeight: 800, color: '#0f172a', letterSpacing: '-0.02em' }}>
+                {stat.value}
               </div>
             </div>
           );
         })}
       </div>
 
-      {/* Order Statistics */}
+      {/* Order Status Breakdown with Progress Bars */}
       <div style={{
-        background: '#fff',
-        borderRadius: '16px',
-        padding: '25px',
-        boxShadow: '0 4px 12px rgba(0,0,0,0.08)',
-        marginBottom: '30px'
+        background: '#ffffff',
+        border: '1px solid #e2e8f0',
+        borderRadius: '14px',
+        padding: '1.25rem',
+        boxShadow: '0 1px 3px rgba(0,0,0,0.03)',
+        marginBottom: '1.25rem'
       }}>
-        <h3 style={{ margin: '0 0 20px 0', fontSize: '1.3rem', color: '#333', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '10px' }}>
-          <TrendingUp size={24} color="#2e7d32" />
-          Order Status Breakdown
+        <h3 style={{ margin: '0 0 1rem 0', fontSize: '1.05rem', fontWeight: 800, color: '#0f172a', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+          <TrendingUp size={18} color="#16a34a" />
+          <span>Fulfillment Status Pipeline</span>
         </h3>
-        <div style={{
-          display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
-          gap: '20px'
-        }}>
-          {orderStats.map((stat, index) => {
-            const Icon = stat.icon;
-            return (
-              <div
-                key={index}
-                style={{
-                  padding: '20px',
-                  border: `2px solid ${stat.color}20`,
-                  borderRadius: '12px',
-                  background: `${stat.color}05`,
-                  textAlign: 'center',
-                  transition: 'all 0.3s ease'
-                }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.borderColor = stat.color;
-                  e.currentTarget.style.background = `${stat.color}10`;
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.borderColor = `${stat.color}20`;
-                  e.currentTarget.style.background = `${stat.color}05`;
-                }}
-              >
-                <Icon size={32} color={stat.color} style={{ marginBottom: '10px' }} />
-                <p style={{ margin: 0, fontSize: '0.9rem', color: '#666', fontWeight: 500 }}>
-                  {stat.label}
-                </p>
-                <p style={{ margin: '8px 0 0 0', fontSize: '2rem', fontWeight: 700, color: stat.color }}>
-                  {stat.value}
-                </p>
-              </div>
-            );
-          })}
-        </div>
-      </div>
 
-      {/* Quick Actions */}
-      <div style={{
-        background: '#fff',
-        borderRadius: '16px',
-        padding: '25px',
-        boxShadow: '0 4px 12px rgba(0,0,0,0.08)'
-      }}>
-        <h3 style={{ margin: '0 0 15px 0', fontSize: '1.3rem', color: '#333', fontWeight: 700 }}>
-          Quick Actions
-        </h3>
-        <p style={{ margin: 0, color: '#666', fontSize: '0.95rem' }}>
-          Use the sidebar to navigate between Products, Orders, and Users management sections.
-        </p>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: '0.75rem', marginBottom: '1rem' }}>
+          <div style={{ background: '#ffedd5', padding: '0.85rem', borderRadius: '10px', border: '1px solid #fed7aa' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', color: '#c2410c', fontSize: '0.82rem', fontWeight: 700 }}>
+              <Clock size={14} /> Pending
+            </div>
+            <div style={{ fontSize: '1.35rem', fontWeight: 800, color: '#c2410c', marginTop: '0.35rem' }}>
+              {stats.pendingOrders}
+            </div>
+            <div style={{ fontSize: '0.72rem', color: '#9a3412', marginTop: '0.15rem' }}>
+              {pendingPct}% of orders
+            </div>
+          </div>
+
+          <div style={{ background: '#e0f2fe', padding: '0.85rem', borderRadius: '10px', border: '1px solid #bae6fd' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', color: '#0369a1', fontSize: '0.82rem', fontWeight: 700 }}>
+              <Truck size={14} /> Preparing
+            </div>
+            <div style={{ fontSize: '1.35rem', fontWeight: 800, color: '#0369a1', marginTop: '0.35rem' }}>
+              {stats.preparingOrders}
+            </div>
+            <div style={{ fontSize: '0.72rem', color: '#075985', marginTop: '0.15rem' }}>
+              {preparingPct}% of orders
+            </div>
+          </div>
+
+          <div style={{ background: '#dcfce7', padding: '0.85rem', borderRadius: '10px', border: '1px solid #bbf7d0' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', color: '#15803d', fontSize: '0.82rem', fontWeight: 700 }}>
+              <CheckCircle size={14} /> Delivered
+            </div>
+            <div style={{ fontSize: '1.35rem', fontWeight: 800, color: '#15803d', marginTop: '0.35rem' }}>
+              {stats.deliveredOrders}
+            </div>
+            <div style={{ fontSize: '0.72rem', color: '#166534', marginTop: '0.15rem' }}>
+              {deliveredPct}% of orders
+            </div>
+          </div>
+        </div>
+
+        {/* Multi-segment Progress Bar */}
+        <div style={{
+          height: '10px',
+          width: '100%',
+          background: '#f1f5f9',
+          borderRadius: '20px',
+          overflow: 'hidden',
+          display: 'flex',
+          gap: '2px'
+        }}>
+          <div style={{ width: `${pendingPct}%`, background: '#ea580c', transition: 'width 0.4s ease' }} title={`Pending: ${pendingPct}%`} />
+          <div style={{ width: `${preparingPct}%`, background: '#0284c7', transition: 'width 0.4s ease' }} title={`Preparing: ${preparingPct}%`} />
+          <div style={{ width: `${deliveredPct}%`, background: '#16a34a', transition: 'width 0.4s ease' }} title={`Delivered: ${deliveredPct}%`} />
+        </div>
       </div>
     </div>
   );

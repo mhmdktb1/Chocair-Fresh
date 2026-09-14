@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { Trash2, Search, MessageSquare } from 'lucide-react';
+import { Trash2, Search, MessageSquare, X } from 'lucide-react';
 import api from '../../utils/api';
 import { toast } from 'react-toastify';
 import './AdminComments.css';
+import './AdminComponents.css';
 
 const AdminComments = () => {
   const [comments, setComments] = useState([]);
@@ -37,84 +38,85 @@ const AdminComments = () => {
   };
 
   const filteredComments = comments.filter(comment => 
-    comment.content.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    (comment.user && comment.user.name && comment.user.name.toLowerCase().includes(searchTerm.toLowerCase()))
+    comment.content?.toLowerCase().includes(searchTerm.toLowerCase().trim()) ||
+    (comment.user && comment.user.name && comment.user.name.toLowerCase().includes(searchTerm.toLowerCase().trim()))
   );
 
-  if (loading) return <div className="loading">Loading comments...</div>;
-
   return (
-    <div className="admin-comments">
-      <div className="comments-header">
-        <div className="search-bar">
-          <Search size={20} />
+    <div className="admin-comments-page">
+      <div className="admin-page-header">
+        <div className="admin-page-title-group">
+          <h2>Product Comments & Reviews</h2>
+          <p className="admin-page-subtitle">
+            {filteredComments.length} of {comments.length} user comments
+          </p>
+        </div>
+      </div>
+
+      <div className="admin-search-filter-card">
+        <div className="admin-search-input-wrap">
+          <Search size={18} color="#64748b" />
           <input 
             type="text" 
-            placeholder="Search comments..." 
+            placeholder="Search comments by text or user..." 
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
           />
-        </div>
-        <div className="stats">
-          <span>Total Comments: {comments.length}</span>
+          {searchTerm && (
+            <button className="clear-search-btn" onClick={() => setSearchTerm("")}>
+              <X size={16} />
+            </button>
+          )}
         </div>
       </div>
 
-      <div className="comments-table-container">
-        <table className="comments-table">
-          <thead>
-            <tr>
-              <th>User</th>
-              <th>Content</th>
-              <th>Date</th>
-              <th>Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            {filteredComments.map((comment) => (
-              <tr key={comment._id}>
-                <td>
-                  <div className="user-cell">
-                    {comment.user ? (
-                      <>
-                        <div className="user-avatar-small">
-                          {comment.user.avatar ? (
-                            <img src={comment.user.avatar} alt={comment.user.name} />
-                          ) : (
-                            <span>{comment.user.name?.charAt(0)}</span>
-                          )}
-                        </div>
-                        <span>{comment.user.name}</span>
-                      </>
+      {loading ? (
+        <div className="admin-empty-state">
+          <MessageSquare size={40} color="#cbd5e1" />
+          <h4>Loading comments...</h4>
+        </div>
+      ) : filteredComments.length === 0 ? (
+        <div className="admin-empty-state">
+          <MessageSquare size={40} color="#cbd5e1" />
+          <h4>No comments found</h4>
+          <p>Customer feedback on products will appear here.</p>
+        </div>
+      ) : (
+        <div className="comments-mobile-list">
+          {filteredComments.map((comment) => (
+            <div key={comment._id} className="comment-mobile-card">
+              <div className="comment-card-top">
+                <div className="user-cell">
+                  <div className="user-avatar-small">
+                    {comment.user?.avatar ? (
+                      <img src={comment.user.avatar} alt={comment.user.name} />
                     ) : (
-                      <span className="deleted-user">Deleted User</span>
+                      <span>{comment.user?.name?.charAt(0)?.toUpperCase() || '?'}</span>
                     )}
                   </div>
-                </td>
-                <td>
-                  <div className="content-cell">
-                    <p>{comment.content}</p>
-                    {comment.parentId && <span className="reply-badge">Reply</span>}
+                  <div>
+                    <span className="comment-user-name">{comment.user?.name || 'Deleted User'}</span>
+                    <span className="comment-date">{new Date(comment.createdAt).toLocaleDateString()}</span>
                   </div>
-                </td>
-                <td>{new Date(comment.createdAt).toLocaleDateString()}</td>
-                <td>
-                  <button 
-                    className="icon-btn delete" 
-                    onClick={() => handleDelete(comment._id)}
-                    title="Delete Comment"
-                  >
-                    <Trash2 size={18} />
-                  </button>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-        {filteredComments.length === 0 && (
-          <div className="no-results">No comments found matching your search.</div>
-        )}
-      </div>
+                </div>
+
+                <button 
+                  className="product-mini-btn btn-delete" 
+                  onClick={() => handleDelete(comment._id)}
+                  title="Delete Comment"
+                >
+                  <Trash2 size={15} />
+                </button>
+              </div>
+
+              <div className="comment-text-body">
+                <p>{comment.content}</p>
+                {comment.parentId && <span className="reply-badge">Reply</span>}
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 };

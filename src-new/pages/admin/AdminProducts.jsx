@@ -1,14 +1,29 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useAdmin } from "../../context/AdminContext";
 import { useCMS } from "../../context/CMSContext";
-import { Plus, Edit2, Trash2, Search, X, Star } from "lucide-react";
+import { 
+  Plus, 
+  Edit2, 
+  Trash2, 
+  Search, 
+  X, 
+  Star, 
+  Package, 
+  Check, 
+  AlertCircle,
+  Tag
+} from "lucide-react";
+import './AdminComponents.css';
 
 function AdminProducts() {
-  const { products, categories, addProduct, updateProduct, deleteProduct, loading, error, refreshProducts } = useAdmin();
+  const { products, categories, addProduct, updateProduct, deleteProduct, loading, error } = useAdmin();
   const { pricingRules, calculatePrice } = useCMS();
   const [searchQuery, setSearchQuery] = useState("");
+  const [selectedCategoryFilter, setSelectedCategoryFilter] = useState("all");
   const [showModal, setShowModal] = useState(false);
   const [editingProduct, setEditingProduct] = useState(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
   const [formData, setFormData] = useState({
     name: "",
     category: "",
@@ -19,42 +34,56 @@ function AdminProducts() {
     stock: "",
     image: "",
     featured: false,
+    description: "",
     customPrices: {}
   });
 
-  const filteredProducts = products.filter(p => {
-    const catName = categories.find(c => c._id === p.category)?.name || p.category;
-    return p.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    catName.toLowerCase().includes(searchQuery.toLowerCase());
-  });
+  // Filter products by search query and category
+  const filteredProducts = useMemo(() => {
+    return products.filter(p => {
+      const catName = categories.find(c => c._id === p.category)?.name || p.category || "";
+      const matchesSearch = !searchQuery.trim() || 
+        p.name?.toLowerCase().includes(searchQuery.toLowerCase().trim()) ||
+        catName.toLowerCase().includes(searchQuery.toLowerCase().trim());
+
+      const matchesCat = selectedCategoryFilter === "all" || 
+        p.category === selectedCategoryFilter || 
+        catName.toLowerCase() === selectedCategoryFilter.toLowerCase();
+
+      return matchesSearch && matchesCat;
+    });
+  }, [products, categories, searchQuery, selectedCategoryFilter]);
 
   const handleOpenModal = (product = null) => {
     if (product) {
       setEditingProduct(product);
       setFormData({
-        name: product.name,
-        category: product.category,
-        categories: product.categories || [product.category],
-        price: product.price,
+        name: product.name || "",
+        category: product.category || "",
+        categories: product.categories?.length ? product.categories : [product.category || ""].filter(Boolean),
+        price: product.price !== undefined ? String(product.price) : "",
         priceUnit: product.priceUnit || "kg",
         unit: product.unit || "kg",
-        stock: product.stock,
-        image: product.image,
+        stock: product.stock !== undefined ? String(product.stock) : "50",
+        image: product.image || "",
         featured: product.featured || false,
+        description: product.description || "",
         customPrices: product.customPrices || {}
       });
     } else {
       setEditingProduct(null);
+      const defaultCat = categories.length > 0 ? categories[0].name : "";
       setFormData({
         name: "",
-        category: "",
-        categories: [],
+        category: defaultCat,
+        categories: defaultCat ? [defaultCat] : [],
         price: "",
         priceUnit: "kg",
         unit: "kg",
-        stock: "",
+        stock: "50",
         image: "",
         featured: false,
+        description: "",
         customPrices: {}
       });
     }
@@ -64,18 +93,6 @@ function AdminProducts() {
   const handleCloseModal = () => {
     setShowModal(false);
     setEditingProduct(null);
-    setFormData({
-      name: "",
-      category: "",
-      categories: [],
-      price: "",
-      priceUnit: "kg",
-      unit: "kg",
-      stock: "",
-      image: "",
-      featured: false,
-      customPrices: {}
-    });
   };
 
   const handleCategoryToggle = (categoryName) => {
@@ -83,669 +100,376 @@ function AdminProducts() {
       ? formData.categories.filter(c => c !== categoryName)
       : [...formData.categories, categoryName];
     
-    setFormData({ ...formData, categories: newCategories, category: newCategories[0] || "" });
+    setFormData({ 
+      ...formData, 
+      categories: newCategories, 
+      category: newCategories[0] || categoryName || "" 
+    });
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     
-    if (!formData.name || !formData.price || formData.stock === '' || formData.categories.length === 0) {
-      alert("Please fill all required fields (name, price, stock, and at least one category)");
+    if (!formData.name.trim() || !formData.price || formData.stock === '') {
+      alert("Please fill product name, price, and stock count.");
       return;
     }
 
+    const selectedCat = formData.category || formData.categories[0] || (categories[0] ? categories[0].name : "General");
+
     const productData = {
-      name: formData.name,
-      category: formData.category || formData.categories[0],
-      categories: formData.categories.length > 0 ? formData.categories : [formData.category],
+      name: formData.name.trim(),
+      category: selectedCat,
+      categories: formData.categories.length > 0 ? formData.categories : [selectedCat],
       price: parseFloat(formData.price),
-      stock: parseInt(formData.stock),
+      stock: parseInt(formData.stock, 10),
       priceUnit: formData.priceUnit || 'kg',
       unit: formData.unit || 'kg',
       featured: formData.featured || false,
-      description: '' // Optional but include it
+      description: formData.description || '',
+      image: formData.image.trim() || '/assets/images/products/placeholder.jpg'
     };
 
-    // Only include image if it's a valid URL or path
-    if (formData.image && formData.image.trim()) {
-      // Check if it's a valid URL or starts with /
-      if (formData.image.startsWith('http') || formData.image.startsWith('/')) {
-        productData.image = formData.image;
-      } else {
-        productData.image = `/assets/images/products/${formData.image}`;
-      }
-    }
-
     try {
+      setIsSubmitting(true);
       if (editingProduct) {
         await updateProduct(editingProduct.id, productData);
       } else {
         await addProduct(productData);
       }
       handleCloseModal();
-    } catch (error) {
-      // Error is already handled by AdminContext and shown in the error banner
-      console.error('Product operation failed:', error);
+    } catch (err) {
+      console.error('Product save failed:', err);
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
-  const handleDelete = (id, name) => {
-    if (window.confirm(`Are you sure you want to delete "${name}"?`)) {
-      deleteProduct(id);
+  const handleDelete = async (id, name) => {
+    if (window.confirm(`Delete product "${name}"? This cannot be undone.`)) {
+      try {
+        await deleteProduct(id);
+      } catch (err) {
+        console.error('Delete failed:', err);
+      }
     }
   };
 
   return (
-    <div>
-      {error && (
-        <div style={{
-          background: '#fdecea',
-          border: '1px solid #f5c6cb',
-          color: '#721c24',
-          padding: '10px 16px',
-          borderRadius: '8px',
-          marginBottom: '16px',
-          fontSize: '0.85rem'
-        }}>
-          Backend error: {error}
+    <div className="admin-products-page">
+      {/* Top Header */}
+      <div className="admin-page-header">
+        <div className="admin-page-title-group">
+          <h2>Product Inventory</h2>
+          <p className="admin-page-subtitle">
+            {filteredProducts.length} of {products.length} products listed
+          </p>
         </div>
-      )}
-      <div style={{
-        display: 'flex',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        marginBottom: '25px',
-        flexWrap: 'wrap',
-        gap: '15px'
-      }}>
-        <h2 style={{ margin: 0, fontSize: '1.8rem', color: '#333', fontWeight: 700 }}>
-          Products Management
-        </h2>
-        <button
-          onClick={() => handleOpenModal()}
-          style={{
-            background: '#2e7d32',
-            color: '#fff',
-            border: 'none',
-            padding: '12px 24px',
-            borderRadius: '10px',
-            display: 'flex',
-            alignItems: 'center',
-            gap: '8px',
-            cursor: 'pointer',
-            fontSize: '1rem',
-            fontWeight: 600,
-            transition: 'all 0.3s ease',
-            fontFamily: 'inherit'
-          }}
-          onMouseEnter={(e) => {
-            e.currentTarget.style.background = '#1b5e20';
-            e.currentTarget.style.transform = 'scale(1.05)';
-          }}
-          onMouseLeave={(e) => {
-            e.currentTarget.style.background = '#2e7d32';
-            e.currentTarget.style.transform = 'scale(1)';
-          }}
-        >
-          <Plus size={20} />
-          Add Product
+        <button className="admin-primary-btn" onClick={() => handleOpenModal()}>
+          <Plus size={18} />
+          <span>Add Product</span>
         </button>
       </div>
 
-      {/* Search Bar */}
-      <div style={{
-        background: '#fff',
-        padding: '15px',
-        borderRadius: '12px',
-        marginBottom: '20px',
-        display: 'flex',
-        alignItems: 'center',
-        gap: '10px',
-        boxShadow: '0 2px 8px rgba(0,0,0,0.06)'
-      }}>
-        <Search size={20} color="#666" />
-        <input
-          type="text"
-          placeholder="Search products by name or category..."
-          value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
-          style={{
-            flex: 1,
-            border: 'none',
-            outline: 'none',
-            fontSize: '1rem',
-            fontFamily: 'inherit'
-          }}
-        />
-      </div>
+      {/* Floating Action Button (Mobile) */}
+      <button 
+        className="admin-fab" 
+        onClick={() => handleOpenModal()} 
+        aria-label="Add new product"
+        title="Add Product"
+      >
+        <Plus size={24} />
+      </button>
 
-      {/* Products Table */}
-      <div style={{
-        background: '#fff',
-        borderRadius: '16px',
-        overflow: 'hidden',
-        boxShadow: '0 4px 12px rgba(0,0,0,0.08)'
-      }}>
-        <div style={{ overflowX: 'auto' }}>
-          <table style={{
-            width: '100%',
-            borderCollapse: 'collapse',
-            fontSize: '0.95rem'
-          }}>
-            <thead>
-              <tr style={{ background: '#f5f5f5', borderBottom: '2px solid #e0e0e0' }}>
-                <th style={{ padding: '15px', textAlign: 'left', fontWeight: 600, color: '#333' }}>Image</th>
-                <th style={{ padding: '15px', textAlign: 'left', fontWeight: 600, color: '#333' }}>Name</th>
-                <th style={{ padding: '15px', textAlign: 'left', fontWeight: 600, color: '#333' }}>Category</th>
-                <th style={{ padding: '15px', textAlign: 'left', fontWeight: 600, color: '#333' }}>Price</th>
-                <th style={{ padding: '15px', textAlign: 'left', fontWeight: 600, color: '#333' }}>Stock</th>
-                <th style={{ padding: '15px', textAlign: 'center', fontWeight: 600, color: '#333' }}>Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {loading ? (
-                <tr>
-                  <td colSpan="6" style={{ padding: '40px', textAlign: 'center', color: '#666' }}>
-                    Loading products…
-                  </td>
-                </tr>
-              ) : filteredProducts.length === 0 ? (
-                <tr>
-                  <td colSpan="6" style={{ padding: '40px', textAlign: 'center', color: '#999' }}>
-                    No products found. {error ? 'Backend may be offline.' : 'Add a product to get started.'}
-                  </td>
-                </tr>
-              ) : (
-                filteredProducts.map((product) => (
-                  <tr key={product.id} style={{ borderBottom: '1px solid #f0f0f0' }}>
-                    <td style={{ padding: '15px' }}>
-                      <img
-                        src={product.image}
-                        alt={product.name}
-                        style={{
-                          width: '50px',
-                          height: '50px',
-                          objectFit: 'cover',
-                          borderRadius: '8px'
-                        }}
-                      />
-                    </td>
-                    <td style={{ padding: '15px', fontWeight: 600, color: '#333' }}>{product.name}</td>
-                    <td style={{ padding: '15px' }}>
-                      <span style={{
-                        background: '#e8f5e9',
-                        color: '#2e7d32',
-                        padding: '4px 12px',
-                        borderRadius: '20px',
-                        fontSize: '0.85rem',
-                        fontWeight: 500
-                      }}>
-                        {categories.find(c => c._id === product.category)?.name || product.category}
-                      </span>
-                    </td>
-                    <td style={{ padding: '15px', fontWeight: 600, color: '#2e7d32' }}>
-                      ${product.price.toFixed(2)}
-                    </td>
-                    <td style={{ padding: '15px', color: product.stock < 30 ? '#f44336' : '#333' }}>
-                      {product.stock} units
-                    </td>
-                    <td style={{ padding: '15px', textAlign: 'center' }}>
-                      <div style={{ display: 'flex', gap: '8px', justifyContent: 'center' }}>
-                        <button
-                          onClick={() => handleOpenModal(product)}
-                          style={{
-                            background: '#1976d2',
-                            color: '#fff',
-                            border: 'none',
-                            padding: '8px 12px',
-                            borderRadius: '8px',
-                            cursor: 'pointer',
-                            display: 'flex',
-                            alignItems: 'center',
-                            gap: '5px',
-                            fontSize: '0.85rem',
-                            transition: 'all 0.3s ease'
-                          }}
-                          onMouseEnter={(e) => e.currentTarget.style.background = '#1565c0'}
-                          onMouseLeave={(e) => e.currentTarget.style.background = '#1976d2'}
-                        >
-                          <Edit2 size={16} />
-                          Edit
-                        </button>
-                        <button
-                          onClick={() => handleDelete(product.id, product.name)}
-                          style={{
-                            background: '#f44336',
-                            color: '#fff',
-                            border: 'none',
-                            padding: '8px 12px',
-                            borderRadius: '8px',
-                            cursor: 'pointer',
-                            display: 'flex',
-                            alignItems: 'center',
-                            gap: '5px',
-                            fontSize: '0.85rem',
-                            transition: 'all 0.3s ease'
-                          }}
-                          onMouseEnter={(e) => e.currentTarget.style.background = '#d32f2f'}
-                          onMouseLeave={(e) => e.currentTarget.style.background = '#f44336'}
-                        >
-                          <Trash2 size={16} />
-                          Delete
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                ))
-              )}
-            </tbody>
-          </table>
+      {/* Search & Category Filter Card */}
+      <div className="admin-search-filter-card">
+        <div className="admin-search-input-wrap">
+          <Search size={18} color="#64748b" />
+          <input
+            type="text"
+            placeholder="Search products by name or category..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+          />
+          {searchQuery && (
+            <button className="clear-search-btn" onClick={() => setSearchQuery("")}>
+              <X size={16} />
+            </button>
+          )}
+        </div>
+
+        {/* Category Filter Pills */}
+        <div className="admin-filter-scroll-row">
+          <button
+            className={`filter-pill ${selectedCategoryFilter === "all" ? "active" : ""}`}
+            onClick={() => setSelectedCategoryFilter("all")}
+          >
+            <span>All Categories</span>
+            <span className="filter-pill-count">{products.length}</span>
+          </button>
+          {categories.map((cat) => {
+            const count = products.filter(p => p.category === cat.name || p.category === cat._id).length;
+            return (
+              <button
+                key={cat._id || cat.name}
+                className={`filter-pill ${selectedCategoryFilter === cat.name ? "active" : ""}`}
+                onClick={() => setSelectedCategoryFilter(cat.name)}
+              >
+                <span>{cat.name}</span>
+                <span className="filter-pill-count">{count}</span>
+              </button>
+            );
+          })}
         </div>
       </div>
 
-      {/* Add/Edit Modal */}
-      {showModal && (
-        <div
-          style={{
-            position: 'fixed',
-            top: 0,
-            left: 0,
-            right: 0,
-            bottom: 0,
-            background: 'rgba(0,0,0,0.6)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            zIndex: 2000,
-            padding: '20px',
-            animation: 'fadeIn 0.3s ease'
-          }}
-          onClick={handleCloseModal}
-        >
-          <style>
-            {`
-              @keyframes fadeIn {
-                from { opacity: 0; }
-                to { opacity: 1; }
-              }
-              @keyframes slideUp {
-                from { 
-                  opacity: 0;
-                  transform: translateY(30px) scale(0.95); 
-                }
-                to { 
-                  opacity: 1;
-                  transform: translateY(0) scale(1); 
-                }
-              }
-            `}
-          </style>
-          <div
-            onClick={(e) => e.stopPropagation()}
-            style={{
-              background: '#fff',
-              borderRadius: '16px',
-              padding: '30px',
-              width: '100%',
-              maxWidth: '500px',
-              maxHeight: '90vh',
-              overflowY: 'auto',
-              position: 'relative',
-              boxShadow: '0 20px 60px rgba(0,0,0,0.3)',
-              animation: 'slideUp 0.3s ease'
-            }}
-          >
-            <button
-              onClick={handleCloseModal}
-              style={{
-                position: 'absolute',
-                top: '15px',
-                right: '15px',
-                background: '#f5f5f5',
-                border: 'none',
-                width: '35px',
-                height: '35px',
-                borderRadius: '50%',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                cursor: 'pointer',
-                transition: 'all 0.3s ease'
-              }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.background = '#f44336';
-                e.currentTarget.style.color = '#fff';
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.background = '#f5f5f5';
-                e.currentTarget.style.color = '#000';
-              }}
-            >
-              <X size={20} />
-            </button>
+      {/* Error alert if any */}
+      {error && (
+        <div style={{
+          background: '#fee2e2',
+          border: '1px solid #fecaca',
+          color: '#b91c1c',
+          padding: '0.65rem 1rem',
+          borderRadius: '10px',
+          marginBottom: '1rem',
+          fontSize: '0.85rem',
+          display: 'flex',
+          alignItems: 'center',
+          gap: '0.5rem'
+        }}>
+          <AlertCircle size={16} />
+          <span>{error}</span>
+        </div>
+      )}
 
-            <h2 style={{ margin: '0 0 25px 0', fontSize: '1.5rem', color: '#333', fontWeight: 700 }}>
-              {editingProduct ? "Edit Product" : "Add New Product"}
-            </h2>
+      {/* Mobile-First Products Cards List */}
+      <div className="admin-products-list">
+        {loading && products.length === 0 ? (
+          <div className="admin-empty-state">
+            <Package size={40} color="#cbd5e1" />
+            <h4>Loading products...</h4>
+          </div>
+        ) : filteredProducts.length === 0 ? (
+          <div className="admin-empty-state" style={{ gridColumn: '1 / -1' }}>
+            <Package size={40} color="#cbd5e1" />
+            <h4>No products found</h4>
+            <p>Try searching for a different keyword or tap "Add Product" to add a new item.</p>
+          </div>
+        ) : (
+          filteredProducts.map((product) => {
+            const catDisplay = categories.find(c => c._id === product.category)?.name || product.category || 'General';
+            const isLowStock = product.stock <= 10;
+            const isOutOfStock = product.stock <= 0;
 
-            <form onSubmit={handleSubmit}>
-              <div style={{ marginBottom: '20px' }}>
-                <label style={{ display: 'block', marginBottom: '8px', fontWeight: 600, color: '#333' }}>
-                  Product Name *
-                </label>
-                <input
-                  type="text"
-                  required
-                  value={formData.name}
-                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                  style={{
-                    width: '100%',
-                    padding: '12px',
-                    border: '2px solid #e0e0e0',
-                    borderRadius: '8px',
-                    fontSize: '1rem',
-                    fontFamily: 'inherit',
-                    outline: 'none',
-                    transition: 'border-color 0.3s ease',
-                    boxSizing: 'border-box'
-                  }}
-                  onFocus={(e) => e.currentTarget.style.borderColor = '#2e7d32'}
-                  onBlur={(e) => e.currentTarget.style.borderColor = '#e0e0e0'}
+            return (
+              <div key={product.id} className="admin-product-card">
+                {/* Product Thumbnail */}
+                <img
+                  src={product.image || '/assets/images/products/placeholder.jpg'}
+                  alt={product.name}
+                  className="product-card-thumbnail"
+                  onError={(e) => { e.currentTarget.src = '/assets/images/products/placeholder.jpg'; }}
                 />
-              </div>
 
-              {/* Multi-Category Selection */}
-              <div style={{ marginBottom: '20px' }}>
-                <label style={{ display: 'block', marginBottom: '8px', fontWeight: 600, color: '#333' }}>
-                  Categories * (Select one or more)
-                </label>
-                <div style={{
-                  display: 'flex',
-                  flexWrap: 'wrap',
-                  gap: '10px',
-                  padding: '12px',
-                  border: '2px solid #e0e0e0',
-                  borderRadius: '8px',
-                  background: '#fafafa'
-                }}>
-                  {categories.filter(cat => cat.isVisible !== false).map(category => (
-                    <label
-                      key={category._id}
-                      style={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '6px',
-                        padding: '8px 12px',
-                        background: formData.categories.includes(category.name) ? '#2e7d32' : '#fff',
-                        color: formData.categories.includes(category.name) ? '#fff' : '#333',
-                        border: '2px solid ' + (formData.categories.includes(category.name) ? '#2e7d32' : '#e0e0e0'),
-                        borderRadius: '20px',
-                        cursor: 'pointer',
-                        fontSize: '0.9rem',
-                        fontWeight: 600,
-                        transition: 'all 0.3s ease',
-                        userSelect: 'none'
-                      }}
-                    >
-                      <input
-                        type="checkbox"
-                        checked={formData.categories.includes(category.name)}
-                        onChange={() => handleCategoryToggle(category.name)}
-                        style={{ display: 'none' }}
-                      />
-                      {category.name}
-                    </label>
-                  ))}
-                </div>
-                {formData.categories.length === 0 && (
-                  <div style={{ color: '#f44336', fontSize: '0.85rem', marginTop: '6px' }}>
-                    Please select at least one category
+                {/* Details */}
+                <div className="product-card-details">
+                  <h3 className="product-card-title">{product.name}</h3>
+                  <span className="product-card-category-tag">{catDisplay}</span>
+
+                  <div className="product-card-metrics">
+                    <span className="product-price-pill">
+                      ${Number(product.price || 0).toFixed(2)}
+                      <span style={{ fontSize: '0.75rem', fontWeight: 500, color: '#64748b' }}>/{product.priceUnit || product.unit || 'kg'}</span>
+                    </span>
+
+                    <span className={`product-stock-pill ${isOutOfStock || isLowStock ? 'stock-low' : 'stock-in'}`}>
+                      {isOutOfStock ? 'Out of stock' : isLowStock ? `Low: ${product.stock}` : `${product.stock} in stock`}
+                    </span>
                   </div>
-                )}
-              </div>
+                </div>
 
-              {/* Advanced Pricing Section */}
-              <div style={{ 
-                background: '#f0f7f1', 
-                padding: '16px', 
-                borderRadius: '10px', 
-                marginBottom: '20px',
-                border: '2px solid #c8e6c9'
-              }}>
-                <h3 style={{ margin: '0 0 15px 0', fontSize: '1.1rem', color: '#2e7d32', fontWeight: 700 }}>
-                  💰 Pricing Configuration
-                </h3>
-                
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '15px', marginBottom: '15px' }}>
-                  <div>
-                    <label style={{ display: 'block', marginBottom: '8px', fontWeight: 600, color: '#333' }}>
-                      Base Price ($) *
-                    </label>
+                {/* Quick Action Buttons */}
+                <div className="product-card-actions">
+                  <button
+                    className="product-mini-btn"
+                    onClick={() => handleOpenModal(product)}
+                    title="Edit Product"
+                  >
+                    <Edit2 size={15} />
+                  </button>
+                  <button
+                    className="product-mini-btn btn-delete"
+                    onClick={() => handleDelete(product.id, product.name)}
+                    title="Delete Product"
+                  >
+                    <Trash2 size={15} />
+                  </button>
+                </div>
+              </div>
+            );
+          })
+        )}
+      </div>
+
+      {/* Add / Edit Product Slide-Up Sheet / Modal */}
+      {showModal && (
+        <div className="admin-modal-backdrop" onClick={handleCloseModal}>
+          <div className="admin-modal-dialog" onClick={(e) => e.stopPropagation()}>
+            <div className="admin-modal-header">
+              <h3>{editingProduct ? "Edit Product" : "Add New Product"}</h3>
+              <button className="modal-close-btn" onClick={handleCloseModal}>
+                <X size={18} />
+              </button>
+            </div>
+
+            <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0 }}>
+              <div className="admin-modal-body">
+                {/* Product Name */}
+                <div className="admin-form-group">
+                  <label className="admin-form-label">Product Name *</label>
+                  <input
+                    type="text"
+                    required
+                    className="admin-form-input"
+                    placeholder="e.g. Fresh Red Apples"
+                    value={formData.name}
+                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                  />
+                </div>
+
+                {/* Category Selection Chips */}
+                <div className="admin-form-group">
+                  <label className="admin-form-label">Category *</label>
+                  <div className="category-chips-grid">
+                    {categories.map((cat) => {
+                      const isSelected = formData.categories.includes(cat.name) || formData.category === cat.name;
+                      return (
+                        <button
+                          type="button"
+                          key={cat._id || cat.name}
+                          className={`category-chip ${isSelected ? 'selected' : ''}`}
+                          onClick={() => handleCategoryToggle(cat.name)}
+                        >
+                          {isSelected && <Check size={12} style={{ marginRight: 4, display: 'inline' }} />}
+                          {cat.name}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {/* Pricing & Unit Row */}
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
+                  <div className="admin-form-group">
+                    <label className="admin-form-label">Price ($) *</label>
                     <input
                       type="number"
                       step="0.01"
                       required
+                      className="admin-form-input"
+                      placeholder="e.g. 3.50"
                       value={formData.price}
                       onChange={(e) => setFormData({ ...formData, price: e.target.value })}
-                      style={{
-                        width: '100%',
-                        padding: '12px',
-                        border: '2px solid #e0e0e0',
-                        borderRadius: '8px',
-                        fontSize: '1rem',
-                        fontFamily: 'inherit',
-                        outline: 'none',
-                        transition: 'border-color 0.3s ease',
-                        boxSizing: 'border-box'
-                      }}
-                      onFocus={(e) => e.currentTarget.style.borderColor = '#2e7d32'}
-                      onBlur={(e) => e.currentTarget.style.borderColor = '#e0e0e0'}
                     />
                   </div>
 
-                  <div>
-                    <label style={{ display: 'block', marginBottom: '8px', fontWeight: 600, color: '#333' }}>
-                      Price Per *
-                    </label>
+                  <div className="admin-form-group">
+                    <label className="admin-form-label">Per Unit *</label>
                     <select
+                      className="admin-form-select"
                       value={formData.priceUnit}
-                      onChange={(e) => setFormData({ ...formData, priceUnit: e.target.value })}
-                      style={{
-                        width: '100%',
-                        padding: '12px',
-                        border: '2px solid #e0e0e0',
-                        borderRadius: '8px',
-                        fontSize: '1rem',
-                        fontFamily: 'inherit',
-                        outline: 'none',
-                        cursor: 'pointer',
-                        boxSizing: 'border-box'
-                      }}
+                      onChange={(e) => setFormData({ ...formData, priceUnit: e.target.value, unit: e.target.value })}
                     >
-                      {pricingRules.availableUnits.map(unit => (
-                        <option key={unit.value} value={unit.value}>{unit.label}</option>
-                      ))}
+                      {pricingRules?.availableUnits?.map(u => (
+                        <option key={u.value} value={u.value}>{u.label}</option>
+                      )) || (
+                        <>
+                          <option value="kg">Per Kilogram (kg)</option>
+                          <option value="box">Per Box</option>
+                          <option value="piece">Per Piece</option>
+                          <option value="bundle">Per Bundle</option>
+                          <option value="pack">Per Pack</option>
+                        </>
+                      )}
                     </select>
                   </div>
                 </div>
 
-                {/* Auto-calculated prices preview */}
-                {formData.price && formData.priceUnit && (
-                  <div style={{
-                    background: '#fff',
-                    padding: '12px',
-                    borderRadius: '8px',
-                    border: '1px solid #e0e0e0'
-                  }}>
-                    <div style={{ fontSize: '0.85rem', color: '#666', fontWeight: 600, marginBottom: '8px' }}>
-                      📊 Auto-Calculated Prices:
-                    </div>
-                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(120px, 1fr))', gap: '8px' }}>
-                      {pricingRules.availableUnits.filter(u => u.base).map(unit => {
-                        const calculatedPrice = calculatePrice(parseFloat(formData.price), formData.priceUnit, unit.value);
-                        return (
-                          <div key={unit.value} style={{ fontSize: '0.85rem', color: '#2e7d32', fontWeight: 600 }}>
-                            {unit.label}: ${calculatedPrice}
-                          </div>
-                        );
-                      })}
-                    </div>
-                  </div>
-                )}
-              </div>
-
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '15px', marginBottom: '20px' }}>
-                <div>
-                  <label style={{ display: 'block', marginBottom: '8px', fontWeight: 600, color: '#333' }}>
-                    Display Unit *
-                  </label>
-                  <select
-                    value={formData.unit}
-                    onChange={(e) => setFormData({ ...formData, unit: e.target.value })}
-                    style={{
-                      width: '100%',
-                      padding: '12px',
-                      border: '2px solid #e0e0e0',
-                      borderRadius: '8px',
-                      fontSize: '1rem',
-                      fontFamily: 'inherit',
-                      outline: 'none',
-                      cursor: 'pointer',
-                      boxSizing: 'border-box'
-                    }}
-                  >
-                    {pricingRules.availableUnits.map(unit => (
-                      <option key={unit.value} value={unit.value}>{unit.label}</option>
-                    ))}
-                  </select>
-                </div>
-
-                <div>
-                  <label style={{ display: 'block', marginBottom: '8px', fontWeight: 600, color: '#333' }}>
-                    Stock *
-                  </label>
+                {/* Stock Count */}
+                <div className="admin-form-group">
+                  <label className="admin-form-label">Available Stock Quantity *</label>
                   <input
                     type="number"
                     required
+                    className="admin-form-input"
+                    placeholder="e.g. 50"
                     value={formData.stock}
                     onChange={(e) => setFormData({ ...formData, stock: e.target.value })}
-                    style={{
-                      width: '100%',
-                      padding: '12px',
-                      border: '2px solid #e0e0e0',
-                      borderRadius: '8px',
-                      fontSize: '1rem',
-                      fontFamily: 'inherit',
-                      outline: 'none',
-                      transition: 'border-color 0.3s ease',
-                      boxSizing: 'border-box'
-                    }}
-                    onFocus={(e) => e.currentTarget.style.borderColor = '#2e7d32'}
-                    onBlur={(e) => e.currentTarget.style.borderColor = '#e0e0e0'}
                   />
                 </div>
-              </div>
 
-              <div style={{ marginBottom: '20px' }}>
-                <label style={{ display: 'block', marginBottom: '8px', fontWeight: 600, color: '#333' }}>
-                  Image URL
-                </label>
-                <input
-                  type="text"
-                  value={formData.image}
-                  onChange={(e) => setFormData({ ...formData, image: e.target.value })}
-                  placeholder="/assets/images/products/..."
-                  style={{
-                    width: '100%',
-                    padding: '12px',
-                    border: '2px solid #e0e0e0',
-                    borderRadius: '8px',
-                    fontSize: '1rem',
-                    fontFamily: 'inherit',
-                    outline: 'none',
-                    transition: 'border-color 0.3s ease',
-                    boxSizing: 'border-box'
-                  }}
-                  onFocus={(e) => e.currentTarget.style.borderColor = '#2e7d32'}
-                  onBlur={(e) => e.currentTarget.style.borderColor = '#e0e0e0'}
-                />
-              </div>
+                {/* Image URL with Preview */}
+                <div className="admin-form-group">
+                  <label className="admin-form-label">Image URL or Path</label>
+                  <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+                    <input
+                      type="text"
+                      className="admin-form-input"
+                      style={{ flex: 1 }}
+                      placeholder="https://... or /assets/images/products/..."
+                      value={formData.image}
+                      onChange={(e) => setFormData({ ...formData, image: e.target.value })}
+                    />
+                    {formData.image && (
+                      <img 
+                        src={formData.image} 
+                        alt="Preview" 
+                        style={{ width: 40, height: 40, borderRadius: 6, objectFit: 'cover', border: '1px solid #e2e8f0' }}
+                        onError={(e) => { e.currentTarget.style.display = 'none'; }}
+                      />
+                    )}
+                  </div>
+                </div>
 
-              {/* Featured Product Toggle */}
-              <div style={{ marginBottom: '25px' }}>
-                <label style={{ 
+                {/* Featured Toggle */}
+                <div style={{ 
                   display: 'flex', 
                   alignItems: 'center', 
-                  gap: '10px',
-                  cursor: 'pointer',
-                  userSelect: 'none',
-                  padding: '12px',
-                  background: formData.featured ? '#fff3cd' : '#f5f5f5',
-                  borderRadius: '8px',
-                  border: '2px solid ' + (formData.featured ? '#ffc107' : '#e0e0e0')
+                  gap: '0.65rem', 
+                  padding: '0.65rem', 
+                  background: '#f8fafc', 
+                  borderRadius: '10px',
+                  border: '1px solid #e2e8f0'
                 }}>
                   <input
                     type="checkbox"
+                    id="featuredProductCheck"
                     checked={formData.featured}
                     onChange={(e) => setFormData({ ...formData, featured: e.target.checked })}
-                    style={{
-                      width: '20px',
-                      height: '20px',
-                      cursor: 'pointer'
-                    }}
+                    style={{ width: 18, height: 18, cursor: 'pointer', accentColor: '#16a34a' }}
                   />
-                  <Star 
-                    size={20} 
-                    fill={formData.featured ? '#ffc107' : 'none'} 
-                    color={formData.featured ? '#ffc107' : '#666'}
-                  />
-                  <span style={{ fontWeight: 600, color: '#333' }}>
-                    Featured Product (shown on homepage)
-                  </span>
-                </label>
+                  <label htmlFor="featuredProductCheck" style={{ fontSize: '0.85rem', fontWeight: 600, color: '#334155', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6 }}>
+                    <Star size={15} fill={formData.featured ? '#eab308' : 'none'} color={formData.featured ? '#eab308' : '#94a3b8'} />
+                    Feature this product on homepage
+                  </label>
+                </div>
               </div>
 
-              <div style={{ display: 'flex', gap: '10px' }}>
-                <button
-                  type="submit"
-                  style={{
-                    flex: 1,
-                    background: '#2e7d32',
-                    color: '#fff',
-                    border: 'none',
-                    padding: '14px',
-                    borderRadius: '10px',
-                    fontSize: '1rem',
-                    fontWeight: 600,
-                    cursor: 'pointer',
-                    transition: 'all 0.3s ease',
-                    fontFamily: 'inherit'
-                  }}
-                  onMouseEnter={(e) => e.currentTarget.style.background = '#1b5e20'}
-                  onMouseLeave={(e) => e.currentTarget.style.background = '#2e7d32'}
-                >
-                  {editingProduct ? "Update Product" : "Add Product"}
-                </button>
-                <button
-                  type="button"
+              <div className="admin-modal-footer">
+                <button 
+                  type="button" 
+                  className="admin-modal-btn btn-cancel" 
                   onClick={handleCloseModal}
-                  style={{
-                    flex: 1,
-                    background: '#f5f5f5',
-                    color: '#333',
-                    border: 'none',
-                    padding: '14px',
-                    borderRadius: '10px',
-                    fontSize: '1rem',
-                    fontWeight: 600,
-                    cursor: 'pointer',
-                    transition: 'all 0.3s ease',
-                    fontFamily: 'inherit'
-                  }}
-                  onMouseEnter={(e) => e.currentTarget.style.background = '#e0e0e0'}
-                  onMouseLeave={(e) => e.currentTarget.style.background = '#f5f5f5'}
+                  disabled={isSubmitting}
                 >
                   Cancel
+                </button>
+                <button 
+                  type="submit" 
+                  className="admin-modal-btn btn-submit"
+                  disabled={isSubmitting}
+                >
+                  {isSubmitting ? "Saving..." : editingProduct ? "Save Changes" : "Create Product"}
                 </button>
               </div>
             </form>
