@@ -322,72 +322,91 @@ const Shop = () => {
 
   return (
     <div className="modern-shop-page toters-layout">
-      <Navbar />
+      {/* Desktop-Only Navbar */}
+      <div className="shop-desktop-navbar-wrapper">
+        <Navbar />
+      </div>
 
       {/* ==========================================
-          1. STICKY TOP APP HEADER & SEARCH BAR
+          UNIFIED STICKY SHOPPING DOCK (SEARCH + CATEGORIES)
           ========================================== */}
-      <header className="toters-shop-top-header">
-        <div className="container toters-header-inner">
-          <div className="toters-search-row">
-            {isSpecificView && (
-              <button 
-                type="button" 
-                className="toters-back-pill-btn" 
-                onClick={resetAllFilters}
-                aria-label="Back to all categories"
-                title="View all aisles"
-              >
-                <ArrowLeft size={18} />
-              </button>
-            )}
-
-            <div className="toters-search-box">
-              <Search className="toters-search-icon" size={17} />
-              <input
-                ref={searchInputRef}
-                type="text"
-                placeholder={t.searchPlaceholder || "Search farm fresh items..."}
-                value={searchQuery}
-                onChange={handleSearchChange}
-                className="toters-search-input"
-              />
-              {searchQuery && (
+      <div className="toters-unified-sticky-dock">
+        {/* Tier 1: Search Bar & Filter Controls */}
+        <div className="toters-search-tier">
+          <div className="container toters-search-tier-inner">
+            <div className="toters-search-row">
+              {isSpecificView && (
                 <button 
                   type="button" 
-                  onClick={clearSearch} 
-                  className="toters-search-clear"
-                  aria-label="Clear search"
+                  className="toters-back-pill-btn" 
+                  onClick={resetAllFilters}
+                  aria-label="Back to all categories"
+                  title="View all aisles"
                 >
-                  <X size={14} />
+                  <ArrowLeft size={18} />
                 </button>
               )}
-            </div>
 
-            <button
-              type="button"
-              className={`toters-filter-trigger-btn ${activeFiltersCount > 0 ? 'active' : ''}`}
-              onClick={() => setShowFilterDrawer(true)}
-              title="Filter & Sort Options"
-            >
-              <SlidersHorizontal size={17} />
-              {activeFiltersCount > 0 && <span className="filter-badge-dot">{activeFiltersCount}</span>}
-            </button>
+              <div className="toters-search-box">
+                <Search className="toters-search-icon" size={17} />
+                <input
+                  ref={searchInputRef}
+                  type="text"
+                  placeholder={t.searchPlaceholder || "Search farm fresh items..."}
+                  value={searchQuery}
+                  onChange={handleSearchChange}
+                  className="toters-search-input"
+                />
+                {searchQuery && (
+                  <button 
+                    type="button" 
+                    onClick={clearSearch} 
+                    className="toters-search-clear"
+                    aria-label="Clear search"
+                  >
+                    <X size={14} />
+                  </button>
+                )}
+              </div>
+
+              <button
+                type="button"
+                className={`toters-filter-trigger-btn ${activeFiltersCount > 0 ? 'active' : ''}`}
+                onClick={() => setShowFilterDrawer(true)}
+                title="Filter & Sort Options"
+              >
+                <SlidersHorizontal size={17} />
+                {activeFiltersCount > 0 && <span className="filter-badge-dot">{activeFiltersCount}</span>}
+              </button>
+            </div>
           </div>
         </div>
-      </header>
 
-      {/* ==========================================
-          2. TOTERS STICKY CATEGORY SNAP RAIL
-          ========================================== */}
-      <nav className="toters-category-snap-rail" aria-label="Aisle Categories">
-        <div className="toters-rail-scroll-track" ref={categoryTrackRef}>
-          {categoriesList.map((cat) => {
-            const isSelected = isSpecificView 
-              ? (selectedCategory === cat.id || selectedCategory === cat.name)
-              : (activeSpyCategory === cat.id);
+        {/* Tier 2: Category Snap Rail Pinned Directly Below Search */}
+        <nav className="toters-category-snap-rail" aria-label="Aisle Categories">
+          <div className="toters-rail-scroll-track" ref={categoryTrackRef}>
+            {categoriesList.map((cat) => {
+              const isSelected = isSpecificView 
+                ? (selectedCategory === cat.id || selectedCategory === cat.name)
+                : (activeSpyCategory === cat.id);
 
-            return (
+              return (
+                <button
+                  key={cat.id}
+                  id={`tab-btn-${cat.id}`}
+                  type="button"
+                  onClick={() => handleCategoryTabClick(cat.id)}
+                  className={`toters-category-tab ${isSelected ? 'active' : ''}`}
+                >
+                  <span className="tab-emoji">{cat.emoji}</span>
+                  <span className="tab-name">{cat.name}</span>
+                  {cat.count > 0 && <span className="tab-count-pill">{cat.count}</span>}
+                </button>
+              );
+            })}
+          </div>
+        </nav>
+      </div>
               <button
                 key={cat.id}
                 id={`tab-btn-${cat.id}`}
