@@ -357,97 +357,102 @@ function AdminOrders() {
 
                 {/* Action Bar */}
                 <div className="order-card-actions" onClick={(e) => e.stopPropagation()}>
-                  {/* WhatsApp Quick Direct Message */}
-                  {waLink && (
-                    <a
-                      href={waLink}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="action-btn action-btn-whatsapp"
-                      title="Chat on WhatsApp"
-                    >
-                      <MessageCircle size={15} />
-                      <span>WhatsApp</span>
-                    </a>
-                  )}
+                  {/* Contact Actions */}
+                  <div className="order-actions-contact">
+                    {waLink && (
+                      <a
+                        href={waLink}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="action-btn action-btn-whatsapp"
+                        title="Chat on WhatsApp"
+                      >
+                        <MessageCircle size={15} />
+                        <span>WhatsApp</span>
+                      </a>
+                    )}
 
-                  {/* Direct Phone Call */}
-                  {order.phone && (
-                    <a
-                      href={`tel:${order.phone}`}
-                      className="action-btn action-btn-call"
-                      title="Call customer"
-                    >
-                      <Phone size={15} />
-                      <span>Call</span>
-                    </a>
-                  )}
+                    {order.phone && (
+                      <a
+                        href={`tel:${order.phone}`}
+                        className="action-btn action-btn-call"
+                        title="Call customer"
+                      >
+                        <Phone size={15} />
+                        <span>Call</span>
+                      </a>
+                    )}
 
-                  {/* Map Button if available */}
-                  {order.googleMapsLink && (
-                    <a
-                      href={order.googleMapsLink}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="action-btn action-btn-map"
-                      title="Delivery Location"
-                    >
-                      <MapPin size={15} />
-                      <span>Map</span>
-                    </a>
-                  )}
+                    {order.googleMapsLink && (
+                      <a
+                        href={order.googleMapsLink}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="action-btn action-btn-map"
+                        title="Delivery Location"
+                      >
+                        <MapPin size={15} />
+                        <span>Map</span>
+                      </a>
+                    )}
+                  </div>
 
-                  {/* Quick Advance Status Button */}
-                  {order.status === "Pending" && (
+                  {/* Workflow & Tools Actions */}
+                  <div className="order-actions-workflow">
+                    {order.status === "Pending" && (
+                      <button
+                        type="button"
+                        className="action-btn action-btn-advance action-btn-advance-prep"
+                        onClick={() => handleStatusChange(order.id, "Preparing")}
+                        title="Mark Preparing"
+                      >
+                        <Truck size={14} />
+                        <span>Prepare</span>
+                      </button>
+                    )}
+
+                    {order.status === "Preparing" && (
+                      <button
+                        type="button"
+                        className="action-btn action-btn-advance"
+                        onClick={() => handleStatusChange(order.id, "Delivered")}
+                        title="Mark Delivered"
+                      >
+                        <CheckCircle size={14} />
+                        <span>Deliver</span>
+                      </button>
+                    )}
+
+                    <select
+                      className="order-quick-status-select"
+                      value={order.status}
+                      onChange={(e) => handleStatusChange(order.id, e.target.value)}
+                      aria-label="Change status"
+                    >
+                      <option value="Pending">Pending</option>
+                      <option value="Preparing">Preparing</option>
+                      <option value="Delivered">Delivered</option>
+                      <option value="Cancelled">Cancelled</option>
+                    </select>
+
                     <button
-                      className="action-btn action-btn-advance"
-                      onClick={() => handleStatusChange(order.id, "Preparing")}
+                      type="button"
+                      className="action-btn action-btn-view"
+                      onClick={() => setSelectedOrder(order)}
+                      title="View order breakdown"
                     >
-                      <Truck size={14} />
-                      <span>Prepare</span>
+                      <Eye size={15} />
                     </button>
-                  )}
 
-                  {order.status === "Preparing" && (
                     <button
-                      className="action-btn action-btn-advance"
-                      onClick={() => handleStatusChange(order.id, "Delivered")}
-                      style={{ background: '#16a34a' }}
+                      type="button"
+                      className="action-btn action-btn-delete"
+                      onClick={() => handleDeleteOrder(order.id, order.customer)}
+                      title="Delete order"
                     >
-                      <CheckCircle size={14} />
-                      <span>Deliver</span>
+                      <Trash2 size={15} />
                     </button>
-                  )}
-
-                  {/* Status Dropdown */}
-                  <select
-                    className="order-quick-status-select"
-                    value={order.status}
-                    onChange={(e) => handleStatusChange(order.id, e.target.value)}
-                  >
-                    <option value="Pending">Pending</option>
-                    <option value="Preparing">Preparing</option>
-                    <option value="Delivered">Delivered</option>
-                    <option value="Cancelled">Cancelled</option>
-                  </select>
-
-                  {/* View Details */}
-                  <button
-                    className="action-btn action-btn-view"
-                    onClick={() => setSelectedOrder(order)}
-                    title="View order breakdown"
-                  >
-                    <Eye size={15} />
-                  </button>
-
-                  {/* Delete */}
-                  <button
-                    className="action-btn action-btn-delete"
-                    onClick={() => handleDeleteOrder(order.id, order.customer)}
-                    title="Delete order"
-                  >
-                    <Trash2 size={15} />
-                  </button>
+                  </div>
                 </div>
               </div>
             );

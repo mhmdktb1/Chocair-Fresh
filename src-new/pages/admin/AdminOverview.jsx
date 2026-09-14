@@ -7,14 +7,12 @@ import {
   TrendingUp, 
   Clock, 
   CheckCircle, 
-  Truck,
-  XCircle,
-  Activity
+  Truck
 } from "lucide-react";
 import './AdminComponents.css';
 
 function AdminOverview() {
-  const { getStats, orders } = useAdmin();
+  const { getStats } = useAdmin();
   const stats = getStats();
 
   const statCards = [
@@ -41,46 +39,23 @@ function AdminOverview() {
       </div>
 
       {/* Main Stats Grid */}
-      <div style={{
-        display: 'grid',
-        gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))',
-        gap: '0.85rem',
-        marginBottom: '1.25rem'
-      }}>
+      <div className="admin-stats-grid">
         {statCards.map((stat, index) => {
           const Icon = stat.icon;
           return (
-            <div
-              key={index}
-              style={{
-                background: '#ffffff',
-                border: '1px solid #e2e8f0',
-                borderRadius: '14px',
-                padding: '1.1rem',
-                boxShadow: '0 1px 3px rgba(0,0,0,0.03)',
-                display: 'flex',
-                flexDirection: 'column',
-                gap: '0.65rem'
-              }}
-            >
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                <span style={{ fontSize: '0.82rem', color: '#64748b', fontWeight: 600 }}>
+            <div key={index} className="admin-stat-card">
+              <div className="stat-card-header">
+                <span className="stat-card-label">
                   {stat.label}
                 </span>
-                <div style={{
-                  width: '36px',
-                  height: '36px',
-                  borderRadius: '10px',
-                  background: stat.bg,
-                  color: stat.color,
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center'
-                }}>
+                <div 
+                  className="stat-icon-wrap"
+                  style={{ background: stat.bg, color: stat.color }}
+                >
                   <Icon size={18} />
                 </div>
               </div>
-              <div style={{ fontSize: '1.45rem', fontWeight: 800, color: '#0f172a', letterSpacing: '-0.02em' }}>
+              <div className="stat-card-value">
                 {stat.value}
               </div>
             </div>
@@ -89,52 +64,45 @@ function AdminOverview() {
       </div>
 
       {/* Order Status Breakdown with Progress Bars */}
-      <div style={{
-        background: '#ffffff',
-        border: '1px solid #e2e8f0',
-        borderRadius: '14px',
-        padding: '1.25rem',
-        boxShadow: '0 1px 3px rgba(0,0,0,0.03)',
-        marginBottom: '1.25rem'
-      }}>
-        <h3 style={{ margin: '0 0 1rem 0', fontSize: '1.05rem', fontWeight: 800, color: '#0f172a', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+      <div className="pipeline-card-container">
+        <h3 className="pipeline-header">
           <TrendingUp size={18} color="#16a34a" />
           <span>Fulfillment Status Pipeline</span>
         </h3>
 
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: '0.75rem', marginBottom: '1rem' }}>
-          <div style={{ background: '#ffedd5', padding: '0.85rem', borderRadius: '10px', border: '1px solid #fed7aa' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', color: '#c2410c', fontSize: '0.82rem', fontWeight: 700 }}>
+        <div className="pipeline-stages-grid">
+          <div className="pipeline-stage-box" style={{ background: '#ffedd5', border: '1px solid #fed7aa' }}>
+            <div className="stage-badge-label" style={{ color: '#c2410c' }}>
               <Clock size={14} /> Pending
             </div>
-            <div style={{ fontSize: '1.35rem', fontWeight: 800, color: '#c2410c', marginTop: '0.35rem' }}>
+            <div className="stage-count-val" style={{ color: '#c2410c' }}>
               {stats.pendingOrders}
             </div>
-            <div style={{ fontSize: '0.72rem', color: '#9a3412', marginTop: '0.15rem' }}>
+            <div className="stage-pct-val" style={{ color: '#9a3412' }}>
               {pendingPct}% of orders
             </div>
           </div>
 
-          <div style={{ background: '#e0f2fe', padding: '0.85rem', borderRadius: '10px', border: '1px solid #bae6fd' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', color: '#0369a1', fontSize: '0.82rem', fontWeight: 700 }}>
+          <div className="pipeline-stage-box" style={{ background: '#e0f2fe', border: '1px solid #bae6fd' }}>
+            <div className="stage-badge-label" style={{ color: '#0369a1' }}>
               <Truck size={14} /> Preparing
             </div>
-            <div style={{ fontSize: '1.35rem', fontWeight: 800, color: '#0369a1', marginTop: '0.35rem' }}>
+            <div className="stage-count-val" style={{ color: '#0369a1' }}>
               {stats.preparingOrders}
             </div>
-            <div style={{ fontSize: '0.72rem', color: '#075985', marginTop: '0.15rem' }}>
+            <div className="stage-pct-val" style={{ color: '#075985' }}>
               {preparingPct}% of orders
             </div>
           </div>
 
-          <div style={{ background: '#dcfce7', padding: '0.85rem', borderRadius: '10px', border: '1px solid #bbf7d0' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', color: '#15803d', fontSize: '0.82rem', fontWeight: 700 }}>
+          <div className="pipeline-stage-box" style={{ background: '#dcfce7', border: '1px solid #bbf7d0' }}>
+            <div className="stage-badge-label" style={{ color: '#15803d' }}>
               <CheckCircle size={14} /> Delivered
             </div>
-            <div style={{ fontSize: '1.35rem', fontWeight: 800, color: '#15803d', marginTop: '0.35rem' }}>
+            <div className="stage-count-val" style={{ color: '#15803d' }}>
               {stats.deliveredOrders}
             </div>
-            <div style={{ fontSize: '0.72rem', color: '#166534', marginTop: '0.15rem' }}>
+            <div className="stage-pct-val" style={{ color: '#166534' }}>
               {deliveredPct}% of orders
             </div>
           </div>
