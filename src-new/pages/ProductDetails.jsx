@@ -1,6 +1,25 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { Minus, Plus, ShoppingBag, ArrowLeft, Star, Truck, ShieldCheck, Clock, Scale } from 'lucide-react';
+import { 
+  Minus, 
+  Plus, 
+  ShoppingBag, 
+  ArrowLeft, 
+  Star, 
+  Truck, 
+  ShieldCheck, 
+  Scale, 
+  Heart, 
+  Share2, 
+  Sparkles, 
+  Leaf, 
+  Check, 
+  Maximize2, 
+  X, 
+  ThermometerSnowflake, 
+  RotateCcw, 
+  ShoppingCart 
+} from 'lucide-react';
 import Navbar from '../components/layout/Navbar';
 import { useCart } from '../context/CartContext';
 import { useCategories } from '../hooks/useCategories';
@@ -15,15 +34,28 @@ import './ProductDetails.css';
 const ProductDetails = () => {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { addToCart } = useCart();
+  const { addToCart, cartCount, setIsCartOpen } = useCart();
   const { categories } = useCategories();
   
   const [product, setProduct] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [quantity, setQuantity] = useState(1);
-  const [activeImage, setActiveImage] = useState(0);
   const [isScaleOpen, setIsScaleOpen] = useState(false);
+  const [isLightboxOpen, setIsLightboxOpen] = useState(false);
+  const [isFavorite, setIsFavorite] = useState(false);
+  const [activeTab, setActiveTab] = useState('overview'); // 'overview' | 'storage' | 'delivery'
+  const [addedAnimation, setAddedAnimation] = useState(false);
+
+  // Check wishlist state from localStorage
+  useEffect(() => {
+    try {
+      const savedWishlist = JSON.parse(localStorage.getItem('cf_wishlist') || '[]');
+      setIsFavorite(savedWishlist.includes(id));
+    } catch (e) {
+      console.error(e);
+    }
+  }, [id]);
 
   useEffect(() => {
     const fetchProduct = async () => {
@@ -36,18 +68,15 @@ const ProductDetails = () => {
         // Save to last viewed history
         try {
           const history = JSON.parse(localStorage.getItem('viewHistory') || '[]');
-          // Remove if exists (to move to top)
           const newHistory = history.filter(item => item._id !== data._id);
-          // Add to front
           newHistory.unshift({ _id: data._id, name: data.name });
-          // Keep max 10
           localStorage.setItem('viewHistory', JSON.stringify(newHistory.slice(0, 10)));
         } catch (e) {
           console.error('Failed to save view history', e);
         }
 
         // Set default quantity based on unit
-        if (data.unit === 'kg' || data.unit === 'g') {
+        if (data.unit === 'kg' || data.unit === 'g' || data.unit === '1kg') {
           setQuantity(1.0);
         } else {
           setQuantity(1);
@@ -70,14 +99,17 @@ const ProductDetails = () => {
   const handleQuantityChange = (delta) => {
     const step = isWeightBased ? 0.5 : 1;
     let newQty = quantity + (delta * step);
-    
-    // Round to avoid floating point errors
     newQty = Math.round(newQty * 100) / 100;
-
     const minQty = isWeightBased ? 0.5 : 1;
     
     if (newQty >= minQty && newQty <= (product?.countInStock || 100)) {
       setQuantity(newQty);
+    }
+  };
+
+  const setPresetQuantity = (qty) => {
+    if (product && qty <= (product.countInStock || 100)) {
+      setQuantity(qty);
     }
   };
 
@@ -86,15 +118,58 @@ const ProductDetails = () => {
     setIsScaleOpen(false);
   };
 
+  const toggleWishlist = () => {
+    try {
+      const savedWishlist = JSON.parse(localStorage.getItem('cf_wishlist') || '[]');
+      let updated;
+      if (isFavorite) {
+        updated = savedWishlist.filter(itemId => itemId !== product._id);
+        toast.info('Removed from favorites');
+      } else {
+        updated = [...savedWishlist, product._id];
+        toast.success('Saved to your favorites! ❤️');
+      }
+      localStorage.setItem('cf_wishlist', JSON.stringify(updated));
+      setIsFavorite(!isFavorite);
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
+  const handleShare = async () => {
+    if (navigator.share) {
+      try {
+        await navigator.share({
+          title: product.name,
+          text: `Check out fresh ${product.name} at Chocair Fresh!`,
+          url: window.location.href,
+        });
+      } catch (err) {
+        // Ignored or cancelled
+      }
+    } else {
+      try {
+        await navigator.clipboard.writeText(window.location.href);
+        toast.success('Product link copied to clipboard! 📋');
+      } catch (err) {
+        toast.info('Link ready to share');
+      }
+    }
+  };
+
   const handleAddToCart = () => {
     if (product) {
       addToCart(product, quantity);
-      toast.success(`Added ${quantity} ${product.unit || 'items'} to cart!`);
+      setAddedAnimation(true);
+      setTimeout(() => setAddedAnimation(false), 800);
+      toast.success(`Added ${quantity} ${product.unit || 'items'} to cart!`, {
+        icon: '🛒'
+      });
     }
   };
 
   if (loading) {
-    return <Loading text="Loading product details..." />;
+    return <Loading text="Loading fresh product details..." />;
   }
 
   if (error || !product) {
@@ -109,128 +184,379 @@ const ProductDetails = () => {
     );
   }
 
+  const categoryName = categories.find(c => c._id === product.category)?.name || product.category || 'Fresh Produce';
+  const totalPrice = (product.price * quantity).toFixed(2);
+  const weightPresets = [0.5, 1.0, 1.5, 2.0, 3.0, 5.0];
+  const unitPresets = [1, 2, 3, 5, 10];
+
   return (
     <div className="product-details-page">
       <Navbar />
-      
-      <div className="container product-details-container">
-        <button className="back-btn" onClick={() => navigate(-1)}>
-          <ArrowLeft size={20} /> Back
-        </button>
 
-        <div className="product-grid">
-          {/* Product Images */}
-          <div className="product-gallery">
-            <div className="main-image">
-              <img src={product.image} alt={product.name} />
+      {/* Modern Mobile Top Action Bar */}
+      <div className="mobile-product-topbar">
+        <button className="topbar-circle-btn" onClick={() => navigate(-1)} aria-label="Go Back">
+          <ArrowLeft size={20} />
+        </button>
+        <div className="topbar-category-chip">{categoryName}</div>
+        <div className="topbar-actions">
+          <button className="topbar-circle-btn" onClick={handleShare} aria-label="Share">
+            <Share2 size={18} />
+          </button>
+          <button 
+            className={`topbar-circle-btn ${isFavorite ? 'favorite-active' : ''}`} 
+            onClick={toggleWishlist} 
+            aria-label="Wishlist"
+          >
+            <Heart size={18} fill={isFavorite ? '#e74c3c' : 'none'} color={isFavorite ? '#e74c3c' : 'currentColor'} />
+          </button>
+          <button className="topbar-circle-btn cart-btn-badge" onClick={() => setIsCartOpen(true)} aria-label="Cart">
+            <ShoppingCart size={18} />
+            {cartCount > 0 && <span className="topbar-badge-count">{cartCount}</span>}
+          </button>
+        </div>
+      </div>
+
+      <div className="container product-details-container">
+        {/* Desktop Breadcrumb Navigation */}
+        <div className="desktop-breadcrumb">
+          <button className="back-btn" onClick={() => navigate(-1)}>
+            <ArrowLeft size={18} /> Back to Products
+          </button>
+          <div className="breadcrumb-path">
+            <span onClick={() => navigate('/')}>Home</span>
+            <span className="separator">/</span>
+            <span onClick={() => navigate('/shop')}>Shop</span>
+            <span className="separator">/</span>
+            <span className="current">{product.name}</span>
+          </div>
+        </div>
+
+        {/* Main Product Showcase Card */}
+        <div className="product-showcase-card">
+          {/* Gallery Section */}
+          <div className="product-gallery-section">
+            <div className="gallery-main-card">
+              {/* Badges on image */}
+              <div className="image-floating-badges">
+                <span className="badge-freshness">
+                  <Leaf size={14} /> 100% Fresh
+                </span>
+                {product.countInStock > 0 ? (
+                  <span className={`badge-stock ${product.countInStock < 10 ? 'low-stock' : 'in-stock'}`}>
+                    {product.countInStock < 10 ? `Only ${product.countInStock} Left` : 'In Stock'}
+                  </span>
+                ) : (
+                  <span className="badge-stock out-of-stock">Sold Out</span>
+                )}
+              </div>
+
+              {/* Floating Quick Action Icons */}
+              <div className="image-quick-actions">
+                {isWeightBased && (
+                  <button 
+                    className="image-action-btn scale-action" 
+                    onClick={() => setIsScaleOpen(true)}
+                    title="Interactive Weight Scale"
+                    aria-label="Open Weight Scale"
+                  >
+                    <Scale size={18} />
+                    <span>Scale</span>
+                  </button>
+                )}
+                <button 
+                  className="image-action-btn preview-action" 
+                  onClick={() => setIsLightboxOpen(true)}
+                  title="Expand Fullscreen"
+                  aria-label="Zoom Photo"
+                >
+                  <Maximize2 size={18} />
+                </button>
+              </div>
+
+              {/* Product Hero Image */}
+              <div className="product-hero-image-wrapper" onClick={() => setIsLightboxOpen(true)}>
+                <img 
+                  src={product.image} 
+                  alt={product.name} 
+                  className="product-hero-img"
+                  loading="eager"
+                />
+              </div>
             </div>
-            {/* If we had multiple images, thumbnails would go here */}
+
+            {/* Trust highlights under image */}
+            <div className="quick-trust-grid">
+              <div className="trust-card">
+                <Truck size={22} className="trust-icon" />
+                <div className="trust-text">
+                  <strong>30-45 Mins Delivery</strong>
+                  <span>Direct to your doorstep</span>
+                </div>
+              </div>
+              <div className="trust-card">
+                <ThermometerSnowflake size={22} className="trust-icon" />
+                <div className="trust-text">
+                  <strong>Cold-Chain Protected</strong>
+                  <span>Always chilled & crisp</span>
+                </div>
+              </div>
+              <div className="trust-card">
+                <ShieldCheck size={22} className="trust-icon" />
+                <div className="trust-text">
+                  <strong>Freshness Guarantee</strong>
+                  <span>100% Quality inspected</span>
+                </div>
+              </div>
+              <div className="trust-card">
+                <RotateCcw size={22} className="trust-icon" />
+                <div className="trust-text">
+                  <strong>Instant Return</strong>
+                  <span>Hassle-free replacement</span>
+                </div>
+              </div>
+            </div>
           </div>
 
-          {/* Product Info */}
-          <div className="product-info">
-            <div className="product-header">
-              <span className="product-category">
-                {categories.find(c => c._id === product.category)?.name || product.category}
-              </span>
-              <h1 className="product-title">{product.name}</h1>
-              <div className="product-rating">
-                <div className="stars">
-                  {[1, 2, 3, 4, 5].map((star) => (
-                    <Star 
-                      key={star} 
-                      size={16} 
-                      fill={star <= (product.rating || 5) ? "#ffc107" : "none"} 
-                      color={star <= (product.rating || 5) ? "#ffc107" : "#ddd"} 
-                    />
-                  ))}
-                </div>
-                <span className="review-count">({product.numReviews || 0} reviews)</span>
-              </div>
-            </div>
-
-            <div className="product-price-section">
-              <span className="current-price">
-                ${product.price}
-                <span className="price-unit"> / {product.unit}</span>
-              </span>
-              {product.countInStock > 0 ? (
-                <span className="stock-status in-stock">In Stock</span>
-              ) : (
-                <span className="stock-status out-of-stock">Out of Stock</span>
-              )}
-            </div>
-
-            <p className="product-description">
-              {product.description || 'No description available for this product.'}
-            </p>
-
-            <div className="product-features">
-              <div className="feature-item">
-                <Truck size={20} />
-                <span>Fast Delivery</span>
-              </div>
-              <div className="feature-item">
-                <ShieldCheck size={20} />
-                <span>Quality Guarantee</span>
-              </div>
-              <div className="feature-item">
-                <Clock size={20} />
-                <span>Fresh Daily</span>
-              </div>
-            </div>
-
-            <div className="product-actions">
-              <div className="quantity-selector">
-                <button 
-                  onClick={() => handleQuantityChange(-1)}
-                  disabled={quantity <= (isWeightBased ? 0.5 : 1)}
-                >
-                  <Minus size={18} />
-                </button>
-                
-                {isWeightBased ? (
+          {/* Product Info & Purchase Panel */}
+          <div className="product-info-section">
+            <div className="product-main-header">
+              <div className="header-meta-row">
+                <span className="product-category-tag">{categoryName}</span>
+                <div className="desktop-share-actions">
                   <button 
-                    className="weight-display-btn"
-                    onClick={() => setIsScaleOpen(true)}
-                    title="Click to open scale"
+                    className={`circle-icon-btn ${isFavorite ? 'active' : ''}`} 
+                    onClick={toggleWishlist}
+                    title={isFavorite ? "Remove favorite" : "Add to favorites"}
                   >
-                    <Scale size={16} />
-                    <span>{quantity.toFixed(2)} {product.unit}</span>
+                    <Heart size={18} fill={isFavorite ? '#e74c3c' : 'none'} color={isFavorite ? '#e74c3c' : 'currentColor'} />
                   </button>
-                ) : (
-                  <span className="qty-display">{quantity}</span>
+                  <button className="circle-icon-btn" onClick={handleShare} title="Share product">
+                    <Share2 size={18} />
+                  </button>
+                </div>
+              </div>
+
+              <h1 className="product-main-title">{product.name}</h1>
+
+              <div className="rating-review-strip">
+                <div className="rating-stars-pill">
+                  <div className="stars">
+                    {[1, 2, 3, 4, 5].map((star) => (
+                      <Star 
+                        key={star} 
+                        size={15} 
+                        fill={star <= (product.rating || 5) ? "#f59e0b" : "none"} 
+                        color={star <= (product.rating || 5) ? "#f59e0b" : "#cbd5e1"} 
+                      />
+                    ))}
+                  </div>
+                  <span className="rating-score">{(product.rating || 5).toFixed(1)}</span>
+                </div>
+                <span className="review-count-badge">
+                  {product.numReviews || 12} Verified Reviews
+                </span>
+                <span className="origin-verified-badge">
+                  <Sparkles size={14} /> Farm Picked
+                </span>
+              </div>
+            </div>
+
+            {/* Price Box */}
+            <div className="product-pricing-card">
+              <div className="pricing-main-block">
+                <div className="unit-price-display">
+                  <span className="currency-symbol">$</span>
+                  <span className="price-number">{product.price}</span>
+                  <span className="price-unit-label">/ {product.unit}</span>
+                </div>
+                <div className="calculated-total-pill">
+                  <span>Selected Total:</span>
+                  <strong>${totalPrice}</strong>
+                </div>
+              </div>
+            </div>
+
+            {/* Quantity / Weight Selection Section */}
+            <div className="purchase-controls-box">
+              <div className="quantity-header-row">
+                <span className="control-label">
+                  {isWeightBased ? 'Select Weight / Quantity:' : 'Select Quantity:'}
+                </span>
+                {isWeightBased && (
+                  <button 
+                    className="scale-trigger-link"
+                    onClick={() => setIsScaleOpen(true)}
+                  >
+                    <Scale size={15} /> Open Digital Scale
+                  </button>
+                )}
+              </div>
+
+              {/* Preset Quick Chips */}
+              <div className="preset-chips-scroll">
+                {(isWeightBased ? weightPresets : unitPresets).map((preset) => {
+                  const isSelected = quantity === preset;
+                  return (
+                    <button
+                      key={preset}
+                      type="button"
+                      className={`preset-chip ${isSelected ? 'active' : ''}`}
+                      onClick={() => setPresetQuantity(preset)}
+                    >
+                      {preset} {isWeightBased ? product.unit : (preset === 1 ? 'item' : 'items')}
+                    </button>
+                  );
+                })}
+              </div>
+
+              {/* Stepper + Big Add to Cart Row */}
+              <div className="actions-control-row">
+                <div className="modern-qty-stepper">
+                  <button 
+                    type="button"
+                    className="stepper-btn minus"
+                    onClick={() => handleQuantityChange(-1)}
+                    disabled={quantity <= (isWeightBased ? 0.5 : 1)}
+                    aria-label="Decrease quantity"
+                  >
+                    <Minus size={18} />
+                  </button>
+                  
+                  {isWeightBased ? (
+                    <button 
+                      type="button"
+                      className="stepper-weight-val"
+                      onClick={() => setIsScaleOpen(true)}
+                      title="Tap to fine-tune weight"
+                    >
+                      <span className="val-text">{quantity.toFixed(2)}</span>
+                      <span className="unit-text">{product.unit}</span>
+                    </button>
+                  ) : (
+                    <span className="stepper-item-val">{quantity}</span>
+                  )}
+
+                  <button 
+                    type="button"
+                    className="stepper-btn plus"
+                    onClick={() => handleQuantityChange(1)}
+                    disabled={quantity >= (product.countInStock || 100)}
+                    aria-label="Increase quantity"
+                  >
+                    <Plus size={18} />
+                  </button>
+                </div>
+
+                <button 
+                  className={`modern-cart-btn ${addedAnimation ? 'cart-btn-bump' : ''}`}
+                  onClick={handleAddToCart}
+                  disabled={product.countInStock === 0}
+                >
+                  <ShoppingBag size={20} className="cart-btn-icon" />
+                  <span className="cart-btn-text">
+                    {product.countInStock === 0 ? 'Out of Stock' : `Add • $${totalPrice}`}
+                  </span>
+                </button>
+              </div>
+            </div>
+
+            {/* Information Tabs */}
+            <div className="product-details-tabs">
+              <div className="tabs-header-bar">
+                <button 
+                  className={`tab-btn ${activeTab === 'overview' ? 'active' : ''}`}
+                  onClick={() => setActiveTab('overview')}
+                >
+                  Overview
+                </button>
+                <button 
+                  className={`tab-btn ${activeTab === 'storage' ? 'active' : ''}`}
+                  onClick={() => setActiveTab('storage')}
+                >
+                  Storage & Freshness
+                </button>
+                <button 
+                  className={`tab-btn ${activeTab === 'delivery' ? 'active' : ''}`}
+                  onClick={() => setActiveTab('delivery')}
+                >
+                  Delivery & Guarantee
+                </button>
+              </div>
+
+              <div className="tab-content-panel">
+                {activeTab === 'overview' && (
+                  <div className="tab-pane fade-in">
+                    <p className="product-description-text">
+                      {product.description || `Handpicked fresh ${product.name} delivered straight from certified local farms. Rich in natural vitamins and flavor.`}
+                    </p>
+                    <div className="details-checklist">
+                      <div className="check-item">
+                        <Check size={16} className="check-icon" />
+                        <span>Freshly harvested within the last 24 hours</span>
+                      </div>
+                      <div className="check-item">
+                        <Check size={16} className="check-icon" />
+                        <span>100% pesticide tested & verified organic standards</span>
+                      </div>
+                      <div className="check-item">
+                        <Check size={16} className="check-icon" />
+                        <span>Carefully hand-graded for peak ripeness & sweetness</span>
+                      </div>
+                    </div>
+                  </div>
                 )}
 
-                <button 
-                  onClick={() => handleQuantityChange(1)}
-                  disabled={quantity >= product.countInStock}
-                >
-                  <Plus size={18} />
-                </button>
-              </div>
+                {activeTab === 'storage' && (
+                  <div className="tab-pane fade-in">
+                    <div className="storage-guide-grid">
+                      <div className="guide-box">
+                        <strong>Optimal Storage</strong>
+                        <span>Store in a cool, dry place or refrigerate between 4°C - 7°C for best flavor.</span>
+                      </div>
+                      <div className="guide-box">
+                        <strong>Shelf Life</strong>
+                        <span>Best consumed within 5-7 days from delivery for peak nutrient density.</span>
+                      </div>
+                      <div className="guide-box">
+                        <strong>Preparation</strong>
+                        <span>Rinse gently with cool water right before serving or cooking.</span>
+                      </div>
+                    </div>
+                  </div>
+                )}
 
-              <Button 
-                className="add-to-cart-btn-large" 
-                onClick={handleAddToCart}
-                disabled={product.countInStock === 0}
-              >
-                <ShoppingBag size={20} style={{ marginRight: '8px' }} />
-                {product.countInStock === 0 ? 'Out of Stock' : 'Add to Cart'}
-              </Button>
+                {activeTab === 'delivery' && (
+                  <div className="tab-pane fade-in">
+                    <div className="guarantee-details">
+                      <p>
+                        We deliver your produce using insulated cold-chain logistics to maintain harvest freshness all the way to your door.
+                      </p>
+                      <div className="guarantee-badge-box">
+                        <ShieldCheck size={28} className="shield-green" />
+                        <div>
+                          <h4>Chocair Fresh Quality Guarantee</h4>
+                          <p>If any item does not meet your quality expectations, tap to report within 24 hours for an instant replacement or refund.</p>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
             </div>
           </div>
         </div>
-        
+
+        {/* AI Recommendations Section */}
         {product && (
-          <div style={{ marginTop: '4rem', borderTop: '1px solid #eee' }}>
+          <div className="product-recommendations-wrapper">
             <RecommendationRow 
               title="Frequently Bought Together" 
               type="related" 
               productId={product._id} 
             />
             <RecommendationRow 
-              title="Similar Products" 
+              title="Similar Fresh Picks" 
               type="similar" 
               productId={product._id} 
             />
@@ -238,6 +564,63 @@ const ProductDetails = () => {
         )}
       </div>
 
+      {/* Modern Sticky Bottom Floating Bar for Mobile */}
+      <div className="mobile-sticky-bottom-bar">
+        <div className="sticky-bar-info">
+          <div className="sticky-qty-chip">
+            {quantity} {product.unit}
+          </div>
+          <div className="sticky-total-price">
+            <span className="total-label">Total</span>
+            <span className="total-val">${totalPrice}</span>
+          </div>
+        </div>
+
+        <div className="sticky-bar-actions">
+          <div className="sticky-stepper">
+            <button 
+              type="button" 
+              onClick={() => handleQuantityChange(-1)} 
+              disabled={quantity <= (isWeightBased ? 0.5 : 1)}
+              aria-label="Decrease"
+            >
+              <Minus size={16} />
+            </button>
+            <button 
+              type="button" 
+              onClick={() => handleQuantityChange(1)} 
+              disabled={quantity >= (product.countInStock || 100)}
+              aria-label="Increase"
+            >
+              <Plus size={16} />
+            </button>
+          </div>
+
+          <button 
+            className={`sticky-add-cart-btn ${addedAnimation ? 'cart-btn-bump' : ''}`}
+            onClick={handleAddToCart}
+            disabled={product.countInStock === 0}
+          >
+            <ShoppingBag size={18} />
+            <span>{product.countInStock === 0 ? 'Out of Stock' : 'Add to Cart'}</span>
+          </button>
+        </div>
+      </div>
+
+      {/* Lightbox Modal */}
+      {isLightboxOpen && (
+        <div className="product-lightbox-modal" onClick={() => setIsLightboxOpen(false)}>
+          <button className="lightbox-close-btn" onClick={() => setIsLightboxOpen(false)} aria-label="Close">
+            <X size={26} />
+          </button>
+          <div className="lightbox-img-wrapper" onClick={e => e.stopPropagation()}>
+            <img src={product.image} alt={product.name} />
+            <div className="lightbox-caption">{product.name}</div>
+          </div>
+        </div>
+      )}
+
+      {/* Weight Scale Modal */}
       {product && (
         <WeightScale 
           isOpen={isScaleOpen}
