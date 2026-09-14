@@ -6,8 +6,6 @@ import {
   ShoppingBag, 
   ArrowLeft, 
   Star, 
-  Truck, 
-  ShieldCheck, 
   Scale, 
   Heart, 
   Share2, 
@@ -15,10 +13,7 @@ import {
   Leaf, 
   Check, 
   Maximize2, 
-  X, 
-  ThermometerSnowflake, 
-  RotateCcw, 
-  ShoppingCart 
+  X
 } from 'lucide-react';
 import Navbar from '../components/layout/Navbar';
 import { useCart } from '../context/CartContext';
@@ -34,7 +29,7 @@ import './ProductDetails.css';
 const ProductDetails = () => {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { addToCart, cartCount, setIsCartOpen } = useCart();
+  const { addToCart } = useCart();
   const { categories } = useCategories();
   
   const [product, setProduct] = useState(null);
@@ -44,7 +39,7 @@ const ProductDetails = () => {
   const [isScaleOpen, setIsScaleOpen] = useState(false);
   const [isLightboxOpen, setIsLightboxOpen] = useState(false);
   const [isFavorite, setIsFavorite] = useState(false);
-  const [activeTab, setActiveTab] = useState('overview'); // 'overview' | 'storage' | 'delivery'
+  const [activeTab, setActiveTab] = useState('overview'); // 'overview' | 'storage'
   const [addedAnimation, setAddedAnimation] = useState(false);
 
   // Check wishlist state from localStorage
@@ -145,7 +140,7 @@ const ProductDetails = () => {
           url: window.location.href,
         });
       } catch (err) {
-        // Ignored or cancelled
+        // User dismissed
       }
     } else {
       try {
@@ -284,38 +279,6 @@ const ProductDetails = () => {
                 />
               </div>
             </div>
-
-            {/* Trust highlights under image */}
-            <div className="quick-trust-grid">
-              <div className="trust-card">
-                <Truck size={22} className="trust-icon" />
-                <div className="trust-text">
-                  <strong>30-45 Mins Delivery</strong>
-                  <span>Direct to your doorstep</span>
-                </div>
-              </div>
-              <div className="trust-card">
-                <ThermometerSnowflake size={22} className="trust-icon" />
-                <div className="trust-text">
-                  <strong>Cold-Chain Protected</strong>
-                  <span>Always chilled & crisp</span>
-                </div>
-              </div>
-              <div className="trust-card">
-                <ShieldCheck size={22} className="trust-icon" />
-                <div className="trust-text">
-                  <strong>Freshness Guarantee</strong>
-                  <span>100% Quality inspected</span>
-                </div>
-              </div>
-              <div className="trust-card">
-                <RotateCcw size={22} className="trust-icon" />
-                <div className="trust-text">
-                  <strong>Instant Return</strong>
-                  <span>Hassle-free replacement</span>
-                </div>
-              </div>
-            </div>
           </div>
 
           {/* Product Info & Purchase Panel */}
@@ -345,7 +308,7 @@ const ProductDetails = () => {
                     {[1, 2, 3, 4, 5].map((star) => (
                       <Star 
                         key={star} 
-                        size={15} 
+                        size={14} 
                         fill={star <= (product.rating || 5) ? "#f59e0b" : "none"} 
                         color={star <= (product.rating || 5) ? "#f59e0b" : "#cbd5e1"} 
                       />
@@ -354,10 +317,10 @@ const ProductDetails = () => {
                   <span className="rating-score">{(product.rating || 5).toFixed(1)}</span>
                 </div>
                 <span className="review-count-badge">
-                  {product.numReviews || 12} Verified Reviews
+                  {product.numReviews || 12} Reviews
                 </span>
                 <span className="origin-verified-badge">
-                  <Sparkles size={14} /> Farm Picked
+                  <Sparkles size={13} /> Farm Picked
                 </span>
               </div>
             </div>
@@ -388,7 +351,7 @@ const ProductDetails = () => {
                     className="scale-trigger-link"
                     onClick={() => setIsScaleOpen(true)}
                   >
-                    <Scale size={15} /> Open Digital Scale
+                    <Scale size={14} /> Open Scale
                   </button>
                 )}
               </div>
@@ -476,12 +439,6 @@ const ProductDetails = () => {
                 >
                   Storage & Freshness
                 </button>
-                <button 
-                  className={`tab-btn ${activeTab === 'delivery' ? 'active' : ''}`}
-                  onClick={() => setActiveTab('delivery')}
-                >
-                  Delivery & Guarantee
-                </button>
               </div>
 
               <div className="tab-content-panel">
@@ -521,23 +478,6 @@ const ProductDetails = () => {
                       <div className="guide-box">
                         <strong>Preparation</strong>
                         <span>Rinse gently with cool water right before serving or cooking.</span>
-                      </div>
-                    </div>
-                  </div>
-                )}
-
-                {activeTab === 'delivery' && (
-                  <div className="tab-pane fade-in">
-                    <div className="guarantee-details">
-                      <p>
-                        We deliver your produce using insulated cold-chain logistics to maintain harvest freshness all the way to your door.
-                      </p>
-                      <div className="guarantee-badge-box">
-                        <ShieldCheck size={28} className="shield-green" />
-                        <div>
-                          <h4>Chocair Fresh Quality Guarantee</h4>
-                          <p>If any item does not meet your quality expectations, tap to report within 24 hours for an instant replacement or refund.</p>
-                        </div>
                       </div>
                     </div>
                   </div>
