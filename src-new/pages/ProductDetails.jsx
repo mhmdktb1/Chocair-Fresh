@@ -41,6 +41,9 @@ const ProductDetails = () => {
   const [isFavorite, setIsFavorite] = useState(false);
   const [activeTab, setActiveTab] = useState('overview'); // 'overview' | 'storage'
   const [addedAnimation, setAddedAnimation] = useState(false);
+  const [imageError, setImageError] = useState(false);
+
+  const FALLBACK_IMAGE = 'https://images.unsplash.com/photo-1542838132-92c53300491e?auto=format&fit=crop&w=600&q=80';
 
   // Check wishlist state from localStorage
   useEffect(() => {
@@ -56,6 +59,7 @@ const ProductDetails = () => {
     const fetchProduct = async () => {
       try {
         setLoading(true);
+        setImageError(false);
         const response = await api.get(`/products/${id}`);
         const data = response.data;
         setProduct(data);
@@ -179,10 +183,29 @@ const ProductDetails = () => {
     );
   }
 
-  const categoryName = categories.find(c => c._id === product.category)?.name || product.category || 'Fresh Produce';
+  // Resolve category name gracefully
+  const getCategoryName = () => {
+    if (!product) return 'Fresh Produce';
+    if (typeof product.category === 'object' && product.category !== null) {
+      return product.category.name || 'Fresh Produce';
+    }
+    const matched = categories.find(c => 
+      String(c._id) === String(product.category) || 
+      c.slug?.toLowerCase() === String(product.category).toLowerCase() ||
+      c.name?.toLowerCase() === String(product.category).toLowerCase()
+    );
+    if (matched?.name) return matched.name;
+    if (product.category && !/^[0-9a-fA-F]{24}$/.test(product.category)) {
+      return product.category;
+    }
+    return 'Fresh Produce';
+  };
+
+  const categoryName = getCategoryName();
   const totalPrice = (product.price * quantity).toFixed(2);
   const weightPresets = [0.5, 1.0, 1.5, 2.0, 3.0, 5.0];
   const unitPresets = [1, 2, 3, 5, 10];
+  const displayImage = !imageError && product.image ? product.image : FALLBACK_IMAGE;
 
   return (
     <div className="product-details-page">
@@ -272,10 +295,11 @@ const ProductDetails = () => {
               {/* Product Hero Image */}
               <div className="product-hero-image-wrapper" onClick={() => setIsLightboxOpen(true)}>
                 <img 
-                  src={product.image} 
+                  src={displayImage} 
                   alt={product.name} 
                   className="product-hero-img"
                   loading="eager"
+                  onError={() => setImageError(true)}
                 />
               </div>
             </div>
