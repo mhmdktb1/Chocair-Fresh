@@ -73,30 +73,6 @@ const Shop = () => {
     }
   }, [searchParams]);
 
-  // Center active category tab in rail whenever selected category changes
-  useEffect(() => {
-    const activeId = selectedCategory === 'all' ? 'all' : (selectedCategoryObj?.id || selectedCategory);
-    const activeBtn = document.getElementById(`tab-btn-${activeId}`);
-    if (activeBtn && categoryTrackRef.current) {
-      const track = categoryTrackRef.current;
-      const btnLeft = activeBtn.offsetLeft;
-      const btnWidth = activeBtn.offsetWidth;
-      const trackWidth = track.offsetWidth;
-      track.scrollTo({
-        left: btnLeft - (trackWidth / 2) + (btnWidth / 2),
-        behavior: 'smooth'
-      });
-    }
-  }, [selectedCategory, selectedCategoryObj]);
-
-  // Handle focus request from bottom nav
-  useEffect(() => {
-    if (shouldFocusSearch && searchInputRef.current) {
-      searchInputRef.current.focus();
-      searchInputRef.current.scrollIntoView({ behavior: 'smooth', block: 'center' });
-    }
-  }, [shouldFocusSearch]);
-
   // Categories list with count - dynamically derived from products AND adminCategories
   const categoriesList = useMemo(() => {
     const allCount = products.length;
@@ -139,6 +115,28 @@ const Shop = () => {
 
     return [allCat, ...mapped];
   }, [adminCategories, products]);
+
+  const selectedCategoryObj = useMemo(() => {
+    return categoriesList.find(
+      c => c.id === selectedCategory || c.name?.toLowerCase() === String(selectedCategory)?.toLowerCase()
+    );
+  }, [categoriesList, selectedCategory]);
+
+  // Center active category tab in rail whenever selected category changes
+  useEffect(() => {
+    const activeId = selectedCategory === 'all' ? 'all' : (selectedCategoryObj?.id || selectedCategory);
+    const activeBtn = document.getElementById(`tab-btn-${activeId}`);
+    if (activeBtn && categoryTrackRef.current) {
+      const track = categoryTrackRef.current;
+      const btnLeft = activeBtn.offsetLeft;
+      const btnWidth = activeBtn.offsetWidth;
+      const trackWidth = track.offsetWidth;
+      track.scrollTo({
+        left: btnLeft - (trackWidth / 2) + (btnWidth / 2),
+        behavior: 'smooth'
+      });
+    }
+  }, [selectedCategory, selectedCategoryObj]);
 
   // Filter & Sort Logic for full/filtered list
   const filteredProducts = useMemo(() => {
@@ -315,9 +313,6 @@ const Shop = () => {
 
   const isSpecificView = selectedCategory !== 'all' || Boolean(searchQuery);
 
-  const selectedCategoryObj = categoriesList.find(
-    c => c.id === selectedCategory || c.name?.toLowerCase() === selectedCategory?.toLowerCase()
-  );
   const specificProducts = useMemo(() => {
     if (!isSpecificView) return [];
     if (selectedCategory === 'all') return filteredProducts;
