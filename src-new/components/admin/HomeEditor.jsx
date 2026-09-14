@@ -123,57 +123,80 @@ const HomeEditor = () => {
     }
   };
 
-  if (loading) return <div className="home-editor-container">Loading settings...</div>;
+  if (loading) {
+    return (
+      <div className="admin-empty-state">
+        <Layout size={40} color="#cbd5e1" />
+        <h4>Loading store configurations...</h4>
+      </div>
+    );
+  }
 
   return (
     <div className="home-editor-container">
       <div className="editor-header">
-        <h1 className="editor-title">Homepage Management</h1>
+        <div>
+          <h2 className="editor-title">Storefront Content (CMS)</h2>
+          <p className="editor-subtitle">Customize homepage promotions, story, bundles, and seasonal picks</p>
+        </div>
         <button onClick={handleSave} className="save-btn">
           <Save size={18} />
-          Save Changes
+          <span>Save Changes</span>
         </button>
       </div>
       
       <div className="editor-content">
         {/* Hero Section */}
         <div className="editor-section">
-          <h2 className="section-title">
-            <Layout size={20} style={{ display: 'inline', marginRight: '8px', verticalAlign: 'text-bottom' }} />
-            Hero Section
-          </h2>
+          <h3 className="section-title">
+            <span className="section-icon-wrap">
+              <Layout size={18} />
+            </span>
+            <span>Hero Banner & Value Props</span>
+          </h3>
+
           <div className="form-group">
-            <label className="form-label">Title</label>
+            <label className="form-label">Headline Title</label>
             <input 
               className="form-input"
+              placeholder="e.g. Pure Farm Freshness Delivered To Your Door"
               value={formData.hero.title}
               onChange={(e) => handleChange('hero', 'title', e.target.value)}
             />
           </div>
+
           <div className="form-group">
-            <label className="form-label">Subtitle</label>
+            <label className="form-label">Sub-headline Description</label>
             <textarea 
               className="form-textarea"
               rows="2"
+              placeholder="e.g. Hand-picked organic fruits and vegetables..."
               value={formData.hero.subtitle}
               onChange={(e) => handleChange('hero', 'subtitle', e.target.value)}
             />
           </div>
+
           <div className="form-group">
-            <label className="form-label">Background Image URL</label>
-            <div className="input-with-icon">
-              <input 
-                className="form-input"
-                value={formData.hero.backgroundImage}
-                onChange={(e) => handleChange('hero', 'backgroundImage', e.target.value)}
-                placeholder="https://..."
+            <label className="form-label">Background Banner Image URL</label>
+            <input 
+              className="form-input"
+              value={formData.hero.backgroundImage}
+              onChange={(e) => handleChange('hero', 'backgroundImage', e.target.value)}
+              placeholder="https://... or /assets/images/hero/..."
+            />
+            {formData.hero.backgroundImage && (
+              <img 
+                src={formData.hero.backgroundImage} 
+                alt="Hero Preview" 
+                className="image-preview-thumbnail"
+                onError={(e) => { e.currentTarget.style.display = 'none'; }}
               />
-            </div>
-            <p className="image-preview-help">Recommended: 1920x1080px high quality image</p>
+            )}
+            <p className="image-preview-help">Recommended high resolution banner (1920x800px)</p>
           </div>
           
           <div className="form-group">
-            <label className="form-label">Key Statistics</label>
+            <label className="form-label">Highlights / Trust Badges (3 stats)</label>
             <div className="stats-grid">
               {formData.hero.stats.map((stat, index) => (
                 <div key={index} className="stat-card">
@@ -185,7 +208,7 @@ const HomeEditor = () => {
                   />
                   <input 
                     className="form-input stat-input-label"
-                    placeholder="Label"
+                    placeholder="Label (e.g. Happy Users)"
                     value={stat.label}
                     onChange={(e) => handleStatChange(index, 'label', e.target.value)}
                   />
@@ -197,14 +220,17 @@ const HomeEditor = () => {
 
         {/* Bundle Section */}
         <div className="editor-section">
-          <h2 className="section-title">
-            <Type size={20} style={{ display: 'inline', marginRight: '8px', verticalAlign: 'text-bottom' }} />
-            Bundle Section
-          </h2>
+          <h3 className="section-title">
+            <span className="section-icon-wrap" style={{ background: '#fef3c7', color: '#d97706' }}>
+              <Type size={18} />
+            </span>
+            <span>Promotional Bundle Box</span>
+          </h3>
           <div className="form-group">
-            <label className="form-label">Title</label>
+            <label className="form-label">Bundle Title</label>
             <input 
               className="form-input"
+              placeholder="e.g. Family Harvest Weekly Box"
               value={formData.bundle.title}
               onChange={(e) => handleChange('bundle', 'title', e.target.value)}
             />
@@ -213,43 +239,49 @@ const HomeEditor = () => {
             <label className="form-label">Description</label>
             <textarea 
               className="form-textarea"
-              rows="3"
+              rows="2"
+              placeholder="Contains 10kg of seasonal favorites..."
               value={formData.bundle.description}
               onChange={(e) => handleChange('bundle', 'description', e.target.value)}
             />
           </div>
           <div className="grid-2-col">
-              <div className="form-group">
-                  <label className="form-label">Price</label>
-                  <input 
-                      type="number"
-                      className="form-input"
-                      value={formData.bundle.price}
-                      onChange={(e) => handleChange('bundle', 'price', e.target.value)}
-                  />
-              </div>
-              <div className="form-group">
-                  <label className="form-label">Image URL (Optional)</label>
-                  <input 
-                      className="form-input"
-                      value={formData.bundle.image}
-                      onChange={(e) => handleChange('bundle', 'image', e.target.value)}
-                      placeholder="Leave empty for default"
-                  />
-              </div>
+            <div className="form-group">
+              <label className="form-label">Bundle Price ($)</label>
+              <input 
+                type="number"
+                step="0.01"
+                className="form-input"
+                placeholder="24.99"
+                value={formData.bundle.price}
+                onChange={(e) => handleChange('bundle', 'price', e.target.value)}
+              />
+            </div>
+            <div className="form-group">
+              <label className="form-label">Bundle Image URL</label>
+              <input 
+                className="form-input"
+                value={formData.bundle.image}
+                onChange={(e) => handleChange('bundle', 'image', e.target.value)}
+                placeholder="/assets/images/bundle.jpg"
+              />
+            </div>
           </div>
         </div>
 
         {/* Story Section */}
         <div className="editor-section">
-          <h2 className="section-title">
-            <ImageIcon size={20} style={{ display: 'inline', marginRight: '8px', verticalAlign: 'text-bottom' }} />
-            Story Section
-          </h2>
+          <h3 className="section-title">
+            <span className="section-icon-wrap" style={{ background: '#e0f2fe', color: '#0284c7' }}>
+              <ImageIcon size={18} />
+            </span>
+            <span>Brand Story & Heritage</span>
+          </h3>
           <div className="form-group">
-            <label className="form-label">Title</label>
+            <label className="form-label">Section Title</label>
             <input 
               className="form-input"
+              placeholder="e.g. From Orchard To Your Kitchen"
               value={formData.story.title}
               onChange={(e) => handleChange('story', 'title', e.target.value)}
             />
@@ -258,55 +290,76 @@ const HomeEditor = () => {
             <label className="form-label">Subtitle</label>
             <input 
               className="form-input"
+              placeholder="e.g. Quality Grown With Care"
               value={formData.story.subtitle}
               onChange={(e) => handleChange('story', 'subtitle', e.target.value)}
             />
           </div>
           <div className="form-group">
-            <label className="form-label">Description</label>
+            <label className="form-label">Story Narrative</label>
             <textarea 
               className="form-textarea"
-              rows="4"
+              rows="3"
+              placeholder="Share your farm roots and fresh pledge..."
               value={formData.story.description}
               onChange={(e) => handleChange('story', 'description', e.target.value)}
             />
           </div>
           <div className="form-group">
-            <label className="form-label">Image URL</label>
+            <label className="form-label">Story Image URL</label>
             <input 
               className="form-input"
               value={formData.story.image}
               onChange={(e) => handleChange('story', 'image', e.target.value)}
+              placeholder="https://..."
             />
+            {formData.story.image && (
+              <img 
+                src={formData.story.image} 
+                alt="Story Preview" 
+                className="image-preview-thumbnail"
+                onError={(e) => { e.currentTarget.style.display = 'none'; }}
+              />
+            )}
           </div>
         </div>
 
         {/* Seasonal Section */}
         <div className="editor-section">
-          <h2 className="section-title">
-            <Layout size={20} style={{ display: 'inline', marginRight: '8px', verticalAlign: 'text-bottom' }} />
-            Seasonal Favorites
-          </h2>
+          <h3 className="section-title">
+            <span className="section-icon-wrap" style={{ background: '#fce7f3', color: '#db2777' }}>
+              <Layout size={18} />
+            </span>
+            <span>Seasonal Favorites Selection</span>
+          </h3>
+
           <div className="form-group">
             <label className="form-label">Section Title</label>
             <input 
               className="form-input"
+              placeholder="e.g. Summer Harvest Picks"
               value={formData.seasonal.title}
               onChange={(e) => handleChange('seasonal', 'title', e.target.value)}
             />
           </div>
           
           <div className="form-group">
-            <label className="form-label">Selected Products</label>
+            <label className="form-label">Featured Products in Carousel ({formData.seasonal.products.length})</label>
             <div className="selected-products-grid">
               {formData.seasonal.products.map(product => (
                 <div key={product._id} className="selected-product-card">
-                  <img src={product.image} alt={product.name} className="selected-product-img" />
+                  <img 
+                    src={product.image || '/assets/images/products/placeholder.jpg'} 
+                    alt={product.name} 
+                    className="selected-product-img" 
+                    onError={(e) => { e.currentTarget.src = '/assets/images/products/placeholder.jpg'; }}
+                  />
                   <div className="selected-product-info">
                     <span className="selected-product-name">{product.name}</span>
                     <button 
                       className="remove-product-btn"
                       onClick={() => handleRemoveProduct(product._id)}
+                      title="Remove from seasonal"
                     >
                       <X size={14} />
                     </button>
@@ -314,19 +367,21 @@ const HomeEditor = () => {
                 </div>
               ))}
               {formData.seasonal.products.length === 0 && (
-                <div className="no-products-msg">No products selected</div>
+                <div className="no-products-msg" style={{ gridColumn: '1 / -1' }}>
+                  No seasonal products chosen yet. Search and add below.
+                </div>
               )}
             </div>
           </div>
 
           <div className="form-group">
-            <label className="form-label">Add Product</label>
+            <label className="form-label">Add Product to Seasonal</label>
             <div className="product-search-container">
               <div className="input-with-icon">
                 <Search size={18} className="input-icon" />
                 <input 
                   className="form-input"
-                  placeholder="Search products..."
+                  placeholder="Type product name to add..."
                   value={productSearch}
                   onChange={(e) => setProductSearch(e.target.value)}
                 />
@@ -335,15 +390,19 @@ const HomeEditor = () => {
               {productSearch && (
                 <div className="product-search-results">
                   {allProducts
-                    .filter(p => p.name.toLowerCase().includes(productSearch.toLowerCase()))
-                    .slice(0, 5)
+                    .filter(p => p.name?.toLowerCase().includes(productSearch.toLowerCase()))
+                    .slice(0, 6)
                     .map(product => (
                       <div 
                         key={product._id} 
                         className="search-result-item"
                         onClick={() => handleAddProduct(product)}
                       >
-                        <img src={product.image} alt={product.name} />
+                        <img 
+                          src={product.image || '/assets/images/products/placeholder.jpg'} 
+                          alt={product.name} 
+                          onError={(e) => { e.currentTarget.src = '/assets/images/products/placeholder.jpg'; }}
+                        />
                         <span>{product.name}</span>
                         <Plus size={16} className="add-icon" />
                       </div>
