@@ -229,68 +229,6 @@
   color: #64748b;
 }
 
-/* 3. Quick Touch Filter Strip */
-.toters-quick-filter-strip {
-  padding: 0.35rem 0 0.5rem;
-  border-top: 1px solid #f1f5f9;
-}
-
-.filter-strip-inner {
-  padding: 0 1rem;
-}
-
-.quick-filter-scroll {
-  display: flex;
-  align-items: center;
-  gap: 0.4rem;
-  overflow-x: auto;
-  scrollbar-width: none;
-}
-
-.quick-filter-scroll::-webkit-scrollbar {
-  display: none;
-}
-
-.touch-filter-chip {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  padding: 0.35rem 0.75rem;
-  border-radius: 10px;
-  background: #ffffff;
-  border: 1px solid #e2e8f0;
-  color: #475569;
-  font-size: 0.76rem;
-  font-weight: 700;
-  cursor: pointer;
-  white-space: nowrap;
-  transition: all 0.15s ease;
-}
-
-.touch-filter-chip.active {
-  background: #f0fdf4;
-  border-color: #86efac;
-  color: #15803d;
-}
-
-.chip-icon.fire { color: #ea580c; }
-.chip-icon.star { color: #eab308; }
-
-.touch-filter-reset {
-  display: inline-flex;
-  align-items: center;
-  gap: 3px;
-  padding: 0.35rem 0.65rem;
-  border-radius: 10px;
-  background: #fee2e2;
-  border: 1px solid #fecaca;
-  color: #dc2626;
-  font-size: 0.74rem;
-  font-weight: 700;
-  cursor: pointer;
-  white-space: nowrap;
-}
-
 /* 4. Main Toters Shop Feed */
 .toters-shop-main-feed {
   padding-top: 0.75rem;
@@ -830,11 +768,6 @@
 
   .toters-category-snap-rail {
     padding: 0.2rem 0 0.35rem;
-  }
-
-  .toters-quick-filter-strip {
-    padding: 0.2rem 0 0.4rem;
-    border-top: 1px solid #f1f5f9;
   }
 
   .toters-search-input {

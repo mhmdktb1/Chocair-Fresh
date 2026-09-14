@@ -73,6 +73,22 @@ const Shop = () => {
     }
   }, [searchParams]);
 
+  // Center active category tab in rail whenever selected category changes
+  useEffect(() => {
+    const activeId = selectedCategory === 'all' ? 'all' : (selectedCategoryObj?.id || selectedCategory);
+    const activeBtn = document.getElementById(`tab-btn-${activeId}`);
+    if (activeBtn && categoryTrackRef.current) {
+      const track = categoryTrackRef.current;
+      const btnLeft = activeBtn.offsetLeft;
+      const btnWidth = activeBtn.offsetWidth;
+      const trackWidth = track.offsetWidth;
+      track.scrollTo({
+        left: btnLeft - (trackWidth / 2) + (btnWidth / 2),
+        behavior: 'smooth'
+      });
+    }
+  }, [selectedCategory, selectedCategoryObj]);
+
   // Handle focus request from bottom nav
   useEffect(() => {
     if (shouldFocusSearch && searchInputRef.current) {
@@ -260,33 +276,24 @@ const Shop = () => {
   };
 
   const handleCategoryTabClick = (catId) => {
-    if (selectedCategory !== 'all' || searchQuery) {
-      // Direct category filter mode
-      setSelectedCategory(catId);
+    if (catId === 'all') {
+      setSelectedCategory('all');
       setSearchParams(prev => {
         const next = new URLSearchParams(prev);
-        if (catId === 'all') {
-          next.delete('category');
-        } else {
-          const catObj = categoriesList.find(c => c.id === catId);
-          next.set('category', catObj ? catObj.name : catId);
-        }
+        next.delete('category');
         return next;
       });
     } else {
-      // Toters ScrollSpy mode: smooth scroll to section
-      if (catId === 'all') {
-        window.scrollTo({ top: 0, behavior: 'smooth' });
-      } else {
-        const el = document.getElementById(`cat-section-${catId}`);
-        if (el) {
-          const yOffset = -140; // sticky header + rail offset
-          const y = el.getBoundingClientRect().top + window.pageYOffset + yOffset;
-          window.scrollTo({ top: y, behavior: 'smooth' });
-        }
-      }
-      setActiveSpyCategory(catId);
+      const catObj = categoriesList.find(c => c.id === catId || c.name.toLowerCase() === String(catId).toLowerCase());
+      const catName = catObj ? catObj.name : catId;
+      setSelectedCategory(catObj ? catObj.id : catId);
+      setSearchParams(prev => {
+        const next = new URLSearchParams(prev);
+        next.set('category', catName);
+        return next;
+      });
     }
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   const handleSeeAllCategory = (catId, catName) => {
@@ -386,9 +393,12 @@ const Shop = () => {
         <nav className="toters-category-snap-rail" aria-label="Aisle Categories">
           <div className="toters-rail-scroll-track" ref={categoryTrackRef}>
             {categoriesList.map((cat) => {
-              const isSelected = isSpecificView 
-                ? (selectedCategory === cat.id || selectedCategory === cat.name)
-                : (activeSpyCategory === cat.id);
+              const isSelected = selectedCategory === 'all'
+                ? cat.id === 'all'
+                : (selectedCategory === cat.id || 
+                   selectedCategory === cat.name || 
+                   selectedCategoryObj?.id === cat.id || 
+                   selectedCategoryObj?.name?.toLowerCase() === cat.name?.toLowerCase());
 
               return (
                 <button
@@ -406,53 +416,6 @@ const Shop = () => {
             })}
           </div>
         </nav>
-
-        {/* Tier 3: Quick Touch Filter Chips Bar */}
-        <div className="toters-quick-filter-strip">
-          <div className="container filter-strip-inner">
-            <div className="quick-filter-scroll">
-              <button
-                type="button"
-                onClick={() => setOnlyDiscounted(!onlyDiscounted)}
-                className={`touch-filter-chip ${onlyDiscounted ? 'active' : ''}`}
-              >
-                <Flame size={13} className="chip-icon fire" />
-                <span>On Sale</span>
-                {onlyDiscounted && <Check size={11} />}
-              </button>
-
-              <button
-                type="button"
-                onClick={() => setOnlyInStock(!onlyInStock)}
-                className={`touch-filter-chip ${onlyInStock ? 'active' : ''}`}
-              >
-                <Sparkles size={13} className="chip-icon star" />
-                <span>In Stock</span>
-                {onlyInStock && <Check size={11} />}
-              </button>
-
-              <button
-                type="button"
-                onClick={() => setSortOption(sortOption === 'price-asc' ? 'price-desc' : 'price-asc')}
-                className={`touch-filter-chip ${sortOption.startsWith('price') ? 'active' : ''}`}
-              >
-                <span>{sortOption === 'price-asc' ? 'Price: Low ↑' : sortOption === 'price-desc' ? 'Price: High ↓' : 'Price'}</span>
-              </button>
-
-              {activeFiltersCount > 0 && (
-                <button
-                  type="button"
-                  onClick={resetAllFilters}
-                  className="touch-filter-reset"
-                  title="Reset all filters"
-                >
-                  <RotateCcw size={12} />
-                  <span>Reset</span>
-                </button>
-              )}
-            </div>
-          </div>
-        </div>
       </div>
 
       {/* ==========================================
