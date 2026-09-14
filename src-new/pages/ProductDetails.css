@@ -439,31 +439,32 @@
   bottom: 0;
   left: 0;
   right: 0;
-  z-index: 99;
-  background: rgba(255, 255, 255, 0.96);
+  width: 100%;
+  z-index: 10000;
+  background: rgba(255, 255, 255, 0.98);
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
   border-top: 1px solid rgba(0, 0, 0, 0.08);
-  padding: 0.75rem 1.25rem env(safe-area-inset-bottom, 0.75rem) 1.25rem;
+  padding: 0.75rem 1.25rem calc(0.75rem + env(safe-area-inset-bottom, 0px)) 1.25rem;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 1rem;
-  box-shadow: 0 -6px 20px rgba(0, 0, 0, 0.06);
+  gap: 1.25rem;
+  box-shadow: 0 -8px 25px rgba(0, 0, 0, 0.08);
   box-sizing: border-box;
 }
 
 [data-theme="dark"] .toters-sticky-bottom-bar {
-  background: rgba(17, 24, 39, 0.96);
+  background: rgba(17, 24, 39, 0.98);
   border-top-color: rgba(255, 255, 255, 0.1);
-  box-shadow: 0 -6px 20px rgba(0, 0, 0, 0.4);
+  box-shadow: 0 -8px 25px rgba(0, 0, 0, 0.45);
 }
 
 /* Left Stepper Control */
 .toters-stepper-control {
   display: flex;
   align-items: center;
-  gap: 0.85rem;
+  gap: 1rem;
   flex-shrink: 0;
 }
 
@@ -471,8 +472,8 @@
   background: none;
   border: none;
   color: #00c98d;
-  width: 32px;
-  height: 32px;
+  width: 36px;
+  height: 36px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -498,7 +499,7 @@
   font-size: 1.15rem;
   font-weight: 800;
   color: var(--text-main, #111827);
-  min-width: 65px;
+  min-width: 68px;
   text-align: center;
   cursor: pointer;
   letter-spacing: -0.3px;
@@ -507,8 +508,8 @@
 /* Right Cart Action Button */
 .toters-cart-action-btn {
   flex: 1;
-  max-width: 420px;
-  height: 50px;
+  max-width: 480px;
+  height: 52px;
   background: #00c98d;
   color: #ffffff;
   border: none;
@@ -546,13 +547,13 @@
 }
 
 .btn-state-text {
-  font-size: 1rem;
+  font-size: 1.05rem;
   font-weight: 800;
   letter-spacing: 0.2px;
 }
 
 .btn-price-text {
-  font-size: 1.05rem;
+  font-size: 1.1rem;
   font-weight: 800;
   letter-spacing: -0.2px;
 }
