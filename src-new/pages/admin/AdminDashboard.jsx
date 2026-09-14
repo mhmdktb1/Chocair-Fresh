@@ -241,7 +241,7 @@ const AdminDashboard = () => {
               onClick={() => setSidebarOpen(true)}
               aria-label="Open navigation menu"
             >
-              <Menu size={22} />
+              <Menu size={20} />
               {pendingOrdersCount > 0 && (
                 <span className="menu-badge-dot" />
               )}
@@ -257,6 +257,7 @@ const AdminDashboard = () => {
               className="header-view-store-btn"
               onClick={() => navigate('/')}
               title="View Customer Shop"
+              aria-label="View Customer Live Store"
             >
               <Store size={18} />
               <span className="store-text">Live Store</span>
@@ -281,8 +282,8 @@ const AdminDashboard = () => {
                   className={`mobile-tab-btn ${isActive ? 'active' : ''}`}
                   onClick={() => setActiveTab(tab.id)}
                 >
-                  <Icon size={16} />
-                  <span>{tab.label}</span>
+                  <Icon size={15} className="mobile-tab-icon" />
+                  <span className="mobile-tab-text">{tab.label}</span>
                   {tab.badge && (
                     <span className={`mobile-tab-badge ${tab.badgeColor || ''}`}>
                       {tab.badge}
