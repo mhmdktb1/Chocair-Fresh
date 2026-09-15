@@ -138,4 +138,91 @@ describe('User and Auth API', () => {
     expect(adminRes.body).toBeInstanceOf(Array);
     expect(adminRes.body.length).toBe(2);
   });
+
+  // ================= ADVERSARIAL AUTH & USER TESTS =================
+
+  it('OTP PRIVACY: never exposes plaintext OTP in production mode', async () => {
+    const originalEnv = process.env.NODE_ENV;
+    try {
+      process.env.NODE_ENV = 'production';
+      const res = await request(app)
+        .post('/api/users/auth/send-otp')
+        .send({ phone: '+96170888999' });
+
+      expect(res.status).toBe(200);
+      expect(res.body.success).toBe(true);
+      expect(res.body.otp).toBeUndefined(); // MUST NOT BE EXPOSED
+    } finally {
+      process.env.NODE_ENV = originalEnv;
+    }
+  });
+
+  it('EXPIRED & WRONG OTP: rejects invalid, expired, or already-used OTP codes', async () => {
+    // 1. Expired OTP
+    await OTP.create({
+      phone: '+96170333444',
+      code: '888888',
+      expiresAt: new Date(Date.now() - 10000), // Expired in past
+      verified: false,
+    });
+
+    const expiredRes = await request(app)
+      .post('/api/users/auth/verify-otp')
+      .send({ phone: '+96170333444', code: '888888' });
+    expect(expiredRes.status).toBe(400);
+
+    // 2. Wrong OTP code
+    const wrongRes = await request(app)
+      .post('/api/users/auth/verify-otp')
+      .send({ phone: '+96170333444', code: '000000' });
+    expect(wrongRes.status).toBe(400);
+
+    // 3. Re-using already verified OTP
+    const validOtp = await OTP.create({
+      phone: '+96170333444',
+      code: '777777',
+      expiresAt: new Date(Date.now() + 5 * 60 * 1000),
+      verified: false,
+    });
+
+    const firstVerify = await request(app)
+      .post('/api/users/auth/verify-otp')
+      .send({ phone: '+96170333444', code: '777777' });
+    expect(firstVerify.status).toBe(200);
+
+    const secondVerify = await request(app)
+      .post('/api/users/auth/verify-otp')
+      .send({ phone: '+96170333444', code: '777777' });
+    expect(secondVerify.status).toBe(400);
+  });
+
+  it('PHONE UPDATE COLLISION: rejects updating phone to an already registered number', async () => {
+    // Attempting to update customer's phone to admin's phone (+96170111222)
+    const res = await request(app)
+      .put('/api/users/profile/phone')
+      .set('Authorization', `Bearer ${userToken}`)
+      .send({
+        phone: '+96170111222',
+        code: '123456',
+      });
+
+    expect(res.status).toBe(400);
+    expect(res.body.message).toMatch(/already in use/i);
+  });
+
+  it('ADMIN ACCESS CONTROL: non-admin cannot delete users, admin cannot delete admin', async () => {
+    // Non-admin attempts to delete user
+    const nonAdminDel = await request(app)
+      .delete(`/api/users/${userId}`)
+      .set('Authorization', `Bearer ${userToken}`);
+    expect(nonAdminDel.status).toBe(401);
+
+    // Admin attempts to delete admin user
+    const adminUser = await User.findOne({ isAdmin: true });
+    const adminDelAdmin = await request(app)
+      .delete(`/api/users/${adminUser._id}`)
+      .set('Authorization', `Bearer ${adminToken}`);
+    expect(adminDelAdmin.status).toBe(400);
+    expect(adminDelAdmin.body.message).toMatch(/cannot delete admin/i);
+  });
 });

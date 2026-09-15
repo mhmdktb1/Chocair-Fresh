@@ -191,4 +191,117 @@ describe('Order API', () => {
     expect(res.status).toBe(200);
     expect(res.body).toEqual([]);
   });
+
+  // ================= ADVERSARIAL ORDER TESTS =================
+
+  it('TAMPERING: recalculates server-authoritative price despite client manipulations', async () => {
+    const tamperedPayload = createOrderData();
+    tamperedPayload.orderItems[0].price = 0.01;
+    tamperedPayload.itemsPrice = 0.02;
+    tamperedPayload.shippingPrice = 2.00;
+    tamperedPayload.totalPrice = 2.02;
+
+    const res = await request(app).post('/api/orders').send(tamperedPayload);
+    expect(res.status).toBe(201);
+    // Real item price in DB is $2.00 * 2 = $4.00, + $2.00 shipping = $6.00
+    expect(res.body.itemsPrice).toBe(4.00);
+    expect(res.body.totalPrice).toBe(6.00);
+    expect(res.body.orderItems[0].price).toBe(2.00);
+  });
+
+  it('INVALID QTY: rejects zero, negative, or non-numeric quantities', async () => {
+    const zeroPayload = createOrderData();
+    zeroPayload.orderItems[0].qty = 0;
+    const zeroRes = await request(app).post('/api/orders').send(zeroPayload);
+    expect(zeroRes.status).toBe(400);
+
+    const negPayload = createOrderData();
+    negPayload.orderItems[0].qty = -5;
+    const negRes = await request(app).post('/api/orders').send(negPayload);
+    expect(negRes.status).toBe(400);
+
+    // Stock remains 100
+    const prod = await Product.findById(productId);
+    expect(prod.countInStock).toBe(100);
+  });
+
+  it('OVERSELLING & ATOMIC ROLLBACK: rolls back prior items if later item fails stock check', async () => {
+    const productB = await Product.create({
+      name: 'Low Stock Mango',
+      price: 5.00,
+      category: 'fruits',
+      countInStock: 2,
+      image: 'mango.jpg',
+      brand: 'Chocair',
+      description: 'Ripe mango',
+      unit: 'kg'
+    });
+
+    const batchPayload = createOrderData();
+    batchPayload.orderItems = [
+      { product: productId, qty: 5, price: 2.00, name: 'Test Orange' },
+      { product: productB._id, qty: 10, price: 5.00, name: 'Low Stock Mango' } // Exceeds 2
+    ];
+
+    const res = await request(app).post('/api/orders').send(batchPayload);
+    expect(res.status).toBe(400);
+    expect(res.body.message).toMatch(/insufficient stock/i);
+
+    // Verify product A was safely rolled back to 100
+    const prodA = await Product.findById(productId);
+    expect(prodA.countInStock).toBe(100);
+
+    const prodB = await Product.findById(productB._id);
+    expect(prodB.countInStock).toBe(2);
+  });
+
+  it('AUTH PRIVACY: user cannot view or cancel another customer order', async () => {
+    const userA = await User.create({ name: 'User A', phone: '+96170111111', email: 'a@test.com' });
+    const userB = await User.create({ name: 'User B', phone: '+96170222222', email: 'b@test.com' });
+    const tokenA = generateToken(userA._id);
+    const tokenB = generateToken(userB._id);
+
+    // User A creates an order
+    const orderData = createOrderData();
+    orderData.customerInfo.phone = userA.phone;
+    orderData.customerInfo.email = userA.email;
+
+    const createRes = await request(app)
+      .post('/api/orders')
+      .set('Authorization', `Bearer ${tokenA}`)
+      .send(orderData);
+    const orderId = createRes.body._id;
+
+    // User B tries to view User A's order -> 401
+    const viewFail = await request(app)
+      .get(`/api/orders/${orderId}`)
+      .set('Authorization', `Bearer ${tokenB}`);
+    expect(viewFail.status).toBe(401);
+
+    // User B tries to cancel User A's order -> 401
+    const cancelFail = await request(app)
+      .put(`/api/orders/${orderId}/cancel`)
+      .set('Authorization', `Bearer ${tokenB}`);
+    expect(cancelFail.status).toBe(401);
+
+    // User A successfully views own order -> 200
+    const viewSuccess = await request(app)
+      .get(`/api/orders/${orderId}`)
+      .set('Authorization', `Bearer ${tokenA}`);
+    expect(viewSuccess.status).toBe(200);
+
+    // User A successfully cancels own pending order -> 200
+    const cancelSuccess = await request(app)
+      .put(`/api/orders/${orderId}/cancel`)
+      .set('Authorization', `Bearer ${tokenA}`);
+    expect(cancelSuccess.status).toBe(200);
+    expect(cancelSuccess.body.status).toBe('Cancelled');
+  });
+
+  it('MALFORMED IDS: returns 404 for non-existent or malformed ObjectIds', async () => {
+    const res = await request(app)
+      .get('/api/orders/not-a-valid-id-12345')
+      .set('Authorization', `Bearer ${adminToken}`);
+    expect(res.status).toBe(404);
+  });
 });

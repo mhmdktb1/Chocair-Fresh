@@ -134,4 +134,80 @@ describe('Home Config & Hero CMS API', () => {
     expect(listRes.status).toBe(200);
     expect(listRes.body).toHaveLength(1);
   });
+
+  // ================= ADVERSARIAL CMS & PERMISSION TESTS =================
+
+  it('CATEGORY SECURITY: rejects duplicate category and non-admin modifications', async () => {
+    // 1. Non-admin tries to create category -> 401
+    const nonAdminRes = await request(app)
+      .post('/api/categories')
+      .set('Authorization', `Bearer ${userToken}`)
+      .send({ name: 'Hacked Category' });
+    expect(nonAdminRes.status).toBe(401);
+
+    // 2. Admin creates category
+    await request(app)
+      .post('/api/categories')
+      .set('Authorization', `Bearer ${adminToken}`)
+      .send({ name: 'Unique Category' });
+
+    // 3. Duplicate category -> 400
+    const dupRes = await request(app)
+      .post('/api/categories')
+      .set('Authorization', `Bearer ${adminToken}`)
+      .send({ name: 'Unique Category' });
+    expect(dupRes.status).toBe(400);
+    expect(dupRes.body.message).toMatch(/already exists/i);
+  });
+
+  it('COMMENT AUTHORIZATION: non-owner cannot delete other comments; admin can moderate any comment', async () => {
+    const attacker = await User.create({ name: 'Attacker', phone: '+96170999000', isAdmin: false });
+    const attackerToken = generateToken(attacker._id);
+
+    // Regular user creates comment
+    const commentRes = await request(app)
+      .post('/api/comments')
+      .set('Authorization', `Bearer ${userToken}`)
+      .send({ content: 'Original review by regular user' });
+    const commentId = commentRes.body._id;
+
+    // Attacker tries to delete -> 401
+    const attackDelete = await request(app)
+      .delete(`/api/comments/${commentId}`)
+      .set('Authorization', `Bearer ${attackerToken}`);
+    expect(attackDelete.status).toBe(401);
+
+    // Admin moderates and deletes -> 200
+    const adminDelete = await request(app)
+      .delete(`/api/comments/${commentId}`)
+      .set('Authorization', `Bearer ${adminToken}`);
+    expect(adminDelete.status).toBe(200);
+    expect(adminDelete.body.message).toBe('Comment removed');
+  });
+
+  it('CMS AUTHORIZATION: non-admins cannot update home config or hero slides', async () => {
+    const homeRes = await request(app)
+      .put('/api/home-config')
+      .set('Authorization', `Bearer ${userToken}`)
+      .send({ hero: { title: 'Hacked Title' } });
+    expect(homeRes.status).toBe(401);
+
+    const heroRes = await request(app)
+      .post('/api/hero')
+      .set('Authorization', `Bearer ${userToken}`)
+      .send({ title: 'Hacked Slide', backgroundImage: 'x.jpg' });
+    expect(heroRes.status).toBe(401);
+  });
+
+  it('UPLOAD SECURITY: unauthenticated upload rejected with 401; missing file returns 400', async () => {
+    // Unauthenticated upload -> 401
+    const unauthRes = await request(app).post('/api/upload');
+    expect(unauthRes.status).toBe(401);
+
+    // Authenticated upload without file -> 400
+    const noFileRes = await request(app)
+      .post('/api/upload')
+      .set('Authorization', `Bearer ${userToken}`);
+    expect(noFileRes.status).toBe(400);
+  });
 });

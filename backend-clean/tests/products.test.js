@@ -112,4 +112,40 @@ describe('Product API', () => {
     const checkRes = await request(app).get(`/api/products/${productId}`);
     expect(checkRes.status).toBe(404);
   });
+
+  // ================= ADVERSARIAL PRODUCT & SEARCH TESTS =================
+
+  it('SEARCH & FILTERING: accurately filters by category, keyword, and limit', async () => {
+    // Seed test products
+    await request(app).post('/api/products').set('Authorization', `Bearer ${adminToken}`).send({
+      name: 'Organic Red Apple', price: 2.00, category: 'fruits', brand: 'Chocair', countInStock: 20, description: 'Crisp red apple'
+    });
+    await request(app).post('/api/products').set('Authorization', `Bearer ${adminToken}`).send({
+      name: 'Organic Green Apple', price: 2.50, category: 'fruits', brand: 'Local Farm', countInStock: 15, description: 'Tart green apple'
+    });
+    await request(app).post('/api/products').set('Authorization', `Bearer ${adminToken}`).send({
+      name: 'Fresh Carrots', price: 1.20, category: 'vegetables', brand: 'Bekaa Roots', countInStock: 40, description: 'Sweet carrots'
+    });
+
+    // 1. Category Filter: 'vegetables' -> 1 item
+    const vegRes = await request(app).get('/api/products?category=vegetables');
+    expect(vegRes.status).toBe(200);
+    expect(vegRes.body).toHaveLength(1);
+    expect(vegRes.body[0].name).toBe('Fresh Carrots');
+
+    // 2. Keyword Search: 'apple' -> 2 items
+    const appleRes = await request(app).get('/api/products?keyword=apple');
+    expect(appleRes.status).toBe(200);
+    expect(appleRes.body).toHaveLength(2);
+
+    // 3. Limit / Pagination: limit=1
+    const limitRes = await request(app).get('/api/products?limit=1');
+    expect(limitRes.status).toBe(200);
+    expect(limitRes.body).toHaveLength(1);
+  });
+
+  it('MALFORMED IDS: returns 404 for invalid product IDs', async () => {
+    const res = await request(app).get('/api/products/non-existent-product-id');
+    expect(res.status).toBe(404);
+  });
 });

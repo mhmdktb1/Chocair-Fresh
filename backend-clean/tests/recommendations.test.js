@@ -124,4 +124,39 @@ describe('Recommendation API', () => {
     expect(res.body.success).toBe(true);
     expect(res.body.data).toEqual([]);
   });
+
+  // ================= ADVERSARIAL RECOMMENDATION TESTS =================
+
+  it('MALFORMED & EDGE INPUTS: handles invalid body formats safely', async () => {
+    // 1. Missing productId -> 400
+    const noProductRes = await request(app)
+      .post('/api/recommend/product')
+      .send({});
+    expect(noProductRes.status).toBe(400);
+
+    // 2. Non-existent product -> 404
+    const fakeProductRes = await request(app)
+      .post('/api/recommend/product')
+      .send({ productId: new mongoose.Types.ObjectId() });
+    expect(fakeProductRes.status).toBe(404);
+
+    // 3. Invalid cart payload (not an array) -> 400
+    const badCartRes = await request(app)
+      .post('/api/recommend/cart')
+      .send({ cartItems: 'not-an-array' });
+    expect(badCartRes.status).toBe(400);
+
+    // 4. Cart with frontend formatted objects (_id and qty)
+    const frontendCartRes = await request(app)
+      .post('/api/recommend/cart')
+      .send({
+        cartItems: [
+          { _id: p1._id.toString(), qty: 2 },
+          { id: p2._id.toString(), quantity: 1 }
+        ],
+        limit: 5
+      });
+    expect(frontendCartRes.status).toBe(200);
+    expect(frontendCartRes.body.success).toBe(true);
+  });
 });

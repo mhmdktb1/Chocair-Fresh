@@ -33,11 +33,16 @@ const addOrderItems = asyncHandler(async (req, res) => {
   try {
     for (const item of orderItems) {
       const productId = item.product || item._id || item.id;
-      const qty = Number(item.qty) || 1;
 
       if (!productId) {
         throw new Error(`Invalid product reference for item: ${item.name || 'Unknown'}`);
       }
+
+      if (item.qty === undefined || item.qty === null || isNaN(Number(item.qty))) {
+        throw new Error(`Quantity is required for item: ${item.name || 'Unknown'}`);
+      }
+
+      const qty = Number(item.qty);
 
       if (qty <= 0) {
         throw new Error(`Invalid quantity for item: ${item.name || 'Unknown'}`);
