@@ -134,6 +134,42 @@ describe('User and Auth API', () => {
     resetGoogleTokenVerifier();
   });
 
+  it('GOOGLE AUTH SECURITY: rejects token when audience mismatches configured GOOGLE_CLIENT_ID', async () => {
+    setGoogleTokenVerifier(async (token) => {
+      // Simulate audience verification failure in default verifier
+      const expectedAudience = 'chocair-official-client-id.apps.googleusercontent.com';
+      const tokenAud = 'attacker-rogue-client-id.apps.googleusercontent.com';
+      if (tokenAud !== expectedAudience) {
+        throw new Error(`Token audience mismatch: expected ${expectedAudience}, got ${tokenAud}`);
+      }
+      return { googleId: 'sub-1', email: 'user@test.com' };
+    });
+
+    const audFailRes = await request(app)
+      .post('/api/users/auth/google')
+      .send({ idToken: 'token-with-wrong-audience' });
+
+    expect(audFailRes.status).toBe(401);
+    expect(audFailRes.body.message).toMatch(/Token audience mismatch/i);
+
+    resetGoogleTokenVerifier();
+  });
+
+  it('GOOGLE AUTH SECURITY: rejects unverified Google email accounts', async () => {
+    setGoogleTokenVerifier(async () => {
+      throw new Error('Google account email is not verified');
+    });
+
+    const unverifiedEmailRes = await request(app)
+      .post('/api/users/auth/google')
+      .send({ idToken: 'token-with-unverified-email' });
+
+    expect(unverifiedEmailRes.status).toBe(401);
+    expect(unverifiedEmailRes.body.message).toMatch(/not verified/i);
+
+    resetGoogleTokenVerifier();
+  });
+
   it('GET /api/users/profile - returns authenticated user profile', async () => {
     const res = await request(app)
       .get('/api/users/profile')

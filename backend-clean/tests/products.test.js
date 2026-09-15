@@ -144,20 +144,62 @@ describe('Product API', () => {
     expect(limitRes.body).toHaveLength(1);
   });
 
-  it('VALIDATION: rejects negative prices and negative stock counts', async () => {
-    // 1. Negative price on create -> 400
+  it('VALIDATION: rejects malformed input types, empty names, and non-finite numbers on create/update', async () => {
+    // 1. Empty name on create -> 400
+    const emptyNameRes = await request(app)
+      .post('/api/products')
+      .set('Authorization', `Bearer ${adminToken}`)
+      .send({ ...productData, name: '   ' });
+    expect(emptyNameRes.status).toBe(400);
+    expect(emptyNameRes.body.message).toMatch(/name must be a non-empty string/i);
+
+    // 2. Non-string name on create -> 400
+    const invalidNameTypeRes = await request(app)
+      .post('/api/products')
+      .set('Authorization', `Bearer ${adminToken}`)
+      .send({ ...productData, name: 12345 });
+    expect(invalidNameTypeRes.status).toBe(400);
+
+    // 3. Negative price on create -> 400
     const negPriceRes = await request(app)
       .post('/api/products')
       .set('Authorization', `Bearer ${adminToken}`)
       .send({ ...productData, price: -4.50 });
     expect(negPriceRes.status).toBe(400);
 
-    // 2. Negative stock on create -> 400
+    // 4. Non-finite price on create -> 400
+    const nonFinitePriceRes = await request(app)
+      .post('/api/products')
+      .set('Authorization', `Bearer ${adminToken}`)
+      .send({ ...productData, price: 'not-a-number' });
+    expect(nonFinitePriceRes.status).toBe(400);
+
+    // 5. Negative stock on create -> 400
     const negStockRes = await request(app)
       .post('/api/products')
       .set('Authorization', `Bearer ${adminToken}`)
       .send({ ...productData, countInStock: -10 });
     expect(negStockRes.status).toBe(400);
+
+    // 6. Non-string description on create -> 400
+    const badDescRes = await request(app)
+      .post('/api/products')
+      .set('Authorization', `Bearer ${adminToken}`)
+      .send({ ...productData, description: ['invalid', 'array'] });
+    expect(badDescRes.status).toBe(400);
+
+    // 7. Malformed update values on existing product -> 400
+    const createRes = await request(app)
+      .post('/api/products')
+      .set('Authorization', `Bearer ${adminToken}`)
+      .send(productData);
+    const prodId = createRes.body._id;
+
+    const badUpdateRes = await request(app)
+      .put(`/api/products/${prodId}`)
+      .set('Authorization', `Bearer ${adminToken}`)
+      .send({ price: 'invalid-price', countInStock: -5 });
+    expect(badUpdateRes.status).toBe(400);
   });
 
   it('MALFORMED IDS: returns 404 for invalid product IDs', async () => {

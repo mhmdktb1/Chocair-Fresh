@@ -410,7 +410,7 @@ const deleteUser = asyncHandler(async (req, res) => {
 // ==========================================
 // GOOGLE TOKEN VERIFICATION
 // ==========================================
-const defaultGoogleTokenVerifier = async (idToken) => {
+export const defaultGoogleTokenVerifier = async (idToken) => {
   if (!idToken || typeof idToken !== 'string') {
     throw new Error('Invalid or missing Google ID token');
   }
@@ -423,6 +423,44 @@ const defaultGoogleTokenVerifier = async (idToken) => {
   const payload = response.data;
   if (!payload || (!payload.sub && !payload.user_id && !payload.email)) {
     throw new Error('Invalid Google token verification response');
+  }
+
+  // 1. Expiry Check
+  if (payload.exp && Number(payload.exp) * 1000 < Date.now()) {
+    throw new Error('Google ID token has expired');
+  }
+
+  // 2. Issuer Validation
+  if (payload.iss) {
+    const isGoogleIssuer =
+      payload.iss === 'accounts.google.com' ||
+      payload.iss === 'https://accounts.google.com' ||
+      payload.iss.startsWith('https://securetoken.google.com/');
+
+    if (!isGoogleIssuer) {
+      throw new Error(`Invalid Google token issuer: ${payload.iss}`);
+    }
+  }
+
+  // 3. Audience Validation
+  const expectedAudience = process.env.GOOGLE_CLIENT_ID;
+  if (expectedAudience) {
+    const audArray = expectedAudience.split(',').map((s) => s.trim()).filter(Boolean);
+    const tokenAud = payload.aud || payload.azp;
+    if (!tokenAud || !audArray.includes(tokenAud)) {
+      throw new Error(`Token audience mismatch: expected ${expectedAudience}, got ${tokenAud}`);
+    }
+  }
+
+  // 4. Require email_verified === true when email is present
+  if (payload.email) {
+    const isEmailVerified =
+      payload.email_verified === 'true' ||
+      payload.email_verified === true ||
+      payload.verified_email === true;
+    if (payload.email_verified !== undefined && !isEmailVerified) {
+      throw new Error('Google account email is not verified');
+    }
   }
 
   return {

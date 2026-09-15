@@ -66,32 +66,57 @@ const getProductById = asyncHandler(async (req, res) => {
 const createProduct = asyncHandler(async (req, res) => {
   const { name, price, description, image, brand, category, countInStock, unit } = req.body;
 
-  if (!name || typeof name !== 'string' || !name.trim()) {
+  if (typeof name !== 'string' || !name.trim()) {
     res.status(400);
-    throw new Error('Product name is required');
+    throw new Error('Product name must be a non-empty string');
   }
 
   const numPrice = Number(price);
-  if (isNaN(numPrice) || numPrice < 0) {
+  if (!Number.isFinite(numPrice) || numPrice < 0) {
     res.status(400);
-    throw new Error('Valid non-negative price is required');
+    throw new Error('Valid non-negative finite price is required');
   }
 
   const numStock = countInStock !== undefined ? Number(countInStock) : 0;
-  if (isNaN(numStock) || numStock < 0) {
+  if (!Number.isFinite(numStock) || numStock < 0) {
     res.status(400);
-    throw new Error('Valid non-negative stock count is required');
+    throw new Error('Valid non-negative finite stock count is required');
+  }
+
+  if (description !== undefined && typeof description !== 'string') {
+    res.status(400);
+    throw new Error('Description must be a string');
+  }
+
+  if (image !== undefined && typeof image !== 'string') {
+    res.status(400);
+    throw new Error('Image must be a string URL or path');
+  }
+
+  if (brand !== undefined && typeof brand !== 'string') {
+    res.status(400);
+    throw new Error('Brand must be a string');
+  }
+
+  if (category !== undefined && typeof category !== 'string') {
+    res.status(400);
+    throw new Error('Category must be a string');
+  }
+
+  if (unit !== undefined && typeof unit !== 'string') {
+    res.status(400);
+    throw new Error('Unit must be a string');
   }
 
   const product = new Product({
     name: name.trim(),
     price: numPrice,
     description: description ? description.trim() : '',
-    image: image || '/assets/images/placeholder-product.jpg',
+    image: image ? image.trim() : '/assets/images/placeholder-product.jpg',
     brand: brand ? brand.trim() : 'Chocair Fresh',
     category: category ? category.trim() : 'general',
     countInStock: numStock,
-    unit: unit || 'kg',
+    unit: unit ? unit.trim() : 'kg',
   });
 
   const createdProduct = await product.save();
@@ -106,38 +131,79 @@ const updateProduct = asyncHandler(async (req, res) => {
 
   const product = await Product.findById(req.params.id);
 
-  if (product) {
-    if (price !== undefined) {
-      const numPrice = Number(price);
-      if (isNaN(numPrice) || numPrice < 0) {
-        res.status(400);
-        throw new Error('Valid non-negative price is required');
-      }
-      product.price = numPrice;
-    }
-
-    if (countInStock !== undefined) {
-      const numStock = Number(countInStock);
-      if (isNaN(numStock) || numStock < 0) {
-        res.status(400);
-        throw new Error('Valid non-negative stock count is required');
-      }
-      product.countInStock = numStock;
-    }
-
-    if (name) product.name = name.trim();
-    if (description !== undefined) product.description = description.trim();
-    if (image) product.image = image;
-    if (brand) product.brand = brand.trim();
-    if (category) product.category = category.trim();
-    if (unit) product.unit = unit;
-
-    const updatedProduct = await product.save();
-    res.json(updatedProduct);
-  } else {
+  if (!product) {
     res.status(404);
     throw new Error('Product not found');
   }
+
+  if (name !== undefined) {
+    if (typeof name !== 'string' || !name.trim()) {
+      res.status(400);
+      throw new Error('Product name must be a non-empty string');
+    }
+    product.name = name.trim();
+  }
+
+  if (price !== undefined) {
+    const numPrice = Number(price);
+    if (!Number.isFinite(numPrice) || numPrice < 0) {
+      res.status(400);
+      throw new Error('Valid non-negative finite price is required');
+    }
+    product.price = numPrice;
+  }
+
+  if (countInStock !== undefined) {
+    const numStock = Number(countInStock);
+    if (!Number.isFinite(numStock) || numStock < 0) {
+      res.status(400);
+      throw new Error('Valid non-negative finite stock count is required');
+    }
+    product.countInStock = numStock;
+  }
+
+  if (description !== undefined) {
+    if (typeof description !== 'string') {
+      res.status(400);
+      throw new Error('Description must be a string');
+    }
+    product.description = description.trim();
+  }
+
+  if (image !== undefined) {
+    if (typeof image !== 'string') {
+      res.status(400);
+      throw new Error('Image must be a string');
+    }
+    product.image = image.trim();
+  }
+
+  if (brand !== undefined) {
+    if (typeof brand !== 'string') {
+      res.status(400);
+      throw new Error('Brand must be a string');
+    }
+    product.brand = brand.trim();
+  }
+
+  if (category !== undefined) {
+    if (typeof category !== 'string') {
+      res.status(400);
+      throw new Error('Category must be a string');
+    }
+    product.category = category.trim();
+  }
+
+  if (unit !== undefined) {
+    if (typeof unit !== 'string') {
+      res.status(400);
+      throw new Error('Unit must be a string');
+    }
+    product.unit = unit.trim();
+  }
+
+  const updatedProduct = await product.save();
+  res.json(updatedProduct);
 });
 
 // @desc    Delete a product
