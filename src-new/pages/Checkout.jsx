@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { 
   CheckCircle, CreditCard, Truck, MapPin, X, ArrowLeft, ArrowRight,
@@ -48,16 +48,10 @@ const Checkout = () => {
     if (user) {
       setFormData(prev => ({
         ...prev,
-        name: user.name || '',
-        phone: user.phone || '',
+        name: user.name || prev.name || '',
+        phone: user.phone || prev.phone || '',
+        address: prev.address || user.location || '',
       }));
-    } else {
-      setFormData({
-        name: "",
-        phone: "",
-        address: "",
-        googleMapsLink: ""
-      });
     }
   }, [user]);
 
@@ -69,21 +63,24 @@ const Checkout = () => {
     setFormData(prev => ({ ...prev, [name]: value }));
   };
 
-  const handleLocationSelect = (locationData) => {
+  const handleLocationSelect = useCallback((locationData) => {
+    if (!locationData) return;
     if (typeof locationData === 'string') {
       setFormData(prev => ({
         ...prev,
         address: locationData
       }));
     } else {
-      const link = `https://www.google.com/maps/search/?api=1&query=${locationData.lat},${locationData.lng}`;
+      const link = (locationData.lat != null && locationData.lng != null)
+        ? `https://www.google.com/maps/search/?api=1&query=${locationData.lat},${locationData.lng}`
+        : '';
       setFormData(prev => ({
         ...prev,
-        address: locationData.address,
-        googleMapsLink: link
+        address: locationData.address || prev.address,
+        googleMapsLink: link || prev.googleMapsLink
       }));
     }
-  };
+  }, []);
 
   const handleCopyWhish = () => {
     navigator.clipboard.writeText('+961 70 123 456');

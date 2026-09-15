@@ -1,23 +1,26 @@
 import React, { useEffect, useMemo, useRef, useState, useCallback } from "react";
-import { GoogleMap, useJsApiLoader } from "@react-google-maps/api";
+import { GoogleMap, useJsApiLoader, Autocomplete } from "@react-google-maps/api";
 import { 
   MapPin, Navigation, ChevronRight, X, Check, Building, 
-  Layers, Compass, Edit3, Plus, ArrowRight
+  Layers, Compass, Plus, Search, Loader2, Sparkles, Crosshair
 } from "lucide-react";
 import { toast } from "react-toastify";
 import "./LocationPicker.css";
 
+const GOOGLE_LIBRARIES = ["places"];
+
 /**
- * Toters-Style Clean Location & Building Details Selector
+ * Google Maps Style Interactive Location & Building Details Selector
  * Props:
  * - onLocationSelect: (payload) => void
  *   payload = { address: string, lat: number|null, lng: number|null, source: "map"|"gps"|"manual" }
  * - initialLocation: string | { address?: string, lat?: number, lng?: number }
+ * - autoLocate: boolean (default true) - automatically detects GPS coordinates on mount
  */
-const LocationPicker = ({ onLocationSelect, initialLocation }) => {
+const LocationPicker = ({ onLocationSelect, initialLocation, autoLocate = true }) => {
   const defaultCenter = useMemo(() => ({ lat: 33.8938, lng: 35.5018 }), []); // Beirut default
   const [selectedCoords, setSelectedCoords] = useState(null); // { lat, lng }
-  const [areaAddress, setAreaAddress] = useState(""); // Base location from map (e.g., "Verdun, Beirut")
+  const [areaAddress, setAreaAddress] = useState(""); // Base location from map (e.g., "Hamra, Beirut")
   
   // Structured building & floor details (standard for delivery in Lebanon)
   const [buildingDetails, setBuildingDetails] = useState({
@@ -27,30 +30,41 @@ const LocationPicker = ({ onLocationSelect, initialLocation }) => {
     landmark: "",
   });
 
+  // Auto-locating initial state
+  const [isAutoLocating, setIsAutoLocating] = useState(false);
+  const [hasAutoLocated, setHasAutoLocated] = useState(false);
+
   // Modals state
   const [showMapModal, setShowMapModal] = useState(false);
   const [showBuildingModal, setShowBuildingModal] = useState(false);
   
-  // Temp states for modals
+  // Temp states for map modal
   const [tempCoords, setTempCoords] = useState(defaultCenter);
   const [tempAddress, setTempAddress] = useState("");
+  const [isAddressResolving, setIsAddressResolving] = useState(false);
+  const [isDragging, setIsDragging] = useState(false);
+  const [isLocating, setIsLocating] = useState(false);
+
+  // Temp states for building details modal
   const [tempDetails, setTempDetails] = useState({
     building: "",
     floor: "",
     apartment: "",
     landmark: "",
   });
-  const [isLocating, setIsLocating] = useState(false);
 
   const mapRef = useRef(null);
   const geocoderRef = useRef(null);
+  const autocompleteRef = useRef(null);
   const lastGeocodeIdRef = useRef(0);
+  const dragTimeoutRef = useRef(null);
 
   const googleMapsApiKey =
     import.meta.env.VITE_GOOGLE_MAPS_API_KEY || "AIzaSyA2sDabFv8XdkWGWQ6OBRFK17iDnDqcN9Y";
 
   const { isLoaded, loadError } = useJsApiLoader({
     googleMapsApiKey,
+    libraries: GOOGLE_LIBRARIES,
   });
 
   // Helper to compose the full formatted address
@@ -78,40 +92,6 @@ const LocationPicker = ({ onLocationSelect, initialLocation }) => {
     return parts.join(" • ");
   }, [buildingDetails]);
 
-  // Parse initialLocation on mount/change
-  useEffect(() => {
-    if (!initialLocation) return;
-
-    if (typeof initialLocation === "string") {
-      setAreaAddress(initialLocation);
-      onLocationSelect?.({
-        address: initialLocation,
-        lat: null,
-        lng: null,
-        source: "manual",
-      });
-      return;
-    }
-
-    const initAddr = initialLocation.address || "";
-    const initLat = typeof initialLocation.lat === "number" ? initialLocation.lat : null;
-    const initLng = typeof initialLocation.lng === "number" ? initialLocation.lng : null;
-
-    if (initAddr) setAreaAddress(initAddr);
-
-    if (initLat != null && initLng != null) {
-      const loc = { lat: initLat, lng: initLng };
-      setSelectedCoords(loc);
-      setTempCoords(loc);
-      onLocationSelect?.({
-        address: initAddr || "",
-        lat: initLat,
-        lng: initLng,
-        source: "map",
-      });
-    }
-  }, [initialLocation, onLocationSelect]);
-
   // Reverse geocoding helper
   const reverseGeocode = useCallback((loc, callback) => {
     if (!geocoderRef.current && window.google?.maps) {
@@ -124,44 +104,154 @@ const LocationPicker = ({ onLocationSelect, initialLocation }) => {
       return;
     }
 
+    setIsAddressResolving(true);
     const geocodeId = ++lastGeocodeIdRef.current;
+    
     geocoderRef.current.geocode({ location: loc }, (results, status) => {
       if (geocodeId !== lastGeocodeIdRef.current) return;
+      setIsAddressResolving(false);
 
       if (status === "OK" && results?.[0]?.formatted_address) {
-        callback?.(results[0].formatted_address);
+        // Clean up excessively long country-only strings
+        const formatted = results[0].formatted_address;
+        callback?.(formatted);
       } else {
-        const coordStr = `${loc.lat.toFixed(4)}, ${loc.lng.toFixed(4)}`;
+        const coordStr = `${loc.lat.toFixed(5)}, ${loc.lng.toFixed(5)}`;
         callback?.(coordStr);
       }
     });
   }, []);
 
+  // Auto-detect GPS location on mount (Auto-locate user upon reaching checkout)
+  useEffect(() => {
+    // If initialLocation is already given, initialize with it
+    if (initialLocation) {
+      if (typeof initialLocation === "string" && initialLocation.trim() !== "") {
+        setAreaAddress(initialLocation);
+        return;
+      }
+
+      if (typeof initialLocation === "object") {
+        const initAddr = initialLocation.address || "";
+        const initLat = typeof initialLocation.lat === "number" ? initialLocation.lat : null;
+        const initLng = typeof initialLocation.lng === "number" ? initialLocation.lng : null;
+
+        if (initAddr) setAreaAddress(initAddr);
+        if (initLat != null && initLng != null) {
+          const loc = { lat: initLat, lng: initLng };
+          setSelectedCoords(loc);
+          setTempCoords(loc);
+        }
+        return;
+      }
+    }
+
+    // Otherwise, auto-locate the user via browser Geolocation if enabled
+    if (autoLocate && !hasAutoLocated && navigator.geolocation) {
+      setIsAutoLocating(true);
+      navigator.geolocation.getCurrentPosition(
+        (pos) => {
+          setIsAutoLocating(false);
+          setHasAutoLocated(true);
+          const userLoc = {
+            lat: pos.coords.latitude,
+            lng: pos.coords.longitude,
+          };
+          setSelectedCoords(userLoc);
+          setTempCoords(userLoc);
+
+          // Reverse geocode to human-readable address
+          reverseGeocode(userLoc, (addr) => {
+            setAreaAddress(addr);
+            setTempAddress(addr);
+            const full = composeFullAddress(addr, buildingDetails);
+            onLocationSelect?.({
+              address: full,
+              lat: userLoc.lat,
+              lng: userLoc.lng,
+              source: "gps",
+            });
+          });
+        },
+        (err) => {
+          setIsAutoLocating(false);
+          setHasAutoLocated(true);
+          console.log("Auto-location skipped or permission not granted:", err.message);
+        },
+        { enableHighAccuracy: true, timeout: 9000, maximumAge: 60000 }
+      );
+    }
+  }, [initialLocation, autoLocate, hasAutoLocated, reverseGeocode, composeFullAddress, buildingDetails, onLocationSelect]);
+
   // Map load callback
   const onMapLoad = useCallback((map) => {
     mapRef.current = map;
     geocoderRef.current = new window.google.maps.Geocoder();
-    const initialPos = selectedCoords || defaultCenter;
+    const initialPos = selectedCoords || tempCoords || defaultCenter;
     map.panTo(initialPos);
     map.setZoom(16);
     reverseGeocode(initialPos, (addr) => setTempAddress(addr));
-  }, [selectedCoords, defaultCenter, reverseGeocode]);
+  }, [selectedCoords, tempCoords, defaultCenter, reverseGeocode]);
 
-  // Map center change handler (smooth center-pin dragging)
+  // Google Maps Style Camera Drag & Idle Center-pin tracking
+  const handleMapDragStart = useCallback(() => {
+    setIsDragging(true);
+  }, []);
+
+  const handleMapDrag = useCallback(() => {
+    setIsDragging(true);
+    if (dragTimeoutRef.current) clearTimeout(dragTimeoutRef.current);
+  }, []);
+
   const onCameraIdle = useCallback(() => {
-    if (!mapRef.current) return;
-    const center = mapRef.current.getCenter();
-    if (!center) return;
+    if (dragTimeoutRef.current) clearTimeout(dragTimeoutRef.current);
+    
+    // Give a brief moment for smooth pin drop animation before geocoding
+    dragTimeoutRef.current = setTimeout(() => {
+      setIsDragging(false);
+      if (!mapRef.current) return;
+      const center = mapRef.current.getCenter();
+      if (!center) return;
 
-    const newLoc = { lat: center.lat(), lng: center.lng() };
-    setTempCoords(newLoc);
-    reverseGeocode(newLoc, (addr) => setTempAddress(addr));
+      const newLoc = { lat: center.lat(), lng: center.lng() };
+      setTempCoords(newLoc);
+      reverseGeocode(newLoc, (addr) => setTempAddress(addr));
+    }, 120);
   }, [reverseGeocode]);
 
-  // GPS Locate Action inside Modal
+  // Map click handler (clicking anywhere pans center to that point smoothly)
+  const handleMapClick = useCallback((e) => {
+    if (e.latLng && mapRef.current) {
+      setIsDragging(true);
+      mapRef.current.panTo(e.latLng);
+    }
+  }, []);
+
+  // Google Places Autocomplete handler
+  const onAutocompleteLoad = useCallback((autocomplete) => {
+    autocompleteRef.current = autocomplete;
+  }, []);
+
+  const onPlaceChanged = useCallback(() => {
+    if (autocompleteRef.current) {
+      const place = autocompleteRef.current.getPlace();
+      if (place?.geometry?.location) {
+        const lat = place.geometry.location.lat();
+        const lng = place.geometry.location.lng();
+        const loc = { lat, lng };
+        setTempCoords(loc);
+        mapRef.current?.panTo(loc);
+        mapRef.current?.setZoom(17);
+        const resolved = place.formatted_address || place.name || `${lat.toFixed(4)}, ${lng.toFixed(4)}`;
+        setTempAddress(resolved);
+      }
+    }
+  }, []);
+
+  // GPS Locate Action (Locate Me FAB)
   const handleGpsLocate = useCallback(() => {
     if (!navigator.geolocation) {
-      toast.warn("Geolocation is not supported in this browser.");
+      toast.warn("Geolocation is not supported on this device.");
       return;
     }
 
@@ -171,21 +261,35 @@ const LocationPicker = ({ onLocationSelect, initialLocation }) => {
         setIsLocating(false);
         const loc = { lat: pos.coords.latitude, lng: pos.coords.longitude };
         setTempCoords(loc);
+        setIsDragging(true);
         mapRef.current?.panTo(loc);
         mapRef.current?.setZoom(17);
         reverseGeocode(loc, (addr) => setTempAddress(addr));
       },
       (err) => {
         setIsLocating(false);
-        let msg = "Failed to detect current GPS location.";
-        if (err.code === 1) msg = "Location permission denied. Please allow location access.";
+        let msg = "Could not retrieve GPS location.";
+        if (err.code === 1) msg = "Location permission denied. Please allow location in your browser settings.";
         toast.error(msg);
       },
       { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 }
     );
   }, [reverseGeocode]);
 
-  // Confirm Location from Map Modal -> Opens building details modal for seamless Toters flow
+  // Open Map Modal
+  const handleOpenMapModal = () => {
+    const startPos = selectedCoords || defaultCenter;
+    setTempCoords(startPos);
+    setTempAddress(areaAddress || "Locating...");
+    setShowMapModal(true);
+
+    // If we have no selected coords yet, trigger a GPS locate right away in the modal
+    if (!selectedCoords && navigator.geolocation) {
+      handleGpsLocate();
+    }
+  };
+
+  // Confirm Location from Map Modal -> Opens building details modal
   const handleConfirmLocation = () => {
     setSelectedCoords(tempCoords);
     const chosenArea = tempAddress || `${tempCoords.lat.toFixed(4)}, ${tempCoords.lng.toFixed(4)}`;
@@ -249,36 +353,48 @@ const LocationPicker = ({ onLocationSelect, initialLocation }) => {
 
   return (
     <div className="location-picker-card-container">
-      {/* 1. Toters-Style Main Location Selector Card */}
+      {/* 1. Main Location Selector Card */}
       <div 
-        className={`toters-location-card ${areaAddress ? "has-selected" : ""}`}
-        onClick={() => {
-          setTempCoords(selectedCoords || defaultCenter);
-          setTempAddress(areaAddress || "Beirut, Lebanon");
-          setShowMapModal(true);
-        }}
+        className={`toters-location-card ${areaAddress ? "has-selected" : ""} ${isAutoLocating ? "is-auto-locating" : ""}`}
+        onClick={handleOpenMapModal}
         role="button"
         tabIndex={0}
       >
         <div className="toters-card-left">
-          <div className="toters-pin-icon-wrap">
-            <MapPin size={20} />
+          <div className={`toters-pin-icon-wrap ${isAutoLocating ? "pulse-locating" : ""}`}>
+            {isAutoLocating ? (
+              <Loader2 size={20} className="animate-spin text-green-600" />
+            ) : (
+              <MapPin size={20} />
+            )}
           </div>
           <div className="toters-card-text">
             <span className="toters-card-label">
-              {areaAddress ? "Delivery Pin Set" : "1. Pin Location on Map"}
+              {isAutoLocating ? "Auto-Detecting Location..." : areaAddress ? "1. Delivery Pin Set" : "1. Delivery Location"}
             </span>
             <div className={`toters-card-address ${!areaAddress ? "placeholder" : ""}`}>
-              {areaAddress || "Tap to select your area on map..."}
+              {isAutoLocating ? (
+                <span className="locating-text-shimmer">Detecting your GPS location...</span>
+              ) : (
+                areaAddress || "Tap to select your area on Google Maps..."
+              )}
             </div>
             <span className="toters-card-hint">
-              {selectedCoords ? "📍 Exact GPS coordinates saved" : "Opens full interactive map"}
+              {isAutoLocating 
+                ? "Locating nearest street & area" 
+                : selectedCoords 
+                  ? "📍 Exact GPS coordinates pinned • Tap to adjust" 
+                  : "Opens interactive Google Maps"}
             </span>
           </div>
         </div>
 
         <div className="toters-card-right">
-          {areaAddress ? (
+          {isAutoLocating ? (
+            <span className="toters-locating-pill">
+              <Loader2 size={12} className="animate-spin" /> Locating
+            </span>
+          ) : areaAddress ? (
             <span className="toters-change-pill">Change Pin</span>
           ) : (
             <ChevronRight size={18} className="toters-arrow-icon" />
@@ -286,7 +402,7 @@ const LocationPicker = ({ onLocationSelect, initialLocation }) => {
         </div>
       </div>
 
-      {/* 2. Toters-Style Clean Building & Apartment Card */}
+      {/* 2. Clean Building & Apartment Card */}
       <div 
         className={`toters-location-card toters-building-card ${hasBuildingDetails ? "has-selected" : ""}`}
         onClick={handleOpenBuildingModal}
@@ -299,13 +415,13 @@ const LocationPicker = ({ onLocationSelect, initialLocation }) => {
           </div>
           <div className="toters-card-text">
             <span className="toters-card-label">
-              {hasBuildingDetails ? "Building & Floor Set" : "2. Building & Floor Details"}
+              {hasBuildingDetails ? "2. Building & Floor Set" : "2. Building & Floor Details"}
             </span>
             <div className={`toters-card-address ${!hasBuildingDetails ? "placeholder" : ""}`}>
               {hasBuildingDetails ? buildingSummaryText : "Add building, floor, apt & landmark..."}
             </div>
             <span className="toters-card-hint">
-              {hasBuildingDetails ? "✅ Details saved for driver" : "Tap to add apartment details"}
+              {hasBuildingDetails ? "✅ Details saved for courier" : "Optional: helps driver find your door"}
             </span>
           </div>
         </div>
@@ -321,16 +437,16 @@ const LocationPicker = ({ onLocationSelect, initialLocation }) => {
         </div>
       </div>
 
-      {/* 3. Toters Fullscreen / Bottom Sheet Map Modal */}
+      {/* 3. Fullscreen / Bottom Sheet Google Maps Modal */}
       {showMapModal && (
-        <div className="toters-map-modal-overlay">
-          <div className="toters-map-modal-card">
+        <div className="toters-map-modal-overlay" onClick={() => setShowMapModal(false)}>
+          <div className="toters-map-modal-card" onClick={(e) => e.stopPropagation()}>
             
             {/* Modal Header */}
             <div className="toters-modal-header">
               <div className="modal-header-info">
                 <h3 className="modal-header-title">Pin Delivery Location</h3>
-                <span className="modal-header-sub">Drag map to position pin at your exact door</span>
+                <span className="modal-header-sub">Drag the map to position the pin at your exact door</span>
               </div>
               <button 
                 type="button" 
@@ -342,33 +458,75 @@ const LocationPicker = ({ onLocationSelect, initialLocation }) => {
               </button>
             </div>
 
+            {/* Google Maps Search Bar Overlay (Top) */}
+            {isLoaded && (
+              <div className="gmaps-search-bar-wrapper">
+                <Autocomplete
+                  onLoad={onAutocompleteLoad}
+                  onPlaceChanged={onPlaceChanged}
+                >
+                  <div className="gmaps-search-box">
+                    <Search size={18} className="gmaps-search-icon" />
+                    <input
+                      type="text"
+                      placeholder="Search street, area, or landmark in Lebanon..."
+                      className="gmaps-search-input"
+                    />
+                  </div>
+                </Autocomplete>
+              </div>
+            )}
+
             {/* Map Canvas Viewport */}
             <div className="toters-map-viewport">
-              {/* Top Hint Badge */}
-              <div className="toters-map-hint-pill">
-                📍 Drag map under center pin
-              </div>
-
-              {/* Floating Center Pin Marker */}
-              <div className="toters-center-pin-marker">
-                <div className="center-pin-icon-box">
-                  <div className="center-pin-inner">
-                    <MapPin size={22} />
-                  </div>
+              {/* Google Maps Center Pin & Dynamic Physics */}
+              <div className="gmaps-center-pin-container">
+                {/* Lifting & Bouncing Center Pin */}
+                <div className={`gmaps-center-pin ${isDragging ? "is-lifting" : "is-dropped"}`}>
+                  <svg 
+                    className="gmaps-svg-pin"
+                    width="42" 
+                    height="50" 
+                    viewBox="0 0 42 50" 
+                    fill="none" 
+                    xmlns="http://www.w3.org/2000/svg"
+                  >
+                    <path 
+                      d="M21 0C9.402 0 0 9.402 0 21C0 34.125 18.375 48.825 20.097 50.169C20.6355 50.5895 21.3645 50.5895 21.903 50.169C23.625 48.825 42 34.125 42 21C42 9.402 32.598 0 21 0Z" 
+                      fill="#EA4335"
+                    />
+                    <circle cx="21" cy="20" r="8" fill="#FFFFFF"/>
+                    <circle cx="21" cy="20" r="4.5" fill="#C5221F"/>
+                  </svg>
                 </div>
-                <div className="center-pin-pulse-shadow" />
+
+                {/* Ground Target Dot / Crosshair */}
+                <div className="gmaps-ground-target">
+                  <div className="gmaps-target-dot" />
+                  <div className={`gmaps-pin-shadow ${isDragging ? "is-lifting" : "is-dropped"}`} />
+                </div>
               </div>
 
-              {/* Floating Locate Me GPS button */}
+              {/* Floating Google Maps Locate Me GPS FAB */}
               <button 
                 type="button" 
-                className={`toters-floating-locate-btn ${isLocating ? "locating" : ""}`}
+                className={`gmaps-fab-locate-btn ${isLocating ? "locating" : ""}`}
                 onClick={handleGpsLocate}
                 disabled={isLocating}
+                title="Locate my position"
+                aria-label="Locate my current position"
               >
-                <Navigation size={15} className="gps-icon" />
-                <span>{isLocating ? "Locating..." : "Locate Me"}</span>
+                {isLocating ? (
+                  <Loader2 size={18} className="animate-spin text-blue-600" />
+                ) : (
+                  <Crosshair size={20} className="gps-crosshair-icon" />
+                )}
               </button>
+
+              {/* Top Hint Badge */}
+              <div className={`gmaps-map-hint-pill ${isDragging ? "dragging" : ""}`}>
+                {isDragging ? "📍 Release to set pin" : "👆 Drag map under center pin"}
+              </div>
 
               {/* Google Map */}
               {isLoaded ? (
@@ -377,18 +535,24 @@ const LocationPicker = ({ onLocationSelect, initialLocation }) => {
                   center={tempCoords}
                   zoom={16}
                   onLoad={onMapLoad}
+                  onDragStart={handleMapDragStart}
+                  onDrag={handleMapDrag}
                   onIdle={onCameraIdle}
+                  onClick={handleMapClick}
                   options={{
                     fullscreenControl: false,
                     streetViewControl: false,
                     mapTypeControl: false,
                     zoomControl: true,
+                    gestureHandling: "greedy",
                     clickableIcons: false,
+                    disableDefaultUI: false,
                   }}
                 />
               ) : (
-                <div style={{ display: "flex", alignItems: "center", justifyContent: "center", height: "100%", color: "#64748b" }}>
-                  Loading map...
+                <div className="gmaps-loading-state">
+                  <Loader2 size={28} className="animate-spin text-green-600" />
+                  <span>Loading Google Maps...</span>
                 </div>
               )}
             </div>
@@ -396,10 +560,19 @@ const LocationPicker = ({ onLocationSelect, initialLocation }) => {
             {/* Modal Bottom Confirm Sheet */}
             <div className="toters-modal-footer">
               <div className="modal-address-preview-row">
-                <MapPin size={20} className="preview-pin-icon" />
+                <div className="preview-pin-icon-box">
+                  <MapPin size={20} />
+                </div>
                 <div className="preview-address-col">
-                  <span className="preview-address-label">Selected Location</span>
-                  <span className="preview-address-text">
+                  <div className="preview-address-header">
+                    <span className="preview-address-label">Selected Delivery Location</span>
+                    {isAddressResolving && (
+                      <span className="preview-resolving-indicator">
+                        <Loader2 size={11} className="animate-spin" /> Updating...
+                      </span>
+                    )}
+                  </div>
+                  <span className={`preview-address-text ${isAddressResolving ? "resolving" : ""}`}>
                     {tempAddress || "Detecting address..."}
                   </span>
                 </div>
@@ -411,13 +584,129 @@ const LocationPicker = ({ onLocationSelect, initialLocation }) => {
                 onClick={handleConfirmLocation}
               >
                 <Check size={18} />
-                <span>Confirm Pin & Add Details</span>
+                <span>Confirm Pin & Set Details</span>
               </button>
             </div>
 
           </div>
         </div>
       )}
+
+      {/* 4. Building & Floor Details Modal */}
+      {showBuildingModal && (
+        <div className="toters-map-modal-overlay" onClick={() => setShowBuildingModal(false)}>
+          <div className="toters-building-modal-card" onClick={(e) => e.stopPropagation()}>
+            
+            {/* Modal Header */}
+            <div className="toters-modal-header">
+              <div className="modal-header-info">
+                <h3 className="modal-header-title">Building & Apartment Details</h3>
+                <span className="modal-header-sub">Helps our courier deliver straight to your door</span>
+              </div>
+              <button 
+                type="button" 
+                className="toters-modal-close-btn"
+                onClick={() => setShowBuildingModal(false)}
+                aria-label="Close"
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            {/* Area Reminder Banner */}
+            {areaAddress && (
+              <div className="building-modal-area-banner">
+                <MapPin size={16} className="banner-icon" />
+                <div className="banner-text">
+                  <span className="banner-label">Delivering around:</span>
+                  <strong className="banner-addr">{areaAddress}</strong>
+                </div>
+              </div>
+            )}
+
+            {/* Form Fields */}
+            <div 
+              className="building-modal-form"
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  e.preventDefault();
+                  handleSaveBuildingDetails();
+                }
+              }}
+            >
+              <div className="modal-input-field">
+                <label className="modal-field-label">
+                  <Building size={14} /> Building or Street Name
+                </label>
+                <input
+                  type="text"
+                  placeholder="e.g. Al-Rida Bldg, Facing Bank Audi"
+                  value={tempDetails.building}
+                  onChange={(e) => setTempDetails({ ...tempDetails, building: e.target.value })}
+                  className="modal-field-input"
+                  autoFocus
+                />
+              </div>
+
+              <div className="modal-fields-grid-two">
+                <div className="modal-input-field">
+                  <label className="modal-field-label">
+                    <Layers size={14} /> Floor #
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="e.g. 3rd Floor"
+                    value={tempDetails.floor}
+                    onChange={(e) => setTempDetails({ ...tempDetails, floor: e.target.value })}
+                    className="modal-field-input"
+                  />
+                </div>
+
+                <div className="modal-input-field">
+                  <label className="modal-field-label">Apartment #</label>
+                  <input
+                    type="text"
+                    placeholder="e.g. Apt 5 / Right"
+                    value={tempDetails.apartment}
+                    onChange={(e) => setTempDetails({ ...tempDetails, apartment: e.target.value })}
+                    className="modal-field-input"
+                  />
+                </div>
+              </div>
+
+              <div className="modal-input-field">
+                <label className="modal-field-label">
+                  <Compass size={14} /> Landmark / Gate Instructions (Optional)
+                </label>
+                <input
+                  type="text"
+                  placeholder="e.g. Next to Pharmacy, gray building gate"
+                  value={tempDetails.landmark}
+                  onChange={(e) => setTempDetails({ ...tempDetails, landmark: e.target.value })}
+                  className="modal-field-input"
+                />
+              </div>
+
+              <div className="building-modal-footer">
+                <button 
+                  type="button"
+                  className="toters-confirm-location-btn"
+                  onClick={handleSaveBuildingDetails}
+                >
+                  <Check size={18} />
+                  <span>Save Building Details</span>
+                </button>
+              </div>
+            </div>
+
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
+
+export default LocationPicker;
 
       {/* 4. Toters-Style Building & Floor Details Modal */}
       {showBuildingModal && (
