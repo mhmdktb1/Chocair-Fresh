@@ -144,6 +144,22 @@ describe('Product API', () => {
     expect(limitRes.body).toHaveLength(1);
   });
 
+  it('VALIDATION: rejects negative prices and negative stock counts', async () => {
+    // 1. Negative price on create -> 400
+    const negPriceRes = await request(app)
+      .post('/api/products')
+      .set('Authorization', `Bearer ${adminToken}`)
+      .send({ ...productData, price: -4.50 });
+    expect(negPriceRes.status).toBe(400);
+
+    // 2. Negative stock on create -> 400
+    const negStockRes = await request(app)
+      .post('/api/products')
+      .set('Authorization', `Bearer ${adminToken}`)
+      .send({ ...productData, countInStock: -10 });
+    expect(negStockRes.status).toBe(400);
+  });
+
   it('MALFORMED IDS: returns 404 for invalid product IDs', async () => {
     const res = await request(app).get('/api/products/non-existent-product-id');
     expect(res.status).toBe(404);

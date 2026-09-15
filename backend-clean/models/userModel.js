@@ -10,6 +10,7 @@ const userSchema = new mongoose.Schema(
     },
     phone: {
       type: String,
+      unique: true,
       sparse: true,
       trim: true,
     },
@@ -17,6 +18,7 @@ const userSchema = new mongoose.Schema(
       type: String,
       trim: true,
       lowercase: true,
+      unique: true,
       sparse: true, // Allows null/undefined values while maintaining uniqueness
     },
     age: {
@@ -39,6 +41,7 @@ const userSchema = new mongoose.Schema(
     // For Google OAuth users - store their Google ID
     googleId: {
       type: String,
+      unique: true,
       sparse: true,
     },
     // Profile picture (optional)

@@ -242,19 +242,51 @@ describe('Home Config & Hero CMS API', () => {
     expect(largeRes.body.message).toMatch(/5MB limit/i);
   });
 
-  it('CORS SECURITY: rejects unauthorized origins with error', async () => {
+  it('CORS SECURITY: rejects unauthorized origins including arbitrary vercel domains; allows configured origins', async () => {
+    // 1. Malicious external origin -> Rejected
     const unauthOriginRes = await request(app)
       .get('/api/health')
       .set('Origin', 'https://malicious-phishing-site.com');
-
-    // Express CORS middleware will return 500/error when callback(new Error('Not allowed by CORS')) is triggered
     expect(unauthOriginRes.status).toBe(500);
     expect(unauthOriginRes.body.message).toMatch(/Not allowed by CORS/i);
 
-    // Authorized Vercel preview origin is accepted
-    const vercelOriginRes = await request(app)
+    // 2. Arbitrary non-configured vercel.app origin -> Rejected (no wildcard vercel regex)
+    const randomVercelRes = await request(app)
       .get('/api/health')
-      .set('Origin', 'https://chocair-fresh-preview.vercel.app');
-    expect(vercelOriginRes.status).toBe(200);
+      .set('Origin', 'https://attacker-app.vercel.app');
+    expect(randomVercelRes.status).toBe(500);
+    expect(randomVercelRes.body.message).toMatch(/Not allowed by CORS/i);
+
+    // 3. Authorized localhost development origin -> Allowed
+    const localOriginRes = await request(app)
+      .get('/api/health')
+      .set('Origin', 'http://localhost:5173');
+    expect(localOriginRes.status).toBe(200);
+  });
+
+  it('COMMENT VALIDATION: rejects empty content, oversized content, and invalid parent comments', async () => {
+    // 1. Empty content -> 400
+    const emptyRes = await request(app)
+      .post('/api/comments')
+      .set('Authorization', `Bearer ${userToken}`)
+      .send({ content: '   ' });
+    expect(emptyRes.status).toBe(400);
+
+    // 2. Oversized content -> 400
+    const longContent = 'A'.repeat(1005);
+    const longRes = await request(app)
+      .post('/api/comments')
+      .set('Authorization', `Bearer ${userToken}`)
+      .send({ content: longContent });
+    expect(longRes.status).toBe(400);
+    expect(longRes.body.message).toMatch(/cannot exceed 1000 characters/i);
+
+    // 3. Non-existent parent comment -> 400
+    const fakeParentRes = await request(app)
+      .post('/api/comments')
+      .set('Authorization', `Bearer ${userToken}`)
+      .send({ content: 'Reply to ghost', parentId: new mongoose.Types.ObjectId() });
+    expect(fakeParentRes.status).toBe(400);
+    expect(fakeParentRes.body.message).toMatch(/Parent comment not found/i);
   });
 });

@@ -47,17 +47,32 @@ if (process.env.NODE_ENV === 'development') {
 
 app.use(express.json());
 
-// Dynamic CORS configuration supporting Vercel previews & production
-const allowedOrigins = process.env.ALLOWED_ORIGINS 
-  ? process.env.ALLOWED_ORIGINS.split(',').map(s => s.trim())
-  : [
-      'http://localhost:5173',
-      'http://localhost:5174',
-      'http://localhost:3000',
-    ];
+// Dynamic CORS configuration supporting explicit allowed origins + localhost development
+const allowedOrigins = [
+  'http://localhost:5173',
+  'http://localhost:5174',
+  'http://localhost:3000',
+  'http://127.0.0.1:5173',
+  'http://127.0.0.1:5174',
+  'http://127.0.0.1:3000',
+];
 
 if (process.env.CLIENT_URL) {
-  allowedOrigins.push(process.env.CLIENT_URL.trim());
+  process.env.CLIENT_URL.split(',').forEach(url => {
+    const trimmed = url.trim();
+    if (trimmed && trimmed !== '*' && !allowedOrigins.includes(trimmed)) {
+      allowedOrigins.push(trimmed);
+    }
+  });
+}
+
+if (process.env.ALLOWED_ORIGINS) {
+  process.env.ALLOWED_ORIGINS.split(',').forEach(url => {
+    const trimmed = url.trim();
+    if (trimmed && trimmed !== '*' && !allowedOrigins.includes(trimmed)) {
+      allowedOrigins.push(trimmed);
+    }
+  });
 }
 
 const corsOptions = {
@@ -65,18 +80,12 @@ const corsOptions = {
     // Allow non-browser requests (mobile, server-to-server, curl)
     if (!origin) return callback(null, true);
     
-    // Allow local development
-    if (origin.startsWith('http://localhost:') || origin.startsWith('http://127.0.0.1:')) {
-      return callback(null, true);
-    }
-    
-    // Allow any Vercel deployment preview or production domain (*.vercel.app)
-    if (/\.vercel\.app$/.test(origin)) {
-      return callback(null, true);
-    }
-
-    // Allow explicitly defined origins
-    if (allowedOrigins.includes(origin) || allowedOrigins.includes('*')) {
+    // Allow explicitly defined origins and localhost development
+    if (
+      allowedOrigins.includes(origin) ||
+      origin.startsWith('http://localhost:') ||
+      origin.startsWith('http://127.0.0.1:')
+    ) {
       return callback(null, true);
     }
 
@@ -101,7 +110,31 @@ const authLimiter = rateLimit({
   legacyHeaders: false,
 });
 
+// Rate Limiting for Order Placement
+const orderLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 50,
+  message: {
+    message: 'Too many order requests from this IP, please try again later.',
+  },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
+// Rate Limiting for Image Uploads
+const uploadLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 30,
+  message: {
+    message: 'Upload rate limit exceeded, please try again later.',
+  },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
 app.use('/api/users/auth', authLimiter);
+app.use('/api/orders', orderLimiter);
+app.use('/api/upload', uploadLimiter);
 
 // Health check endpoints for Render and monitoring
 app.get('/', (req, res) => {

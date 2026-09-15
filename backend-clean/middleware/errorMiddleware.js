@@ -27,6 +27,11 @@ const errorHandler = (err, req, res, next) => {
     message = Object.values(err.errors).map(val => val.message).join(', ');
   }
 
+  // Sanitize 500 internal server errors in production to avoid leaking server paths/secrets
+  if (statusCode === 500 && process.env.NODE_ENV === 'production') {
+    message = 'Internal Server Error';
+  }
+
   res.status(statusCode);
   res.json({
     message,

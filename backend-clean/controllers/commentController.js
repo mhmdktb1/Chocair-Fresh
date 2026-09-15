@@ -34,10 +34,34 @@ const getAllComments = asyncHandler(async (req, res) => {
 const createComment = asyncHandler(async (req, res) => {
   const { content, rating, parentId } = req.body;
 
+  if (!content || typeof content !== 'string' || !content.trim()) {
+    res.status(400);
+    throw new Error('Comment content is required');
+  }
+
+  const trimmedContent = content.trim();
+  if (trimmedContent.length > 1000) {
+    res.status(400);
+    throw new Error('Comment content cannot exceed 1000 characters');
+  }
+
+  let numRating = 0;
+  if (rating !== undefined && rating !== null) {
+    numRating = Math.max(0, Math.min(5, Number(rating) || 0));
+  }
+
+  if (parentId) {
+    const parentComment = await Comment.findById(parentId);
+    if (!parentComment) {
+      res.status(400);
+      throw new Error('Parent comment not found');
+    }
+  }
+
   const comment = await Comment.create({
     user: req.user._id,
-    content,
-    rating,
+    content: trimmedContent,
+    rating: numRating,
     parentId: parentId || null,
   });
 
