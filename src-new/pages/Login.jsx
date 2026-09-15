@@ -93,8 +93,10 @@ const Login = () => {
     try {
       const result = await signInWithPopup(auth, provider);
       const googleUser = result.user;
+      const idToken = await googleUser.getIdToken();
 
       const response = await api.post('/users/auth/google', {
+        idToken,
         googleId: googleUser.uid,
         email: googleUser.email,
         name: googleUser.displayName || googleUser.email?.split('@')[0],

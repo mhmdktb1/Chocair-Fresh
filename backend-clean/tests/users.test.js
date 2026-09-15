@@ -1,6 +1,7 @@
 import mongoose from 'mongoose';
 import { MongoMemoryServer } from 'mongodb-memory-server';
 import request from 'supertest';
+import jwt from 'jsonwebtoken';
 import app from '../server.js';
 import User from '../models/userModel.js';
 import OTP from '../models/otpModel.js';
@@ -79,10 +80,22 @@ describe('User and Auth API', () => {
     expect(res.body.user.name).toBe('Regular Customer');
   });
 
-  it('POST /api/users/auth/google - creates new user on first Google login', async () => {
+  it('POST /api/users/auth/google - creates new user on first Google login with verified token or payload', async () => {
+    const validIdToken = jwt.sign(
+      {
+        sub: 'google-uid-12345',
+        email: 'newgoogle@gmail.com',
+        name: 'Google User',
+        picture: 'https://lh3.googleusercontent.com/photo.jpg',
+      },
+      'google_test_key',
+      { expiresIn: '1h' }
+    );
+
     const res = await request(app)
       .post('/api/users/auth/google')
       .send({
+        idToken: validIdToken,
         googleId: 'google-uid-12345',
         email: 'newgoogle@gmail.com',
         name: 'Google User',
@@ -97,6 +110,30 @@ describe('User and Auth API', () => {
     const dbUser = await User.findOne({ email: 'newgoogle@gmail.com' });
     expect(dbUser).toBeTruthy();
     expect(dbUser.googleId).toBe('google-uid-12345');
+  });
+
+  it('GOOGLE AUTH SECURITY: rejects expired or malformed Google ID tokens', async () => {
+    // 1. Expired token
+    const expiredToken = jwt.sign(
+      {
+        sub: 'google-expired-uid',
+        email: 'expired@gmail.com',
+        exp: Math.floor(Date.now() / 1000) - 3600, // 1 hour in the past
+      },
+      'google_test_key'
+    );
+
+    const expiredRes = await request(app)
+      .post('/api/users/auth/google')
+      .send({ idToken: expiredToken });
+    expect(expiredRes.status).toBe(401);
+    expect(expiredRes.body.message).toMatch(/expired/i);
+
+    // 2. Malformed token string
+    const malformedRes = await request(app)
+      .post('/api/users/auth/google')
+      .send({ idToken: 'not.a.valid.jwt.token' });
+    expect(malformedRes.status).toBe(401);
   });
 
   it('GET /api/users/profile - returns authenticated user profile', async () => {

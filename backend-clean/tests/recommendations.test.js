@@ -159,4 +159,30 @@ describe('Recommendation API', () => {
     expect(frontendCartRes.status).toBe(200);
     expect(frontendCartRes.body.success).toBe(true);
   });
+
+  it('SECURITY: POST /api/recommend/refresh requires admin authorization', async () => {
+    // 1. Unauthenticated request -> 401
+    const anonRes = await request(app).post('/api/recommend/refresh');
+    expect(anonRes.status).toBe(401);
+
+    // 2. Regular user request -> 401
+    const userRes = await request(app)
+      .post('/api/recommend/refresh')
+      .set('Authorization', `Bearer ${userToken}`);
+    expect(userRes.status).toBe(401);
+
+    // 3. Admin request -> 200
+    const adminUser = await User.create({
+      name: 'Admin Rec Tester',
+      phone: '+96170999888',
+      isAdmin: true,
+    });
+    const adminToken = generateToken(adminUser._id);
+
+    const adminRes = await request(app)
+      .post('/api/recommend/refresh')
+      .set('Authorization', `Bearer ${adminToken}`);
+    expect(adminRes.status).toBe(200);
+    expect(adminRes.body.success).toBe(true);
+  });
 });

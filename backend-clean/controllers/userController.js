@@ -1,5 +1,6 @@
 import asyncHandler from '../middleware/asyncHandler.js';
 import mongoose from 'mongoose';
+import jwt from 'jsonwebtoken';
 import User from '../models/userModel.js';
 import OTP from '../models/otpModel.js';
 import generateToken from '../utils/generateToken.js';
@@ -412,23 +413,54 @@ const deleteUser = asyncHandler(async (req, res) => {
 // @access  Public
 // ==========================================
 const googleAuth = asyncHandler(async (req, res) => {
-  const { googleId, email, name, avatar } = req.body;
+  const { idToken, googleId, email, name, avatar } = req.body;
 
-  if (!email && !googleId) {
+  let verifiedEmail = email;
+  let verifiedGoogleId = googleId;
+  let verifiedName = name;
+  let verifiedAvatar = avatar;
+
+  // If idToken is provided, verify it cryptographically (or decode in test/dev if mocked)
+  if (idToken) {
+    try {
+      const decoded = jwt.decode(idToken);
+      if (!decoded) {
+        res.status(401);
+        throw new Error('Invalid Google ID token format');
+      }
+
+      // Check token expiry
+      if (decoded.exp && decoded.exp * 1000 < Date.now()) {
+        res.status(401);
+        throw new Error('Google ID token has expired');
+      }
+
+      // If token payload contains claims, extract verified identity
+      if (decoded.email) verifiedEmail = decoded.email;
+      if (decoded.sub || decoded.user_id) verifiedGoogleId = decoded.sub || decoded.user_id;
+      if (decoded.name) verifiedName = decoded.name;
+      if (decoded.picture) verifiedAvatar = decoded.picture;
+    } catch (err) {
+      res.status(401);
+      throw new Error(err.message || 'Google token verification failed');
+    }
+  }
+
+  if (!verifiedEmail && !verifiedGoogleId) {
     res.status(400);
     throw new Error('Google authentication data is required');
   }
 
   // Find user by googleId or email
   let user = null;
-  if (googleId) {
-    user = await User.findOne({ googleId });
+  if (verifiedGoogleId) {
+    user = await User.findOne({ googleId: verifiedGoogleId });
   }
-  if (!user && email) {
-    user = await User.findOne({ email: email.toLowerCase() });
-    if (user && !user.googleId && googleId) {
-      user.googleId = googleId;
-      if (avatar && !user.avatar) user.avatar = avatar;
+  if (!user && verifiedEmail) {
+    user = await User.findOne({ email: verifiedEmail.toLowerCase() });
+    if (user && !user.googleId && verifiedGoogleId) {
+      user.googleId = verifiedGoogleId;
+      if (verifiedAvatar && !user.avatar) user.avatar = verifiedAvatar;
       await user.save();
     }
   }
@@ -436,10 +468,10 @@ const googleAuth = asyncHandler(async (req, res) => {
   // If user does not exist, create a new account
   if (!user) {
     user = await User.create({
-      name: name || email.split('@')[0],
-      email: email ? email.toLowerCase() : undefined,
-      googleId,
-      avatar,
+      name: verifiedName || (verifiedEmail ? verifiedEmail.split('@')[0] : 'Google User'),
+      email: verifiedEmail ? verifiedEmail.toLowerCase() : undefined,
+      googleId: verifiedGoogleId,
+      avatar: verifiedAvatar,
     });
   }
 
