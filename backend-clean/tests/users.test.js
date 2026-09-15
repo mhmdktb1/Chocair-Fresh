@@ -2,16 +2,22 @@ import mongoose from 'mongoose';
 import { MongoMemoryServer } from 'mongodb-memory-server';
 import request from 'supertest';
 import jwt from 'jsonwebtoken';
+import axios from 'axios';
 import app from '../server.js';
 import User from '../models/userModel.js';
 import OTP from '../models/otpModel.js';
 import generateToken from '../utils/generateToken.js';
-import { setGoogleTokenVerifier, resetGoogleTokenVerifier } from '../controllers/userController.js';
+import {
+  defaultGoogleTokenVerifier,
+  setGoogleTokenVerifier,
+  resetGoogleTokenVerifier,
+} from '../controllers/userController.js';
 
 let mongoServer;
 let adminToken;
 let userToken;
 let userId;
+const originalAxiosGet = axios.get;
 
 beforeAll(async () => {
   mongoServer = await MongoMemoryServer.create();
@@ -25,6 +31,10 @@ afterAll(async () => {
 });
 
 beforeEach(async () => {
+  delete process.env.GOOGLE_CLIENT_ID;
+  resetGoogleTokenVerifier();
+  axios.get = originalAxiosGet;
+
   const collections = mongoose.connection.collections;
   for (const key in collections) {
     const collection = collections[key];
@@ -47,6 +57,12 @@ beforeEach(async () => {
   });
   userId = customer._id;
   userToken = generateToken(customer._id);
+});
+
+afterEach(() => {
+  delete process.env.GOOGLE_CLIENT_ID;
+  resetGoogleTokenVerifier();
+  axios.get = originalAxiosGet;
 });
 
 describe('User and Auth API', () => {
@@ -82,47 +98,197 @@ describe('User and Auth API', () => {
   });
 
   it('POST /api/users/auth/google - creates new user using verified token and ignores forged client claims', async () => {
-    setGoogleTokenVerifier(async (token) => {
-      if (token === 'valid-google-oauth-token') {
-        return {
-          googleId: 'google-uid-verified-12345',
-          email: 'realgoogleuser@gmail.com',
-          name: 'Real Google Name',
-          avatar: 'https://lh3.googleusercontent.com/real.jpg',
-        };
-      }
-      throw new Error('Invalid token');
-    });
+    // Mock the Google tokeninfo HTTP response directly
+    const validGooglePayload = {
+      sub: 'google-uid-verified-12345',
+      email: 'realgoogleuser@gmail.com',
+      email_verified: 'true',
+      name: 'Real Google Name',
+      picture: 'https://lh3.googleusercontent.com/real.jpg',
+      iss: 'https://accounts.google.com',
+      aud: 'test-google-client-id.apps.googleusercontent.com',
+      exp: String(Math.floor(Date.now() / 1000) + 3600),
+    };
 
-    const res = await request(app)
-      .post('/api/users/auth/google')
-      .send({
-        idToken: 'valid-google-oauth-token',
-        // Client attempts to forge a different email and name in request body
-        googleId: 'attacker-spoofed-uid',
-        email: 'victim@gmail.com',
-        name: 'Attacker Name',
-        avatar: 'https://attacker.com/fake.jpg',
-      });
+    const originalClientId = process.env.GOOGLE_CLIENT_ID;
+    process.env.GOOGLE_CLIENT_ID = 'test-google-client-id.apps.googleusercontent.com';
 
-    expect(res.status).toBe(200);
-    expect(res.body.success).toBe(true);
-    expect(res.body.token).toBeTruthy();
-    // Must strictly match the verified Google claims, NOT the spoofed body
-    expect(res.body.user.email).toBe('realgoogleuser@gmail.com');
-    expect(res.body.user.name).toBe('Real Google Name');
+    axios.get = async () => ({ data: validGooglePayload });
 
-    const dbUser = await User.findOne({ email: 'realgoogleuser@gmail.com' });
-    expect(dbUser).toBeTruthy();
-    expect(dbUser.googleId).toBe('google-uid-verified-12345');
+    try {
+      const res = await request(app)
+        .post('/api/users/auth/google')
+        .send({
+          idToken: 'valid-google-oauth-token',
+          // Client attempts to forge a different email and name in request body
+          googleId: 'attacker-spoofed-uid',
+          email: 'victim@gmail.com',
+          name: 'Attacker Name',
+          avatar: 'https://attacker.com/fake.jpg',
+        });
 
-    resetGoogleTokenVerifier();
+      expect(res.status).toBe(200);
+      expect(res.body.success).toBe(true);
+      expect(res.body.token).toBeTruthy();
+      // Must strictly match the verified Google claims, NOT the spoofed body
+      expect(res.body.user.email).toBe('realgoogleuser@gmail.com');
+      expect(res.body.user.name).toBe('Real Google Name');
+
+      const dbUser = await User.findOne({ email: 'realgoogleuser@gmail.com' });
+      expect(dbUser).toBeTruthy();
+      expect(dbUser.googleId).toBe('google-uid-verified-12345');
+    } finally {
+      process.env.GOOGLE_CLIENT_ID = originalClientId;
+    }
   });
 
-  it('GOOGLE AUTH SECURITY: rejects forged or invalid Google ID tokens with 401', async () => {
-    setGoogleTokenVerifier(async () => {
-      throw new Error('Invalid Value');
+  // ================= DEFAULT GOOGLE TOKEN VERIFIER TESTS =================
+
+  describe('defaultGoogleTokenVerifier implementation tests', () => {
+    const validPayload = {
+      sub: 'google-sub-1001',
+      email: 'customer@fresh.com',
+      email_verified: true,
+      iss: 'https://accounts.google.com',
+      aud: 'fresh-client-id.apps.googleusercontent.com',
+      exp: Math.floor(Date.now() / 1000) + 3600,
+      name: 'Fresh Customer',
+      picture: 'https://photo.jpg',
+    };
+
+    it('ACCEPTANCE: accepts valid Google tokeninfo response and normalizes claims', async () => {
+      const originalClientId = process.env.GOOGLE_CLIENT_ID;
+      process.env.GOOGLE_CLIENT_ID = 'fresh-client-id.apps.googleusercontent.com';
+
+      axios.get = async () => ({ data: { ...validPayload } });
+
+      try {
+        const verified = await defaultGoogleTokenVerifier('valid-token-str');
+        expect(verified.googleId).toBe('google-sub-1001');
+        expect(verified.email).toBe('customer@fresh.com');
+        expect(verified.name).toBe('Fresh Customer');
+        expect(verified.avatar).toBe('https://photo.jpg');
+      } finally {
+        process.env.GOOGLE_CLIENT_ID = originalClientId;
+      }
     });
+
+    it('REJECTION: rejects missing audience (aud)', async () => {
+      axios.get = async () => ({
+        data: { ...validPayload, aud: undefined },
+      });
+
+      await expect(defaultGoogleTokenVerifier('test-token')).rejects.toThrow(
+        /Missing Google token audience/i
+      );
+    });
+
+    it('REJECTION: rejects wrong audience (aud)', async () => {
+      const originalClientId = process.env.GOOGLE_CLIENT_ID;
+      process.env.GOOGLE_CLIENT_ID = 'configured-client-id.apps.googleusercontent.com';
+
+      axios.get = async () => ({
+        data: { ...validPayload, aud: 'attacker-client-id.apps.googleusercontent.com' },
+      });
+
+      try {
+        await expect(defaultGoogleTokenVerifier('test-token')).rejects.toThrow(
+          /Token audience mismatch/i
+        );
+      } finally {
+        process.env.GOOGLE_CLIENT_ID = originalClientId;
+      }
+    });
+
+    it('REJECTION: rejects missing issuer (iss)', async () => {
+      axios.get = async () => ({
+        data: { ...validPayload, iss: undefined },
+      });
+
+      await expect(defaultGoogleTokenVerifier('test-token')).rejects.toThrow(
+        /Missing Google token issuer/i
+      );
+    });
+
+    it('REJECTION: rejects wrong issuer (iss)', async () => {
+      axios.get = async () => ({
+        data: { ...validPayload, iss: 'https://malicious-fake-auth.com' },
+      });
+
+      await expect(defaultGoogleTokenVerifier('test-token')).rejects.toThrow(
+        /Invalid Google token issuer/i
+      );
+    });
+
+    it('REJECTION: rejects missing or expired expiration (exp)', async () => {
+      // 1. Missing exp
+      axios.get = async () => ({
+        data: { ...validPayload, exp: undefined },
+      });
+      await expect(defaultGoogleTokenVerifier('test-token')).rejects.toThrow(
+        /Missing Google token expiration/i
+      );
+
+      // 2. Expired exp
+      axios.get = async () => ({
+        data: { ...validPayload, exp: Math.floor(Date.now() / 1000) - 300 },
+      });
+      await expect(defaultGoogleTokenVerifier('test-token')).rejects.toThrow(
+        /Google ID token has expired/i
+      );
+    });
+
+    it('REJECTION: rejects unverified email (email_verified is false or missing)', async () => {
+      // 1. email_verified is false
+      axios.get = async () => ({
+        data: { ...validPayload, email_verified: false },
+      });
+      await expect(defaultGoogleTokenVerifier('test-token')).rejects.toThrow(
+        /Google account email is not verified/i
+      );
+
+      // 2. email_verified is missing
+      axios.get = async () => ({
+        data: { ...validPayload, email_verified: undefined },
+      });
+      await expect(defaultGoogleTokenVerifier('test-token')).rejects.toThrow(
+        /Google account email is not verified/i
+      );
+    });
+
+    it('REJECTION: rejects missing or empty subject identifier (sub)', async () => {
+      axios.get = async () => ({
+        data: { ...validPayload, sub: '' },
+      });
+
+      await expect(defaultGoogleTokenVerifier('test-token')).rejects.toThrow(
+        /Missing or invalid Google subject identifier/i
+      );
+    });
+
+    it('PRODUCTION SECURITY: fails closed when GOOGLE_CLIENT_ID is missing in production', async () => {
+      const originalEnv = process.env.NODE_ENV;
+      const originalClientId = process.env.GOOGLE_CLIENT_ID;
+      process.env.NODE_ENV = 'production';
+      delete process.env.GOOGLE_CLIENT_ID;
+
+      try {
+        await expect(defaultGoogleTokenVerifier('test-token')).rejects.toThrow(
+          /GOOGLE_CLIENT_ID.*not configured/i
+        );
+      } finally {
+        process.env.NODE_ENV = originalEnv;
+        process.env.GOOGLE_CLIENT_ID = originalClientId;
+      }
+    });
+  });
+
+  it('GOOGLE AUTH SECURITY: rejects forged or invalid Google ID tokens via endpoint with 401', async () => {
+    axios.get = async () => {
+      const err = new Error('Invalid Value');
+      err.response = { status: 400, data: { error_description: 'Invalid Value' } };
+      throw err;
+    };
 
     const forgedRes = await request(app)
       .post('/api/users/auth/google')
@@ -130,44 +296,6 @@ describe('User and Auth API', () => {
 
     expect(forgedRes.status).toBe(401);
     expect(forgedRes.body.message).toMatch(/Google token verification failed/i);
-
-    resetGoogleTokenVerifier();
-  });
-
-  it('GOOGLE AUTH SECURITY: rejects token when audience mismatches configured GOOGLE_CLIENT_ID', async () => {
-    setGoogleTokenVerifier(async (token) => {
-      // Simulate audience verification failure in default verifier
-      const expectedAudience = 'chocair-official-client-id.apps.googleusercontent.com';
-      const tokenAud = 'attacker-rogue-client-id.apps.googleusercontent.com';
-      if (tokenAud !== expectedAudience) {
-        throw new Error(`Token audience mismatch: expected ${expectedAudience}, got ${tokenAud}`);
-      }
-      return { googleId: 'sub-1', email: 'user@test.com' };
-    });
-
-    const audFailRes = await request(app)
-      .post('/api/users/auth/google')
-      .send({ idToken: 'token-with-wrong-audience' });
-
-    expect(audFailRes.status).toBe(401);
-    expect(audFailRes.body.message).toMatch(/Token audience mismatch/i);
-
-    resetGoogleTokenVerifier();
-  });
-
-  it('GOOGLE AUTH SECURITY: rejects unverified Google email accounts', async () => {
-    setGoogleTokenVerifier(async () => {
-      throw new Error('Google account email is not verified');
-    });
-
-    const unverifiedEmailRes = await request(app)
-      .post('/api/users/auth/google')
-      .send({ idToken: 'token-with-unverified-email' });
-
-    expect(unverifiedEmailRes.status).toBe(401);
-    expect(unverifiedEmailRes.body.message).toMatch(/not verified/i);
-
-    resetGoogleTokenVerifier();
   });
 
   it('GET /api/users/profile - returns authenticated user profile', async () => {
