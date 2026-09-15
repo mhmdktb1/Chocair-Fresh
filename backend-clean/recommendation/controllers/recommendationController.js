@@ -184,10 +184,26 @@ export const recommendByCart = asyncHandler(async (req, res) => {
   }
 
   // Get recommendations
-  const recommendations = await getCartRecommendations(cartItems, {
-    limit: Number(limit),
-    userId: userPhone
-  });
+  let recommendations = [];
+  try {
+    recommendations = await getCartRecommendations(cartItems, {
+      limit: Number(limit),
+      userId: userPhone
+    });
+  } catch (err) {
+    // If knowledge maps are not built yet, fallback to top rated products
+    const excludedIds = cartItems.map(i => (i && (i.productId || i._id || i.id)) ? String(i.productId || i._id || i.id) : null).filter(Boolean);
+    const fallbackProducts = await Product.find({ _id: { $nin: excludedIds } })
+      .sort({ rating: -1, numReviews: -1 })
+      .limit(Number(limit))
+      .select('name price image category countInStock unit rating numReviews');
+
+    return res.json({
+      success: true,
+      count: fallbackProducts.length,
+      data: fallbackProducts.map(p => ({ product: p, score: p.rating || 0, isFallback: true }))
+    });
+  }
 
   // Enrich with full product data
   const enrichedRecommendations = await Promise.all(
@@ -225,32 +241,50 @@ export const recommendByCart = asyncHandler(async (req, res) => {
 export const getTrending = asyncHandler(async (req, res) => {
   const { limit = 10 } = req.query;
 
-  // Get trending products
-  const trending = await getTrendingProducts(Number(limit));
+  try {
+    // Get trending products from engine
+    const trending = await getTrendingProducts(Number(limit));
 
-  // Enrich with full product data
-  const enrichedTrending = await Promise.all(
-    trending.map(async (item) => {
-      const productData = await Product.findById(item.productId).select(
-        'name price image category countInStock unit rating numReviews'
-      );
+    // Enrich with full product data
+    const enrichedTrending = await Promise.all(
+      trending.map(async (item) => {
+        const productData = await Product.findById(item.productId).select(
+          'name price image category countInStock unit rating numReviews'
+        );
 
-      return {
-        product: productData,
-        popularity: item.popularity
-      };
-    })
-  );
+        return {
+          product: productData,
+          popularity: item.popularity
+        };
+      })
+    );
 
-  // Filter out products that no longer exist
-  const validTrending = enrichedTrending.filter(
-    (item) => item.product !== null
-  );
+    // Filter out products that no longer exist
+    const validTrending = enrichedTrending.filter(
+      (item) => item.product !== null
+    );
+
+    if (validTrending.length > 0) {
+      return res.json({
+        success: true,
+        count: validTrending.length,
+        data: validTrending
+      });
+    }
+  } catch (error) {
+    // Fallback to database query if knowledge files are not built yet
+  }
+
+  // DB Fallback: top rated products
+  const fallbackProducts = await Product.find({})
+    .sort({ rating: -1, numReviews: -1 })
+    .limit(Number(limit))
+    .select('name price image category countInStock unit rating numReviews');
 
   res.json({
     success: true,
-    count: validTrending.length,
-    data: validTrending
+    count: fallbackProducts.length,
+    data: fallbackProducts.map(p => ({ product: p, popularity: p.rating || 0 }))
   });
 });
 
