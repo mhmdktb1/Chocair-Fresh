@@ -408,6 +408,42 @@ const deleteUser = asyncHandler(async (req, res) => {
 });
 
 // ==========================================
+// GOOGLE TOKEN VERIFICATION
+// ==========================================
+const defaultGoogleTokenVerifier = async (idToken) => {
+  if (!idToken || typeof idToken !== 'string') {
+    throw new Error('Invalid or missing Google ID token');
+  }
+
+  const response = await axios.get(
+    `https://oauth2.googleapis.com/tokeninfo?id_token=${encodeURIComponent(idToken)}`,
+    { timeout: 8000 }
+  );
+
+  const payload = response.data;
+  if (!payload || (!payload.sub && !payload.user_id && !payload.email)) {
+    throw new Error('Invalid Google token verification response');
+  }
+
+  return {
+    googleId: payload.sub || payload.user_id,
+    email: payload.email,
+    name: payload.name || (payload.email ? payload.email.split('@')[0] : 'Google User'),
+    avatar: payload.picture || '',
+  };
+};
+
+let googleTokenVerifier = defaultGoogleTokenVerifier;
+
+export const setGoogleTokenVerifier = (fn) => {
+  googleTokenVerifier = fn;
+};
+
+export const resetGoogleTokenVerifier = () => {
+  googleTokenVerifier = defaultGoogleTokenVerifier;
+};
+
+// ==========================================
 // GOOGLE AUTHENTICATION
 // @route   POST /api/users/auth/google
 // @access  Public
@@ -415,35 +451,33 @@ const deleteUser = asyncHandler(async (req, res) => {
 const googleAuth = asyncHandler(async (req, res) => {
   const { idToken, googleId, email, name, avatar } = req.body;
 
-  let verifiedEmail = email;
-  let verifiedGoogleId = googleId;
-  let verifiedName = name;
-  let verifiedAvatar = avatar;
+  let verifiedEmail;
+  let verifiedGoogleId;
+  let verifiedName;
+  let verifiedAvatar;
 
-  // If idToken is provided, verify it cryptographically (or decode in test/dev if mocked)
+  // When idToken is provided, ALWAYS verify it cryptographically with Google and ignore client claims
   if (idToken) {
     try {
-      const decoded = jwt.decode(idToken);
-      if (!decoded) {
-        res.status(401);
-        throw new Error('Invalid Google ID token format');
-      }
-
-      // Check token expiry
-      if (decoded.exp && decoded.exp * 1000 < Date.now()) {
-        res.status(401);
-        throw new Error('Google ID token has expired');
-      }
-
-      // If token payload contains claims, extract verified identity
-      if (decoded.email) verifiedEmail = decoded.email;
-      if (decoded.sub || decoded.user_id) verifiedGoogleId = decoded.sub || decoded.user_id;
-      if (decoded.name) verifiedName = decoded.name;
-      if (decoded.picture) verifiedAvatar = decoded.picture;
+      const verified = await googleTokenVerifier(idToken);
+      verifiedGoogleId = verified.googleId;
+      verifiedEmail = verified.email;
+      verifiedName = verified.name;
+      verifiedAvatar = verified.avatar;
     } catch (err) {
       res.status(401);
-      throw new Error(err.message || 'Google token verification failed');
+      const msg = err.response?.data?.error_description || err.response?.data?.error || err.message;
+      throw new Error(`Google token verification failed: ${msg}`);
     }
+  } else if (process.env.NODE_ENV !== 'production' && (email || googleId)) {
+    // Only in non-production environments and when idToken is absent, allow explicit payload for dev testing
+    verifiedGoogleId = googleId;
+    verifiedEmail = email;
+    verifiedName = name;
+    verifiedAvatar = avatar;
+  } else {
+    res.status(400);
+    throw new Error('Google ID token is required');
   }
 
   if (!verifiedEmail && !verifiedGoogleId) {

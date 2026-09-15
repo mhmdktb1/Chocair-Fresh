@@ -199,15 +199,62 @@ describe('Home Config & Hero CMS API', () => {
     expect(heroRes.status).toBe(401);
   });
 
-  it('UPLOAD SECURITY: unauthenticated upload rejected with 401; missing file returns 400', async () => {
-    // Unauthenticated upload -> 401
+  it('UPLOAD SECURITY: validates image format, size limits, and requires auth', async () => {
+    // 1. Unauthenticated upload -> 401
     const unauthRes = await request(app).post('/api/upload');
     expect(unauthRes.status).toBe(401);
 
-    // Authenticated upload without file -> 400
+    // 2. Authenticated upload without file -> 400
     const noFileRes = await request(app)
       .post('/api/upload')
       .set('Authorization', `Bearer ${userToken}`);
     expect(noFileRes.status).toBe(400);
+
+    // 3. Authenticated upload of invalid file type (e.g., .txt) -> 400
+    const invalidTypeRes = await request(app)
+      .post('/api/upload')
+      .set('Authorization', `Bearer ${userToken}`)
+      .attach('image', Buffer.from('plain text content'), 'test.txt');
+    expect(invalidTypeRes.status).toBe(400);
+    expect(invalidTypeRes.body.message).toMatch(/Images only/i);
+
+    // 4. Authenticated upload of valid image (e.g., .png) -> 200
+    const validImgRes = await request(app)
+      .post('/api/upload')
+      .set('Authorization', `Bearer ${userToken}`)
+      .attach('image', Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]), {
+        filename: 'avatar.png',
+        contentType: 'image/png',
+      });
+    expect(validImgRes.status).toBe(200);
+    expect(validImgRes.text).toMatch(/\/uploads\/image-/i);
+
+    // 5. Authenticated upload exceeding 5MB limit -> 400
+    const largeBuffer = Buffer.alloc(6 * 1024 * 1024); // 6MB
+    const largeRes = await request(app)
+      .post('/api/upload')
+      .set('Authorization', `Bearer ${userToken}`)
+      .attach('image', largeBuffer, {
+        filename: 'large.jpg',
+        contentType: 'image/jpeg',
+      });
+    expect(largeRes.status).toBe(400);
+    expect(largeRes.body.message).toMatch(/5MB limit/i);
+  });
+
+  it('CORS SECURITY: rejects unauthorized origins with error', async () => {
+    const unauthOriginRes = await request(app)
+      .get('/api/health')
+      .set('Origin', 'https://malicious-phishing-site.com');
+
+    // Express CORS middleware will return 500/error when callback(new Error('Not allowed by CORS')) is triggered
+    expect(unauthOriginRes.status).toBe(500);
+    expect(unauthOriginRes.body.message).toMatch(/Not allowed by CORS/i);
+
+    // Authorized Vercel preview origin is accepted
+    const vercelOriginRes = await request(app)
+      .get('/api/health')
+      .set('Origin', 'https://chocair-fresh-preview.vercel.app');
+    expect(vercelOriginRes.status).toBe(200);
   });
 });

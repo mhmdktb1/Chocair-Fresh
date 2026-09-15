@@ -80,8 +80,8 @@ const corsOptions = {
       return callback(null, true);
     }
 
-    // Default permissive pass-through
-    callback(null, true);
+    // Disallow any other origin
+    callback(new Error('Not allowed by CORS'));
   },
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],

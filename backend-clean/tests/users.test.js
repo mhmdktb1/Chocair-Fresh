@@ -6,6 +6,7 @@ import app from '../server.js';
 import User from '../models/userModel.js';
 import OTP from '../models/otpModel.js';
 import generateToken from '../utils/generateToken.js';
+import { setGoogleTokenVerifier, resetGoogleTokenVerifier } from '../controllers/userController.js';
 
 let mongoServer;
 let adminToken;
@@ -80,60 +81,57 @@ describe('User and Auth API', () => {
     expect(res.body.user.name).toBe('Regular Customer');
   });
 
-  it('POST /api/users/auth/google - creates new user on first Google login with verified token or payload', async () => {
-    const validIdToken = jwt.sign(
-      {
-        sub: 'google-uid-12345',
-        email: 'newgoogle@gmail.com',
-        name: 'Google User',
-        picture: 'https://lh3.googleusercontent.com/photo.jpg',
-      },
-      'google_test_key',
-      { expiresIn: '1h' }
-    );
+  it('POST /api/users/auth/google - creates new user using verified token and ignores forged client claims', async () => {
+    setGoogleTokenVerifier(async (token) => {
+      if (token === 'valid-google-oauth-token') {
+        return {
+          googleId: 'google-uid-verified-12345',
+          email: 'realgoogleuser@gmail.com',
+          name: 'Real Google Name',
+          avatar: 'https://lh3.googleusercontent.com/real.jpg',
+        };
+      }
+      throw new Error('Invalid token');
+    });
 
     const res = await request(app)
       .post('/api/users/auth/google')
       .send({
-        idToken: validIdToken,
-        googleId: 'google-uid-12345',
-        email: 'newgoogle@gmail.com',
-        name: 'Google User',
-        avatar: 'https://lh3.googleusercontent.com/photo.jpg',
+        idToken: 'valid-google-oauth-token',
+        // Client attempts to forge a different email and name in request body
+        googleId: 'attacker-spoofed-uid',
+        email: 'victim@gmail.com',
+        name: 'Attacker Name',
+        avatar: 'https://attacker.com/fake.jpg',
       });
 
     expect(res.status).toBe(200);
     expect(res.body.success).toBe(true);
     expect(res.body.token).toBeTruthy();
-    expect(res.body.user.email).toBe('newgoogle@gmail.com');
+    // Must strictly match the verified Google claims, NOT the spoofed body
+    expect(res.body.user.email).toBe('realgoogleuser@gmail.com');
+    expect(res.body.user.name).toBe('Real Google Name');
 
-    const dbUser = await User.findOne({ email: 'newgoogle@gmail.com' });
+    const dbUser = await User.findOne({ email: 'realgoogleuser@gmail.com' });
     expect(dbUser).toBeTruthy();
-    expect(dbUser.googleId).toBe('google-uid-12345');
+    expect(dbUser.googleId).toBe('google-uid-verified-12345');
+
+    resetGoogleTokenVerifier();
   });
 
-  it('GOOGLE AUTH SECURITY: rejects expired or malformed Google ID tokens', async () => {
-    // 1. Expired token
-    const expiredToken = jwt.sign(
-      {
-        sub: 'google-expired-uid',
-        email: 'expired@gmail.com',
-        exp: Math.floor(Date.now() / 1000) - 3600, // 1 hour in the past
-      },
-      'google_test_key'
-    );
+  it('GOOGLE AUTH SECURITY: rejects forged or invalid Google ID tokens with 401', async () => {
+    setGoogleTokenVerifier(async () => {
+      throw new Error('Invalid Value');
+    });
 
-    const expiredRes = await request(app)
+    const forgedRes = await request(app)
       .post('/api/users/auth/google')
-      .send({ idToken: expiredToken });
-    expect(expiredRes.status).toBe(401);
-    expect(expiredRes.body.message).toMatch(/expired/i);
+      .send({ idToken: 'forged-fake-token-12345' });
 
-    // 2. Malformed token string
-    const malformedRes = await request(app)
-      .post('/api/users/auth/google')
-      .send({ idToken: 'not.a.valid.jwt.token' });
-    expect(malformedRes.status).toBe(401);
+    expect(forgedRes.status).toBe(401);
+    expect(forgedRes.body.message).toMatch(/Google token verification failed/i);
+
+    resetGoogleTokenVerifier();
   });
 
   it('GET /api/users/profile - returns authenticated user profile', async () => {
