@@ -51,4 +51,26 @@ const admin = (req, res, next) => {
   }
 };
 
-export { protect, admin };
+// Optional authentication - attaches req.user if a valid token is present, but allows guest requests through
+const optionalProtect = asyncHandler(async (req, res, next) => {
+  let token;
+
+  if (
+    req.headers.authorization &&
+    req.headers.authorization.startsWith('Bearer')
+  ) {
+    try {
+      token = req.headers.authorization.split(' ')[1];
+      const secret = process.env.JWT_SECRET;
+      const decoded = jwt.verify(token, secret || 'test_jwt_secret_fallback');
+      req.user = await User.findById(decoded.id).select('-password');
+    } catch (error) {
+      // In optional auth, invalid token simply means user remains guest
+      req.user = null;
+    }
+  }
+
+  next();
+});
+
+export { protect, admin, optionalProtect };

@@ -75,12 +75,18 @@ const sendOTP = asyncHandler(async (req, res) => {
   // Dispatch OTP via Meta WhatsApp Cloud API (with dev simulation fallback)
   await sendWhatsAppOtp(phone, code);
 
-  res.status(200).json({
+  const responsePayload = {
     success: true,
     message: 'OTP sent successfully',
-    // Always return OTP during testing phase
-    otp: code,
-  });
+  };
+
+  // Only expose OTP in local development/test environments for development convenience.
+  // In production, OTP is NEVER returned in the API response.
+  if (process.env.NODE_ENV === 'development' || process.env.NODE_ENV === 'test') {
+    responsePayload.otp = code;
+  }
+
+  res.status(200).json(responsePayload);
 });
 
 // ==========================================

@@ -15,10 +15,10 @@ const getCategories = async (req, res) => {
 
 // @desc    Create a category
 // @route   POST /api/categories
-// @access  Public (for now)
+// @access  Private / Admin
 const createCategory = async (req, res) => {
   try {
-    const { name, image, description } = req.body;
+    const { name, image, description, isVisible, featured } = req.body;
 
     const categoryExists = await Category.findOne({ name });
 
@@ -31,6 +31,8 @@ const createCategory = async (req, res) => {
       name,
       image,
       description,
+      isVisible: isVisible !== undefined ? isVisible : true,
+      featured: featured !== undefined ? featured : false,
     });
 
     if (category) {

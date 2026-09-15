@@ -97,8 +97,25 @@ describe('Order API', () => {
   });
 
   it('POST /api/orders - should allow missing item image and use fallback', async () => {
+    const noImageProduct = await Product.create({
+      name: 'No Image Berry',
+      price: 3.50,
+      category: 'fruits',
+      countInStock: 50,
+      image: '',
+      brand: 'Chocair',
+      description: 'Fresh berry without image',
+      unit: 'box'
+    });
+
     const payload = createOrderData();
-    payload.orderItems[0].image = '';
+    payload.orderItems = [{
+      product: noImageProduct._id,
+      name: 'No Image Berry',
+      qty: 1,
+      price: 3.50,
+      image: '',
+    }];
 
     const res = await request(app).post('/api/orders').send(payload);
     expect(res.status).toBe(201);
@@ -116,13 +133,20 @@ describe('Order API', () => {
     expect(res.body.length).toBe(1);
   });
 
-  it('GET /api/orders/:id - should return single order', async () => {
+  it('GET /api/orders/:id - should return single order for admin or owner', async () => {
     const createRes = await request(app).post('/api/orders').send(createOrderData());
     const orderId = createRes.body._id;
 
-    const res = await request(app).get(`/api/orders/${orderId}`);
+    // Admin should view it
+    const res = await request(app)
+      .get(`/api/orders/${orderId}`)
+      .set('Authorization', `Bearer ${adminToken}`);
     expect(res.status).toBe(200);
     expect(res.body._id).toBe(orderId);
+
+    // Unauthenticated request should be rejected with 401
+    const anonRes = await request(app).get(`/api/orders/${orderId}`);
+    expect(anonRes.status).toBe(401);
   });
 
   it('PUT /api/orders/:id/status - should update status when authenticated as admin', async () => {
@@ -147,7 +171,9 @@ describe('Order API', () => {
     expect(res.status).toBe(200);
     expect(res.body.message).toBe('Order removed');
 
-    const checkRes = await request(app).get(`/api/orders/${orderId}`);
+    const checkRes = await request(app)
+      .get(`/api/orders/${orderId}`)
+      .set('Authorization', `Bearer ${adminToken}`);
     expect(checkRes.status).toBe(404);
   });
   

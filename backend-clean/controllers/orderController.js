@@ -6,15 +6,13 @@ import { sendWhatsAppOrderNotification } from '../utils/whatsappService.js';
 
 // @desc    Create new order
 // @route   POST /api/orders
-// @access  Public
+// @access  Public / Authenticated
 const addOrderItems = asyncHandler(async (req, res) => {
   const {
     orderItems,
     customerInfo,
     paymentMethod,
-    itemsPrice,
-    shippingPrice,
-    totalPrice,
+    shippingPrice: clientShippingPrice,
   } = req.body;
 
   if (!orderItems || orderItems.length === 0) {
@@ -22,15 +20,27 @@ const addOrderItems = asyncHandler(async (req, res) => {
     throw new Error('No order items');
   }
 
-  // Atomically decrement stock for all ordered items
+  if (!customerInfo || !customerInfo.name || !customerInfo.phone || !customerInfo.address) {
+    res.status(400);
+    throw new Error('Customer name, phone, and delivery address are required');
+  }
+
+  // Atomically decrement stock and build server-verified order items with authoritative DB prices
   const decrementedItems = [];
+  const verifiedOrderItems = [];
+  let computedItemsPrice = 0;
+
   try {
     for (const item of orderItems) {
-      const productId = item.product || item._id;
+      const productId = item.product || item._id || item.id;
       const qty = Number(item.qty) || 1;
 
       if (!productId) {
         throw new Error(`Invalid product reference for item: ${item.name || 'Unknown'}`);
+      }
+
+      if (qty <= 0) {
+        throw new Error(`Invalid quantity for item: ${item.name || 'Unknown'}`);
       }
 
       const updatedProduct = await Product.findOneAndUpdate(
@@ -46,19 +56,41 @@ const addOrderItems = asyncHandler(async (req, res) => {
       }
 
       decrementedItems.push({ productId, qty });
+
+      const authoritativePrice = Number(updatedProduct.price) || 0;
+      computedItemsPrice += authoritativePrice * qty;
+
+      verifiedOrderItems.push({
+        name: updatedProduct.name,
+        qty,
+        image: item.image || updatedProduct.image || '/assets/images/placeholder-product.jpg',
+        price: authoritativePrice,
+        product: updatedProduct._id,
+      });
     }
 
-    const normalizedOrderItems = orderItems.map((item) => ({
-      ...item,
-      image: item.image || '/assets/images/placeholder-product.jpg',
-    }));
+    // Standardize currency precision
+    computedItemsPrice = Number(computedItemsPrice.toFixed(2));
+    const shippingPrice = typeof clientShippingPrice === 'number' && clientShippingPrice >= 0
+      ? Number(clientShippingPrice.toFixed(2))
+      : 0;
+    const totalPrice = Number((computedItemsPrice + shippingPrice).toFixed(2));
 
     const order = new Order({
-      orderItems: normalizedOrderItems,
+      orderItems: verifiedOrderItems,
       user: req.user ? req.user._id : undefined,
-      customerInfo,
-      paymentMethod,
-      itemsPrice,
+      customerInfo: {
+        name: customerInfo.name.trim(),
+        email: customerInfo.email ? customerInfo.email.trim().toLowerCase() : undefined,
+        phone: customerInfo.phone.trim(),
+        address: customerInfo.address.trim(),
+        city: customerInfo.city ? customerInfo.city.trim() : undefined,
+        postalCode: customerInfo.postalCode ? customerInfo.postalCode.trim() : undefined,
+        country: customerInfo.country || 'Lebanon',
+        googleMapsLink: customerInfo.googleMapsLink || '',
+      },
+      paymentMethod: paymentMethod || 'Cash on Delivery',
+      itemsPrice: computedItemsPrice,
       shippingPrice,
       totalPrice,
     });
@@ -100,19 +132,48 @@ const addOrderItems = asyncHandler(async (req, res) => {
 
 // @desc    Get order by ID
 // @route   GET /api/orders/:id
-// @access  Public
+// @access  Private / Owner or Admin
 const getOrderById = asyncHandler(async (req, res) => {
   const order = await Order.findById(req.params.id).populate(
     'orderItems.product',
-    'name image email'
+    'name image price unit'
   );
 
-  if (order) {
-    res.json(order);
-  } else {
+  if (!order) {
     res.status(404);
     throw new Error('Order not found');
   }
+
+  // Authorize: check if user is admin, order user, or matches phone/email
+  let isAuthorized = false;
+
+  if (req.user) {
+    if (req.user.isAdmin) {
+      isAuthorized = true;
+    } else if (order.user && order.user.toString() === req.user._id.toString()) {
+      isAuthorized = true;
+    } else if (req.user.phone) {
+      const orderPhone = order.customerInfo.phone;
+      const userPhone = req.user.phone;
+      if (orderPhone === userPhone) {
+        isAuthorized = true;
+      } else if (userPhone.startsWith('+961')) {
+        const localPhone = userPhone.replace('+961', '');
+        if (orderPhone === localPhone || orderPhone === `0${localPhone}`) {
+          isAuthorized = true;
+        }
+      }
+    } else if (req.user.email && order.customerInfo.email === req.user.email) {
+      isAuthorized = true;
+    }
+  }
+
+  if (!isAuthorized) {
+    res.status(401);
+    throw new Error('Not authorized to view this order');
+  }
+
+  res.json(order);
 });
 
 // @desc    Get all orders (supports filtering by email/phone)

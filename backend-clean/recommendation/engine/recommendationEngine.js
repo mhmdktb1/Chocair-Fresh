@@ -316,11 +316,16 @@ export async function getCartRecommendations(cartItems, options = {}) {
     }
   }
 
+  const normalizedCart = (cartItems || []).map(item => ({
+    productId: (item && (item.productId || item._id || item.id)) ? String(item.productId || item._id || item.id) : null,
+    quantity: Number(item.quantity || item.qty || 1),
+  })).filter(i => i.productId !== null);
+
   const scores = {}; // { productId: { associationScore: number, sources: number } }
-  const cartProductIds = new Set(cartItems.map(item => item.productId));
+  const cartProductIds = new Set(normalizedCart.map(item => item.productId));
 
   // 1. Iterate through each item in the cart
-  for (const item of cartItems) {
+  for (const item of normalizedCart) {
     const { productId, quantity } = item;
     const associations = productAssociations[productId];
 

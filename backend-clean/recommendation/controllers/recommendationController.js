@@ -118,7 +118,7 @@ export const recommendByProduct = asyncHandler(async (req, res) => {
       }
 
       const productData = await Product.findById(rec.productId).select(
-        'name price image category stock unit'
+        'name price image category countInStock unit rating numReviews'
       );
 
       return {
@@ -193,7 +193,7 @@ export const recommendByCart = asyncHandler(async (req, res) => {
   const enrichedRecommendations = await Promise.all(
     recommendations.map(async (rec) => {
       const productData = await Product.findById(rec.productId).select(
-        'name price image category stock unit'
+        'name price image category countInStock unit rating numReviews'
       );
 
       return {
@@ -232,7 +232,7 @@ export const getTrending = asyncHandler(async (req, res) => {
   const enrichedTrending = await Promise.all(
     trending.map(async (item) => {
       const productData = await Product.findById(item.productId).select(
-        'name price image category stock unit'
+        'name price image category countInStock unit rating numReviews'
       );
 
       return {
@@ -305,7 +305,7 @@ export const getNewArrivals = asyncHandler(async (req, res) => {
   const products = await Product.find({})
     .sort({ createdAt: -1 })
     .limit(Number(limit))
-    .select('name price image category stock unit');
+    .select('name price image category countInStock unit rating numReviews');
 
   res.json({
     success: true,
@@ -325,7 +325,7 @@ export const getTopRated = asyncHandler(async (req, res) => {
   const products = await Product.find({})
     .sort({ rating: -1, numReviews: -1 })
     .limit(Number(limit))
-    .select('name price image category stock unit rating numReviews');
+    .select('name price image category countInStock unit rating numReviews');
 
   res.json({
     success: true,
@@ -383,7 +383,7 @@ export const getPersonalized = asyncHandler(async (req, res) => {
   // 6. Fetch full product details
   const enrichedRecs = await Promise.all(
     sortedRecs.map(async ([productId, score]) => {
-      const product = await Product.findById(productId).select('name price image category stock unit');
+      const product = await Product.findById(productId).select('name price image category countInStock unit rating numReviews');
       return { product, score };
     })
   );

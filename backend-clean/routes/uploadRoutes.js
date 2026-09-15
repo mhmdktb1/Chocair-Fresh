@@ -36,7 +36,8 @@ const upload = multer({
   },
 });
 
-router.post('/', protect, admin, upload.single('image'), (req, res) => {
+// Authenticated users can upload images (e.g., profile avatars or admin product images)
+router.post('/', protect, upload.single('image'), (req, res) => {
   if (!req.file) {
     res.status(400);
     throw new Error('No image file uploaded');

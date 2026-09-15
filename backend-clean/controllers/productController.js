@@ -1,16 +1,36 @@
 import asyncHandler from '../middleware/asyncHandler.js';
 import Product from '../models/productModel.js';
 
-// @desc    Fetch all products
+// @desc    Fetch all products (supports category, keyword, and limit query params)
 // @route   GET /api/products
 // @access  Public
 const getProducts = asyncHandler(async (req, res) => {
   try {
-    const products = await Product.find({});
+    const { category, keyword, limit } = req.query;
+    const query = {};
+
+    if (category && category !== 'all') {
+      query.category = { $regex: `^${category}$`, $options: 'i' };
+    }
+
+    if (keyword) {
+      query.$or = [
+        { name: { $regex: keyword, $options: 'i' } },
+        { description: { $regex: keyword, $options: 'i' } },
+        { brand: { $regex: keyword, $options: 'i' } },
+      ];
+    }
+
+    let productQuery = Product.find(query).sort({ createdAt: -1 });
+
+    if (limit && Number(limit) > 0) {
+      productQuery = productQuery.limit(Number(limit));
+    }
+
+    const products = await productQuery;
     res.json(products);
   } catch (error) {
     console.error('DB error in getProducts:', error.message);
-    // Return empty array if DB fails
     res.json([]);
   }
 });

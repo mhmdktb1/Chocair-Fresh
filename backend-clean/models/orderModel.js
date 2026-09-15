@@ -26,6 +26,9 @@ const orderSchema = mongoose.Schema(
       email: { type: String },
       phone: { type: String, required: true },
       address: { type: String, required: true },
+      city: { type: String },
+      postalCode: { type: String },
+      country: { type: String, default: 'Lebanon' },
       googleMapsLink: { type: String },
     },
     paymentMethod: {
