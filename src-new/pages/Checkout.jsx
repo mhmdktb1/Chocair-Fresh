@@ -39,7 +39,8 @@ const Checkout = () => {
     name: "",
     phone: "",
     address: "",
-    googleMapsLink: ""
+    googleMapsLink: "",
+    additionalInfo: ""
   });
 
   const [paymentMethod, setPaymentMethod] = useState("Cash on Delivery");
@@ -103,7 +104,8 @@ const Checkout = () => {
           email: user?.email || '',
           phone: user?.phone || formData.phone,
           address: formData.address,
-          googleMapsLink: formData.googleMapsLink
+          googleMapsLink: formData.googleMapsLink,
+          additionalInfo: formData.additionalInfo || ''
         },
         paymentMethod: paymentMethod,
         itemsPrice: cartTotal,
@@ -473,7 +475,37 @@ const Checkout = () => {
                 </div>
               </div>
 
-              {/* BOX 3: Dedicated Payment Method Section */}
+              {/* BOX 3: Additional Information / Order Notes */}
+              <div className="checkout-section-box">
+                <div className="section-box-header">
+                  <div className="section-header-icon-wrap notes-icon">
+                    <MessageSquare size={20} />
+                  </div>
+                  <div>
+                    <h2 className="section-box-title">Additional Information <span className="opt-tag">(Optional)</span></h2>
+                    <p className="section-box-subtitle">Any specific notes, gate codes, or delivery instructions for our courier.</p>
+                  </div>
+                </div>
+
+                <div className="form-card-inner">
+                  <div className="form-input-group">
+                    <label htmlFor="additionalInfo" className="modern-label">
+                      <MessageSquare size={15} /> Order Notes & Delivery Instructions
+                    </label>
+                    <textarea 
+                      id="additionalInfo"
+                      name="additionalInfo"
+                      rows={3}
+                      placeholder="e.g. Please ring the doorbell twice, leave package at concierge desk, or call when arriving..." 
+                      value={formData.additionalInfo}
+                      onChange={handleInputChange}
+                      className="modern-textarea"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* BOX 4: Dedicated Payment Method Section */}
               <div className="checkout-section-box">
                 <div className="section-box-header">
                   <div className="section-header-icon-wrap payment">

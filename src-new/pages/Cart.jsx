@@ -34,8 +34,6 @@ const Cart = () => {
   const [promoInput, setPromoInput] = useState('');
   const [appliedPromo, setAppliedPromo] = useState(null);
   const [promoError, setPromoError] = useState('');
-  const [orderNote, setOrderNote] = useState('');
-  const [showNoteInput, setShowNoteInput] = useState(false);
   const [confirmClear, setConfirmClear] = useState(false);
 
   // Calculations
@@ -333,36 +331,9 @@ const Cart = () => {
               ))}
             </div>
 
-            {/* Additional Delivery Notes */}
-            <div className="cart-extra-options">
-              <div className="order-note-wrapper">
-                <button 
-                  type="button"
-                  className="order-note-toggle-btn"
-                  onClick={() => setShowNoteInput(!showNoteInput)}
-                >
-                  <MessageSquare size={16} />
-                  <span>{showNoteInput ? 'Hide delivery instructions' : 'Add delivery instructions / notes'}</span>
-                </button>
-                
-                {showNoteInput && (
-                  <div className="order-note-input-wrap">
-                    <textarea 
-                      className="order-note-textarea"
-                      placeholder="e.g. Leave by front door, call upon arrival..."
-                      value={orderNote}
-                      onChange={(e) => setOrderNote(e.target.value)}
-                      rows={2}
-                    />
-                    <span className="note-hint">Our harvest team will follow your packaging notes.</span>
-                  </div>
-                )}
-              </div>
-            </div>
-
             {/* Quick Add / Cart Recommendations */}
             <div className="cart-recommendations-box">
-              <CartRecommendations limit={4} />
+              <CartRecommendations limit={8} />
             </div>
           </div>
 

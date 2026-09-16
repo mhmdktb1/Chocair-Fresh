@@ -134,9 +134,13 @@ export const sendWhatsAppOrderNotification = async (phone, order, options = {}) 
       .map((item) => `• ${item.name} (${item.qty}x) - $${(item.price * item.qty).toFixed(2)}`)
       .join('\n');
 
+    const additionalNotes = order.customerInfo?.additionalInfo 
+      ? `\n*Additional Notes:* ${order.customerInfo.additionalInfo}` 
+      : '';
+
     const messageText = isAdmin
-      ? `🚨 *Chocair Fresh - New Order Alert*\n\nA new order has been placed.\n\n*Order ID:* #${order._id.toString().slice(-6).toUpperCase()}\n*Customer:* ${order.customerInfo?.name || 'Guest'}\n*Phone:* ${order.customerInfo?.phone || 'Not provided'}\n*Total:* $${order.totalPrice?.toFixed(2)}\n*Payment Method:* ${order.paymentMethod}\n\n*Items:*\n${itemsSummary}\n\n*Delivery Address:* ${order.customerInfo?.address || 'Provided Location'}`
-      : `🍏 *Chocair Fresh - Order Confirmation*\n\nThank you for your order, *${order.customerInfo?.name || 'Valued Customer'}*!\n\n*Order ID:* #${order._id.toString().slice(-6).toUpperCase()}\n*Total:* $${order.totalPrice?.toFixed(2)}\n*Payment Method:* ${order.paymentMethod}\n*Delivery Address:* ${order.customerInfo?.address || 'Provided Location'}\n\n*Items:*\n${itemsSummary}\n\nOur team is preparing your fresh order. Track updates on your Chocair Fresh profile!`;
+      ? `🚨 *Chocair Fresh - New Order Alert*\n\nA new order has been placed.\n\n*Order ID:* #${order._id.toString().slice(-6).toUpperCase()}\n*Customer:* ${order.customerInfo?.name || 'Guest'}\n*Phone:* ${order.customerInfo?.phone || 'Not provided'}\n*Total:* $${order.totalPrice?.toFixed(2)}\n*Payment Method:* ${order.paymentMethod}\n\n*Items:*\n${itemsSummary}\n\n*Delivery Address:* ${order.customerInfo?.address || 'Provided Location'}${additionalNotes}`
+      : `🍏 *Chocair Fresh - Order Confirmation*\n\nThank you for your order, *${order.customerInfo?.name || 'Valued Customer'}*!\n\n*Order ID:* #${order._id.toString().slice(-6).toUpperCase()}\n*Total:* $${order.totalPrice?.toFixed(2)}\n*Payment Method:* ${order.paymentMethod}\n*Delivery Address:* ${order.customerInfo?.address || 'Provided Location'}${additionalNotes}\n\n*Items:*\n${itemsSummary}\n\nOur team is preparing your fresh order. Track updates on your Chocair Fresh profile!`;
 
     const url = `https://graph.facebook.com/v18.0/${phoneNumberId}/messages`;
     const payload = {

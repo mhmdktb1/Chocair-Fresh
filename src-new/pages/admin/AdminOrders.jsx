@@ -528,6 +528,21 @@ function AdminOrders() {
                     {selectedOrder.email}
                   </div>
                 )}
+                {selectedOrder.shippingAddress?.address && (
+                  <div style={{ fontSize: '0.85rem', color: '#475569', marginTop: '0.35rem', display: 'flex', alignItems: 'flex-start', gap: '0.4rem' }}>
+                    <MapPin size={14} color="#16a34a" style={{ flexShrink: 0, marginTop: '2px' }} />
+                    <span>{selectedOrder.shippingAddress.address}</span>
+                  </div>
+                )}
+                {(selectedOrder.shippingAddress?.additionalInfo || selectedOrder.additionalInfo) && (
+                  <div style={{ fontSize: '0.82rem', color: '#6b21a8', background: '#faf5ff', border: '1px solid #e9d5ff', borderRadius: '8px', padding: '0.45rem 0.65rem', marginTop: '0.5rem', display: 'flex', alignItems: 'flex-start', gap: '0.4rem' }}>
+                    <MessageCircle size={14} style={{ flexShrink: 0, marginTop: '2px' }} />
+                    <div>
+                      <strong style={{ display: 'block', fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.3px', color: '#7e22ce' }}>Notes / Instructions:</strong>
+                      <span>{selectedOrder.shippingAddress?.additionalInfo || selectedOrder.additionalInfo}</span>
+                    </div>
+                  </div>
+                )}
                 {selectedOrder.googleMapsLink && (
                   <div style={{ marginTop: '0.6rem' }}>
                     <a

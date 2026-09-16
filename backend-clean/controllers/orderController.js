@@ -93,6 +93,7 @@ const addOrderItems = asyncHandler(async (req, res) => {
         postalCode: customerInfo.postalCode ? customerInfo.postalCode.trim() : undefined,
         country: customerInfo.country || 'Lebanon',
         googleMapsLink: customerInfo.googleMapsLink || '',
+        additionalInfo: customerInfo.additionalInfo ? customerInfo.additionalInfo.trim() : undefined,
       },
       paymentMethod: paymentMethod || 'Cash on Delivery',
       itemsPrice: computedItemsPrice,

@@ -30,6 +30,7 @@ const orderSchema = mongoose.Schema(
       postalCode: { type: String },
       country: { type: String, default: 'Lebanon' },
       googleMapsLink: { type: String },
+      additionalInfo: { type: String },
     },
     paymentMethod: {
       type: String,
