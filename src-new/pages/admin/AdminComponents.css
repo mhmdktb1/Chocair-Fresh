@@ -113,6 +113,13 @@
   gap: 0.75rem;
 }
 
+.admin-search-row {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  width: 100%;
+}
+
 .admin-search-input-wrap {
   display: flex;
   align-items: center;
@@ -122,6 +129,8 @@
   border-radius: 12px;
   padding: 0.6rem 0.9rem;
   transition: all 0.2s ease;
+  flex: 1;
+  min-width: 0;
 }
 
 .admin-search-input-wrap:focus-within {
@@ -165,12 +174,60 @@
   color: #0f172a;
 }
 
-/* Status Filter Pills */
+/* Compact Mobile Filter Button */
+.admin-mobile-filter-btn {
+  display: none;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  padding: 0.6rem 0.95rem;
+  min-height: 42px;
+  background: #f1f5f9;
+  border: 1px solid #cbd5e1;
+  border-radius: 12px;
+  color: #1e293b;
+  font-size: 0.85rem;
+  font-weight: 700;
+  cursor: pointer;
+  white-space: nowrap;
+  flex-shrink: 0;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  -webkit-tap-highlight-color: transparent;
+}
+
+.admin-mobile-filter-btn:active {
+  transform: scale(0.96);
+}
+
+.admin-mobile-filter-btn.active {
+  background: #0f172a;
+  border-color: #0f172a;
+  color: #ffffff;
+  box-shadow: 0 2px 6px rgba(15, 23, 42, 0.25);
+}
+
+.mobile-filter-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 4px;
+  border-radius: 9px;
+  background: #16a34a;
+  color: #ffffff;
+  font-size: 0.7rem;
+  font-weight: 800;
+  line-height: 1;
+}
+
+/* Status Filter Pills - Single Horizontal Scroll Row */
 .admin-filter-scroll-row {
   display: flex;
   align-items: center;
   gap: 0.45rem;
   overflow-x: auto;
+  flex-wrap: nowrap;
   scrollbar-width: none;
   -webkit-overflow-scrolling: touch;
   padding-bottom: 2px;
@@ -178,6 +235,10 @@
 
 .admin-filter-scroll-row::-webkit-scrollbar {
   display: none;
+}
+
+.status-filter-row {
+  width: 100%;
 }
 
 .filter-pill {
@@ -259,6 +320,16 @@
   flex-wrap: wrap;
   padding-top: 0.45rem;
   border-top: 1px solid #f1f5f9;
+}
+
+@media (max-width: 768px) {
+  .admin-mobile-filter-btn {
+    display: inline-flex;
+  }
+
+  .desktop-controls-only {
+    display: none !important;
+  }
 }
 
 .admin-sort-group {
@@ -474,9 +545,21 @@
 .order-card-actions {
   display: flex;
   align-items: center;
+  gap: 0.5rem;
+  width: 100%;
+}
+
+.order-actions-desktop {
+  display: flex;
+  align-items: center;
   justify-content: space-between;
   gap: 0.5rem;
+  width: 100%;
   flex-wrap: wrap;
+}
+
+.order-actions-mobile {
+  display: none;
 }
 
 .order-actions-contact {
@@ -492,6 +575,37 @@
   gap: 0.45rem;
   flex-wrap: wrap;
   margin-left: auto;
+}
+
+.order-mobile-primary-action {
+  flex: 1;
+  display: flex;
+  min-width: 0;
+}
+
+.order-mobile-primary-action .action-btn-advance,
+.order-mobile-primary-action .order-quick-status-select {
+  width: 100%;
+  justify-content: center;
+}
+
+.order-mobile-quick-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  flex-shrink: 0;
+}
+
+.action-btn-icon-only {
+  width: 38px;
+  height: 38px;
+  min-height: 38px;
+  padding: 0;
+  border-radius: 10px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
 }
 
 .action-btn {
@@ -606,32 +720,32 @@
   border-color: #16a34a;
 }
 
-@media (max-width: 640px) {
-  .order-card-actions {
-    flex-direction: column;
-    align-items: stretch;
-    gap: 0.65rem;
+@media (max-width: 768px) {
+  .order-actions-desktop {
+    display: none !important;
   }
 
-  .order-actions-contact,
-  .order-actions-workflow {
-    width: 100%;
-    display: flex;
+  .order-actions-mobile {
+    display: flex !important;
+    align-items: center;
     justify-content: space-between;
-    margin-left: 0;
+    gap: 0.5rem;
+    width: 100%;
   }
 
-  .order-actions-contact .action-btn {
-    flex: 1;
-    text-align: center;
+  .admin-order-card {
+    padding: 0.9rem;
+    gap: 0.75rem;
+    border-radius: 14px;
   }
 
-  .order-actions-workflow .action-btn-advance {
-    flex: 1;
+  .order-card-info-row {
+    padding: 0.75rem;
+    border-radius: 10px;
   }
 
-  .order-actions-workflow .order-quick-status-select {
-    flex: 1;
+  .order-total-amount {
+    font-size: 1.22rem;
   }
 }
 
@@ -1012,6 +1126,16 @@
       transform: translateY(0);
     }
   }
+}
+
+.admin-filter-modal-dialog {
+  max-width: 440px;
+}
+
+.admin-modal-filter-options {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 0.5rem;
 }
 
 .admin-modal-header {

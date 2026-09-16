@@ -18,7 +18,8 @@ import {
   Eye, 
   X,
   Sparkles,
-  ArrowRight
+  ArrowRight,
+  SlidersHorizontal
 } from "lucide-react";
 import './AdminComponents.css';
 
@@ -30,7 +31,11 @@ function AdminOrders() {
   const [sortBy, setSortBy] = useState("date-desc");
   const [currentPage, setCurrentPage] = useState(1);
   const [selectedOrder, setSelectedOrder] = useState(null);
+  const [isFilterModalOpen, setIsFilterModalOpen] = useState(false);
   const ordersPerPage = 12;
+
+  const hasActiveFilters = dateFilter !== "all" || sortBy !== "date-desc";
+  const activeFiltersCount = (dateFilter !== "all" ? 1 : 0) + (sortBy !== "date-desc" ? 1 : 0);
 
   // Real-time status counter tallies for fast filter pills
   const counts = useMemo(() => {
@@ -213,28 +218,43 @@ function AdminOrders() {
 
       {/* Search & Filter Bar */}
       <div className="admin-search-filter-card">
-        {/* Search Input */}
-        <div className="admin-search-input-wrap">
-          <Search size={18} color="#64748b" />
-          <input
-            type="text"
-            placeholder="Search by Order ID, customer, phone..."
-            value={searchQuery}
-            onChange={(e) => handleFilterChange(setSearchQuery)(e.target.value)}
-          />
-          {searchQuery && (
-            <button 
-              className="clear-search-btn" 
-              onClick={() => handleFilterChange(setSearchQuery)("")}
-              aria-label="Clear search"
-            >
-              <X size={16} />
-            </button>
-          )}
+        {/* Search Input & Mobile Filter Button */}
+        <div className="admin-search-row">
+          <div className="admin-search-input-wrap">
+            <Search size={18} color="#64748b" />
+            <input
+              type="text"
+              placeholder="Search by Order ID, customer, phone..."
+              value={searchQuery}
+              onChange={(e) => handleFilterChange(setSearchQuery)(e.target.value)}
+            />
+            {searchQuery && (
+              <button 
+                className="clear-search-btn" 
+                onClick={() => handleFilterChange(setSearchQuery)("")}
+                aria-label="Clear search"
+              >
+                <X size={16} />
+              </button>
+            )}
+          </div>
+
+          <button
+            type="button"
+            className={`admin-mobile-filter-btn ${hasActiveFilters ? "active" : ""}`}
+            onClick={() => setIsFilterModalOpen(true)}
+            aria-label="Filter and sort orders"
+          >
+            <SlidersHorizontal size={16} />
+            <span>Filter</span>
+            {hasActiveFilters && (
+              <span className="mobile-filter-badge">{activeFiltersCount}</span>
+            )}
+          </button>
         </div>
 
         {/* Status Filter Scrollable Row */}
-        <div className="admin-filter-scroll-row">
+        <div className="admin-filter-scroll-row status-filter-row">
           <button
             className={`filter-pill ${filterStatus === "all" ? "active" : ""}`}
             onClick={() => handleFilterChange(setFilterStatus)("all")}
@@ -276,8 +296,8 @@ function AdminOrders() {
           </button>
         </div>
 
-        {/* Date & Sort Controls */}
-        <div className="admin-controls-row">
+        {/* Date & Sort Controls (Desktop Only) */}
+        <div className="admin-controls-row desktop-controls-only">
           <div className="admin-filter-scroll-row">
             {["all", "today", "week", "month"].map(filter => (
               <button
@@ -355,8 +375,8 @@ function AdminOrders() {
                   </div>
                 </div>
 
-                {/* Action Bar */}
-                <div className="order-card-actions" onClick={(e) => e.stopPropagation()}>
+                {/* Desktop Action Bar */}
+                <div className="order-card-actions order-actions-desktop" onClick={(e) => e.stopPropagation()}>
                   {/* Contact Actions */}
                   <div className="order-actions-contact">
                     {waLink && (
@@ -454,6 +474,81 @@ function AdminOrders() {
                     </button>
                   </div>
                 </div>
+
+                {/* Simplified Mobile Action Bar */}
+                <div className="order-card-actions order-actions-mobile" onClick={(e) => e.stopPropagation()}>
+                  <div className="order-mobile-primary-action">
+                    {order.status === "Pending" ? (
+                      <button
+                        type="button"
+                        className="action-btn action-btn-advance action-btn-advance-prep"
+                        onClick={() => handleStatusChange(order.id, "Preparing")}
+                        title="Mark Preparing"
+                      >
+                        <Truck size={15} />
+                        <span>Prepare</span>
+                      </button>
+                    ) : order.status === "Preparing" ? (
+                      <button
+                        type="button"
+                        className="action-btn action-btn-advance"
+                        onClick={() => handleStatusChange(order.id, "Delivered")}
+                        title="Mark Delivered"
+                      >
+                        <CheckCircle size={15} />
+                        <span>Deliver</span>
+                      </button>
+                    ) : (
+                      <select
+                        className="order-quick-status-select"
+                        value={order.status}
+                        onChange={(e) => handleStatusChange(order.id, e.target.value)}
+                        aria-label="Change status"
+                      >
+                        <option value="Pending">Pending</option>
+                        <option value="Preparing">Preparing</option>
+                        <option value="Delivered">Delivered</option>
+                        <option value="Cancelled">Cancelled</option>
+                      </select>
+                    )}
+                  </div>
+
+                  <div className="order-mobile-quick-actions">
+                    {waLink && (
+                      <a
+                        href={waLink}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="action-btn action-btn-whatsapp action-btn-icon-only"
+                        title="Chat on WhatsApp"
+                        aria-label="Chat on WhatsApp"
+                      >
+                        <MessageCircle size={16} />
+                      </a>
+                    )}
+
+                    {order.phone && (
+                      <a
+                        href={`tel:${order.phone}`}
+                        className="action-btn action-btn-call action-btn-icon-only"
+                        title="Call customer"
+                        aria-label="Call customer"
+                      >
+                        <Phone size={15} />
+                      </a>
+                    )}
+
+                    <button
+                      type="button"
+                      className="action-btn action-btn-view action-btn-icon-only"
+                      onClick={() => setSelectedOrder(order)}
+                      title="View order details"
+                      aria-label="View details"
+                    >
+                      <Eye size={16} />
+                    </button>
+                  </div>
+                </div>
               </div>
             );
           })
@@ -492,6 +587,96 @@ function AdminOrders() {
             <span>Next</span>
             <ChevronRight size={16} />
           </button>
+        </div>
+      )}
+
+      {/* Mobile Filter & Sort Modal */}
+      {isFilterModalOpen && (
+        <div className="admin-modal-backdrop" onClick={() => setIsFilterModalOpen(false)}>
+          <div className="admin-modal-dialog admin-filter-modal-dialog" onClick={(e) => e.stopPropagation()}>
+            <div className="admin-modal-header">
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                <SlidersHorizontal size={18} color="#16a34a" />
+                <h3 style={{ fontSize: '1.1rem' }}>Filter & Sort Orders</h3>
+              </div>
+              <button className="modal-close-btn" onClick={() => setIsFilterModalOpen(false)}>
+                <X size={18} />
+              </button>
+            </div>
+
+            <div className="admin-modal-body" style={{ gap: '1.25rem' }}>
+              {/* Date Filter Section */}
+              <div>
+                <label className="admin-form-label" style={{ marginBottom: '0.6rem', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                  <Calendar size={15} color="#64748b" />
+                  <span>Date Range</span>
+                </label>
+                <div className="admin-modal-filter-options">
+                  {[
+                    { id: "all", label: "All Time" },
+                    { id: "today", label: "Today" },
+                    { id: "week", label: "This Week" },
+                    { id: "month", label: "This Month" },
+                  ].map((d) => (
+                    <button
+                      key={d.id}
+                      type="button"
+                      className={`filter-pill ${dateFilter === d.id ? "active" : ""}`}
+                      style={{ justifyContent: 'center', padding: '0.65rem 0.75rem' }}
+                      onClick={() => handleFilterChange(setDateFilter)(d.id)}
+                    >
+                      {d.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Sort Section */}
+              <div className="admin-form-group">
+                <label className="admin-form-label" style={{ marginBottom: '0.5rem', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                  <ArrowUpDown size={15} color="#64748b" />
+                  <span>Sort Orders By</span>
+                </label>
+                <select
+                  className="admin-form-select"
+                  value={sortBy}
+                  onChange={(e) => {
+                    setSortBy(e.target.value);
+                    setCurrentPage(1);
+                  }}
+                >
+                  <option value="date-desc">Newest First (Default)</option>
+                  <option value="date-asc">Oldest First</option>
+                  <option value="total-desc">Highest Total Amount</option>
+                  <option value="total-asc">Lowest Total Amount</option>
+                  <option value="status">By Order Status</option>
+                </select>
+              </div>
+            </div>
+
+            <div className="admin-modal-footer">
+              {hasActiveFilters && (
+                <button
+                  type="button"
+                  className="admin-modal-btn btn-cancel"
+                  onClick={() => {
+                    setDateFilter("all");
+                    setSortBy("date-desc");
+                    setCurrentPage(1);
+                  }}
+                >
+                  Reset
+                </button>
+              )}
+              <button
+                type="button"
+                className="admin-modal-btn btn-submit"
+                onClick={() => setIsFilterModalOpen(false)}
+              >
+                Apply Filters
+              </button>
+            </div>
+          </div>
         </div>
       )}
 
