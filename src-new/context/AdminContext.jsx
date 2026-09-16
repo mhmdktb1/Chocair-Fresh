@@ -42,23 +42,23 @@ export const AdminProvider = ({ children }) => {
 
   // Helper to normalize backend order to UI shape
   const mapOrder = (o) => ({
-    id: o._id,
-    customer: o.customerInfo?.name || "Guest",
-    email: o.customerInfo?.email,
-    phone: o.customerInfo?.phone,
+    id: o._id || o.id,
+    customer: o.customerInfo?.name || o.name || "Guest",
+    email: o.customerInfo?.email || o.email,
+    phone: o.customerInfo?.phone || o.phone,
     googleMapsLink: o.customerInfo?.googleMapsLink,
-    items: o.orderItems.map(item => ({
-      name: item.name,
-      quantity: item.qty,
-      price: item.price,
-      total: item.qty * item.price,
-      image: item.image,
-      unit: "kg"
+    items: (o.orderItems || []).map(item => ({
+      name: item.name || (item.product?.name) || "Product",
+      quantity: item.qty || item.quantity || 1,
+      price: item.price !== undefined ? item.price : (item.product?.price || 0),
+      total: (item.qty || item.quantity || 1) * (item.price !== undefined ? item.price : (item.product?.price || 0)),
+      image: item.image || item.product?.image,
+      unit: item.unit || item.product?.unit || "kg"
     })),
-    total: o.totalPrice,
+    total: o.totalPrice || o.total || 0,
     status: o.status || "Pending",
-    date: o.createdAt,
-    shippingAddress: o.customerInfo
+    date: o.createdAt || o.date || new Date().toISOString(),
+    shippingAddress: o.customerInfo || o.shippingAddress
   });
 
   const fetchProducts = async () => {
