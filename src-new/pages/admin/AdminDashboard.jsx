@@ -237,7 +237,7 @@ const AdminDashboard = () => {
         <div className="admin-top-bar-container">
           {/* Row 1: Top Navigation & Title Bar */}
           <header className="admin-header">
-            <div className="header-left">
+            <div className="admin-header-left">
               <button 
                 className="menu-toggle-btn" 
                 onClick={() => setSidebarOpen(true)}
