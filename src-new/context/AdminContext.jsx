@@ -128,15 +128,10 @@ export const AdminProvider = ({ children }) => {
     fetchCategories();
     fetchHeroes();
     
-    // Temporarily fetch orders and users directly so admin pages function without auth gate
-    fetchOrders();
-    fetchUsers();
-    /*
     if (isAdmin) {
       fetchOrders();
       fetchUsers();
     }
-    */
   }, [isAdmin]);
 
   const addProduct = async (productData) => {

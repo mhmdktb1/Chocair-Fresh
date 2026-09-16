@@ -45,8 +45,6 @@ const AdminDashboard = () => {
     }
   }, [location.search]);
 
-  // TEMPORARILY DISABLED: Admin route protection commented out for accessibility
-  /*
   useEffect(() => {
     if (!loading) {
       if (!user) {
@@ -56,7 +54,6 @@ const AdminDashboard = () => {
       }
     }
   }, [loading, user, isAdmin, navigate]);
-  */
 
   const handleLogout = () => {
     logout();
@@ -64,8 +61,7 @@ const AdminDashboard = () => {
   };
 
   if (loading) return <Loading text="Loading admin hub..." />;
-  // TEMPORARILY DISABLED: Admin access gate commented out for accessibility
-  // if (!isAdmin) return null;
+  if (!isAdmin) return null;
 
   // Real-time badge counts for high-speed admin awareness
   const pendingOrdersCount = orders?.filter(o => o.status === "Pending")?.length || 0;
