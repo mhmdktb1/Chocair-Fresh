@@ -11,7 +11,12 @@ const DealSection = ({ data }) => {
     title = "Organic Summer Berry Bundle",
     description = "Get a curated selection of our freshest strawberries, blueberries, and raspberries. Perfect for smoothies, desserts, or healthy snacking.",
     price = 29.99,
-    image = ""
+    originalPrice = 45.00,
+    saveAmount = "Save $15.01",
+    claimedPercentage = 84,
+    stockLeftText = "Only 16 bundles left",
+    image = "https://images.unsplash.com/photo-1619566636858-adf3ef46400b?auto=format&fit=crop&w=1000&q=80",
+    link = "/shop?discount=true"
   } = data || {};
 
   const [timeLeft, setTimeLeft] = useState({
@@ -38,6 +43,14 @@ const DealSection = ({ data }) => {
 
     return () => clearInterval(timer);
   }, []);
+
+  const discountPercent = originalPrice && price && originalPrice > price
+    ? Math.round(((originalPrice - price) / originalPrice) * 100)
+    : 30;
+
+  const displaySaveAmount = saveAmount || (originalPrice && price && originalPrice > price
+    ? `Save $${(originalPrice - price).toFixed(2)}`
+    : null);
 
   return (
     <section className="deal-section" aria-label="Limited Time Offer">
@@ -76,21 +89,21 @@ const DealSection = ({ data }) => {
             {/* Deal Stock / Progress Meter */}
             <div className="deal-progress-box">
               <div className="deal-progress-info">
-                <span>🔥 <strong>84% Claimed</strong></span>
-                <span className="deal-stock-left">Only 16 bundles left</span>
+                <span>🔥 <strong>{claimedPercentage}% Claimed</strong></span>
+                <span className="deal-stock-left">{stockLeftText}</span>
               </div>
               <div className="deal-progress-track">
-                <div className="deal-progress-fill" style={{ width: '84%' }}></div>
+                <div className="deal-progress-fill" style={{ width: `${Math.min(100, Math.max(0, claimedPercentage))}%` }}></div>
               </div>
             </div>
 
             <div className="deal-price">
-              <span className="old-price">$45.00</span>
-              <span className="new-price">$29.99</span>
-              <span className="deal-save-pill">Save $15.01</span>
+              {originalPrice && <span className="old-price">${Number(originalPrice).toFixed(2)}</span>}
+              <span className="new-price">${Number(price).toFixed(2)}</span>
+              {displaySaveAmount && <span className="deal-save-pill">{displaySaveAmount}</span>}
             </div>
 
-            <Button variant="primary" size="large" onClick={() => navigate('/shop?discount=true')} className="deal-btn">
+            <Button variant="primary" size="large" onClick={() => navigate(link || '/shop?discount=true')} className="deal-btn">
               <ShoppingBag size={18} />
               <span>Claim Offer Now</span>
               <ArrowRight size={18} />
@@ -100,15 +113,17 @@ const DealSection = ({ data }) => {
           <div className="deal-image-wrapper">
             <div className="deal-circle"></div>
             <img 
-              src={image || "https://images.unsplash.com/photo-1519999482648-25049ddd37b1?ixlib=rb-4.0.3&auto=format&fit=crop&w=1000&q=80"} 
-              alt="Berry Bundle" 
+              src={image || "https://images.unsplash.com/photo-1619566636858-adf3ef46400b?auto=format&fit=crop&w=1000&q=80"} 
+              alt={title || "Deal Bundle"} 
               className="deal-img"
               loading="lazy"
             />
-            <div className="discount-tag">
-              <span className="discount-amount">35%</span>
-              <span className="discount-label">OFF</span>
-            </div>
+            {discountPercent > 0 && (
+              <div className="discount-tag">
+                <span className="discount-amount">{discountPercent}%</span>
+                <span className="discount-label">OFF</span>
+              </div>
+            )}
           </div>
         </div>
       </div>

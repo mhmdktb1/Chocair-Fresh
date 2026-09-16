@@ -1,53 +1,41 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowRight, Sparkles, ChevronLeft, ChevronRight, ShieldCheck, Truck, Star, Zap } from 'lucide-react';
+import { ArrowRight, ChevronLeft, ChevronRight } from 'lucide-react';
 import './Hero.css';
 
 const defaultSlides = [
   {
     id: 'slide-1',
-    badge: '100% Organic & Farm Fresh',
-    badgeIcon: 'sparkle',
-    title: 'Handpicked Nature, Straight to Your Door',
-    subtitle: 'Crisp organic vegetables, luscious seasonal fruits, and aromatic herbs harvested at peak vitality.',
-    ctaText: 'Shop Daily Harvest',
+    title: 'FRESHER. CLEANER. BETTER.',
+    subtitle: 'Carefully selected fresh produce, every day.',
+    ctaText: 'Shop Now',
     ctaLink: '/shop',
-    secondaryText: 'Explore Categories',
+    secondaryText: 'Explore Produce',
     secondaryLink: '/shop',
-    image: 'https://images.unsplash.com/photo-1610832958506-aa56368176cf?auto=format&fit=crop&w=1200&q=80',
-    accentTag: '⚡ Delivered in 25–35 mins',
-    ratingText: '4.9 ★ (2.5k+ Reviews)',
+    image: 'https://images.unsplash.com/photo-1610348725531-843dff563e2c?auto=format&fit=crop&w=1200&q=80',
     theme: 'emerald'
   },
   {
     id: 'slide-2',
-    badge: 'Direct Farm Harvest',
-    badgeIcon: 'zap',
-    title: 'Pure Goodness with Zero Compromise',
-    subtitle: 'Naturally grown with love, zero artificial chemicals, supporting local sustainable family growers.',
-    ctaText: 'Discover Organic',
+    title: 'FRESH TO YOUR DOOR',
+    subtitle: 'Your order, delivered in 30 minutes.',
+    ctaText: 'Order Now',
     ctaLink: '/shop',
-    secondaryText: 'Our Story',
-    secondaryLink: '/#about',
+    secondaryText: 'Explore Shop',
+    secondaryLink: '/shop',
     image: 'https://images.unsplash.com/photo-1542838132-92c53300491e?auto=format&fit=crop&w=1200&q=80',
-    accentTag: '🌱 Chemical Free',
-    ratingText: '100% Certified Organic',
     theme: 'forest'
   },
   {
     id: 'slide-3',
-    badge: 'Seasonal Box Specials',
-    badgeIcon: 'truck',
-    title: 'Curated Farm Boxes for Healthy Living',
-    subtitle: 'Get seasonal fruit & veggie combinations packed with natural vitamins at special everyday value.',
-    ctaText: 'View Fresh Deals',
-    ctaLink: '/shop',
-    secondaryText: 'Quick Search',
-    secondaryLink: '/shop?focus=search',
-    image: 'https://images.unsplash.com/photo-1619566636858-adf3ef46400b?auto=format&fit=crop&w=1200&q=80',
-    accentTag: '🎁 Best Family Value',
-    ratingText: 'Same-Day Fast Delivery',
-    theme: 'amber'
+    title: 'COME VISIT US',
+    subtitle: 'Fresh produce, picked with care.',
+    ctaText: 'Visit Us',
+    ctaLink: '/contact',
+    secondaryText: 'Our Story',
+    secondaryLink: '/about',
+    image: 'https://images.unsplash.com/photo-1578916171728-46686eac8d58?auto=format&fit=crop&w=1200&q=80',
+    theme: 'emerald'
   }
 ];
 
@@ -58,16 +46,23 @@ const Hero = ({ data }) => {
   const touchStartX = useRef(0);
   const touchEndX = useRef(0);
 
-  // If dynamic title / image exists from props, merge it into slide 1
+  // If dynamic slides exist from props with custom content, use them; otherwise use defaultSlides
   const slides = React.useMemo(() => {
     if (!data) return defaultSlides;
-    const customFirst = {
-      ...defaultSlides[0],
-      title: data.title || defaultSlides[0].title,
-      subtitle: data.subtitle || defaultSlides[0].subtitle,
-      image: data.backgroundImage || defaultSlides[0].image
-    };
-    return [customFirst, defaultSlides[1], defaultSlides[2]];
+    if (Array.isArray(data.slides) && data.slides.length > 0) {
+      return data.slides.map((s, idx) => ({
+        id: s._id || s.id || `slide-${idx + 1}`,
+        title: s.title || defaultSlides[idx % defaultSlides.length]?.title,
+        subtitle: s.subtitle || defaultSlides[idx % defaultSlides.length]?.subtitle,
+        ctaText: s.ctaText || defaultSlides[idx % defaultSlides.length]?.ctaText || 'Shop Now',
+        ctaLink: s.ctaLink || defaultSlides[idx % defaultSlides.length]?.ctaLink || '/shop',
+        secondaryText: s.secondaryText || defaultSlides[idx % defaultSlides.length]?.secondaryText || 'Explore',
+        secondaryLink: s.secondaryLink || defaultSlides[idx % defaultSlides.length]?.secondaryLink || '/shop',
+        image: s.image || s.backgroundImage || defaultSlides[idx % defaultSlides.length]?.image,
+        theme: s.theme || defaultSlides[idx % defaultSlides.length]?.theme || 'emerald'
+      }));
+    }
+    return defaultSlides;
   }, [data]);
 
   // Auto-slide every 6 seconds unless user is hovering/interacting
@@ -148,13 +143,6 @@ const Hero = ({ data }) => {
 
           {/* Left / Top Content Side */}
           <div className="hero-text-block">
-            <div className="hero-micro-pill">
-              {activeSlide.badgeIcon === 'sparkle' && <Sparkles size={14} className="pill-icon" />}
-              {activeSlide.badgeIcon === 'zap' && <Zap size={14} className="pill-icon" />}
-              {activeSlide.badgeIcon === 'truck' && <Truck size={14} className="pill-icon" />}
-              <span>{activeSlide.badge}</span>
-            </div>
-
             <h1 className="hero-main-title">
               {activeSlide.title}
             </h1>
@@ -181,12 +169,6 @@ const Hero = ({ data }) => {
                 <span>{activeSlide.secondaryText}</span>
               </button>
             </div>
-
-            {/* Micro Trust Pills */}
-            <div className="hero-bottom-trust-strip">
-              <span className="trust-pill"><Star size={13} className="trust-star" /> {activeSlide.ratingText}</span>
-              <span className="trust-pill"><ShieldCheck size={13} className="trust-check" /> Guaranteed Freshness</span>
-            </div>
           </div>
 
           {/* Right / Visual Image Side */}
@@ -198,11 +180,6 @@ const Hero = ({ data }) => {
                 className="hero-feature-image" 
                 loading="eager"
               />
-            </div>
-
-            {/* Floating Glass Pill on the Image */}
-            <div className="floating-accent-tag">
-              <span>{activeSlide.accentTag}</span>
             </div>
           </div>
 

@@ -12,29 +12,90 @@ const getHomeConfig = async (req, res) => {
       
     if (!config) {
       config = await HomeConfig.create({});
-      // Re-fetch to populate if needed (though newly created won't have categories yet)
+      config = await HomeConfig.findById(config._id)
+        .populate('featuredCategories')
+        .populate('seasonal.products');
     }
     res.json(config);
   } catch (error) {
-    // If DB fails, return default config
     console.error('DB error in getHomeConfig:', error.message);
     const defaultConfig = {
       hero: {
-        title: "Welcome to Chocair Fresh",
-        subtitle: "Fresh, Organic, and Delicious",
-        backgroundImage: "/assets/images/hero-bg.jpg"
+        title: "FRESHER. CLEANER. BETTER.",
+        subtitle: "Carefully selected fresh produce, every day.",
+        backgroundImage: "https://images.unsplash.com/photo-1610348725531-843dff563e2c?auto=format&fit=crop&w=1200&q=80",
+        ctaText: "Shop Now",
+        ctaLink: "/shop",
+        secondaryText: "Explore Produce",
+        secondaryLink: "/shop",
+        theme: "emerald",
+        stats: [
+          { label: "Happy Customers", value: "20k+" },
+          { label: "Fresh Products", value: "500+" },
+          { label: "Fast Delivery", value: "24h" }
+        ]
       },
       featuredCategories: [],
+      promos: {
+        enabled: true,
+        boxCard: {
+          badge: "Hot Offer",
+          discountTag: "Save 25%",
+          title: "Weekly Organic Harvest Box",
+          description: "Freshly harvested local vegetables & berries",
+          ctaText: "Shop Box",
+          ctaLink: "/shop?category=Organic",
+          emoji: "🥗"
+        },
+        couponCard: {
+          badge: "New Customer",
+          discountTag: "$10 OFF",
+          title: "Use Code at Checkout",
+          description: "Valid on your first order over $35",
+          code: "FRESH30",
+          emoji: "🎟️"
+        }
+      },
       bundle: {
-        title: "Limited Time Offer",
-        products: []
+        enabled: true,
+        title: "Organic Summer Berry Bundle",
+        description: "Get a curated selection of our freshest strawberries, blueberries, and raspberries. Perfect for smoothies, desserts, or healthy snacking.",
+        price: 29.99,
+        originalPrice: 45.00,
+        saveAmount: "Save $15.01",
+        claimedPercentage: 84,
+        stockLeftText: "Only 16 bundles left",
+        image: "https://images.unsplash.com/photo-1619566636858-adf3ef46400b?auto=format&fit=crop&w=1000&q=80",
+        link: "/shop?discount=true"
       },
       story: {
-        title: "Our Story",
-        content: "We are passionate about providing fresh organic products."
+        enabled: true,
+        title: "Cultivating Goodness",
+        subtitle: "Fresh from the farm, straight to your table.",
+        description: "Chocair Fresh started with a simple mission: bridging the gap between local farmers and your kitchen. We believe everyone deserves authentic, chemical-free produce.",
+        image: "https://images.unsplash.com/photo-1542838132-92c53300491e?ixlib=rb-4.0.3&auto=format&fit=crop&w=1000&q=80",
+        yearsOfService: "15+"
+      },
+      features: {
+        enabled: true,
+        pillText: "Key Benefits",
+        title: "Why Choose Us",
+        items: [
+          { title: "100% Organic", description: "Certified organic produce sourced directly from sustainable local farms.", icon: "Leaf", color: "#2ecc71" },
+          { title: "Fast Delivery", description: "Same-day delivery for orders placed before 2 PM. Freshness guaranteed.", icon: "Truck", color: "#3498db" },
+          { title: "Quality Check", description: "Every item is hand-picked and quality checked before it reaches your door.", icon: "ShieldCheck", color: "#9b59b6" },
+          { title: "24/7 Support", description: "Our dedicated support team is always here to help you with your needs.", icon: "Clock", color: "#e67e22" }
+        ]
+      },
+      newsletter: {
+        enabled: true,
+        badge: "Join The Club",
+        title: "Get Fresh Updates",
+        description: "Subscribe to our newsletter and get 10% off your first order. Plus, receive weekly healthy recipes and exclusive deals."
       },
       seasonal: {
         title: "Seasonal Favorites",
+        subtitle: "Picked at the peak of flavor this season",
         products: []
       }
     };
@@ -52,6 +113,7 @@ const updateHomeConfig = async (req, res) => {
     // Clean up IDs for seasonal products and featured categories
     const seasonalPayload = req.body.seasonal ? {
       title: req.body.seasonal.title || config?.seasonal?.title || 'Seasonal Favorites',
+      subtitle: req.body.seasonal.subtitle || config?.seasonal?.subtitle || 'Picked at the peak of flavor this season',
       products: Array.isArray(req.body.seasonal.products)
         ? req.body.seasonal.products.map(p => (p && p._id ? p._id : p))
         : []
@@ -71,8 +133,11 @@ const updateHomeConfig = async (req, res) => {
       // Update fields
       if (req.body.hero) config.hero = { ...config.hero, ...req.body.hero };
       if (featuredCategoriesPayload !== undefined) config.featuredCategories = featuredCategoriesPayload;
+      if (req.body.promos) config.promos = { ...config.promos, ...req.body.promos };
       if (req.body.bundle) config.bundle = { ...config.bundle, ...req.body.bundle };
       if (req.body.story) config.story = { ...config.story, ...req.body.story };
+      if (req.body.features) config.features = { ...config.features, ...req.body.features };
+      if (req.body.newsletter) config.newsletter = { ...config.newsletter, ...req.body.newsletter };
       if (seasonalPayload !== undefined) config.seasonal = seasonalPayload;
     }
     

@@ -1,8 +1,8 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { Truck, Leaf, ShieldCheck, Clock } from 'lucide-react';
+import { Truck, Leaf, ShieldCheck, Clock, Award, Heart, Sparkles, Zap } from 'lucide-react';
 import './FeaturesSection.css';
 
-const features = [
+const defaultFeatures = [
 	{
 		id: 1,
 		icon: Leaf,
@@ -37,9 +37,42 @@ const features = [
 	},
 ];
 
-const FeaturesSection = () => {
+const getIconComponent = (iconName, fallback = Leaf) => {
+	if (!iconName) return fallback;
+	if (typeof iconName !== 'string') return iconName;
+	switch (iconName.toLowerCase()) {
+		case 'leaf': return Leaf;
+		case 'truck': return Truck;
+		case 'shieldcheck':
+		case 'shield': return ShieldCheck;
+		case 'clock': return Clock;
+		case 'award': return Award;
+		case 'heart': return Heart;
+		case 'sparkles': return Sparkles;
+		case 'zap': return Zap;
+		default: return Leaf;
+	}
+};
+
+const FeaturesSection = ({ data }) => {
 	const sectionRef = useRef(null);
 	const [isVisible, setIsVisible] = useState(false);
+
+	const pillText = data?.pillText || 'Key Benefits';
+	const title = data?.title || 'Why Choose Us';
+
+	const displayFeatures = React.useMemo(() => {
+		if (data?.items && Array.isArray(data.items) && data.items.length > 0) {
+			return data.items.map((item, index) => ({
+				id: item._id || item.id || index + 1,
+				icon: getIconComponent(item.icon, defaultFeatures[index % defaultFeatures.length]?.icon),
+				title: item.title || defaultFeatures[index % defaultFeatures.length]?.title,
+				description: item.description || defaultFeatures[index % defaultFeatures.length]?.description,
+				color: item.color || defaultFeatures[index % defaultFeatures.length]?.color || '#2ecc71',
+			}));
+		}
+		return defaultFeatures;
+	}, [data]);
 
 	useEffect(() => {
 		const observer = new IntersectionObserver(
@@ -74,36 +107,39 @@ const FeaturesSection = () => {
 							margin: '0 auto 1rem auto',
 						}}
 					>
-						Key Benefits
+						{pillText}
 					</span>
 					<span
 						className="features-title"
 						style={{ display: 'block' }}
 					>
-						Why Choose Us
+						{title}
 					</span>
 				</div>
 				<div className={`features-grid ${isVisible ? 'animate' : ''}`}>
-					{features.map((feature, index) => (
-						<div
-							key={feature.id}
-							className="feature-card"
-							style={{ transitionDelay: `${index * 100}ms` }}
-						>
+					{displayFeatures.map((feature, index) => {
+						const IconComponent = feature.icon;
+						return (
 							<div
-								className="feature-icon-wrapper"
-								style={{
-									background: `${feature.color}20`,
-									color: feature.color,
-									boxShadow: `0 10px 20px -10px ${feature.color}60`,
-								}}
+								key={feature.id}
+								className="feature-card"
+								style={{ transitionDelay: `${index * 100}ms` }}
 							>
-								<feature.icon size={32} />
+								<div
+									className="feature-icon-wrapper"
+									style={{
+										background: `${feature.color}20`,
+										color: feature.color,
+										boxShadow: `0 10px 20px -10px ${feature.color}60`,
+									}}
+								>
+									<IconComponent size={32} />
+								</div>
+								<h3 className="feature-title">{feature.title}</h3>
+								<p className="feature-desc">{feature.description}</p>
 							</div>
-							<h3 className="feature-title">{feature.title}</h3>
-							<p className="feature-desc">{feature.description}</p>
-						</div>
-					))}
+						);
+					})}
 				</div>
 			</div>
 		</div>

@@ -3,9 +3,13 @@ import { Send } from 'lucide-react';
 import Button from '../common/Button';
 import './NewsletterSection.css';
 
-const NewsletterSection = () => {
+const NewsletterSection = ({ data }) => {
   const [email, setEmail] = useState('');
   const [subscribed, setSubscribed] = useState(false);
+
+  const badge = data?.badge || 'Join The Club';
+  const title = data?.title || 'Get Fresh Updates';
+  const description = data?.description || 'Subscribe to our newsletter and get 10% off your first order. Plus, receive weekly healthy recipes and exclusive deals.';
 
   const handleSubmit = (e) => {
     e.preventDefault();
@@ -23,12 +27,9 @@ const NewsletterSection = () => {
       
       <div className="container newsletter-container">
         <div className="newsletter-content">
-          <span className="newsletter-badge">Join The Club</span>
-          <h2 className="newsletter-title">Get Fresh Updates</h2>
-          <p className="newsletter-desc">
-            Subscribe to our newsletter and get 10% off your first order. 
-            Plus, receive weekly healthy recipes and exclusive deals.
-          </p>
+          <span className="newsletter-badge">{badge}</span>
+          <h2 className="newsletter-title">{title}</h2>
+          <p className="newsletter-desc">{description}</p>
           
           <form onSubmit={handleSubmit} className="newsletter-form">
             <div className="input-group">

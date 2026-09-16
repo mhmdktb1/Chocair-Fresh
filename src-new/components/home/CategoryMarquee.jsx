@@ -1,21 +1,72 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ArrowRight, Sparkles } from 'lucide-react';
+import { useCategories } from '../../hooks/useCategories';
 import './CategoryMarquee.css';
 
-const categories = [
-  { id: 1, name: 'Fresh Fruits', icon: '🍎', color: '#ff7675', bg: 'linear-gradient(135deg, #ffeaa7 0%, #fab1a0 100%)', badge: 'Fresh' },
-  { id: 2, name: 'Vegetables', icon: '🥦', color: '#00b894', bg: 'linear-gradient(135deg, #55efc4 0%, #81ecec 100%)', badge: 'Organic' },
-  { id: 3, name: 'Dairy & Eggs', icon: '🥛', color: '#0984e3', bg: 'linear-gradient(135deg, #74b9ff 0%, #a29bfe 100%)', badge: 'Daily' },
-  { id: 4, name: 'Bakery', icon: '🥖', color: '#e17055', bg: 'linear-gradient(135deg, #fdcb6e 0%, #e17055 100%)', badge: 'Artisan' },
-  { id: 5, name: 'Meat & Seafood', icon: '🥩', color: '#d63031', bg: 'linear-gradient(135deg, #ff7675 0%, #d63031 100%)', badge: 'Premium' },
-  { id: 6, name: 'Beverages', icon: '🥤', color: '#6c5ce7', bg: 'linear-gradient(135deg, #a29bfe 0%, #6c5ce7 100%)', badge: 'Cold' },
-  { id: 7, name: 'Snacks', icon: '🍿', color: '#fdcb6e', bg: 'linear-gradient(135deg, #ffeaa7 0%, #fdcb6e 100%)', badge: 'Crispy' },
-  { id: 8, name: 'Organic', icon: '🌿', color: '#00cec9', bg: 'linear-gradient(135deg, #55efc4 0%, #00b894 100%)', badge: '100% Bio' },
+const defaultCategories = [
+  { id: '1', name: 'Fresh Fruits', icon: '🍎', color: '#ff7675', bg: 'linear-gradient(135deg, #ffeaa7 0%, #fab1a0 100%)', badge: 'Fresh' },
+  { id: '2', name: 'Vegetables', icon: '🥦', color: '#00b894', bg: 'linear-gradient(135deg, #55efc4 0%, #81ecec 100%)', badge: 'Organic' },
+  { id: '3', name: 'Dairy & Eggs', icon: '🥛', color: '#0984e3', bg: 'linear-gradient(135deg, #74b9ff 0%, #a29bfe 100%)', badge: 'Daily' },
+  { id: '4', name: 'Bakery', icon: '🥖', color: '#e17055', bg: 'linear-gradient(135deg, #fdcb6e 0%, #e17055 100%)', badge: 'Artisan' },
+  { id: '5', name: 'Meat & Seafood', icon: '🥩', color: '#d63031', bg: 'linear-gradient(135deg, #ff7675 0%, #d63031 100%)', badge: 'Premium' },
+  { id: '6', name: 'Beverages', icon: '🥤', color: '#6c5ce7', bg: 'linear-gradient(135deg, #a29bfe 0%, #6c5ce7 100%)', badge: 'Cold' },
+  { id: '7', name: 'Snacks', icon: '🍿', color: '#fdcb6e', bg: 'linear-gradient(135deg, #ffeaa7 0%, #fdcb6e 100%)', badge: 'Crispy' },
+  { id: '8', name: 'Organic', icon: '🌿', color: '#00cec9', bg: 'linear-gradient(135deg, #55efc4 0%, #00b894 100%)', badge: '100% Bio' },
 ];
 
-const CategoryMarquee = () => {
+const getCategoryVisuals = (name) => {
+  const lower = (name || '').toLowerCase();
+  if (lower.includes('fruit') || lower.includes('apple') || lower.includes('berry')) {
+    return { icon: '🍎', bg: 'linear-gradient(135deg, #ffeaa7 0%, #fab1a0 100%)', badge: 'Fresh' };
+  }
+  if (lower.includes('veg') || lower.includes('salad') || lower.includes('green')) {
+    return { icon: '🥦', bg: 'linear-gradient(135deg, #55efc4 0%, #81ecec 100%)', badge: 'Organic' };
+  }
+  if (lower.includes('dairy') || lower.includes('milk') || lower.includes('egg') || lower.includes('cheese')) {
+    return { icon: '🥛', bg: 'linear-gradient(135deg, #74b9ff 0%, #a29bfe 100%)', badge: 'Daily' };
+  }
+  if (lower.includes('bake') || lower.includes('bread') || lower.includes('pastry')) {
+    return { icon: '🥖', bg: 'linear-gradient(135deg, #fdcb6e 0%, #e17055 100%)', badge: 'Artisan' };
+  }
+  if (lower.includes('meat') || lower.includes('beef') || lower.includes('fish') || lower.includes('seafood')) {
+    return { icon: '🥩', bg: 'linear-gradient(135deg, #ff7675 0%, #d63031 100%)', badge: 'Premium' };
+  }
+  if (lower.includes('drink') || lower.includes('beverage') || lower.includes('juice')) {
+    return { icon: '🥤', bg: 'linear-gradient(135deg, #a29bfe 0%, #6c5ce7 100%)', badge: 'Cold' };
+  }
+  if (lower.includes('snack') || lower.includes('nut') || lower.includes('chip')) {
+    return { icon: '🍿', bg: 'linear-gradient(135deg, #ffeaa7 0%, #fdcb6e 100%)', badge: 'Crispy' };
+  }
+  if (lower.includes('herb') || lower.includes('spice')) {
+    return { icon: '🌱', bg: 'linear-gradient(135deg, #81ecec 0%, #00b894 100%)', badge: 'Pure' };
+  }
+  return { icon: '🌿', bg: 'linear-gradient(135deg, #55efc4 0%, #00b894 100%)', badge: 'Bio' };
+};
+
+const CategoryMarquee = ({ categories: propCategories }) => {
   const navigate = useNavigate();
+  const { categories: fetchedCategories } = useCategories();
+
+  const displayCategories = React.useMemo(() => {
+    const source = (propCategories && propCategories.length > 0)
+      ? propCategories
+      : (fetchedCategories && fetchedCategories.length > 0)
+        ? fetchedCategories
+        : defaultCategories;
+
+    return source.map((c, index) => {
+      const name = typeof c === 'string' ? c : c.name || `Category ${index + 1}`;
+      const visuals = getCategoryVisuals(name);
+      return {
+        id: c._id || c.id || `cat-${index}`,
+        name,
+        icon: c.icon || visuals.icon,
+        bg: c.bg || visuals.bg,
+        badge: c.badge || visuals.badge,
+      };
+    });
+  }, [propCategories, fetchedCategories]);
 
   const handleCategoryClick = (categoryName) => {
     navigate(`/shop?category=${encodeURIComponent(categoryName)}`);
@@ -50,7 +101,7 @@ const CategoryMarquee = () => {
         </div>
 
         <div className="mobile-category-grid" role="list">
-          {categories.map((cat) => (
+          {displayCategories.map((cat) => (
             <div 
               key={`mob-${cat.id}`} 
               className="mobile-category-card"
@@ -72,15 +123,15 @@ const CategoryMarquee = () => {
       {/* Desktop Marquee Track */}
       <div className="marquee-container desktop-marquee-only" role="region">
         <div className="marquee-track" role="list">
-          {/* Double the items for seamless loop */}
-          {[...categories, ...categories, ...categories].map((cat, index) => (
+          {/* Repeat items for seamless loop */}
+          {[...displayCategories, ...displayCategories, ...displayCategories].map((cat, index) => (
             <div 
               key={`${cat.id}-${index}`} 
               className="marquee-item"
               onClick={() => handleCategoryClick(cat.name)}
               onKeyDown={(e) => handleKeyDown(e, cat.name)}
               role="listitem"
-              tabIndex={index < categories.length ? 0 : -1}
+              tabIndex={index < displayCategories.length ? 0 : -1}
               aria-label={`Browse ${cat.name}`}
             >
               <span className="marquee-icon" aria-hidden="true">{cat.icon}</span>
