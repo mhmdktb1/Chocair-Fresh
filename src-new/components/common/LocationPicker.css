@@ -819,3 +819,48 @@
     padding: 0.85rem 1rem calc(0.85rem + env(safe-area-inset-bottom, 0px));
   }
 }
+
+/* ---------------------------------------------------------
+   5. GOOGLE PLACES AUTOCOMPLETE DROPDOWN
+   --------------------------------------------------------- */
+.pac-container {
+  z-index: 100000 !important;
+  background-color: #ffffff !important;
+  border-radius: 14px !important;
+  margin-top: 6px !important;
+  box-shadow: 0 16px 40px -8px rgba(0, 0, 0, 0.25), 0 0 0 1px rgba(0, 0, 0, 0.08) !important;
+  border: none !important;
+  font-family: inherit !important;
+  overflow: hidden !important;
+  pointer-events: auto !important;
+}
+
+.pac-item {
+  padding: 10px 14px !important;
+  font-size: 0.88rem !important;
+  cursor: pointer !important;
+  display: flex !important;
+  align-items: center !important;
+  border-top: 1px solid #f1f5f9 !important;
+  color: #334155 !important;
+  transition: background-color 0.15s ease !important;
+}
+
+.pac-item:first-child {
+  border-top: none !important;
+}
+
+.pac-item:hover,
+.pac-item-selected {
+  background-color: #f0fdf4 !important;
+}
+
+.pac-icon {
+  margin-right: 10px !important;
+}
+
+.pac-item-query {
+  font-size: 0.9rem !important;
+  font-weight: 700 !important;
+  color: #0f172a !important;
+}

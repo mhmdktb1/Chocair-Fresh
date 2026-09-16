@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState, useCallback } from "react";
+import { createPortal } from "react-dom";
 import { GoogleMap, useJsApiLoader, Autocomplete } from "@react-google-maps/api";
 import { 
   MapPin, Navigation, ChevronRight, X, Check, Building, 
@@ -345,6 +346,12 @@ const LocationPicker = ({ onLocationSelect, initialLocation, autoLocate = true }
             setAreaAddress(v);
             onLocationSelect?.({ address: v, lat: null, lng: null, source: "manual" });
           }}
+          onKeyDown={(e) => {
+            if (e.key === "Enter") {
+              e.preventDefault();
+              e.stopPropagation();
+            }
+          }}
           className="details-input"
         />
       </div>
@@ -438,7 +445,7 @@ const LocationPicker = ({ onLocationSelect, initialLocation, autoLocate = true }
       </div>
 
       {/* 3. Fullscreen / Bottom Sheet Google Maps Modal */}
-      {showMapModal && (
+      {showMapModal && typeof document !== "undefined" && createPortal(
         <div className="toters-map-modal-overlay" onClick={() => setShowMapModal(false)}>
           <div className="toters-map-modal-card" onClick={(e) => e.stopPropagation()}>
             
@@ -464,6 +471,9 @@ const LocationPicker = ({ onLocationSelect, initialLocation, autoLocate = true }
                 <Autocomplete
                   onLoad={onAutocompleteLoad}
                   onPlaceChanged={onPlaceChanged}
+                  options={{
+                    componentRestrictions: { country: "lb" },
+                  }}
                 >
                   <div className="gmaps-search-box">
                     <Search size={18} className="gmaps-search-icon" />
@@ -471,6 +481,12 @@ const LocationPicker = ({ onLocationSelect, initialLocation, autoLocate = true }
                       type="text"
                       placeholder="Search street, area, or landmark in Lebanon..."
                       className="gmaps-search-input"
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter") {
+                          e.preventDefault();
+                          e.stopPropagation();
+                        }
+                      }}
                     />
                   </div>
                 </Autocomplete>
@@ -589,11 +605,12 @@ const LocationPicker = ({ onLocationSelect, initialLocation, autoLocate = true }
             </div>
 
           </div>
-        </div>
+        </div>,
+        document.body
       )}
 
       {/* 4. Building & Floor Details Modal */}
-      {showBuildingModal && (
+      {showBuildingModal && typeof document !== "undefined" && createPortal(
         <div className="toters-map-modal-overlay" onClick={() => setShowBuildingModal(false)}>
           <div className="toters-building-modal-card" onClick={(e) => e.stopPropagation()}>
             
@@ -630,6 +647,7 @@ const LocationPicker = ({ onLocationSelect, initialLocation, autoLocate = true }
               onKeyDown={(e) => {
                 if (e.key === 'Enter') {
                   e.preventDefault();
+                  e.stopPropagation();
                   handleSaveBuildingDetails();
                 }
               }}
@@ -645,6 +663,13 @@ const LocationPicker = ({ onLocationSelect, initialLocation, autoLocate = true }
                   onChange={(e) => setTempDetails({ ...tempDetails, building: e.target.value })}
                   className="modal-field-input"
                   autoFocus
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      handleSaveBuildingDetails();
+                    }
+                  }}
                 />
               </div>
 
@@ -659,6 +684,13 @@ const LocationPicker = ({ onLocationSelect, initialLocation, autoLocate = true }
                     value={tempDetails.floor}
                     onChange={(e) => setTempDetails({ ...tempDetails, floor: e.target.value })}
                     className="modal-field-input"
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        handleSaveBuildingDetails();
+                      }
+                    }}
                   />
                 </div>
 
@@ -670,6 +702,13 @@ const LocationPicker = ({ onLocationSelect, initialLocation, autoLocate = true }
                     value={tempDetails.apartment}
                     onChange={(e) => setTempDetails({ ...tempDetails, apartment: e.target.value })}
                     className="modal-field-input"
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        handleSaveBuildingDetails();
+                      }
+                    }}
                   />
                 </div>
               </div>
@@ -684,6 +723,13 @@ const LocationPicker = ({ onLocationSelect, initialLocation, autoLocate = true }
                   value={tempDetails.landmark}
                   onChange={(e) => setTempDetails({ ...tempDetails, landmark: e.target.value })}
                   className="modal-field-input"
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      handleSaveBuildingDetails();
+                    }
+                  }}
                 />
               </div>
 
@@ -700,7 +746,8 @@ const LocationPicker = ({ onLocationSelect, initialLocation, autoLocate = true }
             </div>
 
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </div>
   );
