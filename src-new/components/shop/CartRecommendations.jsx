@@ -1,11 +1,11 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { ArrowRight, Sparkles } from 'lucide-react';
+import { Sparkles } from 'lucide-react';
 import ProductCard from './ProductCard';
 import api from '../../utils/api';
 import { useCart } from '../../context/CartContext';
-import './RecommendationRow.css'; // Reuse existing styles
+import './CartRecommendations.css';
 
-const CartRecommendations = ({ limit = 4 }) => {
+const CartRecommendations = ({ limit = 8 }) => {
   const { cartItems } = useCart();
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -29,7 +29,7 @@ const CartRecommendations = ({ limit = 4 }) => {
         
         // Format cart items for the API: [{ productId, quantity }]
         const formattedItems = cartItems.map(item => ({
-          productId: item._id,
+          productId: item._id || item.id,
           quantity: item.quantity
         }));
 
@@ -40,7 +40,7 @@ const CartRecommendations = ({ limit = 4 }) => {
 
         if (response.data && response.data.success && response.data.data) {
           // Extract product data from the wrapper object { product: {...}, score: ... }
-          const items = response.data.data.map(item => item.product);
+          const items = response.data.data.map(item => item.product).filter(Boolean);
           setProducts(items);
         }
       } catch (error) {
@@ -48,7 +48,7 @@ const CartRecommendations = ({ limit = 4 }) => {
       } finally {
         setLoading(false);
       }
-    }, 800); // 800ms delay
+    }, 500); // 500ms delay
 
     return () => {
       if (debounceTimer.current) {
@@ -60,31 +60,37 @@ const CartRecommendations = ({ limit = 4 }) => {
   if (products.length === 0) return null;
 
   return (
-    <section className="recommendation-row cart-recommendations">
-      <div className="row-header">
-        <h2 className="row-title" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-          <Sparkles size={24} color="var(--primary)" />
-          Complete Your Order
-        </h2>
+    <section className="cart-recommendations-section">
+      <div className="cart-rec-header">
+        <div className="cart-rec-title-wrap">
+          <div className="cart-rec-icon-badge">
+            <Sparkles size={18} />
+          </div>
+          <div className="cart-rec-headings">
+            <h3 className="cart-rec-title">Complete Your Order</h3>
+            <span className="cart-rec-subtitle">Frequently paired fresh harvest</span>
+          </div>
+        </div>
       </div>
       
-      <div className="row-grid">
+      <div className="cart-rec-track">
         {products.map((product) => (
-          <ProductCard 
-            key={product._id} 
-            product={{
-              _id: product._id,
-              name: product.name,
-              category: product.category,
-              price: product.price,
-              unit: product.unit,
-              rating: 5,
-              reviews: 0,
-              image: product.image,
-              isNew: false,
-              discount: 0
-            }} 
-          />
+          <div key={product._id || product.id} className="cart-rec-card-item">
+            <ProductCard 
+              product={{
+                _id: product._id || product.id,
+                name: product.name,
+                category: product.category,
+                price: product.price,
+                unit: product.unit,
+                rating: product.rating || 4.9,
+                reviews: product.reviews || 16,
+                image: product.image,
+                isNew: product.isNew || false,
+                discount: product.discount || 0
+              }} 
+            />
+          </div>
         ))}
       </div>
     </section>
