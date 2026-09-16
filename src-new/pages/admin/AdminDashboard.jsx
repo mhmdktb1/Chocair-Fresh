@@ -237,66 +237,69 @@ const AdminDashboard = () => {
 
       {/* Main Content Area */}
       <main className="admin-main">
-        {/* Sticky Mobile & Desktop Top Bar */}
-        <header className="admin-header">
-          <div className="header-left">
-            <button 
-              className="menu-toggle-btn" 
-              onClick={() => setSidebarOpen(true)}
-              aria-label="Open navigation menu"
-            >
-              <Menu size={20} />
-              {pendingOrdersCount > 0 && (
-                <span className="menu-badge-dot" />
-              )}
-            </button>
-            <div className="header-title-block">
-              <span className="header-badge">MANAGEMENT HUB</span>
-              <h1>{activeTabObj.label}</h1>
-            </div>
-          </div>
-
-          <div className="header-right">
-            <button 
-              className="header-view-store-btn"
-              onClick={() => navigate('/')}
-              title="View Customer Shop"
-              aria-label="View Customer Live Store"
-            >
-              <Store size={18} />
-              <span className="store-text">Live Store</span>
-            </button>
-            <div className="admin-profile-chip">
-              <div className="avatar-small">
-                {user?.name ? user.name.charAt(0).toUpperCase() : 'A'}
+        {/* Sticky Mobile & Desktop Top Bar Container */}
+        <div className="admin-top-bar-container">
+          {/* Row 1: Top Navigation & Title Bar */}
+          <header className="admin-header">
+            <div className="header-left">
+              <button 
+                className="menu-toggle-btn" 
+                onClick={() => setSidebarOpen(true)}
+                aria-label="Open navigation menu"
+              >
+                <Menu size={20} />
+                {pendingOrdersCount > 0 && (
+                  <span className="menu-badge-dot" />
+                )}
+              </button>
+              <div className="header-title-block">
+                <span className="header-badge">MANAGEMENT HUB</span>
+                <h1>{activeTabObj.label}</h1>
               </div>
             </div>
-          </div>
-        </header>
 
-        {/* Mobile Quick-Action Navigation Tabs */}
-        <div className="admin-mobile-tabs-bar">
-          <div className="mobile-tabs-scroll">
-            {tabs.map((tab) => {
-              const Icon = tab.icon;
-              const isActive = activeTab === tab.id;
-              return (
-                <button
-                  key={tab.id}
-                  className={`mobile-tab-btn ${isActive ? 'active' : ''}`}
-                  onClick={() => setActiveTab(tab.id)}
-                >
-                  <Icon size={15} className="mobile-tab-icon" />
-                  <span className="mobile-tab-text">{tab.label}</span>
-                  {tab.badge && (
-                    <span className={`mobile-tab-badge ${tab.badgeColor || ''}`}>
-                      {tab.badge}
-                    </span>
-                  )}
-                </button>
-              );
-            })}
-          </div>
+            <div className="header-right">
+              <button 
+                className="header-view-store-btn"
+                onClick={() => navigate('/')}
+                title="View Customer Shop"
+                aria-label="View Customer Live Store"
+              >
+                <Store size={18} />
+                <span className="store-text">Live Store</span>
+              </button>
+              <div className="admin-profile-chip">
+                <div className="avatar-small">
+                  {user?.name ? user.name.charAt(0).toUpperCase() : 'A'}
+                </div>
+              </div>
+            </div>
+          </header>
+
+          {/* Row 2: Mobile Quick-Action Navigation Tabs */}
+          <nav className="admin-mobile-tabs-bar" aria-label="Admin navigation tabs">
+            <div className="mobile-tabs-scroll">
+              {tabs.map((tab) => {
+                const Icon = tab.icon;
+                const isActive = activeTab === tab.id;
+                return (
+                  <button
+                    key={tab.id}
+                    className={`mobile-tab-btn ${isActive ? 'active' : ''}`}
+                    onClick={() => setActiveTab(tab.id)}
+                  >
+                    <Icon size={15} className="mobile-tab-icon" />
+                    <span className="mobile-tab-text">{tab.label}</span>
+                    {tab.badge && (
+                      <span className={`mobile-tab-badge ${tab.badgeColor || ''}`}>
+                        {tab.badge}
+                      </span>
+                    )}
+                  </button>
+                );
+              })}
+            </div>
+          </nav>
         </div>
 
         {/* Dynamic Admin Body Content */}

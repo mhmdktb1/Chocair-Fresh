@@ -322,21 +322,30 @@
   min-height: 100vh;
 }
 
-/* Sticky Header */
-.admin-header {
-  background: rgba(255, 255, 255, 0.95);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  padding: 0 1.5rem;
-  border-bottom: 1px solid #e2e8f0;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
+/* Sticky Top Bar Container (Wraps Header and Tabs into Clean Independent Rows) */
+.admin-top-bar-container {
   position: sticky;
   top: 0;
   z-index: 90;
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border-bottom: 1px solid #e2e8f0;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+/* Top Navigation Bar */
+.admin-header {
+  background: transparent;
+  padding: 0 1.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
   height: 64px;
   box-sizing: border-box;
+  width: 100%;
+  gap: 0.75rem;
 }
 
 .header-left {
@@ -345,6 +354,7 @@
   gap: 0.75rem;
   min-width: 0;
   flex: 1;
+  overflow: hidden;
 }
 
 .menu-toggle-btn {
@@ -388,6 +398,7 @@
   flex-direction: column;
   justify-content: center;
   min-width: 0;
+  overflow: hidden;
 }
 
 .header-badge {
@@ -395,8 +406,12 @@
   font-weight: 800;
   letter-spacing: 0.08em;
   color: #16a34a;
-  line-height: 1;
+  line-height: 1.1;
   margin-bottom: 2px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  text-transform: uppercase;
 }
 
 .header-title-block h1 {
@@ -463,18 +478,14 @@
   flex-shrink: 0;
 }
 
-/* Mobile Quick Tabs Bar (Visible on mobile/tablet) */
+/* Mobile Quick Tabs Bar (Row 2 - Visible on mobile/tablet) */
 .admin-mobile-tabs-bar {
   display: none;
-  background: rgba(255, 255, 255, 0.96);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  border-bottom: 1px solid #e2e8f0;
-  padding: 0.45rem 0.65rem;
-  position: sticky;
-  top: 60px;
-  z-index: 85;
-  box-shadow: 0 2px 6px rgba(15, 23, 42, 0.03);
+  background: transparent;
+  border-top: 1px solid #f1f5f9;
+  padding: 0.45rem 0.75rem;
+  box-sizing: border-box;
+  width: 100%;
 }
 
 .mobile-tabs-scroll {
@@ -484,7 +495,8 @@
   overflow-x: auto;
   scrollbar-width: none;
   -webkit-overflow-scrolling: touch;
-  padding: 1px 2px;
+  padding: 2px 2px;
+  overscroll-behavior-x: contain;
 }
 
 .mobile-tabs-scroll::-webkit-scrollbar {
@@ -595,17 +607,29 @@
 @media (max-width: 640px) {
   .admin-header {
     padding: 0 0.75rem;
-    height: 58px;
+    height: 56px;
+    gap: 0.5rem;
   }
 
   .menu-toggle-btn {
     width: 38px;
     height: 38px;
+    border-radius: 10px;
   }
 
   .admin-mobile-tabs-bar {
-    top: 58px;
     padding: 0.35rem 0.55rem;
+  }
+
+  .mobile-tabs-scroll {
+    gap: 0.4rem;
+  }
+
+  .mobile-tab-btn {
+    height: 34px;
+    padding: 0.35rem 0.75rem;
+    font-size: 0.8rem;
+    border-radius: 17px;
   }
 
   .header-view-store-btn .store-text {
@@ -626,6 +650,7 @@
     width: 34px;
     height: 34px;
     font-size: 0.9rem;
+    border-radius: 10px;
   }
 
   .header-title-block h1 {
