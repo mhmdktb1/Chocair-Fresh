@@ -721,6 +721,115 @@
 }
 
 @media (max-width: 768px) {
+  .admin-orders-page .admin-page-header {
+    display: none !important;
+  }
+
+  .admin-orders-page .admin-search-filter-card {
+    padding: 0.65rem 0.75rem;
+    margin-bottom: 0.75rem;
+    gap: 0.55rem;
+    border-radius: 14px;
+  }
+
+  .admin-orders-page .admin-search-row {
+    gap: 0.5rem;
+  }
+
+  .admin-orders-page .admin-search-input-wrap {
+    padding: 0.45rem 0.7rem;
+    border-radius: 10px;
+  }
+
+  .admin-orders-page .admin-search-input-wrap input {
+    font-size: 0.88rem;
+  }
+
+  .admin-orders-page .admin-mobile-filter-btn {
+    min-height: 38px;
+    padding: 0.45rem 0.75rem;
+    font-size: 0.82rem;
+    border-radius: 10px;
+  }
+
+  .admin-orders-page .filter-pill {
+    padding: 0.38rem 0.7rem;
+    font-size: 0.78rem;
+    gap: 0.35rem;
+  }
+
+  .admin-orders-page .admin-orders-list {
+    gap: 0.65rem;
+  }
+
+  .admin-orders-page .admin-order-card {
+    padding: 0.75rem 0.85rem;
+    gap: 0.6rem;
+    border-radius: 12px;
+  }
+
+  .admin-orders-page .order-card-header {
+    gap: 0.4rem;
+  }
+
+  .admin-orders-page .order-id-tag {
+    font-size: 0.88rem;
+    padding: 0.15rem 0.45rem;
+  }
+
+  .admin-orders-page .order-status-badge {
+    padding: 0.3rem 0.65rem;
+    font-size: 0.74rem;
+  }
+
+  .admin-orders-page .order-card-info-row {
+    padding: 0.6rem 0.75rem;
+    border-radius: 10px;
+    gap: 0.5rem;
+  }
+
+  .admin-orders-page .order-customer-name {
+    font-size: 0.9rem;
+  }
+
+  .admin-orders-page .order-customer-phone {
+    font-size: 0.78rem;
+  }
+
+  .admin-orders-page .order-total-amount {
+    font-size: 1.15rem;
+  }
+
+  .admin-orders-page .order-items-count {
+    font-size: 0.7rem;
+  }
+
+  .admin-orders-page .order-card-actions {
+    gap: 0.45rem;
+  }
+
+  .admin-orders-page .action-btn {
+    min-height: 36px;
+    height: 36px;
+    padding: 0.4rem 0.75rem;
+    font-size: 0.8rem;
+    border-radius: 8px;
+  }
+
+  .admin-orders-page .action-btn-icon-only {
+    width: 36px;
+    height: 36px;
+    min-height: 36px;
+  }
+
+  .admin-orders-page .order-quick-status-select {
+    min-height: 36px;
+    height: 36px;
+    padding: 0.4rem 0.55rem;
+    font-size: 0.8rem;
+    border-radius: 8px;
+  }
+
   .order-actions-desktop {
     display: none !important;
   }
@@ -731,21 +840,6 @@
     justify-content: space-between;
     gap: 0.5rem;
     width: 100%;
-  }
-
-  .admin-order-card {
-    padding: 0.9rem;
-    gap: 0.75rem;
-    border-radius: 14px;
-  }
-
-  .order-card-info-row {
-    padding: 0.75rem;
-    border-radius: 10px;
-  }
-
-  .order-total-amount {
-    font-size: 1.22rem;
   }
 }
 

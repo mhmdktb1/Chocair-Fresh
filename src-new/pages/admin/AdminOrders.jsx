@@ -25,8 +25,8 @@ import './AdminComponents.css';
 
 function AdminOrders() {
   const { orders, updateOrderStatus, deleteOrder } = useAdmin();
-  const [filterStatus, setFilterStatus] = useState("all");
-  const [dateFilter, setDateFilter] = useState("all");
+  const [filterStatus, setFilterStatus] = useState("Pending");
+  const [dateFilter, setDateFilter] = useState("today");
   const [searchQuery, setSearchQuery] = useState("");
   const [sortBy, setSortBy] = useState("date-desc");
   const [currentPage, setCurrentPage] = useState(1);
@@ -34,8 +34,8 @@ function AdminOrders() {
   const [isFilterModalOpen, setIsFilterModalOpen] = useState(false);
   const ordersPerPage = 12;
 
-  const hasActiveFilters = dateFilter !== "all" || sortBy !== "date-desc";
-  const activeFiltersCount = (dateFilter !== "all" ? 1 : 0) + (sortBy !== "date-desc" ? 1 : 0);
+  const hasActiveFilters = dateFilter !== "today" || sortBy !== "date-desc";
+  const activeFiltersCount = (dateFilter !== "today" ? 1 : 0) + (sortBy !== "date-desc" ? 1 : 0);
 
   // Real-time status counter tallies for fast filter pills
   const counts = useMemo(() => {
@@ -660,7 +660,7 @@ function AdminOrders() {
                   type="button"
                   className="admin-modal-btn btn-cancel"
                   onClick={() => {
-                    setDateFilter("all");
+                    setDateFilter("today");
                     setSortBy("date-desc");
                     setCurrentPage(1);
                   }}
