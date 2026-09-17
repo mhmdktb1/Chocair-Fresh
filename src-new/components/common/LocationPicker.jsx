@@ -100,8 +100,7 @@ const LocationPicker = ({ onLocationSelect, initialLocation, autoLocate = true }
     }
 
     if (!geocoderRef.current) {
-      const coordStr = `${loc.lat.toFixed(4)}, ${loc.lng.toFixed(4)}`;
-      callback?.(coordStr);
+      callback?.("Pinned Location");
       return;
     }
 
@@ -113,12 +112,12 @@ const LocationPicker = ({ onLocationSelect, initialLocation, autoLocate = true }
       setIsAddressResolving(false);
 
       if (status === "OK" && results?.[0]?.formatted_address) {
-        // Clean up excessively long country-only strings
-        const formatted = results[0].formatted_address;
-        callback?.(formatted);
+        // Strip plus codes or leading numbers like "8GV3+8Q Beirut" or coordinates
+        let formatted = results[0].formatted_address;
+        formatted = formatted.replace(/^[A-Z0-9\+]{4,}\+?[A-Z0-9]*,?\s*/i, '');
+        callback?.(formatted || "Pinned Location");
       } else {
-        const coordStr = `${loc.lat.toFixed(5)}, ${loc.lng.toFixed(5)}`;
-        callback?.(coordStr);
+        callback?.("Pinned Location");
       }
     });
   }, []);
@@ -293,7 +292,7 @@ const LocationPicker = ({ onLocationSelect, initialLocation, autoLocate = true }
   // Confirm Location from Map Modal -> Opens building details modal
   const handleConfirmLocation = () => {
     setSelectedCoords(tempCoords);
-    const chosenArea = tempAddress || `${tempCoords.lat.toFixed(4)}, ${tempCoords.lng.toFixed(4)}`;
+    const chosenArea = tempAddress || "Pinned Location";
     setAreaAddress(chosenArea);
     setShowMapModal(false);
 
