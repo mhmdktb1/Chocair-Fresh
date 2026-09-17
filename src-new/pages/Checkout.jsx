@@ -334,10 +334,10 @@ const Checkout = () => {
           <div className="checkout-header-content">
             <div>
               <h1 className="checkout-title">Checkout</h1>
-              <p className="checkout-subtitle">Review delivery details and choose your payment method.</p>
+              <p className="checkout-subtitle">Set your delivery location and choose payment method.</p>
             </div>
             <div className="desktop-secure-badge">
-              <Lock size={15} /> 256-Bit SSL Encrypted
+              <Lock size={14} /> Secure & Encrypted
             </div>
           </div>
         </div>
@@ -366,7 +366,7 @@ const Checkout = () => {
                     </div>
                     <div className="user-logged-info">
                       <span className="user-ordering-label">Ordering Account</span>
-                      <strong className="user-logged-name">{user.name || 'Valued Customer'}</strong>
+                      <strong className="user-logged-name">{user.name || 'Customer'}</strong>
                       <span className="user-logged-phone">
                         <Phone size={12} /> {user.phone}
                         <span className="verified-pill"><CheckCircle size={11} /> Verified</span>
@@ -379,25 +379,25 @@ const Checkout = () => {
                 <div className="checkout-section-box">
                   <div className="section-box-header">
                     <div className="section-header-icon-wrap user-icon">
-                      <Phone size={20} />
+                      <Phone size={18} />
                     </div>
                     <div>
-                      <h2 className="section-box-title">WhatsApp Phone Number</h2>
-                      <p className="section-box-subtitle">Hi {user.name || 'there'}, please enter your WhatsApp number for order updates.</p>
+                      <h2 className="section-box-title">WhatsApp Number</h2>
+                      <p className="section-box-subtitle">Enter your phone number for delivery updates</p>
                     </div>
                   </div>
 
                   <div className="form-card-inner">
                     <div className="form-input-group">
                       <label htmlFor="phone" className="modern-label">
-                        <Phone size={15} /> Phone Number (WhatsApp) <span className="req-star">*</span>
+                        <Phone size={14} /> Phone Number (WhatsApp) <span className="req-star">*</span>
                       </label>
                       <input 
                         id="phone"
                         type="tel" 
                         name="phone"
                         required 
-                        placeholder="e.g. 70 123 456 or +961 70 123456" 
+                        placeholder="e.g. 70 123 456" 
                         value={formData.phone}
                         onChange={handleInputChange}
                         className="modern-input"
@@ -411,11 +411,11 @@ const Checkout = () => {
                 <div className="checkout-section-box">
                   <div className="section-box-header">
                     <div className="section-header-icon-wrap user-icon">
-                      <User size={20} />
+                      <User size={18} />
                     </div>
                     <div>
                       <h2 className="section-box-title">Contact Information</h2>
-                      <p className="section-box-subtitle">Enter your name and WhatsApp number for delivery tracking.</p>
+                      <p className="section-box-subtitle">Name & WhatsApp number</p>
                     </div>
                   </div>
 
@@ -423,7 +423,7 @@ const Checkout = () => {
                     <div className="form-grid-two">
                       <div className="form-input-group">
                         <label htmlFor="name" className="modern-label">
-                          <User size={15} /> Full Name <span className="req-star">*</span>
+                          <User size={14} /> Full Name <span className="req-star">*</span>
                         </label>
                         <input 
                           id="name"
@@ -439,14 +439,14 @@ const Checkout = () => {
 
                       <div className="form-input-group">
                         <label htmlFor="phone" className="modern-label">
-                          <Phone size={15} /> Phone Number (WhatsApp) <span className="req-star">*</span>
+                          <Phone size={14} /> Phone Number (WhatsApp) <span className="req-star">*</span>
                         </label>
                         <input 
                           id="phone"
                           type="tel" 
                           name="phone"
                           required 
-                          placeholder="e.g. 70 123 456 or +961 70 123456" 
+                          placeholder="e.g. 70 123 456" 
                           value={formData.phone}
                           onChange={handleInputChange}
                           className="modern-input"
@@ -461,11 +461,11 @@ const Checkout = () => {
               <div className="checkout-section-box">
                 <div className="section-box-header">
                   <div className="section-header-icon-wrap">
-                    <MapPin size={20} />
+                    <MapPin size={18} />
                   </div>
                   <div>
-                    <h2 className="section-box-title">Delivery Location & Address</h2>
-                    <p className="section-box-subtitle">Select your area on the map and add building details.</p>
+                    <h2 className="section-box-title">Delivery Address</h2>
+                    <p className="section-box-subtitle">Set your delivery location</p>
                   </div>
                 </div>
 
@@ -481,24 +481,21 @@ const Checkout = () => {
               <div className="checkout-section-box">
                 <div className="section-box-header">
                   <div className="section-header-icon-wrap notes-icon">
-                    <MessageSquare size={20} />
+                    <MessageSquare size={18} />
                   </div>
                   <div>
-                    <h2 className="section-box-title">Additional Information <span className="opt-tag">(Optional)</span></h2>
-                    <p className="section-box-subtitle">Any specific notes, gate codes, or delivery instructions for our courier.</p>
+                    <h2 className="section-box-title">Delivery Notes <span className="opt-tag">(Optional)</span></h2>
+                    <p className="section-box-subtitle">Notes or gate instructions for driver</p>
                   </div>
                 </div>
 
                 <div className="form-card-inner">
                   <div className="form-input-group">
-                    <label htmlFor="additionalInfo" className="modern-label">
-                      <MessageSquare size={15} /> Order Notes & Delivery Instructions
-                    </label>
                     <textarea 
                       id="additionalInfo"
                       name="additionalInfo"
-                      rows={3}
-                      placeholder="e.g. Please ring the doorbell twice, leave package at concierge desk, or call when arriving..." 
+                      rows={2}
+                      placeholder="e.g. Ring bell twice, leave with concierge, or call on arrival..." 
                       value={formData.additionalInfo}
                       onChange={handleInputChange}
                       className="modern-textarea"
@@ -511,11 +508,11 @@ const Checkout = () => {
               <div className="checkout-section-box">
                 <div className="section-box-header">
                   <div className="section-header-icon-wrap payment">
-                    <CreditCard size={20} />
+                    <CreditCard size={18} />
                   </div>
                   <div>
                     <h2 className="section-box-title">Payment Method</h2>
-                    <p className="section-box-subtitle">Choose how you prefer to pay for your fresh harvest.</p>
+                    <p className="section-box-subtitle">Choose payment method</p>
                   </div>
                 </div>
 
@@ -530,16 +527,13 @@ const Checkout = () => {
                         <div className="radio-dot" />
                       </div>
                       <div className="payment-card-icon-wrap cod">
-                        <Truck size={22} />
+                        <Truck size={18} />
                       </div>
                       <div className="payment-card-info">
                         <div className="payment-title-row">
-                          <strong className="payment-title">Cash on Delivery (COD)</strong>
-                          <span className="popular-badge">Cash</span>
+                          <strong className="payment-title">Cash on Delivery</strong>
                         </div>
-                        <p className="payment-desc">
-                          Pay in cash (USD or Lebanese Pounds at market rate) upon delivery at your door.
-                        </p>
+                        <p className="payment-desc">Pay cash on delivery</p>
                       </div>
                     </div>
 
@@ -552,16 +546,13 @@ const Checkout = () => {
                         <div className="radio-dot" />
                       </div>
                       <div className="payment-card-icon-wrap whish">
-                        <CreditCard size={22} />
+                        <CreditCard size={18} />
                       </div>
                       <div className="payment-card-info">
                         <div className="payment-title-row">
-                          <strong className="payment-title">Whish Money Transfer</strong>
-                          <span className="instant-badge">⚡ Instant</span>
+                          <strong className="payment-title">Whish Money</strong>
                         </div>
-                        <p className="payment-desc">
-                          Transfer directly via Whish Money mobile app or any authorized Whish agent.
-                        </p>
+                        <p className="payment-desc">Pay via Whish</p>
                       </div>
                     </div>
                   </div>
@@ -570,16 +561,16 @@ const Checkout = () => {
                   {paymentMethod === 'Whish Money' && (
                     <div className="whish-instructions-card">
                       <div className="whish-header">
-                        <span className="whish-badge">Whish Money Account</span>
+                        <span className="whish-badge">Whish Money Transfer</span>
                         <button 
                           type="button" 
                           className="copy-whish-btn"
                           onClick={handleCopyWhish}
                         >
                           {copiedWhishNumber ? (
-                            <><Check size={14} /> Copied</>
+                            <><Check size={13} /> Copied</>
                           ) : (
-                            <><Copy size={14} /> Copy Number</>
+                            <><Copy size={13} /> Copy Number</>
                           )}
                         </button>
                       </div>
@@ -588,7 +579,7 @@ const Checkout = () => {
                         <span className="whish-holder">Chocair Fresh</span>
                       </div>
                       <p className="whish-note">
-                        Transfer exact total: <strong>{formatCurrency(finalTotal)}</strong>. Our dispatcher verifies the transaction upon order dispatch.
+                        Transfer exact total: <strong>{formatCurrency(finalTotal)}</strong>
                       </p>
                     </div>
                   )}
@@ -597,8 +588,8 @@ const Checkout = () => {
 
               {/* Quality Guarantee Box */}
               <div className="checkout-guarantee-box">
-                <ShieldCheck size={20} className="shield-icon" />
-                <span>100% Satisfaction & Farm Fresh Quality Guaranteed with every order.</span>
+                <ShieldCheck size={16} className="shield-icon" />
+                <span>100% Satisfaction & farm fresh quality guaranteed.</span>
               </div>
 
               {/* Desktop Submit Action */}

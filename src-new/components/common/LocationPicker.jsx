@@ -370,29 +370,22 @@ const LocationPicker = ({ onLocationSelect, initialLocation, autoLocate = true }
         <div className="toters-card-left">
           <div className={`toters-pin-icon-wrap ${isAutoLocating ? "pulse-locating" : ""}`}>
             {isAutoLocating ? (
-              <Loader2 size={20} className="animate-spin text-green-600" />
+              <Loader2 size={18} className="animate-spin text-green-600" />
             ) : (
-              <MapPin size={20} />
+              <MapPin size={18} />
             )}
           </div>
           <div className="toters-card-text">
             <span className="toters-card-label">
-              {isAutoLocating ? "Auto-Detecting Location..." : areaAddress ? "1. Delivery Pin Set" : "1. Delivery Location"}
+              {isAutoLocating ? "Locating..." : "Location"}
             </span>
             <div className={`toters-card-address ${!areaAddress ? "placeholder" : ""}`}>
               {isAutoLocating ? (
-                <span className="locating-text-shimmer">Detecting your GPS location...</span>
+                <span className="locating-text-shimmer">Detecting GPS location...</span>
               ) : (
-                areaAddress || "Tap to select your area on Google Maps..."
+                areaAddress || "Select location on map..."
               )}
             </div>
-            <span className="toters-card-hint">
-              {isAutoLocating 
-                ? "Locating nearest street & area" 
-                : selectedCoords 
-                  ? "📍 Exact GPS coordinates pinned • Tap to adjust" 
-                  : "Opens interactive Google Maps"}
-            </span>
           </div>
         </div>
 
@@ -418,27 +411,24 @@ const LocationPicker = ({ onLocationSelect, initialLocation, autoLocate = true }
       >
         <div className="toters-card-left">
           <div className="toters-pin-icon-wrap building-icon-wrap">
-            <Building size={20} />
+            <Building size={18} />
           </div>
           <div className="toters-card-text">
             <span className="toters-card-label">
-              {hasBuildingDetails ? "2. Building & Floor Set" : "2. Building & Floor Details"}
+              Building details (Optional)
             </span>
             <div className={`toters-card-address ${!hasBuildingDetails ? "placeholder" : ""}`}>
-              {hasBuildingDetails ? buildingSummaryText : "Add building, floor, apt & landmark..."}
+              {hasBuildingDetails ? buildingSummaryText : "Building, floor & apartment..."}
             </div>
-            <span className="toters-card-hint">
-              {hasBuildingDetails ? "✅ Details saved for courier" : "Optional: helps driver find your door"}
-            </span>
           </div>
         </div>
 
         <div className="toters-card-right">
           {hasBuildingDetails ? (
-            <span className="toters-change-pill edit-pill">Edit Details</span>
+            <span className="toters-change-pill edit-pill">Edit</span>
           ) : (
             <span className="toters-add-pill">
-              <Plus size={14} /> Add
+              <Plus size={13} /> Add
             </span>
           )}
         </div>
@@ -453,7 +443,7 @@ const LocationPicker = ({ onLocationSelect, initialLocation, autoLocate = true }
             <div className="toters-modal-header">
               <div className="modal-header-info">
                 <h3 className="modal-header-title">Pin Delivery Location</h3>
-                <span className="modal-header-sub">Drag the map to position the pin at your exact door</span>
+                <span className="modal-header-sub">Position pin at your door</span>
               </div>
               <button 
                 type="button" 
@@ -476,10 +466,10 @@ const LocationPicker = ({ onLocationSelect, initialLocation, autoLocate = true }
                   }}
                 >
                   <div className="gmaps-search-box">
-                    <Search size={18} className="gmaps-search-icon" />
+                    <Search size={16} className="gmaps-search-icon" />
                     <input
                       type="text"
-                      placeholder="Search street, area, or landmark in Lebanon..."
+                      placeholder="Search street or area..."
                       className="gmaps-search-input"
                       onKeyDown={(e) => {
                         if (e.key === "Enter") {
@@ -541,7 +531,7 @@ const LocationPicker = ({ onLocationSelect, initialLocation, autoLocate = true }
 
               {/* Top Hint Badge */}
               <div className={`gmaps-map-hint-pill ${isDragging ? "dragging" : ""}`}>
-                {isDragging ? "📍 Release to set pin" : "👆 Drag map under center pin"}
+                {isDragging ? "Release to set" : "Drag map under pin"}
               </div>
 
               {/* Google Map */}
@@ -568,7 +558,7 @@ const LocationPicker = ({ onLocationSelect, initialLocation, autoLocate = true }
               ) : (
                 <div className="gmaps-loading-state">
                   <Loader2 size={28} className="animate-spin text-green-600" />
-                  <span>Loading Google Maps...</span>
+                  <span>Loading map...</span>
                 </div>
               )}
             </div>
@@ -577,11 +567,11 @@ const LocationPicker = ({ onLocationSelect, initialLocation, autoLocate = true }
             <div className="toters-modal-footer">
               <div className="modal-address-preview-row">
                 <div className="preview-pin-icon-box">
-                  <MapPin size={20} />
+                  <MapPin size={18} />
                 </div>
                 <div className="preview-address-col">
                   <div className="preview-address-header">
-                    <span className="preview-address-label">Selected Delivery Location</span>
+                    <span className="preview-address-label">Delivery Location</span>
                     {isAddressResolving && (
                       <span className="preview-resolving-indicator">
                         <Loader2 size={11} className="animate-spin" /> Updating...
@@ -600,7 +590,7 @@ const LocationPicker = ({ onLocationSelect, initialLocation, autoLocate = true }
                 onClick={handleConfirmLocation}
               >
                 <Check size={18} />
-                <span>Confirm Pin & Set Details</span>
+                <span>Confirm Pin</span>
               </button>
             </div>
 
@@ -617,8 +607,7 @@ const LocationPicker = ({ onLocationSelect, initialLocation, autoLocate = true }
             {/* Modal Header */}
             <div className="toters-modal-header">
               <div className="modal-header-info">
-                <h3 className="modal-header-title">Building & Apartment Details</h3>
-                <span className="modal-header-sub">Helps our courier deliver straight to your door</span>
+                <h3 className="modal-header-title">Building Details (Optional)</h3>
               </div>
               <button 
                 type="button" 
@@ -633,9 +622,9 @@ const LocationPicker = ({ onLocationSelect, initialLocation, autoLocate = true }
             {/* Area Reminder Banner */}
             {areaAddress && (
               <div className="building-modal-area-banner">
-                <MapPin size={16} className="banner-icon" />
+                <MapPin size={15} className="banner-icon" />
                 <div className="banner-text">
-                  <span className="banner-label">Delivering around:</span>
+                  <span className="banner-label">Area</span>
                   <strong className="banner-addr">{areaAddress}</strong>
                 </div>
               </div>
@@ -654,11 +643,11 @@ const LocationPicker = ({ onLocationSelect, initialLocation, autoLocate = true }
             >
               <div className="modal-input-field">
                 <label className="modal-field-label">
-                  <Building size={14} /> Building or Street Name
+                  <Building size={14} /> Building / Street
                 </label>
                 <input
                   type="text"
-                  placeholder="e.g. Al-Rida Bldg, Facing Bank Audi"
+                  placeholder="e.g. Sunrise Bldg, Hamra St"
                   value={tempDetails.building}
                   onChange={(e) => setTempDetails({ ...tempDetails, building: e.target.value })}
                   className="modal-field-input"
@@ -676,11 +665,11 @@ const LocationPicker = ({ onLocationSelect, initialLocation, autoLocate = true }
               <div className="modal-fields-grid-two">
                 <div className="modal-input-field">
                   <label className="modal-field-label">
-                    <Layers size={14} /> Floor #
+                    <Layers size={14} /> Floor
                   </label>
                   <input
                     type="text"
-                    placeholder="e.g. 3rd Floor"
+                    placeholder="e.g. 3rd"
                     value={tempDetails.floor}
                     onChange={(e) => setTempDetails({ ...tempDetails, floor: e.target.value })}
                     className="modal-field-input"
@@ -695,10 +684,10 @@ const LocationPicker = ({ onLocationSelect, initialLocation, autoLocate = true }
                 </div>
 
                 <div className="modal-input-field">
-                  <label className="modal-field-label">Apartment #</label>
+                  <label className="modal-field-label">Apartment</label>
                   <input
                     type="text"
-                    placeholder="e.g. Apt 5 / Right"
+                    placeholder="e.g. Apt 4B"
                     value={tempDetails.apartment}
                     onChange={(e) => setTempDetails({ ...tempDetails, apartment: e.target.value })}
                     className="modal-field-input"
@@ -715,11 +704,11 @@ const LocationPicker = ({ onLocationSelect, initialLocation, autoLocate = true }
 
               <div className="modal-input-field">
                 <label className="modal-field-label">
-                  <Compass size={14} /> Landmark / Gate Instructions (Optional)
+                  <Compass size={14} /> Landmark / Gate (Optional)
                 </label>
                 <input
                   type="text"
-                  placeholder="e.g. Next to Pharmacy, gray building gate"
+                  placeholder="e.g. Near pharmacy, black gate"
                   value={tempDetails.landmark}
                   onChange={(e) => setTempDetails({ ...tempDetails, landmark: e.target.value })}
                   className="modal-field-input"
@@ -740,7 +729,7 @@ const LocationPicker = ({ onLocationSelect, initialLocation, autoLocate = true }
                   onClick={handleSaveBuildingDetails}
                 >
                   <Check size={18} />
-                  <span>Save Building Details</span>
+                  <span>Save Details</span>
                 </button>
               </div>
             </div>
