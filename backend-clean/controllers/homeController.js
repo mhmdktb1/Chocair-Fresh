@@ -21,7 +21,6 @@ const getHomeConfig = async (req, res) => {
     console.error('DB error in getHomeConfig:', error.message);
     const defaultConfig = {
       hero: {
-        enabled: true,
         title: "FRESHER. CLEANER. BETTER.",
         subtitle: "Carefully selected fresh produce, every day.",
         backgroundImage: "https://images.unsplash.com/photo-1610348725531-843dff563e2c?auto=format&fit=crop&w=1200&q=80",
@@ -35,9 +34,6 @@ const getHomeConfig = async (req, res) => {
           { label: "Fresh Products", value: "500+" },
           { label: "Fast Delivery", value: "24h" }
         ]
-      },
-      categoryMarquee: {
-        enabled: true
       },
       featuredCategories: [],
       promos: {
@@ -59,16 +55,6 @@ const getHomeConfig = async (req, res) => {
           code: "FRESH30",
           emoji: "🎟️"
         }
-      },
-      trending: {
-        enabled: true,
-        title: "Trending Right Now"
-      },
-      seasonal: {
-        enabled: true,
-        title: "Seasonal Favorites",
-        subtitle: "Picked at the peak of flavor this season",
-        products: []
       },
       bundle: {
         enabled: true,
@@ -101,20 +87,17 @@ const getHomeConfig = async (req, res) => {
           { title: "24/7 Support", description: "Our dedicated support team is always here to help you with your needs.", icon: "Clock", color: "#e67e22" }
         ]
       },
-      testimonials: {
-        enabled: true,
-        title: "What Our Customers Say"
-      },
       newsletter: {
         enabled: true,
         badge: "Join The Club",
         title: "Get Fresh Updates",
         description: "Subscribe to our newsletter and get 10% off your first order. Plus, receive weekly healthy recipes and exclusive deals."
       },
-      comments: {
-        enabled: true
-      },
-      customSections: []
+      seasonal: {
+        title: "Seasonal Favorites",
+        subtitle: "Picked at the peak of flavor this season",
+        products: []
+      }
     };
     res.json(defaultConfig);
   }
@@ -129,7 +112,6 @@ const updateHomeConfig = async (req, res) => {
     
     // Clean up IDs for seasonal products and featured categories
     const seasonalPayload = req.body.seasonal ? {
-      enabled: req.body.seasonal.enabled !== undefined ? req.body.seasonal.enabled : (config?.seasonal?.enabled !== false),
       title: req.body.seasonal.title || config?.seasonal?.title || 'Seasonal Favorites',
       subtitle: req.body.seasonal.subtitle || config?.seasonal?.subtitle || 'Picked at the peak of flavor this season',
       products: Array.isArray(req.body.seasonal.products)
@@ -150,17 +132,12 @@ const updateHomeConfig = async (req, res) => {
     } else {
       // Update fields
       if (req.body.hero) config.hero = { ...config.hero, ...req.body.hero };
-      if (req.body.categoryMarquee) config.categoryMarquee = { ...config.categoryMarquee, ...req.body.categoryMarquee };
       if (featuredCategoriesPayload !== undefined) config.featuredCategories = featuredCategoriesPayload;
       if (req.body.promos) config.promos = { ...config.promos, ...req.body.promos };
-      if (req.body.trending) config.trending = { ...config.trending, ...req.body.trending };
       if (req.body.bundle) config.bundle = { ...config.bundle, ...req.body.bundle };
       if (req.body.story) config.story = { ...config.story, ...req.body.story };
       if (req.body.features) config.features = { ...config.features, ...req.body.features };
-      if (req.body.testimonials) config.testimonials = { ...config.testimonials, ...req.body.testimonials };
       if (req.body.newsletter) config.newsletter = { ...config.newsletter, ...req.body.newsletter };
-      if (req.body.comments) config.comments = { ...config.comments, ...req.body.comments };
-      if (req.body.customSections !== undefined) config.customSections = req.body.customSections;
       if (seasonalPayload !== undefined) config.seasonal = seasonalPayload;
     }
     

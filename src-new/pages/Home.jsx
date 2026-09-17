@@ -10,7 +10,6 @@ import AboutSection from '../components/home/AboutSection';
 import TestimonialsSection from '../components/home/TestimonialsSection';
 import NewsletterSection from '../components/home/NewsletterSection';
 import CommentsSection from '../components/home/CommentsSection';
-import CustomSection from '../components/home/CustomSection';
 import Footer from '../components/layout/Footer';
 import RecommendationRow from '../components/shop/RecommendationRow';
 import { useCart } from '../context/CartContext';
@@ -19,7 +18,6 @@ import './Home.css';
 
 const defaultHomeConfig = {
   hero: {
-    enabled: true,
     title: 'FRESHER. CLEANER. BETTER.',
     subtitle: 'Carefully selected fresh produce, every day.',
     backgroundImage: 'https://images.unsplash.com/photo-1610348725531-843dff563e2c?auto=format&fit=crop&w=1200&q=80',
@@ -33,9 +31,6 @@ const defaultHomeConfig = {
       { label: 'Fresh Products', value: '500+' },
       { label: 'Fast Delivery', value: '24h' }
     ]
-  },
-  categoryMarquee: {
-    enabled: true
   },
   featuredCategories: [],
   promos: {
@@ -57,10 +52,6 @@ const defaultHomeConfig = {
       code: 'FRESH30',
       emoji: '🎟️'
     }
-  },
-  trending: {
-    enabled: true,
-    title: 'Trending Right Now'
   },
   bundle: {
     enabled: true,
@@ -93,26 +84,17 @@ const defaultHomeConfig = {
       { title: '24/7 Support', description: 'Our dedicated support team is always here to help you with your needs.', icon: 'Clock', color: '#e67e22' }
     ]
   },
-  testimonials: {
-    enabled: true,
-    title: 'What Our Customers Say'
-  },
   newsletter: {
     enabled: true,
     badge: 'Join The Club',
     title: 'Get Fresh Updates',
     description: 'Subscribe to our newsletter and get 10% off your first order. Plus, receive weekly healthy recipes and exclusive deals.'
   },
-  comments: {
-    enabled: true
-  },
   seasonal: {
-    enabled: true,
     title: 'Seasonal Favorites',
     subtitle: 'Picked at the peak of flavor this season',
     products: [],
   },
-  customSections: []
 };
 
 const Home = () => {
@@ -176,14 +158,10 @@ const Home = () => {
       <Navbar />
 
       {/* 1. Hero */}
-      {activeHomeConfig.hero?.enabled !== false && (
-        <Hero data={activeHomeConfig.hero} />
-      )}
+      <Hero data={activeHomeConfig.hero} />
       
       {/* 2. Categories Bar / Mobile App Category Rail */}
-      {activeHomeConfig.categoryMarquee?.enabled !== false && (
-        <CategoryMarquee categories={activeHomeConfig.featuredCategories} />
-      )}
+      <CategoryMarquee categories={activeHomeConfig.featuredCategories} />
       
       {/* 3. Promo Micro Banners (Seasonal Box & 1-Tap Coupon) */}
       {activeHomeConfig.promos?.enabled !== false && (
@@ -193,23 +171,19 @@ const Home = () => {
       {/* 4. Recommendation Rows: Trending by ML Engine & Seasonal by Admin */}
       <div className="container home-recommendations-container">
         {/* 1. Trending by Backend Engine */}
-        {activeHomeConfig.trending?.enabled !== false && (
-          <RecommendationRow 
-            title={activeHomeConfig.trending?.title || "Trending Right Now"} 
-            type="popular" 
-            limit={8}
-          />
-        )}
+        <RecommendationRow 
+          title="Trending Right Now" 
+          type="popular" 
+          limit={8}
+        />
 
         {/* 2. Seasonal Fruits / Harvest Curated by Admin */}
-        {activeHomeConfig.seasonal?.enabled !== false && (
-          <RecommendationRow 
-            title={activeHomeConfig.seasonal?.title || "Seasonal Harvest Picks"} 
-            type="manual" 
-            items={activeHomeConfig.seasonal?.products || []} 
-            limit={8}
-          />
-        )}
+        <RecommendationRow 
+          title={activeHomeConfig.seasonal?.title || "Seasonal Harvest Picks"} 
+          type="manual" 
+          items={activeHomeConfig.seasonal?.products || []} 
+          limit={8}
+        />
 
         {/* 3. Complete Your Basket (When items in cart) */}
         {cartItems.length > 0 && (
@@ -237,18 +211,7 @@ const Home = () => {
       )}
 
       {/* 8. Customer Testimonials */}
-      {activeHomeConfig.testimonials?.enabled !== false && (
-        <TestimonialsSection title={activeHomeConfig.testimonials?.title} />
-      )}
-
-      {/* Custom Dynamic Sections */}
-      {Array.isArray(activeHomeConfig.customSections) && 
-        activeHomeConfig.customSections
-          .filter(s => s && s.enabled !== false)
-          .map((sec, idx) => (
-            <CustomSection key={sec.id || idx} data={sec} />
-          ))
-      }
+      <TestimonialsSection />
 
       {/* 9. Newsletter Club */}
       {activeHomeConfig.newsletter?.enabled !== false && (
@@ -256,9 +219,7 @@ const Home = () => {
       )}
 
       {/* 10. Community Discussion */}
-      {activeHomeConfig.comments?.enabled !== false && (
-        <CommentsSection />
-      )}
+      <CommentsSection />
 
       {/* 11. Modern Footer */}
       <Footer />

@@ -23,30 +23,19 @@ import {
   Mail,
   BookOpen,
   ChevronRight,
-  Eye,
-  Trash2,
-  EyeOff,
-  PlusCircle,
-  TrendingUp,
-  MessageSquare,
-  Star,
-  Layers,
-  Check,
-  Palette
+  Eye
 } from 'lucide-react';
 import './HomeEditor.css';
 
 const HomeEditor = () => {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [activeTab, setActiveTab] = useState('layout');
+  const [activeTab, setActiveTab] = useState('hero');
   const [allProducts, setAllProducts] = useState([]);
   const [productSearch, setProductSearch] = useState('');
-  const [showAddModal, setShowAddModal] = useState(false);
 
   const [formData, setFormData] = useState({
     hero: { 
-      enabled: true,
       title: 'FRESHER. CLEANER. BETTER.', 
       subtitle: 'Carefully selected fresh produce, every day.', 
       backgroundImage: 'https://images.unsplash.com/photo-1610348725531-843dff563e2c?auto=format&fit=crop&w=1200&q=80',
@@ -65,10 +54,6 @@ const HomeEditor = () => {
         { label: 'Fast Delivery', value: '24h' }
       ]
     },
-    categoryMarquee: {
-      enabled: true
-    },
-    featuredCategories: [],
     promos: {
       enabled: true,
       boxCard: {
@@ -88,16 +73,6 @@ const HomeEditor = () => {
         code: 'FRESH30',
         emoji: '🎟️'
       }
-    },
-    trending: {
-      enabled: true,
-      title: 'Trending Right Now'
-    },
-    seasonal: { 
-      enabled: true,
-      title: 'Seasonal Favorites', 
-      subtitle: 'Picked at the peak of flavor this season',
-      products: [] 
     },
     bundle: { 
       enabled: true,
@@ -130,20 +105,18 @@ const HomeEditor = () => {
         { title: '24/7 Support', description: 'Our dedicated support team is always here to help you with your needs.', icon: 'Clock', color: '#e67e22' }
       ]
     },
-    testimonials: {
-      enabled: true,
-      title: 'What Our Customers Say'
-    },
     newsletter: {
       enabled: true,
       badge: 'Join The Club',
       title: 'Get Fresh Updates',
       description: 'Subscribe to our newsletter and get 10% off your first order. Plus, receive weekly healthy recipes and exclusive deals.'
     },
-    comments: {
-      enabled: true
+    seasonal: { 
+      title: 'Seasonal Favorites', 
+      subtitle: 'Picked at the peak of flavor this season',
+      products: [] 
     },
-    customSections: []
+    featuredCategories: []
   });
 
   useEffect(() => {
@@ -175,68 +148,40 @@ const HomeEditor = () => {
           hero: {
             ...prev.hero,
             ...(data.hero || {}),
-            enabled: data.hero?.enabled !== undefined ? data.hero.enabled : true,
             stats: (data.hero?.stats && data.hero.stats.length === 3) 
               ? data.hero.stats 
               : prev.hero.stats
           },
-          categoryMarquee: {
-            ...prev.categoryMarquee,
-            ...(data.categoryMarquee || {}),
-            enabled: data.categoryMarquee?.enabled !== undefined ? data.categoryMarquee.enabled : true
-          },
           promos: {
             ...prev.promos,
             ...(data.promos || {}),
-            enabled: data.promos?.enabled !== undefined ? data.promos.enabled : true,
             boxCard: { ...prev.promos.boxCard, ...(data.promos?.boxCard || {}) },
             couponCard: { ...prev.promos.couponCard, ...(data.promos?.couponCard || {}) }
           },
-          trending: {
-            ...prev.trending,
-            ...(data.trending || {}),
-            enabled: data.trending?.enabled !== undefined ? data.trending.enabled : true
-          },
           bundle: {
             ...prev.bundle,
-            ...(data.bundle || {}),
-            enabled: data.bundle?.enabled !== undefined ? data.bundle.enabled : true
+            ...(data.bundle || {})
           },
           story: {
             ...prev.story,
-            ...(data.story || {}),
-            enabled: data.story?.enabled !== undefined ? data.story.enabled : true
+            ...(data.story || {})
           },
           features: {
             ...prev.features,
             ...(data.features || {}),
-            enabled: data.features?.enabled !== undefined ? data.features.enabled : true,
             items: (data.features?.items && data.features.items.length > 0)
               ? data.features.items
               : prev.features.items
           },
-          testimonials: {
-            ...prev.testimonials,
-            ...(data.testimonials || {}),
-            enabled: data.testimonials?.enabled !== undefined ? data.testimonials.enabled : true
-          },
           newsletter: {
             ...prev.newsletter,
-            ...(data.newsletter || {}),
-            enabled: data.newsletter?.enabled !== undefined ? data.newsletter.enabled : true
-          },
-          comments: {
-            ...prev.comments,
-            ...(data.comments || {}),
-            enabled: data.comments?.enabled !== undefined ? data.comments.enabled : true
+            ...(data.newsletter || {})
           },
           seasonal: {
             ...prev.seasonal,
             ...(data.seasonal || {}),
-            enabled: data.seasonal?.enabled !== undefined ? data.seasonal.enabled : true,
             products: data.seasonal?.products || []
-          },
-          customSections: Array.isArray(data.customSections) ? data.customSections : []
+          }
         }));
       }
       setLoading(false);
@@ -258,80 +203,6 @@ const HomeEditor = () => {
       cur[pathArray[pathArray.length - 1]] = value;
       return updated;
     });
-  };
-
-  const toggleSectionEnabled = (sectionKey, isEnabled) => {
-    setFormData(prev => ({
-      ...prev,
-      [sectionKey]: {
-        ...(prev[sectionKey] || {}),
-        enabled: isEnabled !== undefined ? isEnabled : !(prev[sectionKey]?.enabled !== false)
-      }
-    }));
-    const stateStr = isEnabled ? "enabled and added to" : "removed from";
-    toast.info(`Section ${sectionKey} ${stateStr} homepage`);
-  };
-
-  const removeSection = (sectionKey) => {
-    setFormData(prev => ({
-      ...prev,
-      [sectionKey]: {
-        ...(prev[sectionKey] || {}),
-        enabled: false
-      }
-    }));
-    toast.warn(`Section removed from homepage storefront. You can re-add it anytime.`);
-  };
-
-  const restoreSection = (sectionKey) => {
-    setFormData(prev => ({
-      ...prev,
-      [sectionKey]: {
-        ...(prev[sectionKey] || {}),
-        enabled: true
-      }
-    }));
-    toast.success(`Section restored to homepage storefront!`);
-  };
-
-  const handleAddCustomSection = () => {
-    const newSection = {
-      id: `custom-${Date.now()}`,
-      enabled: true,
-      badge: 'Special Feature',
-      title: 'Seasonal Organic Special',
-      subtitle: 'Experience farm-fresh produce picked at the peak of flavor.',
-      image: 'https://images.unsplash.com/photo-1542838132-92c53300491e?auto=format&fit=crop&w=1000&q=80',
-      ctaText: 'Explore Collection',
-      ctaLink: '/shop',
-      theme: 'emerald'
-    };
-
-    setFormData(prev => ({
-      ...prev,
-      customSections: [...(prev.customSections || []), newSection]
-    }));
-
-    setShowAddModal(false);
-    setActiveTab('custom');
-    toast.success("New custom promotion section added to homepage!");
-  };
-
-  const handleUpdateCustomSection = (id, field, value) => {
-    setFormData(prev => ({
-      ...prev,
-      customSections: (prev.customSections || []).map(sec => 
-        sec.id === id ? { ...sec, [field]: value } : sec
-      )
-    }));
-  };
-
-  const handleDeleteCustomSection = (id) => {
-    setFormData(prev => ({
-      ...prev,
-      customSections: (prev.customSections || []).filter(sec => sec.id !== id)
-    }));
-    toast.warn("Custom section permanently removed");
   };
 
   const handleStatChange = (index, field, value) => {
@@ -402,115 +273,27 @@ const HomeEditor = () => {
     );
   }
 
-  // Master Section Definitions
-  const standardSections = [
-    { key: 'hero', name: 'Hero Showcase & Slides', desc: 'Main full-bleed header with animated copy & high-res visuals', icon: Layout, tab: 'hero' },
-    { key: 'categoryMarquee', name: 'Category Rail & Marquee', desc: 'Top interactive icon rail for quick category browsing', icon: Layers, tab: 'layout' },
-    { key: 'promos', name: 'Promo Twin Cards & Coupon', desc: 'Harvest box spotlight and 1-tap copy discount code', icon: Gift, tab: 'promos' },
-    { key: 'trending', name: 'Trending Recommendations', desc: 'ML engine & popular product carousel', icon: TrendingUp, tab: 'layout' },
-    { key: 'seasonal', name: 'Seasonal Curated Picks', desc: 'Handpicked harvest selections curated by admin', icon: Sparkles, tab: 'seasonal' },
-    { key: 'bundle', name: 'Flash Deal & Bundle Box', desc: 'Limited time discounted product bundle with countdown and savings pill', icon: Flame, tab: 'bundle' },
-    { key: 'features', name: 'Store Benefits & Value Props', desc: 'Key store pillars (100% Organic, Fast Delivery, Quality Check, 24/7 Support)', icon: Award, tab: 'features' },
-    { key: 'story', name: 'Brand Story & Heritage', desc: 'Farm roots, founder pledge, and background story', icon: BookOpen, tab: 'story' },
-    { key: 'testimonials', name: 'Customer Testimonials', desc: 'Authentic buyer reviews and ratings showcase', icon: Star, tab: 'layout' },
-    { key: 'newsletter', name: 'Newsletter VIP Bar', desc: 'Email subscription box with 10% discount hook', icon: Mail, tab: 'newsletter' },
-    { key: 'comments', name: 'Community Discussion', desc: 'Interactive customer feedback and reviews forum', icon: MessageSquare, tab: 'layout' }
-  ];
-
   const tabs = [
-    { id: 'layout', label: 'All Sections & Layout', icon: Layers },
-    { id: 'hero', label: 'Hero Showcase', icon: Layout },
+    { id: 'hero', label: 'Hero & Banner', icon: Layout },
     { id: 'promos', label: 'Promo Banners & Coupon', icon: Gift },
     { id: 'bundle', label: 'Flash Deal & Bundle', icon: Flame },
     { id: 'seasonal', label: 'Seasonal Curated Picks', icon: Sparkles },
     { id: 'story', label: 'Brand Story', icon: BookOpen },
     { id: 'features', label: 'Store Benefits', icon: Award },
-    { id: 'newsletter', label: 'Newsletter Bar', icon: Mail },
-    { id: 'custom', label: `Custom Sections (${formData.customSections?.length || 0})`, icon: Palette }
+    { id: 'newsletter', label: 'Newsletter Bar', icon: Mail }
   ];
-
-  // Helper banner inside section editor tabs
-  const renderSectionVisibilityHeader = (sectionKey, title, tabIcon = Layout) => {
-    const isEnabled = formData[sectionKey]?.enabled !== false;
-    const IconComponent = tabIcon;
-
-    return (
-      <div className={`section-control-banner ${isEnabled ? 'is-active' : 'is-removed'}`}>
-        <div className="section-control-info">
-          <div className="section-control-icon-pill">
-            <IconComponent size={18} />
-          </div>
-          <div>
-            <div className="section-control-title-row">
-              <h3 className="section-control-title">{title}</h3>
-              <span className={`status-badge-pill ${isEnabled ? 'live' : 'hidden'}`}>
-                {isEnabled ? <Check size={12} /> : <EyeOff size={12} />}
-                <span>{isEnabled ? 'Live on Storefront' : 'Hidden / Removed'}</span>
-              </span>
-            </div>
-            <p className="section-control-desc">
-              {isEnabled 
-                ? 'This section is currently visible to visitors on the live homepage.' 
-                : 'This section is currently hidden from the homepage. Turn on to restore.'}
-            </p>
-          </div>
-        </div>
-
-        <div className="section-control-actions">
-          {isEnabled ? (
-            <button 
-              type="button" 
-              className="remove-section-action-btn"
-              onClick={() => removeSection(sectionKey)}
-              title="Remove section completely from homepage"
-            >
-              <Trash2 size={15} />
-              <span>Remove Section</span>
-            </button>
-          ) : (
-            <button 
-              type="button" 
-              className="restore-section-action-btn"
-              onClick={() => restoreSection(sectionKey)}
-              title="Add section back to homepage"
-            >
-              <PlusCircle size={15} />
-              <span>Add / Show on Homepage</span>
-            </button>
-          )}
-
-          <label className="toggle-switch" title="Toggle section visibility">
-            <input 
-              type="checkbox" 
-              checked={isEnabled} 
-              onChange={(e) => toggleSectionEnabled(sectionKey, e.target.checked)} 
-            />
-            <span className="toggle-slider"></span>
-          </label>
-        </div>
-      </div>
-    );
-  };
 
   return (
     <div className="home-editor-container">
       {/* CMS Top Header */}
       <div className="editor-header">
         <div>
-          <h2 className="editor-title">Storefront Content & Section Manager (CMS)</h2>
+          <h2 className="editor-title">Storefront Content Management (CMS)</h2>
           <p className="editor-subtitle">
-            Add, remove, reconfigure, and customize live homepage sections in real time.
+            Configure live homepage content, promotional banners, deals, and recommendations in real-time.
           </p>
         </div>
         <div className="editor-header-actions">
-          <button
-            type="button"
-            className="add-section-top-btn"
-            onClick={() => setShowAddModal(true)}
-          >
-            <Plus size={16} />
-            <span>Add Section</span>
-          </button>
           <a 
             href="/" 
             target="_blank" 
@@ -554,192 +337,48 @@ const HomeEditor = () => {
       </div>
       
       <div className="editor-content">
-
-        {/* ==================================================== */}
-        {/* TAB 0: ALL SECTIONS & LAYOUT MASTER OVERVIEW */}
-        {/* ==================================================== */}
-        {activeTab === 'layout' && (
-          <div className="editor-section animate-fade-in">
-            <div className="layout-overview-header">
-              <div>
-                <h3 className="section-title" style={{ margin: 0, border: 'none', padding: 0 }}>
-                  <span className="section-icon-wrap" style={{ background: '#ecfdf5', color: '#10b981' }}>
-                    <Layers size={18} />
-                  </span>
-                  <span>Homepage Sections & Architecture</span>
-                </h3>
-                <p className="layout-overview-subtitle">
-                  Manage the active sections displayed on your homepage. Remove any unwanted sections or add new ones.
-                </p>
-              </div>
-              <button 
-                type="button" 
-                className="add-section-btn-inline"
-                onClick={() => setShowAddModal(true)}
-              >
-                <Plus size={16} />
-                <span>+ Add Section</span>
-              </button>
-            </div>
-
-            <div className="sections-manager-grid">
-              {standardSections.map((sec) => {
-                const IconComponent = sec.icon;
-                const isEnabled = formData[sec.key]?.enabled !== false;
-
-                return (
-                  <div key={sec.key} className={`section-manager-card ${isEnabled ? 'is-live' : 'is-hidden'}`}>
-                    <div className="sec-card-header">
-                      <div className="sec-card-icon-wrap">
-                        <IconComponent size={20} />
-                      </div>
-                      <div className="sec-card-titles">
-                        <div className="sec-card-title-row">
-                          <h4 className="sec-card-title">{sec.name}</h4>
-                          <span className={`status-pill ${isEnabled ? 'live' : 'hidden'}`}>
-                            {isEnabled ? 'Active' : 'Removed'}
-                          </span>
-                        </div>
-                        <p className="sec-card-desc">{sec.desc}</p>
-                      </div>
-                    </div>
-
-                    <div className="sec-card-footer">
-                      <div className="sec-card-toggle-wrap">
-                        <label className="toggle-switch">
-                          <input 
-                            type="checkbox" 
-                            checked={isEnabled} 
-                            onChange={(e) => toggleSectionEnabled(sec.key, e.target.checked)} 
-                          />
-                          <span className="toggle-slider"></span>
-                        </label>
-                        <span className="toggle-label-text">
-                          {isEnabled ? 'Shown on Homepage' : 'Hidden'}
-                        </span>
-                      </div>
-
-                      <div className="sec-card-action-buttons">
-                        {sec.tab !== 'layout' && (
-                          <button 
-                            type="button" 
-                            className="sec-btn-edit"
-                            onClick={() => setActiveTab(sec.tab)}
-                          >
-                            <span>Edit Content</span>
-                            <ChevronRight size={14} />
-                          </button>
-                        )}
-
-                        {isEnabled ? (
-                          <button 
-                            type="button" 
-                            className="sec-btn-remove"
-                            onClick={() => removeSection(sec.key)}
-                            title="Remove section from homepage"
-                          >
-                            <Trash2 size={14} />
-                            <span>Remove</span>
-                          </button>
-                        ) : (
-                          <button 
-                            type="button" 
-                            className="sec-btn-add"
-                            onClick={() => restoreSection(sec.key)}
-                            title="Add section to homepage"
-                          >
-                            <Plus size={14} />
-                            <span>Add</span>
-                          </button>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                );
-              })}
-
-              {/* Custom Sections in Layout */}
-              {Array.isArray(formData.customSections) && formData.customSections.map((cSec, index) => (
-                <div key={cSec.id || index} className={`section-manager-card custom-type ${cSec.enabled !== false ? 'is-live' : 'is-hidden'}`}>
-                  <div className="sec-card-header">
-                    <div className="sec-card-icon-wrap" style={{ background: '#fdf4ff', color: '#c026d3' }}>
-                      <Palette size={20} />
-                    </div>
-                    <div className="sec-card-titles">
-                      <div className="sec-card-title-row">
-                        <h4 className="sec-card-title">{cSec.title || `Custom Section ${index + 1}`}</h4>
-                        <span className="custom-type-tag">Custom Promo</span>
-                        <span className={`status-pill ${cSec.enabled !== false ? 'live' : 'hidden'}`}>
-                          {cSec.enabled !== false ? 'Active' : 'Removed'}
-                        </span>
-                      </div>
-                      <p className="sec-card-desc">{cSec.subtitle || 'Custom banner / promotion card'}</p>
-                    </div>
-                  </div>
-
-                  <div className="sec-card-footer">
-                    <div className="sec-card-toggle-wrap">
-                      <label className="toggle-switch">
-                        <input 
-                          type="checkbox" 
-                          checked={cSec.enabled !== false} 
-                          onChange={(e) => handleUpdateCustomSection(cSec.id, 'enabled', e.target.checked)} 
-                        />
-                        <span className="toggle-slider"></span>
-                      </label>
-                      <span className="toggle-label-text">
-                        {cSec.enabled !== false ? 'Shown on Homepage' : 'Hidden'}
-                      </span>
-                    </div>
-
-                    <div className="sec-card-action-buttons">
-                      <button 
-                        type="button" 
-                        className="sec-btn-edit"
-                        onClick={() => setActiveTab('custom')}
-                      >
-                        <span>Edit</span>
-                        <ChevronRight size={14} />
-                      </button>
-                      <button 
-                        type="button" 
-                        className="sec-btn-remove"
-                        onClick={() => handleDeleteCustomSection(cSec.id)}
-                        title="Delete custom section"
-                      >
-                        <Trash2 size={14} />
-                        <span>Delete</span>
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-
-            <div className="add-section-bottom-card" onClick={() => setShowAddModal(true)}>
-              <div className="add-section-circle">
-                <Plus size={24} />
-              </div>
-              <div className="add-section-text">
-                <h4>+ Add Another Section</h4>
-                <p>Choose from built-in sections or create a brand new custom promotional banner.</p>
-              </div>
-            </div>
-          </div>
-        )}
         
         {/* ==================================================== */}
         {/* TAB 1: HERO & BANNER */}
         {/* ==================================================== */}
         {activeTab === 'hero' && (
           <div className="editor-section animate-fade-in">
-            {renderSectionVisibilityHeader('hero', 'Hero Showcase & Slides', Layout)}
+            <h3 className="section-title">
+              <span className="section-icon-wrap" style={{ background: '#ecfdf5', color: '#10b981' }}>
+                <Layout size={18} />
+              </span>
+              <span>Hero Showcase & Trust Strip</span>
+            </h3>
+
+            <div className="grid-2-col">
+              <div className="form-group">
+                <label className="form-label">Top Pill Badge Text</label>
+                <input 
+                  className="form-input"
+                  placeholder="e.g. 100% Organic & Farm Fresh"
+                  value={formData.hero.badge || ''}
+                  onChange={(e) => handleDeepChange(['hero', 'badge'], e.target.value)}
+                />
+              </div>
+              <div className="form-group">
+                <label className="form-label">Badge Icon</label>
+                <select 
+                  className="form-input"
+                  value={formData.hero.badgeIcon || 'sparkle'}
+                  onChange={(e) => handleDeepChange(['hero', 'badgeIcon'], e.target.value)}
+                >
+                  <option value="sparkle">✨ Sparkle</option>
+                  <option value="zap">⚡ Zap / Lightning</option>
+                  <option value="truck">🚚 Delivery Truck</option>
+                </select>
+              </div>
+            </div>
 
             <div className="form-group">
               <label className="form-label">Main Headline Title</label>
               <input 
                 className="form-input"
-                placeholder="e.g. FRESHER. CLEANER. BETTER."
+                placeholder="e.g. Handpicked Nature, Straight to Your Door"
                 value={formData.hero.title || ''}
                 onChange={(e) => handleDeepChange(['hero', 'title'], e.target.value)}
               />
@@ -750,7 +389,7 @@ const HomeEditor = () => {
               <textarea 
                 className="form-textarea"
                 rows="2"
-                placeholder="Carefully selected fresh produce, every day."
+                placeholder="Crisp organic vegetables, luscious seasonal fruits..."
                 value={formData.hero.subtitle || ''}
                 onChange={(e) => handleDeepChange(['hero', 'subtitle'], e.target.value)}
               />
@@ -761,7 +400,7 @@ const HomeEditor = () => {
                 <label className="form-label">Primary CTA Button Text</label>
                 <input 
                   className="form-input"
-                  placeholder="Shop Now"
+                  placeholder="Shop Daily Harvest"
                   value={formData.hero.ctaText || ''}
                   onChange={(e) => handleDeepChange(['hero', 'ctaText'], e.target.value)}
                 />
@@ -782,7 +421,7 @@ const HomeEditor = () => {
                 <label className="form-label">Secondary Button Text</label>
                 <input 
                   className="form-input"
-                  placeholder="Explore Produce"
+                  placeholder="Explore Categories"
                   value={formData.hero.secondaryText || ''}
                   onChange={(e) => handleDeepChange(['hero', 'secondaryText'], e.target.value)}
                 />
@@ -794,6 +433,27 @@ const HomeEditor = () => {
                   placeholder="/shop"
                   value={formData.hero.secondaryLink || ''}
                   onChange={(e) => handleDeepChange(['hero', 'secondaryLink'], e.target.value)}
+                />
+              </div>
+            </div>
+
+            <div className="grid-2-col">
+              <div className="form-group">
+                <label className="form-label">Floating Image Accent Tag</label>
+                <input 
+                  className="form-input"
+                  placeholder="⚡ Delivered in 25–35 mins"
+                  value={formData.hero.accentTag || ''}
+                  onChange={(e) => handleDeepChange(['hero', 'accentTag'], e.target.value)}
+                />
+              </div>
+              <div className="form-group">
+                <label className="form-label">Rating Trust Text</label>
+                <input 
+                  className="form-input"
+                  placeholder="4.9 ★ (2.5k+ Reviews)"
+                  value={formData.hero.ratingText || ''}
+                  onChange={(e) => handleDeepChange(['hero', 'ratingText'], e.target.value)}
                 />
               </div>
             </div>
@@ -847,7 +507,22 @@ const HomeEditor = () => {
         {/* ==================================================== */}
         {activeTab === 'promos' && (
           <div className="editor-section animate-fade-in">
-            {renderSectionVisibilityHeader('promos', 'Promotional Twin Banners & Coupon', Gift)}
+            <div className="section-title-with-toggle">
+              <h3 className="section-title" style={{ margin: 0, border: 'none', padding: 0 }}>
+                <span className="section-icon-wrap" style={{ background: '#fef3c7', color: '#d97706' }}>
+                  <Gift size={18} />
+                </span>
+                <span>Promotional Twin Banners & Coupon</span>
+              </h3>
+              <label className="toggle-switch">
+                <input 
+                  type="checkbox" 
+                  checked={formData.promos?.enabled !== false} 
+                  onChange={(e) => handleDeepChange(['promos', 'enabled'], e.target.checked)} 
+                />
+                <span className="toggle-slider"></span>
+              </label>
+            </div>
 
             <div className="promo-cards-editor-grid">
               {/* Card 1 */}
@@ -1001,7 +676,22 @@ const HomeEditor = () => {
         {/* ==================================================== */}
         {activeTab === 'bundle' && (
           <div className="editor-section animate-fade-in">
-            {renderSectionVisibilityHeader('bundle', 'Flash Deal & Bundle Box', Flame)}
+            <div className="section-title-with-toggle">
+              <h3 className="section-title" style={{ margin: 0, border: 'none', padding: 0 }}>
+                <span className="section-icon-wrap" style={{ background: '#ffedd5', color: '#ea580c' }}>
+                  <Flame size={18} />
+                </span>
+                <span>Flash Deal & Bundle Box</span>
+              </h3>
+              <label className="toggle-switch">
+                <input 
+                  type="checkbox" 
+                  checked={formData.bundle?.enabled !== false} 
+                  onChange={(e) => handleDeepChange(['bundle', 'enabled'], e.target.checked)} 
+                />
+                <span className="toggle-slider"></span>
+              </label>
+            </div>
 
             <div className="form-group">
               <label className="form-label">Deal Title</label>
@@ -1107,7 +797,7 @@ const HomeEditor = () => {
               <div className="image-preview-wrapper">
                 <img 
                   src={formData.bundle.image} 
-                  alt="Bundle Preview"
+                  alt="Bundle Preview" 
                   className="image-preview-thumbnail"
                   onError={(e) => { e.currentTarget.style.display = 'none'; }}
                 />
@@ -1121,7 +811,12 @@ const HomeEditor = () => {
         {/* ==================================================== */}
         {activeTab === 'seasonal' && (
           <div className="editor-section animate-fade-in">
-            {renderSectionVisibilityHeader('seasonal', 'Seasonal Harvest Curated Picks', Sparkles)}
+            <h3 className="section-title">
+              <span className="section-icon-wrap" style={{ background: '#fce7f3', color: '#db2777' }}>
+                <Sparkles size={18} />
+              </span>
+              <span>Seasonal Harvest Curated Picks</span>
+            </h3>
 
             <div className="form-group">
               <label className="form-label">Section Row Title</label>
@@ -1219,7 +914,22 @@ const HomeEditor = () => {
         {/* ==================================================== */}
         {activeTab === 'story' && (
           <div className="editor-section animate-fade-in">
-            {renderSectionVisibilityHeader('story', 'Brand Story & Heritage', BookOpen)}
+            <div className="section-title-with-toggle">
+              <h3 className="section-title" style={{ margin: 0, border: 'none', padding: 0 }}>
+                <span className="section-icon-wrap" style={{ background: '#e0f2fe', color: '#0284c7' }}>
+                  <BookOpen size={18} />
+                </span>
+                <span>Brand Story & Heritage (About Section)</span>
+              </h3>
+              <label className="toggle-switch">
+                <input 
+                  type="checkbox" 
+                  checked={formData.story?.enabled !== false} 
+                  onChange={(e) => handleDeepChange(['story', 'enabled'], e.target.checked)} 
+                />
+                <span className="toggle-slider"></span>
+              </label>
+            </div>
 
             <div className="grid-2-col">
               <div className="form-group">
@@ -1290,7 +1000,22 @@ const HomeEditor = () => {
         {/* ==================================================== */}
         {activeTab === 'features' && (
           <div className="editor-section animate-fade-in">
-            {renderSectionVisibilityHeader('features', 'Store Key Benefits & Value Props', Award)}
+            <div className="section-title-with-toggle">
+              <h3 className="section-title" style={{ margin: 0, border: 'none', padding: 0 }}>
+                <span className="section-icon-wrap" style={{ background: '#f3e8ff', color: '#9333ea' }}>
+                  <Award size={18} />
+                </span>
+                <span>Store Key Benefits & Value Props</span>
+              </h3>
+              <label className="toggle-switch">
+                <input 
+                  type="checkbox" 
+                  checked={formData.features?.enabled !== false} 
+                  onChange={(e) => handleDeepChange(['features', 'enabled'], e.target.checked)} 
+                />
+                <span className="toggle-slider"></span>
+              </label>
+            </div>
 
             <div className="grid-2-col">
               <div className="form-group">
@@ -1376,7 +1101,22 @@ const HomeEditor = () => {
         {/* ==================================================== */}
         {activeTab === 'newsletter' && (
           <div className="editor-section animate-fade-in">
-            {renderSectionVisibilityHeader('newsletter', 'Newsletter VIP Banner', Mail)}
+            <div className="section-title-with-toggle">
+              <h3 className="section-title" style={{ margin: 0, border: 'none', padding: 0 }}>
+                <span className="section-icon-wrap" style={{ background: '#e0e7ff', color: '#4f46e5' }}>
+                  <Mail size={18} />
+                </span>
+                <span>Newsletter Banner</span>
+              </h3>
+              <label className="toggle-switch">
+                <input 
+                  type="checkbox" 
+                  checked={formData.newsletter?.enabled !== false} 
+                  onChange={(e) => handleDeepChange(['newsletter', 'enabled'], e.target.checked)} 
+                />
+                <span className="toggle-slider"></span>
+              </label>
+            </div>
 
             <div className="form-group">
               <label className="form-label">Badge Pill</label>
@@ -1411,262 +1151,7 @@ const HomeEditor = () => {
           </div>
         )}
 
-        {/* ==================================================== */}
-        {/* TAB 8: CUSTOM SECTIONS */}
-        {/* ==================================================== */}
-        {activeTab === 'custom' && (
-          <div className="editor-section animate-fade-in">
-            <div className="section-title-with-toggle">
-              <h3 className="section-title" style={{ margin: 0, border: 'none', padding: 0 }}>
-                <span className="section-icon-wrap" style={{ background: '#fdf4ff', color: '#c026d3' }}>
-                  <Palette size={18} />
-                </span>
-                <span>Custom Promotional & Content Sections</span>
-              </h3>
-              <button 
-                type="button" 
-                className="add-section-top-btn"
-                onClick={handleAddCustomSection}
-              >
-                <Plus size={16} />
-                <span>+ Add Custom Section</span>
-              </button>
-            </div>
-
-            {(!formData.customSections || formData.customSections.length === 0) ? (
-              <div className="empty-custom-state">
-                <Palette size={36} color="#cbd5e1" />
-                <h4>No custom sections yet</h4>
-                <p>Create promotional banners, seasonal announcements, or custom content blocks.</p>
-                <button 
-                  type="button" 
-                  className="save-btn" 
-                  style={{ background: '#0f172a' }}
-                  onClick={handleAddCustomSection}
-                >
-                  <Plus size={16} />
-                  <span>Create First Custom Section</span>
-                </button>
-              </div>
-            ) : (
-              <div className="custom-sections-list">
-                {formData.customSections.map((sec, idx) => (
-                  <div key={sec.id || idx} className="custom-section-card-editor">
-                    <div className="custom-sec-header">
-                      <div className="custom-sec-title-wrap">
-                        <span className="custom-sec-number">Section #{idx + 1}</span>
-                        <h4>{sec.title || 'Untitled Custom Section'}</h4>
-                      </div>
-                      <div className="custom-sec-controls">
-                        <label className="toggle-switch" title="Toggle section visibility">
-                          <input 
-                            type="checkbox" 
-                            checked={sec.enabled !== false} 
-                            onChange={(e) => handleUpdateCustomSection(sec.id, 'enabled', e.target.checked)} 
-                          />
-                          <span className="toggle-slider"></span>
-                        </label>
-                        <button 
-                          type="button" 
-                          className="delete-custom-sec-btn"
-                          onClick={() => handleDeleteCustomSection(sec.id)}
-                          title="Remove custom section completely"
-                        >
-                          <Trash2 size={16} />
-                        </button>
-                      </div>
-                    </div>
-
-                    <div className="grid-2-col">
-                      <div className="form-group">
-                        <label className="form-label">Badge Tag (e.g. Special Offer)</label>
-                        <input 
-                          className="form-input"
-                          value={sec.badge || ''}
-                          onChange={(e) => handleUpdateCustomSection(sec.id, 'badge', e.target.value)}
-                          placeholder="Special Offer"
-                        />
-                      </div>
-                      <div className="form-group">
-                        <label className="form-label">Color Theme</label>
-                        <select 
-                          className="form-input"
-                          value={sec.theme || 'emerald'}
-                          onChange={(e) => handleUpdateCustomSection(sec.id, 'theme', e.target.value)}
-                        >
-                          <option value="emerald">Emerald Green (Brand)</option>
-                          <option value="forest">Deep Forest Green</option>
-                          <option value="amber">Warm Amber / Harvest</option>
-                          <option value="dark">Modern Dark Slate</option>
-                          <option value="light">Clean Soft White</option>
-                        </select>
-                      </div>
-                    </div>
-
-                    <div className="form-group">
-                      <label className="form-label">Section Title</label>
-                      <input 
-                        className="form-input"
-                        value={sec.title || ''}
-                        onChange={(e) => handleUpdateCustomSection(sec.id, 'title', e.target.value)}
-                        placeholder="Seasonal Organic Special"
-                      />
-                    </div>
-
-                    <div className="form-group">
-                      <label className="form-label">Subtitle / Description</label>
-                      <textarea 
-                        className="form-textarea"
-                        rows="2"
-                        value={sec.subtitle || ''}
-                        onChange={(e) => handleUpdateCustomSection(sec.id, 'subtitle', e.target.value)}
-                        placeholder="Experience farm-fresh produce picked at the peak of flavor."
-                      />
-                    </div>
-
-                    <div className="grid-2-col">
-                      <div className="form-group">
-                        <label className="form-label">Button Text</label>
-                        <input 
-                          className="form-input"
-                          value={sec.ctaText || ''}
-                          onChange={(e) => handleUpdateCustomSection(sec.id, 'ctaText', e.target.value)}
-                          placeholder="Explore Collection"
-                        />
-                      </div>
-                      <div className="form-group">
-                        <label className="form-label">Button Destination URL</label>
-                        <input 
-                          className="form-input"
-                          value={sec.ctaLink || ''}
-                          onChange={(e) => handleUpdateCustomSection(sec.id, 'ctaLink', e.target.value)}
-                          placeholder="/shop"
-                        />
-                      </div>
-                    </div>
-
-                    <div className="form-group">
-                      <label className="form-label">Banner Image URL</label>
-                      <input 
-                        className="form-input"
-                        value={sec.image || ''}
-                        onChange={(e) => handleUpdateCustomSection(sec.id, 'image', e.target.value)}
-                        placeholder="https://images.unsplash.com/..."
-                      />
-                      {sec.image && (
-                        <div className="image-preview-wrapper" style={{ marginTop: '0.5rem' }}>
-                          <img 
-                            src={sec.image} 
-                            alt="Custom Preview" 
-                            className="image-preview-thumbnail"
-                            onError={(e) => { e.currentTarget.style.display = 'none'; }}
-                          />
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-        )}
-
       </div>
-
-      {/* ==================================================== */}
-      {/* ADD SECTION MODAL POPUP */}
-      {/* ==================================================== */}
-      {showAddModal && (
-        <div className="modal-overlay" onClick={() => setShowAddModal(false)}>
-          <div className="add-section-modal" onClick={(e) => e.stopPropagation()}>
-            <div className="modal-header">
-              <div>
-                <h3 className="modal-title">Add Section to Homepage</h3>
-                <p className="modal-subtitle">Choose a built-in storefront block or add a custom promotional banner.</p>
-              </div>
-              <button 
-                type="button" 
-                className="close-modal-btn"
-                onClick={() => setShowAddModal(false)}
-              >
-                <X size={20} />
-              </button>
-            </div>
-
-            <div className="modal-body">
-              {/* Option A: Create Custom Promo */}
-              <div className="add-modal-section-group">
-                <h4 className="group-title">Custom Content</h4>
-                <div 
-                  className="add-option-card custom-highlight"
-                  onClick={handleAddCustomSection}
-                >
-                  <div className="option-icon-box" style={{ background: '#fdf4ff', color: '#c026d3' }}>
-                    <Palette size={22} />
-                  </div>
-                  <div className="option-info">
-                    <h5>+ Create Custom Promotional Banner</h5>
-                    <p>Add a new full-width card with custom headline, badge, image, theme, and CTA link.</p>
-                  </div>
-                  <button type="button" className="option-add-btn">
-                    <span>Add</span>
-                    <Plus size={15} />
-                  </button>
-                </div>
-              </div>
-
-              {/* Option B: Standard Sections */}
-              <div className="add-modal-section-group">
-                <h4 className="group-title">Storefront Sections</h4>
-                <div className="standard-options-grid">
-                  {standardSections.map(sec => {
-                    const IconComponent = sec.icon;
-                    const isEnabled = formData[sec.key]?.enabled !== false;
-
-                    return (
-                      <div 
-                        key={sec.key} 
-                        className={`add-option-card ${isEnabled ? 'already-active' : ''}`}
-                        onClick={() => {
-                          restoreSection(sec.key);
-                          setShowAddModal(false);
-                          if (sec.tab !== 'layout') setActiveTab(sec.tab);
-                        }}
-                      >
-                        <div className="option-icon-box">
-                          <IconComponent size={20} />
-                        </div>
-                        <div className="option-info">
-                          <h5>{sec.name}</h5>
-                          <p>{sec.desc}</p>
-                        </div>
-                        {isEnabled ? (
-                          <span className="already-active-badge">Active</span>
-                        ) : (
-                          <button type="button" className="option-add-btn">
-                            <span>Add</span>
-                            <Plus size={15} />
-                          </button>
-                        )}
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-            </div>
-
-            <div className="modal-footer">
-              <button 
-                type="button" 
-                className="modal-cancel-btn"
-                onClick={() => setShowAddModal(false)}
-              >
-                Close
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 };
