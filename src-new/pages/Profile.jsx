@@ -1,18 +1,19 @@
 import React, { useEffect, useState, useRef, useMemo } from 'react';
-import { useNavigate, useLocation } from 'react-router-dom';
+import { useNavigate, useLocation, Link } from 'react-router-dom';
 import { 
-  User, MapPin, Mail, Calendar, Edit2, LogOut, Save, X, 
-  Package, Settings, ChevronRight, ShoppingBag, ChevronDown, ChevronUp, 
-  AlertCircle, Phone, Camera, Upload, Plus, ShieldCheck, Clock, Truck, 
-  ArrowLeft, ArrowRight, CheckCircle, Sparkles, RefreshCw, Copy, Check, 
-  MessageSquare, Home, Briefcase, Trash2, Bell, Heart, ExternalLink, 
-  Award, Search, Filter, Shield, CheckCircle2, MapPinned, Globe, Moon, Sun, Palette
+  User, MapPin, Edit2, LogOut, Save, X, 
+  Package, Settings, ShoppingBag, ChevronDown, ChevronUp, 
+  AlertCircle, Phone, Camera, Upload, Plus, ShieldCheck, Truck, 
+  ArrowLeft, ArrowRight, CheckCircle, RefreshCw, Copy, Check, 
+  MessageSquare, Home, Briefcase, Trash2, Heart, ExternalLink, 
+  Search, CheckCircle2, MapPinned, Globe, Moon, Sun, ShoppingCart, Sparkles
 } from 'lucide-react';
 import Navbar from '../components/layout/Navbar';
 import LocationPicker from '../components/common/LocationPicker';
 import api, { getStoredUser, clearAuthData, saveAuthData, getAssetUrl } from '../utils/api';
 import { useAuth } from '../context/AuthContext';
 import { useCart } from '../context/CartContext';
+import { useFavorites } from '../context/FavoritesContext';
 import { useTheme } from '../context/ThemeContext';
 import { translations } from '../utils/translations';
 import Button from '../components/common/Button';
@@ -27,6 +28,7 @@ const Profile = () => {
   const location = useLocation();
   const { user: authUser, updateUser, logout: authLogout, isAdmin } = useAuth();
   const { addToCart, setIsCartOpen } = useCart();
+  const { favorites, favoritesCount, toggleFavorite, isFavorite } = useFavorites();
   const { language, setLanguage, toggleLanguage, theme, setTheme, toggleTheme, isDark } = useTheme();
   const t = translations[language] || translations.en;
 
@@ -34,10 +36,12 @@ const Profile = () => {
   const [openSections, setOpenSections] = useState({
     profile: false,
     orders: true,
+    favorites: false,
     addresses: false,
     preferences: false,
   });
   const [orders, setOrders] = useState([]);
+  const [allProducts, setAllProducts] = useState([]);
   const [loading, setLoading] = useState(false);
   const [initialLoading, setInitialLoading] = useState(true);
   const [isEditing, setIsEditing] = useState(false);
@@ -94,42 +98,19 @@ const Profile = () => {
     }, 100);
   };
 
-  // Preferences State
-  const [preferences, setPreferences] = useState(() => {
-    try {
-      const saved = localStorage.getItem('cf_user_prefs');
-      return saved ? JSON.parse(saved) : {
-        whatsappNotifications: true,
-        harvestAlerts: true,
-        deliveryWindow: 'afternoon',
-        language: 'en'
-      };
-    } catch {
-      return {
-        whatsappNotifications: true,
-        harvestAlerts: true,
-        deliveryWindow: 'afternoon',
-        language: 'en'
-      };
-    }
-  });
-
-  useEffect(() => {
-    localStorage.setItem('cf_user_prefs', JSON.stringify(preferences));
-  }, [preferences]);
-
   // Handle query or location navigation state
   useEffect(() => {
     if (location.state?.activeTab) {
       const tab = location.state.activeTab;
-      if (tab === 'overview') expandAndScrollToSection('profile');
+      if (tab === 'overview' || tab === 'profile') expandAndScrollToSection('profile');
       else if (tab === 'orders') expandAndScrollToSection('orders');
+      else if (tab === 'favorites') expandAndScrollToSection('favorites');
       else if (tab === 'addresses') expandAndScrollToSection('addresses');
-      else if (tab === 'settings') expandAndScrollToSection('preferences');
+      else if (tab === 'settings' || tab === 'preferences') expandAndScrollToSection('preferences');
     }
   }, [location.state]);
 
-  // Initial load
+  // Initial load: user, orders, products
   useEffect(() => {
     const loadUserData = async () => {
       const storedUser = getStoredUser();
@@ -142,15 +123,27 @@ const Profile = () => {
       setFormData(storedUser);
 
       try {
-        const response = await api.get('/users/profile');
-        const freshUser = response.data;
-        
-        setUser(freshUser);
-        setFormData(freshUser);
-        saveAuthData(localStorage.getItem('token'), freshUser);
-        if (updateUser) updateUser(freshUser);
-        
-        await fetchOrders();
+        const [profileRes, ordersRes, productsRes] = await Promise.allSettled([
+          api.get('/users/profile'),
+          api.get('/orders/myorders'),
+          api.get('/products')
+        ]);
+
+        if (profileRes.status === 'fulfilled' && profileRes.value?.data) {
+          const freshUser = profileRes.value.data;
+          setUser(freshUser);
+          setFormData(freshUser);
+          saveAuthData(localStorage.getItem('token'), freshUser);
+          if (updateUser) updateUser(freshUser);
+        }
+
+        if (ordersRes.status === 'fulfilled' && ordersRes.value?.data) {
+          setOrders(ordersRes.value.data || []);
+        }
+
+        if (productsRes.status === 'fulfilled' && productsRes.value?.data) {
+          setAllProducts(productsRes.value.data || []);
+        }
       } catch (err) {
         console.error("Failed to refresh user data", err);
         if (err.response && err.response.status === 401) {
@@ -188,7 +181,6 @@ const Profile = () => {
     try {
       const response = await api.put('/users/profile', {
         name: formData.name,
-        email: formData.email,
         location: formData.location,
         avatar: formData.avatar,
         addresses: formData.addresses || user.addresses || []
@@ -258,7 +250,7 @@ const Profile = () => {
         setNewPhone('');
         setOtp('');
         setPhoneStep('INPUT');
-        toast.success('Phone number updated successfully!');
+        toast.success('WhatsApp number updated!');
       }
     } catch (err) {
       setPhoneError(err.response?.data?.message || 'Invalid OTP code or phone number already in use');
@@ -288,7 +280,6 @@ const Profile = () => {
       return;
     }
 
-    let addedCount = 0;
     order.orderItems.forEach(item => {
       const productObj = {
         _id: item.product || item._id,
@@ -297,11 +288,10 @@ const Profile = () => {
         image: item.image,
       };
       addToCart(productObj, item.qty || 1);
-      addedCount += (item.qty || 1);
     });
 
     setIsCartOpen(true);
-    toast.success(`Added ${order.orderItems.length} items to your cart!`);
+    toast.success(`Added ${order.orderItems.length} items to cart`);
   };
 
   const handleCopyOrderId = (e, orderId) => {
@@ -309,7 +299,7 @@ const Profile = () => {
     const formatted = `#${orderId.slice(-6).toUpperCase()}`;
     navigator.clipboard?.writeText(orderId);
     setCopiedId(orderId);
-    toast.info(`Order ID ${formatted} copied to clipboard!`);
+    toast.info(`Order ID ${formatted} copied!`);
     setTimeout(() => setCopiedId(null), 2500);
   };
 
@@ -353,7 +343,6 @@ const Profile = () => {
       
       const response = await api.put('/users/profile', {
         name: user.name,
-        email: user.email,
         location: user.location,
         avatar: avatarUrl,
         addresses: user.addresses || []
@@ -426,7 +415,6 @@ const Profile = () => {
         });
       }
 
-      // If user default location is empty or updated address is default, update default location
       let newLocation = user.location;
       if (addressForm.isDefault || !newLocation) {
         newLocation = addressForm.address;
@@ -496,7 +484,7 @@ const Profile = () => {
       setFormData(updatedUser);
       saveAuthData(localStorage.getItem('token'), updatedUser);
       if (updateUser) updateUser(updatedUser);
-      toast.success('Default delivery address updated!');
+      toast.success('Default address updated!');
     } catch (err) {
       toast.error('Failed to set default address');
     } finally {
@@ -518,16 +506,11 @@ const Profile = () => {
     }).length;
   }, [orders]);
 
-  const rewardPoints = useMemo(() => {
-    return Math.floor(totalSpent * 10);
-  }, [totalSpent]);
-
   // Filtered Orders
   const filteredOrders = useMemo(() => {
     return orders.filter(order => {
       const status = (order.status || 'pending').toLowerCase();
       
-      // Status tab match
       let matchesTab = true;
       if (orderFilter === 'active') {
         matchesTab = ['pending', 'processing', 'confirmed', 'shipped', 'out_for_delivery'].includes(status);
@@ -539,7 +522,6 @@ const Profile = () => {
 
       if (!matchesTab) return false;
 
-      // Search term match
       if (orderSearch.trim()) {
         const query = orderSearch.toLowerCase().trim();
         const idMatch = order._id?.toLowerCase().includes(query);
@@ -551,8 +533,13 @@ const Profile = () => {
     });
   }, [orders, orderFilter, orderSearch]);
 
+  // Favorite Products list
+  const favoriteProductsList = useMemo(() => {
+    return allProducts.filter(p => favorites.includes((p._id || p.id).toString()));
+  }, [allProducts, favorites]);
+
   if (initialLoading) {
-    return <Loading text="Loading your account..." />;
+    return <Loading text="Loading account..." />;
   }
 
   if (!user) {
@@ -569,18 +556,18 @@ const Profile = () => {
     if (st === 'delivered') return 4;
     if (st === 'shipped' || st === 'out_for_delivery') return 3;
     if (st === 'processing' || st === 'confirmed') return 2;
-    return 1; // Pending / Placed
+    return 1;
   };
 
   // ==========================================
-  // TAB: OVERVIEW & PROFILE EDIT
+  // SECTION: PERSONAL PROFILE (EDIT)
   // ==========================================
-  const renderOverview = () => (
+  const renderProfile = () => (
     <div className="profile-section-card fade-in">
       <div className="section-header-row">
         <div>
-          <h2 className="section-title">Personal Information</h2>
-          <p className="section-subtitle">Manage your personal profile and primary delivery location</p>
+          <h2 className="section-title">{t.personalDetails}</h2>
+          <p className="section-subtitle">Manage name, WhatsApp, and primary delivery spot</p>
         </div>
         {!isEditing ? (
           <button 
@@ -588,7 +575,7 @@ const Profile = () => {
             className="account-action-pill-btn"
             onClick={() => setIsEditing(true)}
           >
-            <Edit2 size={15} />
+            <Edit2 size={14} />
             <span>Edit Profile</span>
           </button>
         ) : (
@@ -601,7 +588,7 @@ const Profile = () => {
                 setFormData(user);
               }}
             >
-              <X size={15} />
+              <X size={14} />
               <span>Cancel</span>
             </button>
             <button 
@@ -610,8 +597,8 @@ const Profile = () => {
               onClick={handleSaveProfile}
               disabled={loading}
             >
-              <Save size={15} />
-              <span>{loading ? 'Saving...' : 'Save Changes'}</span>
+              <Save size={14} />
+              <span>{loading ? 'Saving...' : 'Save'}</span>
             </button>
           </div>
         )}
@@ -621,7 +608,7 @@ const Profile = () => {
         {/* Full Name */}
         <div className="profile-field-box">
           <label className="profile-field-label">
-            <User size={15} /> Full Name
+            <User size={14} /> {t.fullName}
           </label>
           <input 
             type="text" 
@@ -629,21 +616,21 @@ const Profile = () => {
             value={formData.name || ''}
             onChange={(e) => setFormData({...formData, name: e.target.value})}
             disabled={!isEditing}
-            placeholder="e.g. Walid Chocair"
+            placeholder="Full Name"
           />
         </div>
 
         {/* WhatsApp Phone */}
         <div className="profile-field-box">
           <label className="profile-field-label">
-            <Phone size={15} /> WhatsApp Number
+            <Phone size={14} /> {t.whatsAppNumber}
             {user.phone ? (
               <span className="verified-badge-pill">
-                <CheckCircle2 size={12} /> Verified
+                <CheckCircle2 size={11} /> Verified
               </span>
             ) : (
               <span className="unverified-badge-pill">
-                <AlertCircle size={12} /> Unlinked
+                <AlertCircle size={11} /> Unlinked
               </span>
             )}
           </label>
@@ -651,7 +638,7 @@ const Profile = () => {
             <input 
               type="tel" 
               className="profile-field-input phone-input"
-              value={formData.phone ? formatPhoneNumber(formData.phone) : 'No WhatsApp phone linked'}
+              value={formData.phone ? formatPhoneNumber(formData.phone) : 'No phone linked'}
               disabled={true}
             />
             {isEditing && (
@@ -672,45 +659,11 @@ const Profile = () => {
           </div>
         </div>
 
-        {/* Email Address */}
-        <div className="profile-field-box">
-          <label className="profile-field-label">
-            <Mail size={15} /> Email Address <span className="opt-tag">(Optional)</span>
-          </label>
-          <input 
-            type="email" 
-            className="profile-field-input"
-            value={formData.email || ''}
-            onChange={(e) => setFormData({...formData, email: e.target.value})}
-            disabled={!isEditing}
-            placeholder="your.email@example.com"
-          />
-        </div>
-
-        {/* Member Since / Loyalty */}
-        <div className="profile-field-box">
-          <label className="profile-field-label">
-            <Award size={15} /> Membership Tier
-          </label>
-          <div className="tier-display-box">
-            <div className="tier-badge-icon">
-              <Sparkles size={16} />
-            </div>
-            <div className="tier-info">
-              <span className="tier-name">{isAdmin ? 'Store Administrator' : 'Fresh VIP Member'}</span>
-              <span className="tier-perks">Free Priority Delivery & Fresh Harvest Perks</span>
-            </div>
-          </div>
-        </div>
-
-        {/* Delivery Location Section */}
+        {/* Primary Delivery Location */}
         <div className="profile-field-box full-width">
-          <div className="field-label-with-action">
-            <label className="profile-field-label">
-              <MapPin size={15} /> Primary Delivery Address
-            </label>
-            <span className="address-helper-text">Used for instant 1-tap checkout</span>
-          </div>
+          <label className="profile-field-label">
+            <MapPin size={14} /> {t.primaryAddress}
+          </label>
 
           {isEditing ? (
             <div className="location-picker-wrapper">
@@ -719,22 +672,20 @@ const Profile = () => {
           ) : (
             <div className="location-preview-card">
               <div className="location-pin-icon-wrap">
-                <MapPinned size={22} />
+                <MapPinned size={20} />
               </div>
               <div className="location-preview-content">
                 <span className="location-main-text">
-                  {formData.location ? (formData.location.startsWith('Lat:') ? 'Custom GPS Pinned Location' : formData.location) : 'No primary delivery address specified'}
+                  {formData.location ? (formData.location.startsWith('Lat:') ? 'Pinned GPS Location' : formData.location) : 'No primary delivery address set'}
                 </span>
-                <span className="location-sub-text">
-                  Lebanon Delivery Network • Guaranteed Fresh On-Time Dispatch
-                </span>
+                <span className="location-sub-text">Lebanon Delivery Network</span>
               </div>
               <button 
                 type="button" 
                 className="edit-addr-quick-btn"
                 onClick={() => setIsEditing(true)}
               >
-                Update
+                Change
               </button>
             </div>
           )}
@@ -744,13 +695,13 @@ const Profile = () => {
   );
 
   // ==========================================
-  // TAB: ORDERS & DELIVERIES
+  // SECTION: ORDERS & DELIVERIES
   // ==========================================
   const renderOrders = () => (
     <div className="profile-section-card fade-in">
       <div className="orders-section-header">
         <div>
-          <h2 className="section-title">Order History & Deliveries</h2>
+          <h2 className="section-title">{t.ordersDeliveries}</h2>
           <p className="section-subtitle">Real-time status tracking, instant reordering, and item receipts</p>
         </div>
         <Button 
@@ -797,16 +748,16 @@ const Profile = () => {
         </div>
 
         <div className="order-search-box">
-          <Search size={15} className="search-icon" />
+          <Search size={14} className="search-icon" />
           <input 
             type="text" 
-            placeholder="Search by order # or item..." 
+            placeholder="Search orders or items..." 
             value={orderSearch}
             onChange={(e) => setOrderSearch(e.target.value)}
           />
           {orderSearch && (
             <button type="button" className="clear-search-btn" onClick={() => setOrderSearch('')}>
-              <X size={14} />
+              <X size={13} />
             </button>
           )}
         </div>
@@ -815,18 +766,18 @@ const Profile = () => {
       {filteredOrders.length === 0 ? (
         <div className="empty-orders-view">
           <div className="empty-icon-circle">
-            <ShoppingBag size={38} />
+            <ShoppingBag size={34} />
           </div>
-          <h3>No Orders Found</h3>
+          <h3>{t.noOrdersFound}</h3>
           <p>
             {orderSearch 
-              ? `No orders matching "${orderSearch}". Try searching for another item or order ID.`
+              ? `No orders matching "${orderSearch}".`
               : orderFilter !== 'all' 
-                ? `You have no ${orderFilter} orders currently.`
-                : "You haven't placed any fresh grocery orders yet."}
+                ? `You have no ${orderFilter} orders.`
+                : "You haven't placed any orders yet."}
           </p>
           <Button variant="primary" onClick={() => navigate('/shop')} className="start-fresh-shop-btn">
-            Explore Daily Harvest <ArrowRight size={16} style={{ marginLeft: 6 }} />
+            {t.exploreHarvest} <ArrowRight size={15} style={{ marginLeft: 6 }} />
           </Button>
         </div>
       ) : (
@@ -853,13 +804,13 @@ const Profile = () => {
                         type="button" 
                         className="copy-id-btn" 
                         onClick={(e) => handleCopyOrderId(e, order._id)}
-                        title="Copy Order ID"
+                        title="Copy ID"
                       >
-                        {copiedId === order._id ? <Check size={13} color="#16a34a" /> : <Copy size={13} />}
+                        {copiedId === order._id ? <Check size={12} color="#16a34a" /> : <Copy size={12} />}
                       </button>
                     </div>
                     <span className="order-date-tag">
-                      <Calendar size={13} /> {formatDate(order.createdAt)}
+                      {formatDate(order.createdAt)}
                     </span>
                   </div>
 
@@ -872,17 +823,17 @@ const Profile = () => {
                       className="order-expand-toggle"
                       aria-label={isExpanded ? "Collapse Order" : "Expand Order"}
                     >
-                      {isExpanded ? <ChevronUp size={18} /> : <ChevronDown size={18} />}
+                      {isExpanded ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
                     </button>
                   </div>
                 </div>
 
-                {/* Visual Order Progress Tracker (Only for non-cancelled) */}
+                {/* Visual Order Progress Tracker */}
                 {!isCancelled && (
                   <div className="order-progress-tracker" onClick={(e) => e.stopPropagation()}>
                     <div className={`progress-step ${progressStep >= 1 ? 'completed' : ''} ${progressStep === 1 ? 'current' : ''}`}>
                       <div className="step-dot">
-                        <Check size={11} strokeWidth={3} />
+                        <Check size={10} strokeWidth={3} />
                       </div>
                       <span className="step-label">Placed</span>
                     </div>
@@ -891,7 +842,7 @@ const Profile = () => {
 
                     <div className={`progress-step ${progressStep >= 2 ? 'completed' : ''} ${progressStep === 2 ? 'current' : ''}`}>
                       <div className="step-dot">
-                        <Check size={11} strokeWidth={3} />
+                        <Check size={10} strokeWidth={3} />
                       </div>
                       <span className="step-label">Confirmed</span>
                     </div>
@@ -900,16 +851,16 @@ const Profile = () => {
 
                     <div className={`progress-step ${progressStep >= 3 ? 'completed' : ''} ${progressStep === 3 ? 'current' : ''}`}>
                       <div className="step-dot">
-                        <Truck size={12} strokeWidth={2.5} />
+                        <Truck size={11} strokeWidth={2.5} />
                       </div>
-                      <span className="step-label">On The Way</span>
+                      <span className="step-label">On Way</span>
                     </div>
 
                     <div className={`progress-line ${progressStep >= 4 ? 'completed' : ''}`} />
 
                     <div className={`progress-step ${progressStep >= 4 ? 'completed' : ''} ${progressStep === 4 ? 'current' : ''}`}>
                       <div className="step-dot">
-                        <CheckCircle size={12} strokeWidth={2.5} />
+                        <CheckCircle size={11} strokeWidth={2.5} />
                       </div>
                       <span className="step-label">Delivered</span>
                     </div>
@@ -925,7 +876,7 @@ const Profile = () => {
                           {item.image ? (
                             <img src={item.image} alt={item.name} />
                           ) : (
-                            <Package size={14} color="#94a3b8" />
+                            <Package size={13} color="#94a3b8" />
                           )}
                         </div>
                       ))}
@@ -936,12 +887,12 @@ const Profile = () => {
                       )}
                     </div>
                     <span className="order-item-count-text">
-                      {order.orderItems?.length || 0} {order.orderItems?.length === 1 ? 'fresh item' : 'fresh items'}
+                      {order.orderItems?.length || 0} items
                     </span>
                   </div>
 
                   <div className="order-total-price-box">
-                    <span className="total-label">Total Amount</span>
+                    <span className="total-label">{t.totalAmount}</span>
                     <span className="total-value">{formatCurrency(order.totalPrice || 0)}</span>
                   </div>
                 </div>
@@ -949,11 +900,8 @@ const Profile = () => {
                 {/* Expanded Details Drawer */}
                 {isExpanded && (
                   <div className="order-drawer-content fade-in" onClick={(e) => e.stopPropagation()}>
-                    <div className="drawer-divider" />
-
-                    {/* Line Items List */}
                     <div className="line-items-header">
-                      <span>Purchased Items</span>
+                      <span>Items</span>
                       <span>Subtotal</span>
                     </div>
                     
@@ -964,13 +912,13 @@ const Profile = () => {
                             {item.image ? (
                               <img src={item.image} alt={item.name} />
                             ) : (
-                              <Package size={20} color="#94a3b8" />
+                              <Package size={18} color="#94a3b8" />
                             )}
                           </div>
                           <div className="item-info-col">
                             <span className="item-title">{item.name}</span>
                             <span className="item-qty-rate">
-                              Quantity: {item.qty} × {formatCurrency(item.price)}
+                              {item.qty} × {formatCurrency(item.price)}
                             </span>
                           </div>
                           <span className="item-row-total">
@@ -980,36 +928,34 @@ const Profile = () => {
                       ))}
                     </div>
 
-                    {/* Delivery & Payment Details */}
                     <div className="order-meta-info-grid">
                       <div className="meta-info-card">
                         <div className="meta-card-title">
-                          <Truck size={14} /> Delivery Address
+                          <Truck size={13} /> {t.deliveryAddress}
                         </div>
                         <p className="meta-card-text">
-                          {order.customerInfo?.address || order.shippingAddress?.address || 'Standard Delivery Spot, Lebanon'}
+                          {order.customerInfo?.address || order.shippingAddress?.address || 'Standard Delivery, Lebanon'}
                         </p>
                       </div>
 
                       <div className="meta-info-card">
                         <div className="meta-card-title">
-                          <Phone size={14} /> Recipient Phone
+                          <Phone size={13} /> {t.recipientPhone}
                         </div>
                         <p className="meta-card-text">
-                          {order.customerInfo?.phone ? formatPhoneNumber(order.customerInfo.phone) : (user.phone ? formatPhoneNumber(user.phone) : 'Phone on file')}
+                          {order.customerInfo?.phone ? formatPhoneNumber(order.customerInfo.phone) : (user.phone ? formatPhoneNumber(user.phone) : 'On file')}
                         </p>
                       </div>
                     </div>
 
-                    {/* Actions Row */}
                     <div className="order-actions-bar">
                       <button 
                         type="button" 
                         className="reorder-action-btn"
                         onClick={(e) => handleReorder(e, order)}
                       >
-                        <RefreshCw size={15} />
-                        <span>Reorder All Items</span>
+                        <RefreshCw size={14} />
+                        <span>{t.reorderAll}</span>
                       </button>
 
                       <button 
@@ -1017,8 +963,8 @@ const Profile = () => {
                         className="whatsapp-help-btn"
                         onClick={(e) => handleWhatsAppHelp(e, order)}
                       >
-                        <MessageSquare size={15} />
-                        <span>WhatsApp Help</span>
+                        <MessageSquare size={14} />
+                        <span>{t.whatsAppHelp}</span>
                       </button>
 
                       {order.status === 'Pending' && (
@@ -1027,7 +973,7 @@ const Profile = () => {
                           className="cancel-order-pill-btn"
                           onClick={(e) => handleCancelOrder(e, order._id)}
                         >
-                          Cancel Order
+                          {t.cancelOrder}
                         </button>
                       )}
                     </div>
@@ -1042,7 +988,96 @@ const Profile = () => {
   );
 
   // ==========================================
-  // TAB: SAVED ADDRESSES
+  // SECTION: FAVORITES
+  // ==========================================
+  const renderFavorites = () => (
+    <div className="profile-section-card fade-in">
+      <div className="section-header-row">
+        <div>
+          <h2 className="section-title">{t.myFavorites}</h2>
+          <p className="section-subtitle">{t.favoritesSubtitle}</p>
+        </div>
+        <Button 
+          variant="outline" 
+          size="small" 
+          onClick={() => navigate('/shop')} 
+          className="header-shop-btn"
+        >
+          <ShoppingBag size={14} style={{ marginRight: 6 }} /> {t.browseShop}
+        </Button>
+      </div>
+
+      {favoriteProductsList.length === 0 ? (
+        <div className="empty-favorites-box">
+          <div className="empty-fav-icon-circle">
+            <Heart size={34} />
+          </div>
+          <h3>{t.noFavoritesFound}</h3>
+          <p>{t.noFavoritesDesc}</p>
+          <Button variant="primary" onClick={() => navigate('/shop')} className="start-fresh-shop-btn">
+            {t.browseShop} <ArrowRight size={15} style={{ marginLeft: 6 }} />
+          </Button>
+        </div>
+      ) : (
+        <div className="favorites-product-grid">
+          {favoriteProductsList.map((product) => {
+            const inStock = (product.countInStock || 10) > 0;
+            return (
+              <div key={product._id} className="favorite-item-card">
+                <button
+                  type="button"
+                  className="fav-remove-icon-btn"
+                  onClick={() => toggleFavorite(product)}
+                  title="Remove from favorites"
+                  aria-label="Remove from favorites"
+                >
+                  <Heart size={16} fill="#ef4444" color="#ef4444" />
+                </button>
+
+                <Link to={`/product/${product._id}`} className="fav-item-image-wrap">
+                  <img 
+                    src={product.image || 'https://images.unsplash.com/photo-1542838132-92c53300491e?auto=format&fit=crop&w=600&q=80'} 
+                    alt={product.name}
+                    loading="lazy"
+                  />
+                </Link>
+
+                <div className="fav-item-info">
+                  <Link to={`/product/${product._id}`} className="fav-item-title-link">
+                    <h4 className="fav-item-title">{product.name}</h4>
+                  </Link>
+
+                  <div className="fav-item-pricing-row">
+                    <span className="fav-item-price">{formatCurrency(product.price)}</span>
+                    {product.oldPrice && (
+                      <span className="fav-item-old-price">{formatCurrency(product.oldPrice)}</span>
+                    )}
+                    {product.unit && <span className="fav-item-unit">/ {product.unit}</span>}
+                  </div>
+
+                  <button
+                    type="button"
+                    className="fav-add-cart-btn"
+                    disabled={!inStock}
+                    onClick={() => {
+                      addToCart(product, 1);
+                      toast.success(`${product.name} added to cart!`);
+                    }}
+                  >
+                    <ShoppingCart size={14} />
+                    <span>{inStock ? t.addToCart : t.outOfStock}</span>
+                  </button>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+
+  // ==========================================
+  // SECTION: SAVED ADDRESSES
   // ==========================================
   const renderAddresses = () => {
     const savedAddresses = user.addresses || [];
@@ -1051,28 +1086,28 @@ const Profile = () => {
       <div className="profile-section-card fade-in">
         <div className="section-header-row">
           <div>
-            <h2 className="section-title">Saved Delivery Addresses</h2>
-            <p className="section-subtitle">Manage multiple drop-off points for lightning-fast checkout</p>
+            <h2 className="section-title">{t.savedAddresses}</h2>
+            <p className="section-subtitle">Manage delivery locations for quick checkout</p>
           </div>
           <button 
             type="button" 
             className="account-action-pill-btn"
             onClick={handleOpenAddAddress}
           >
-            <Plus size={16} />
-            <span>Add New Address</span>
+            <Plus size={15} />
+            <span>{t.addNewAddress}</span>
           </button>
         </div>
 
         {savedAddresses.length === 0 ? (
           <div className="empty-addresses-box">
             <div className="empty-icon-circle">
-              <MapPin size={38} />
+              <MapPin size={34} />
             </div>
-            <h3>No Saved Addresses</h3>
-            <p>Save your home, work, or chalet address to skip typing at checkout.</p>
+            <h3>{t.noSavedAddresses}</h3>
+            <p>Save your home or work address for 1-tap fast checkout.</p>
             <Button variant="primary" onClick={handleOpenAddAddress} className="add-first-address-btn">
-              <Plus size={16} style={{ marginRight: 6 }} /> Add Address
+              <Plus size={15} style={{ marginRight: 6 }} /> {t.addNewAddress}
             </Button>
           </div>
         ) : (
@@ -1086,18 +1121,18 @@ const Profile = () => {
                   <div className="address-card-header">
                     <div className="address-label-badge">
                       {labelLower === 'work' ? (
-                        <Briefcase size={15} />
+                        <Briefcase size={14} />
                       ) : labelLower === 'home' ? (
-                        <Home size={15} />
+                        <Home size={14} />
                       ) : (
-                        <MapPin size={15} />
+                        <MapPin size={14} />
                       )}
                       <span>{addr.label || 'Saved Location'}</span>
                     </div>
 
                     {isDefault ? (
                       <span className="default-address-chip">
-                        <Check size={12} strokeWidth={3} /> Default
+                        <Check size={11} strokeWidth={3} /> {t.defaultBadge}
                       </span>
                     ) : (
                       <button 
@@ -1105,7 +1140,7 @@ const Profile = () => {
                         className="make-default-btn"
                         onClick={() => handleSetDefaultAddress(addr)}
                       >
-                        Set as Default
+                        {t.setDefault}
                       </button>
                     )}
                   </div>
@@ -1126,8 +1161,8 @@ const Profile = () => {
                       onClick={() => handleDeleteAddress(addr._id || addr.id)}
                       title="Delete Address"
                     >
-                      <Trash2 size={15} />
-                      <span>Remove</span>
+                      <Trash2 size={14} />
+                      <span>{t.remove}</span>
                     </button>
                   </div>
                 </div>
@@ -1140,29 +1175,26 @@ const Profile = () => {
   };
 
   // ==========================================
-  // TAB: PREFERENCES & SETTINGS
+  // SECTION: SETTINGS & APPEARANCE
   // ==========================================
   const renderSettings = () => (
     <div className="profile-section-card fade-in">
       <div className="section-header-row">
         <div>
           <h2 className="section-title">{t.preferencesSecurity}</h2>
-          <p className="section-subtitle">Customize language, dark mode, delivery timing, and security</p>
+          <p className="section-subtitle">Language and theme preferences</p>
         </div>
       </div>
 
       <div className="settings-groups-stack">
-        {/* Appearance & Language Selection */}
+        {/* Language & Theme Selectors */}
         <div className="settings-group-card">
-          <h3 className="settings-group-title">
-            <Palette size={18} /> {t.themeOption} & {t.languageOption}
-          </h3>
-
-          {/* Language Selector */}
+          {/* Language */}
           <div className="settings-toggle-row">
             <div className="toggle-text-col">
-              <span className="toggle-title"><Globe size={14} style={{ display: 'inline', marginRight: 4 }} /> {t.languageOption}</span>
-              <span className="toggle-desc">Switch between English and Arabic (with right-to-left alignment).</span>
+              <span className="toggle-title">
+                <Globe size={14} style={{ display: 'inline', marginRight: 5 }} /> {t.languageOption}
+              </span>
             </div>
             <div className="segmented-choice-pill">
               <button 
@@ -1182,14 +1214,13 @@ const Profile = () => {
             </div>
           </div>
 
-          {/* Theme Selector */}
+          {/* Theme */}
           <div className="settings-toggle-row">
             <div className="toggle-text-col">
               <span className="toggle-title">
-                {isDark ? <Moon size={14} style={{ display: 'inline', marginRight: 4 }} /> : <Sun size={14} style={{ display: 'inline', marginRight: 4 }} />}
+                {isDark ? <Moon size={14} style={{ display: 'inline', marginRight: 5 }} /> : <Sun size={14} style={{ display: 'inline', marginRight: 5 }} />}
                 {t.themeOption}
               </span>
-              <span className="toggle-desc">Choose between vibrant fresh daylight theme or modern dark mode.</span>
             </div>
             <div className="segmented-choice-pill">
               <button 
@@ -1210,107 +1241,29 @@ const Profile = () => {
           </div>
         </div>
 
-        {/* Notification Preferences */}
-        <div className="settings-group-card">
-          <h3 className="settings-group-title">
-            <Bell size={18} /> {t.notificationPrefs}
-          </h3>
-          
-          <div className="settings-toggle-row">
-            <div className="toggle-text-col">
-              <span className="toggle-title">{t.whatsAppAlerts}</span>
-              <span className="toggle-desc">Receive real-time driver updates and dispatch confirmations on WhatsApp.</span>
-            </div>
-            <label className="toggle-switch">
-              <input 
-                type="checkbox" 
-                checked={preferences.whatsappNotifications}
-                onChange={(e) => setPreferences({...preferences, whatsappNotifications: e.target.checked})}
-              />
-              <span className="slider round"></span>
-            </label>
-          </div>
-
-          <div className="settings-toggle-row">
-            <div className="toggle-text-col">
-              <span className="toggle-title">{t.harvestAlerts}</span>
-              <span className="toggle-desc">Get notified when new seasonal fruits, fresh berries, or flash sales drop.</span>
-            </div>
-            <label className="toggle-switch">
-              <input 
-                type="checkbox" 
-                checked={preferences.harvestAlerts}
-                onChange={(e) => setPreferences({...preferences, harvestAlerts: e.target.checked})}
-              />
-              <span className="slider round"></span>
-            </label>
-          </div>
-        </div>
-
-        {/* Delivery Schedule Preferences */}
-        <div className="settings-group-card">
-          <h3 className="settings-group-title">
-            <Clock size={18} /> {t.deliveryWindow}
-          </h3>
-          <p className="settings-group-desc">Choose when our refrigerated farm vans should prioritize your orders.</p>
-
-          <div className="delivery-window-options">
-            <label className={`window-radio-option ${preferences.deliveryWindow === 'morning' ? 'selected' : ''}`}>
-              <input 
-                type="radio" 
-                name="deliveryWindow" 
-                value="morning"
-                checked={preferences.deliveryWindow === 'morning'}
-                onChange={() => setPreferences({...preferences, deliveryWindow: 'morning'})}
-              />
-              <div className="window-radio-content">
-                <span className="window-title">{t.morningWindow}</span>
-                <span className="window-sub">Ideal for early fresh kitchen prep and daily cooking</span>
-              </div>
-            </label>
-
-            <label className={`window-radio-option ${preferences.deliveryWindow === 'afternoon' ? 'selected' : ''}`}>
-              <input 
-                type="radio" 
-                name="deliveryWindow" 
-                value="afternoon"
-                checked={preferences.deliveryWindow === 'afternoon'}
-                onChange={() => setPreferences({...preferences, deliveryWindow: 'afternoon'})}
-              />
-              <div className="window-radio-content">
-                <span className="window-title">{t.afternoonWindow}</span>
-                <span className="window-sub">Fresh delivery right after work or school</span>
-              </div>
-            </label>
-          </div>
-        </div>
-
         {/* Admin Shortcut if applicable */}
         {isAdmin && (
           <div className="settings-group-card admin-highlight-card">
             <div className="admin-card-inner">
               <div className="admin-badge-icon">
-                <ShieldCheck size={22} />
+                <ShieldCheck size={20} />
               </div>
               <div className="admin-text-col">
                 <span className="admin-card-title">Store Management Portal</span>
-                <span className="admin-card-desc">Access live inventory controls, orders dispatch, and hero configuration.</span>
+                <span className="admin-card-desc">Access live inventory controls and orders dispatch</span>
               </div>
               <Button variant="primary" onClick={() => navigate('/admin')} className="launch-admin-btn">
-                Launch Admin <ExternalLink size={14} style={{ marginLeft: 6 }} />
+                Launch Admin <ExternalLink size={13} style={{ marginLeft: 5 }} />
               </Button>
             </div>
           </div>
         )}
 
-        {/* Account Security & Signout */}
+        {/* Sign Out Card */}
         <div className="settings-group-card danger-zone">
-          <h3 className="settings-group-title danger">
-            <Shield size={18} /> {t.accountSession}
-          </h3>
           <div className="danger-zone-row">
             <div className="danger-text-col">
-              <span className="danger-title">Sign Out of Chocair Fresh</span>
+              <span className="danger-title">{t.accountSession}</span>
               <span className="danger-desc">{t.signOutDesc}</span>
             </div>
             <button 
@@ -1318,7 +1271,7 @@ const Profile = () => {
               className="danger-signout-btn"
               onClick={() => setShowLogoutModal(true)}
             >
-              <LogOut size={15} />
+              <LogOut size={14} />
               <span>{t.logout}</span>
             </button>
           </div>
@@ -1329,14 +1282,14 @@ const Profile = () => {
 
   return (
     <div className="profile-page">
-      {loading && <Loading text="Updating your account..." />}
+      {loading && <Loading text="Updating account..." />}
       
       {/* Desktop Navbar */}
       <div className="profile-desktop-nav">
         <Navbar />
       </div>
 
-      {/* Mobile Sticky Top Header */}
+      {/* Mobile Header */}
       <header className="profile-mobile-header">
         <button 
           type="button" 
@@ -1395,11 +1348,11 @@ const Profile = () => {
                   <img src={fullAvatarUrl} alt={user.name} className="avatar-img" />
                 ) : (
                   <div className="avatar-letter">
-                    {user.name ? user.name.charAt(0).toUpperCase() : <User size={38} />}
+                    {user.name ? user.name.charAt(0).toUpperCase() : <User size={32} />}
                   </div>
                 )}
                 <div className="avatar-camera-overlay">
-                  <Camera size={14} />
+                  <Camera size={13} />
                 </div>
               </div>
             </div>
@@ -1412,65 +1365,50 @@ const Profile = () => {
               
               <div className="hero-contact-row">
                 <span className="hero-phone-item">
-                  <Phone size={13} /> {user.phone ? formatPhoneNumber(user.phone) : 'No phone linked'}
+                  <Phone size={12} /> {user.phone ? formatPhoneNumber(user.phone) : 'No phone linked'}
                 </span>
-                {user.email && (
-                  <span className="hero-email-item">
-                    <Mail size={13} /> {user.email}
-                  </span>
-                )}
               </div>
 
               <div className="hero-tier-tag-wrap">
                 <span className="hero-tier-tag">
-                  <Sparkles size={12} /> {isAdmin ? 'Administrator' : 'Fresh VIP Member'}
+                  <Sparkles size={11} /> {isAdmin ? 'Store Administrator' : 'Fresh VIP Member'}
                 </span>
                 <span className="hero-loc-tag">
-                  <MapPin size={12} /> {user.location ? (user.location.startsWith('Lat:') ? 'Pinned Location' : user.location.slice(0, 24) + (user.location.length > 24 ? '...' : '')) : 'Lebanon'}
+                  <MapPin size={11} /> {user.location ? (user.location.startsWith('Lat:') ? 'Pinned Location' : user.location.slice(0, 22) + (user.location.length > 22 ? '...' : '')) : 'Lebanon'}
                 </span>
               </div>
             </div>
           </div>
 
-          {/* Quick Stat Counter Cards */}
+          {/* Quick 3-Stat Counter Cards (Orders, Saved Addresses, Favorites) */}
           <div className="hero-stats-row">
             <div className="hero-stat-card" onClick={() => { setOrderFilter('all'); expandAndScrollToSection('orders'); }}>
               <div className="stat-icon-wrap orders">
-                <Package size={18} />
+                <Package size={17} />
               </div>
               <div className="stat-numbers">
                 <span className="stat-value">{orders.length}</span>
-                <span className="stat-label">Total Orders</span>
-              </div>
-            </div>
-
-            <div className="hero-stat-card" onClick={() => { setOrderFilter('active'); expandAndScrollToSection('orders'); }}>
-              <div className="stat-icon-wrap active-orders">
-                <Truck size={18} />
-              </div>
-              <div className="stat-numbers">
-                <span className="stat-value">{activeOrdersCount}</span>
-                <span className="stat-label">In Transit</span>
-              </div>
-            </div>
-
-            <div className="hero-stat-card" onClick={() => expandAndScrollToSection('preferences')}>
-              <div className="stat-icon-wrap spent">
-                <Award size={18} />
-              </div>
-              <div className="stat-numbers">
-                <span className="stat-value">{rewardPoints}</span>
-                <span className="stat-label">Fresh Points</span>
+                <span className="stat-label">{t.totalOrders}</span>
               </div>
             </div>
 
             <div className="hero-stat-card" onClick={() => expandAndScrollToSection('addresses')}>
-              <div className="stat-icon-wrap total">
-                <MapPin size={18} />
+              <div className="stat-icon-wrap addresses">
+                <MapPin size={17} />
               </div>
               <div className="stat-numbers">
                 <span className="stat-value">{user.addresses?.length || 1}</span>
-                <span className="stat-label">Saved Spots</span>
+                <span className="stat-label">{t.savedSpots}</span>
+              </div>
+            </div>
+
+            <div className="hero-stat-card" onClick={() => expandAndScrollToSection('favorites')}>
+              <div className="stat-icon-wrap favorites">
+                <Heart size={17} />
+              </div>
+              <div className="stat-numbers">
+                <span className="stat-value">{favoritesCount}</span>
+                <span className="stat-label">{t.favorites}</span>
               </div>
             </div>
           </div>
@@ -1481,7 +1419,7 @@ const Profile = () => {
             ========================================== */}
         <div className="profile-accordion-container">
 
-          {/* 1. Profile Information Accordion */}
+          {/* 1. Profile Information */}
           <section id="section-profile" className={`accordion-card ${openSections.profile ? 'is-open' : ''}`}>
             <div 
               className="accordion-trigger-header"
@@ -1492,7 +1430,7 @@ const Profile = () => {
             >
               <div className="accordion-trigger-left">
                 <div className="accordion-icon-box profile">
-                  <User size={20} />
+                  <User size={18} />
                 </div>
                 <div className="accordion-title-col">
                   <div className="accordion-title-row">
@@ -1508,19 +1446,19 @@ const Profile = () => {
               <div className="accordion-trigger-right">
                 <span className="accordion-state-hint">{openSections.profile ? t.close : t.viewEdit}</span>
                 <div className="accordion-chevron">
-                  {openSections.profile ? <ChevronUp size={20} /> : <ChevronDown size={20} />}
+                  {openSections.profile ? <ChevronUp size={18} /> : <ChevronDown size={18} />}
                 </div>
               </div>
             </div>
 
             {openSections.profile && (
               <div className="accordion-body-content fade-in">
-                {renderOverview()}
+                {renderProfile()}
               </div>
             )}
           </section>
 
-          {/* 2. Orders & Deliveries Accordion */}
+          {/* 2. Orders & Deliveries */}
           <section id="section-orders" className={`accordion-card ${openSections.orders ? 'is-open' : ''}`}>
             <div 
               className="accordion-trigger-header"
@@ -1531,14 +1469,14 @@ const Profile = () => {
             >
               <div className="accordion-trigger-left">
                 <div className="accordion-icon-box orders">
-                  <Package size={20} />
+                  <Package size={18} />
                 </div>
                 <div className="accordion-title-col">
                   <div className="accordion-title-row">
                     <h2 className="accordion-section-title">{t.ordersDeliveries}</h2>
                     {activeOrdersCount > 0 ? (
                       <span className="accordion-mini-chip active-chip">
-                        <Truck size={11} /> {activeOrdersCount} {t.inTransit}
+                        <Truck size={10} /> {activeOrdersCount} {t.inTransit}
                       </span>
                     ) : (
                       <span className="accordion-mini-chip neutral">
@@ -1549,7 +1487,7 @@ const Profile = () => {
                   <p className="accordion-summary-text">
                     {orders.length === 0 
                       ? 'No orders placed yet' 
-                      : `Latest order #${orders[0]?._id?.slice(-6).toUpperCase()} • Total spent ${formatCurrency(totalSpent)}`}
+                      : `${orders.length} orders • Total spent ${formatCurrency(totalSpent)}`}
                   </p>
                 </div>
               </div>
@@ -1557,7 +1495,7 @@ const Profile = () => {
               <div className="accordion-trigger-right">
                 <span className="accordion-state-hint">{openSections.orders ? t.close : t.trackManage}</span>
                 <div className="accordion-chevron">
-                  {openSections.orders ? <ChevronUp size={20} /> : <ChevronDown size={20} />}
+                  {openSections.orders ? <ChevronUp size={18} /> : <ChevronDown size={18} />}
                 </div>
               </div>
             </div>
@@ -1569,7 +1507,48 @@ const Profile = () => {
             )}
           </section>
 
-          {/* 3. Saved Addresses Accordion */}
+          {/* 3. Favorites */}
+          <section id="section-favorites" className={`accordion-card ${openSections.favorites ? 'is-open' : ''}`}>
+            <div 
+              className="accordion-trigger-header"
+              onClick={() => toggleSection('favorites')}
+              role="button"
+              tabIndex={0}
+              aria-expanded={openSections.favorites}
+            >
+              <div className="accordion-trigger-left">
+                <div className="accordion-icon-box favorites">
+                  <Heart size={18} />
+                </div>
+                <div className="accordion-title-col">
+                  <div className="accordion-title-row">
+                    <h2 className="accordion-section-title">{t.myFavorites}</h2>
+                    <span className="accordion-mini-chip neutral">
+                      {favoritesCount} {t.favorites}
+                    </span>
+                  </div>
+                  <p className="accordion-summary-text">
+                    {favoritesCount === 0 ? 'No favorites saved' : `${favoritesCount} saved fresh produce items`}
+                  </p>
+                </div>
+              </div>
+
+              <div className="accordion-trigger-right">
+                <span className="accordion-state-hint">{openSections.favorites ? t.close : t.manage}</span>
+                <div className="accordion-chevron">
+                  {openSections.favorites ? <ChevronUp size={18} /> : <ChevronDown size={18} />}
+                </div>
+              </div>
+            </div>
+
+            {openSections.favorites && (
+              <div className="accordion-body-content fade-in">
+                {renderFavorites()}
+              </div>
+            )}
+          </section>
+
+          {/* 4. Saved Addresses */}
           <section id="section-addresses" className={`accordion-card ${openSections.addresses ? 'is-open' : ''}`}>
             <div 
               className="accordion-trigger-header"
@@ -1580,7 +1559,7 @@ const Profile = () => {
             >
               <div className="accordion-trigger-left">
                 <div className="accordion-icon-box addresses">
-                  <MapPin size={20} />
+                  <MapPin size={18} />
                 </div>
                 <div className="accordion-title-col">
                   <div className="accordion-title-row">
@@ -1591,8 +1570,8 @@ const Profile = () => {
                   </div>
                   <p className="accordion-summary-text">
                     {user.location 
-                      ? (user.location.startsWith('Lat:') ? 'Map Pinned Location' : user.location.slice(0, 36) + (user.location.length > 36 ? '...' : '')) 
-                      : 'Manage multiple drop-off spots & building info'}
+                      ? (user.location.startsWith('Lat:') ? 'Pinned Map Location' : user.location.slice(0, 32) + (user.location.length > 32 ? '...' : '')) 
+                      : 'Manage delivery addresses'}
                   </p>
                 </div>
               </div>
@@ -1600,7 +1579,7 @@ const Profile = () => {
               <div className="accordion-trigger-right">
                 <span className="accordion-state-hint">{openSections.addresses ? t.close : t.manage}</span>
                 <div className="accordion-chevron">
-                  {openSections.addresses ? <ChevronUp size={20} /> : <ChevronDown size={20} />}
+                  {openSections.addresses ? <ChevronUp size={18} /> : <ChevronDown size={18} />}
                 </div>
               </div>
             </div>
@@ -1612,38 +1591,38 @@ const Profile = () => {
             )}
           </section>
 
-          {/* 4. Preferences & Settings Accordion */}
-          <section id="section-preferences" className={`accordion-card ${openSections.preferences ? 'is-open' : ''}`}>
+          {/* 5. Preferences & Settings */}
+          <section id="section-settings" className={`accordion-card ${openSections.settings ? 'is-open' : ''}`}>
             <div 
               className="accordion-trigger-header"
-              onClick={() => toggleSection('preferences')}
+              onClick={() => toggleSection('settings')}
               role="button"
               tabIndex={0}
-              aria-expanded={openSections.preferences}
+              aria-expanded={openSections.settings}
             >
               <div className="accordion-trigger-left">
                 <div className="accordion-icon-box preferences">
-                  <Settings size={20} />
+                  <Settings size={18} />
                 </div>
                 <div className="accordion-title-col">
                   <div className="accordion-title-row">
                     <h2 className="accordion-section-title">{t.preferencesSecurity}</h2>
                   </div>
                   <p className="accordion-summary-text">
-                    {language === 'ar' ? 'اللغة العربية' : 'English'} • {isDark ? t.darkMode : t.lightMode} • {preferences.deliveryWindow === 'morning' ? t.morningWindow : t.afternoonWindow}
+                    {language === 'ar' ? 'اللغة العربية' : 'English'} • {isDark ? t.darkMode : t.lightMode}
                   </p>
                 </div>
               </div>
 
               <div className="accordion-trigger-right">
-                <span className="accordion-state-hint">{openSections.preferences ? t.close : t.configure}</span>
+                <span className="accordion-state-hint">{openSections.settings ? t.close : t.configure}</span>
                 <div className="accordion-chevron">
-                  {openSections.preferences ? <ChevronUp size={20} /> : <ChevronDown size={20} />}
+                  {openSections.settings ? <ChevronUp size={18} /> : <ChevronDown size={18} />}
                 </div>
               </div>
             </div>
 
-            {openSections.preferences && (
+            {openSections.settings && (
               <div className="accordion-body-content fade-in">
                 {renderSettings()}
               </div>
@@ -1662,7 +1641,7 @@ const Profile = () => {
             <div className="modal-top-bar">
               <h3 className="modal-title">Change Profile Photo</h3>
               <button type="button" className="modal-x-btn" onClick={() => setShowAvatarModal(false)}>
-                <X size={18} />
+                <X size={17} />
               </button>
             </div>
 
@@ -1673,13 +1652,13 @@ const Profile = () => {
                 className="avatar-choice-card camera"
               >
                 <div className="choice-icon-wrap">
-                  <Camera size={22} />
+                  <Camera size={20} />
                 </div>
                 <div className="choice-text-col">
                   <span className="choice-title">Take a Photo</span>
-                  <span className="choice-sub">Use your phone or webcam camera</span>
+                  <span className="choice-sub">Use camera</span>
                 </div>
-                <ChevronRight size={18} className="choice-arrow" />
+                <ChevronRight size={16} className="choice-arrow" />
               </button>
 
               <button
@@ -1688,13 +1667,13 @@ const Profile = () => {
                 className="avatar-choice-card file"
               >
                 <div className="choice-icon-wrap">
-                  <Upload size={22} />
+                  <Upload size={20} />
                 </div>
                 <div className="choice-text-col">
                   <span className="choice-title">Choose from Gallery</span>
-                  <span className="choice-sub">Upload PNG, JPG or WEBP image</span>
+                  <span className="choice-sub">Upload image</span>
                 </div>
-                <ChevronRight size={18} className="choice-arrow" />
+                <ChevronRight size={16} className="choice-arrow" />
               </button>
             </div>
 
@@ -1727,13 +1706,13 @@ const Profile = () => {
             <div className="modal-top-bar">
               <h3 className="modal-title">Update WhatsApp Phone</h3>
               <button type="button" className="modal-x-btn" onClick={() => setShowPhoneModal(false)}>
-                <X size={18} />
+                <X size={17} />
               </button>
             </div>
 
             {phoneError && (
               <div className="modal-error-banner">
-                <AlertCircle size={15} /> {phoneError}
+                <AlertCircle size={14} /> {phoneError}
               </div>
             )}
 
@@ -1754,7 +1733,7 @@ const Profile = () => {
                     />
                   </div>
                   <span className="modal-input-hint">
-                    We will send a 6-digit WhatsApp verification code to confirm ownership.
+                    A 6-digit WhatsApp verification code will be sent.
                   </span>
                 </div>
                 
@@ -1763,7 +1742,7 @@ const Profile = () => {
                     Cancel
                   </Button>
                   <Button type="submit" variant="primary" disabled={phoneLoading}>
-                    {phoneLoading ? 'Sending...' : 'Send WhatsApp Code'}
+                    {phoneLoading ? 'Sending...' : 'Send Code'}
                   </Button>
                 </div>
               </form>
@@ -1818,7 +1797,7 @@ const Profile = () => {
                 {addressForm.id ? 'Edit Saved Address' : 'Add New Delivery Address'}
               </h3>
               <button type="button" className="modal-x-btn" onClick={() => setShowAddressModal(false)}>
-                <X size={18} />
+                <X size={17} />
               </button>
             </div>
 
@@ -1834,19 +1813,19 @@ const Profile = () => {
                       className={`label-choice-pill ${addressForm.label === lbl ? 'selected' : ''}`}
                       onClick={() => setAddressForm({...addressForm, label: lbl})}
                     >
-                      {lbl === 'Home' && <Home size={14} />}
-                      {lbl === 'Work' && <Briefcase size={14} />}
-                      {lbl === 'Farm' && <Sparkles size={14} />}
-                      {lbl === 'Other' && <MapPin size={14} />}
+                      {lbl === 'Home' && <Home size={13} />}
+                      {lbl === 'Work' && <Briefcase size={13} />}
+                      {lbl === 'Farm' && <Sparkles size={13} />}
+                      {lbl === 'Other' && <MapPin size={13} />}
                       <span>{lbl}</span>
                     </button>
                   ))}
                 </div>
               </div>
 
-              {/* Location Picker / Interactive Address */}
+              {/* Location Picker */}
               <div className="form-group-wrap">
-                <label className="modal-input-label">Select Location on Map & Building Details</label>
+                <label className="modal-input-label">Location on Map & Details</label>
                 <div className="address-picker-container">
                   <LocationPicker 
                     onLocationSelect={(locData) => {
@@ -1858,19 +1837,19 @@ const Profile = () => {
                 </div>
               </div>
 
-              {/* Delivery Notes / Special Instructions */}
+              {/* Delivery Notes */}
               <div className="form-group-wrap">
                 <label className="modal-input-label">Delivery Notes / Landmark (Optional)</label>
                 <input 
                   type="text" 
                   className="modal-field-input"
-                  placeholder="e.g. Ring second bell, leave with concierge"
+                  placeholder="e.g. Ring 2nd bell, leave with concierge"
                   value={addressForm.notes}
                   onChange={(e) => setAddressForm({...addressForm, notes: e.target.value})}
                 />
               </div>
 
-              {/* Set as Default Switch */}
+              {/* Set as Default */}
               <div className="modal-checkbox-row">
                 <input 
                   type="checkbox" 
@@ -1879,7 +1858,7 @@ const Profile = () => {
                   onChange={(e) => setAddressForm({...addressForm, isDefault: e.target.checked})}
                 />
                 <label htmlFor="addrDefault" className="checkbox-label">
-                  Set as my primary default delivery address
+                  Set as default delivery address
                 </label>
               </div>
 
@@ -1903,11 +1882,11 @@ const Profile = () => {
         <div className="modal-overlay" onClick={() => setShowLogoutModal(false)}>
           <div className="modal-content-card logout-modal" onClick={(e) => e.stopPropagation()}>
             <div className="logout-icon-wrap">
-              <LogOut size={32} />
+              <LogOut size={28} />
             </div>
             <h3 className="logout-confirm-title">Sign Out of Chocair Fresh?</h3>
             <p className="logout-confirm-desc">
-              You will need to sign back in with your WhatsApp number or Google account next time.
+              Your saved addresses and order history will be waiting for you.
             </p>
 
             <div className="modal-actions-row">
