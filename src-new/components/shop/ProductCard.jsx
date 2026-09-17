@@ -1,18 +1,21 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { Plus, Minus, Eye, Star } from 'lucide-react';
+import { Plus, Minus, Eye, Star, Heart } from 'lucide-react';
 import { useCart } from '../../context/CartContext';
+import { useFavorites } from '../../context/FavoritesContext';
 import { formatCurrency } from '../../utils/formatters';
 import './ProductCard.css';
 
 const ProductCard = ({ product }) => {
   const { cartItems = [], addToCart, updateQuantity, removeFromCart } = useCart();
+  const { isFavorite, toggleFavorite } = useFavorites();
 
   // Helper to generate random rating for demo purposes if not provided
   const rating = product.rating || 4.5;
   const reviews = product.reviews || 12;
 
   const cartItem = cartItems.find(item => item._id === product._id);
+  const isFav = isFavorite(product._id);
 
   return (
     <div className="product-card group">
@@ -22,6 +25,21 @@ const ProductCard = ({ product }) => {
           {product.isNew && <span className="badge badge-hot">New</span>}
           {product.discount > 0 && <span className="badge badge-sale">-{product.discount}%</span>}
         </div>
+
+        {/* Wishlist / Favorite Button */}
+        <button
+          type="button"
+          className={`wishlist-btn ${isFav ? 'active' : ''}`}
+          onClick={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            toggleFavorite(product);
+          }}
+          title={isFav ? "Remove from favorites" : "Save to favorites"}
+          aria-label={isFav ? "Remove from favorites" : "Save to favorites"}
+        >
+          <Heart size={18} fill={isFav ? '#e74c3c' : 'none'} color={isFav ? '#e74c3c' : 'currentColor'} />
+        </button>
 
         <Link to={`/product/${product._id}`}>
           <img src={product.image} alt={product.name} className="product-image" loading="lazy" />

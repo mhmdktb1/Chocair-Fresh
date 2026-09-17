@@ -44,11 +44,22 @@ export const translations = {
     changePhone: 'Change',
     
     // Stats Bar
-    totalOrders: 'Total Orders',
+    totalOrders: 'Orders',
     inTransit: 'In Transit',
-    freshPoints: 'Fresh Points',
-    savedSpots: 'Saved Spots',
-    totalSaved: 'Total Saved',
+    favorites: 'Favorites',
+    savedSpots: 'Saved Addresses',
+    totalSaved: 'Saved',
+
+    // Favorites Section
+    myFavorites: 'My Favorites',
+    favoritesSubtitle: 'Your saved fresh produce and items for quick shopping',
+    noFavoritesFound: 'No Favorites Yet',
+    noFavoritesDesc: 'Save your favorite fresh fruits, veggies, and pantry picks for quick 1-tap reordering.',
+    browseShop: 'Browse Shop',
+    addToCart: 'Add to Cart',
+    addedToCart: 'Added to cart!',
+    inStock: 'In Stock',
+    outOfStock: 'Out of Stock',
 
     // Orders Accordion
     ordersDeliveries: 'Orders & Live Deliveries',
@@ -135,11 +146,22 @@ export const translations = {
     changePhone: 'تغيير',
 
     // Stats Bar
-    totalOrders: 'إجمالي الطلبات',
+    totalOrders: 'الطلبات',
     inTransit: 'في الطريق',
-    freshPoints: 'نقاط فريش',
+    favorites: 'المفضلة',
     savedSpots: 'العناوين المحفوظة',
-    totalSaved: 'إجمالي التوفير',
+    totalSaved: 'المحفوظات',
+
+    // Favorites Section
+    myFavorites: 'منتجاتي المفضلة',
+    favoritesSubtitle: 'منتجاتك الطازجة المفضلة لطلبها سريعاً بلمسة واحدة',
+    noFavoritesFound: 'لا توجد عناصر بالمفضلة بعد',
+    noFavoritesDesc: 'احفظ فواكهك وخضارك المفضلة للوصول إليها وإضافتها لسلتك فوراً.',
+    browseShop: 'تصفح المتجر',
+    addToCart: 'أضف للسلة',
+    addedToCart: 'تمت الإضافة للسلة!',
+    inStock: 'متوفر',
+    outOfStock: 'غير متوفر حالياً',
 
     // Orders Accordion
     ordersDeliveries: 'الطلبات والتوصيل المباشر',

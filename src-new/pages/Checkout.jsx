@@ -198,8 +198,8 @@ const Checkout = () => {
     }
 
     const normalizedPhone = normalizeLebanesePhoneNumber(currentPhone);
-    if (!normalizedPhone && !currentPhone) {
-      setError('Please enter a valid Lebanese phone number');
+    if (!normalizedPhone) {
+      setError('Please enter a valid Lebanese phone number (e.g., 70 123 456 or 03 123 456)');
       return;
     }
     

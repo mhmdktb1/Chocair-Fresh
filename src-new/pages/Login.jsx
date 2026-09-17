@@ -5,7 +5,7 @@ import {
   MapPin, Mail, Calendar, ShieldCheck, Sparkles, Lock, MessageSquare, AlertCircle,
   ChevronDown, Search, Check
 } from 'lucide-react';
-import { normalizeLebanesePhoneNumber, formatPhoneNumber } from '../utils/phoneUtils';
+import { normalizeLebanesePhoneNumber, formatPhoneNumber, validateAndNormalizePhone } from '../utils/phoneUtils';
 import Navbar from '../components/layout/Navbar';
 import Button from '../components/common/Button';
 import LocationPicker from '../components/common/LocationPicker';
@@ -66,24 +66,12 @@ const isAdminAccessKey = (value) => {
   return ADMIN_ACCESS_KEYS.includes(input);
 };
 
-const getFullNormalizedPhone = (rawPhone, country) => {
+const resolvePhone = (rawPhone, country) => {
   const trimmed = (rawPhone || '').trim();
-  if (isAdminAccessKey(trimmed)) return trimmed.toLowerCase();
-  
-  if (trimmed.startsWith('+')) {
-    const cleaned = '+' + trimmed.replace(/\D/g, '');
-    return cleaned.length > 5 ? cleaned : null;
+  if (isAdminAccessKey(trimmed)) {
+    return { isValid: true, normalized: trimmed.toLowerCase(), error: null };
   }
-  
-  if (country.code === 'LB') {
-    const lebNorm = normalizeLebanesePhoneNumber(trimmed);
-    if (lebNorm) return lebNorm;
-  }
-  
-  const cleanDigits = trimmed.replace(/\D/g, '').replace(/^0+/, '');
-  if (!cleanDigits || cleanDigits.length < 4) return null;
-  
-  return `${country.dialCode}${cleanDigits}`;
+  return validateAndNormalizePhone(trimmed, country);
 };
 
 const Login = () => {
@@ -159,14 +147,11 @@ const Login = () => {
     setLoading(true);
 
     try {
-      const normalizedPhone = getFullNormalizedPhone(phoneNumber, selectedCountry);
-      if (!normalizedPhone) {
-        throw new Error(
-          selectedCountry.code === 'LB'
-            ? 'Please enter a valid Lebanese phone number (e.g., 70 123 456).'
-            : 'Please enter a valid phone number.'
-        );
+      const validation = resolvePhone(phoneNumber, selectedCountry);
+      if (!validation.isValid) {
+        throw new Error(validation.error || 'Please enter a valid phone number.');
       }
+      const normalizedPhone = validation.normalized;
 
       // Call Backend API
       const response = await api.post('/users/auth/send-otp', { phone: normalizedPhone });
@@ -237,7 +222,8 @@ const Login = () => {
     setLoading(true);
 
     try {
-      const normalizedPhone = getFullNormalizedPhone(phoneNumber, selectedCountry);
+      const validation = resolvePhone(phoneNumber, selectedCountry);
+      const normalizedPhone = validation.normalized || phoneNumber;
       const response = await api.post('/users/auth/verify-otp', { 
         phone: normalizedPhone,
         code: otp 
@@ -279,7 +265,8 @@ const Login = () => {
         throw new Error('Name and Delivery Location are required');
       }
 
-      const normalizedPhone = getFullNormalizedPhone(phoneNumber, selectedCountry);
+      const validation = resolvePhone(phoneNumber, selectedCountry);
+      const normalizedPhone = validation.normalized || phoneNumber;
       const response = await api.post('/users/auth/register', {
         phone: normalizedPhone,
         name: regData.name,
@@ -313,7 +300,10 @@ const Login = () => {
     }
   };
 
-  const currentFormattedPhone = getFullNormalizedPhone(phoneNumber, selectedCountry) || phoneNumber;
+  const validationResult = resolvePhone(phoneNumber, selectedCountry);
+  const currentFormattedPhone = validationResult.normalized 
+    ? formatPhoneNumber(validationResult.normalized) 
+    : phoneNumber;
 
   return (
     <div className="login-page">

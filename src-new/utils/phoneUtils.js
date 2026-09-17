@@ -93,11 +93,89 @@ export function normalizeLebanesePhoneNumber(input) {
  * e.g. +96170123456 -> +961 70 123 456
  */
 export function formatPhoneNumber(input) {
+  if (!input) return '';
   const normalized = normalizeLebanesePhoneNumber(input);
-  if (!normalized) return input;
+  if (normalized) {
+    const number = normalized.substring(4); // Remove +961
+    if (number.length === 7) {
+      return `+961 ${number.substring(0, 1)} ${number.substring(1, 4)} ${number.substring(4)}`;
+    }
+    return `+961 ${number.substring(0, 2)} ${number.substring(2, 5)} ${number.substring(5)}`;
+  }
+  return input;
+}
 
-  const number = normalized.substring(4); // Remove +961
+/**
+ * Validate and normalize any phone number based on selected country or direct international input
+ * Returns { isValid: boolean, normalized: string|null, error: string|null }
+ */
+export function validateAndNormalizePhone(rawPhone, country = { code: 'LB', dialCode: '+961', name: 'Lebanon' }) {
+  if (!rawPhone || typeof rawPhone !== 'string') {
+    return { isValid: false, normalized: null, error: 'Please enter your phone number.' };
+  }
+
+  const trimmed = rawPhone.trim();
+  if (!trimmed) {
+    return { isValid: false, normalized: null, error: 'Please enter your phone number.' };
+  }
+
+  // Handle direct full international format with leading '+'
+  if (trimmed.startsWith('+')) {
+    const cleanIntl = '+' + cleanPhoneNumber(trimmed).replace(/\D/g, '');
+    if (cleanIntl.startsWith('+961')) {
+      const leb = normalizeLebanesePhoneNumber(cleanIntl);
+      if (leb) {
+        return { isValid: true, normalized: leb, error: null };
+      }
+      return { 
+        isValid: false, 
+        normalized: null, 
+        error: 'Please enter a valid Lebanese phone number (e.g., 70 123 456 or 03 123 456).' 
+      };
+    }
+    
+    // For other international codes starting with '+'
+    const digitsOnly = cleanIntl.substring(1);
+    if (digitsOnly.length >= 7 && digitsOnly.length <= 15) {
+      return { isValid: true, normalized: cleanIntl, error: null };
+    }
+    return { isValid: false, normalized: null, error: 'Please enter a valid international phone number.' };
+  }
+
+  // 1. If selected country is Lebanon
+  if (!country || country.code === 'LB' || country.dialCode === '+961') {
+    const lebNorm = normalizeLebanesePhoneNumber(trimmed);
+    if (lebNorm) {
+      return { isValid: true, normalized: lebNorm, error: null };
+    }
+    return { 
+      isValid: false, 
+      normalized: null, 
+      error: 'Please enter a valid Lebanese phone number (e.g., 70 123 456 or 03 123 456).' 
+    };
+  }
+
+  // 2. For any other selected country (e.g. UAE, Saudi Arabia, France, USA, etc.)
+  let cleanDigits = cleanPhoneNumber(trimmed).replace(/\D/g, '');
   
-  // All numbers are 8 digits: 70 123 456
-  return `+961 ${number.substring(0, 2)} ${number.substring(2, 5)} ${number.substring(5)}`;
+  // If user pasted/typed with dial code prefix included (e.g., entered 971501234567 for UAE)
+  const dialCodeDigits = (country.dialCode || '').replace(/\D/g, '');
+  if (dialCodeDigits && cleanDigits.startsWith(dialCodeDigits)) {
+    cleanDigits = cleanDigits.substring(dialCodeDigits.length);
+  }
+
+  // Remove leading zeros (e.g. 050 -> 50)
+  cleanDigits = cleanDigits.replace(/^0+/, '');
+
+  // International subscriber numbers are strictly between 6 and 14 digits
+  if (cleanDigits.length < 6 || cleanDigits.length > 14) {
+    return { 
+      isValid: false, 
+      normalized: null, 
+      error: `Please enter a valid phone number for ${country.name || 'the selected country'}.` 
+    };
+  }
+
+  const normalized = `${country.dialCode}${cleanDigits}`;
+  return { isValid: true, normalized, error: null };
 }

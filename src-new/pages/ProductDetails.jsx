@@ -11,6 +11,7 @@ import {
 } from 'lucide-react';
 import Navbar from '../components/layout/Navbar';
 import { useCart } from '../context/CartContext';
+import { useFavorites } from '../context/FavoritesContext';
 import { useCategories } from '../hooks/useCategories';
 import api from '../utils/api';
 import Button from '../components/common/Button';
@@ -26,6 +27,7 @@ const ProductDetails = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const { cartItems, addToCart, updateQuantity } = useCart();
+  const { isFavorite: checkIsFavorite, toggleFavorite } = useFavorites();
   const { categories } = useCategories();
   
   const [product, setProduct] = useState(null);
@@ -34,20 +36,11 @@ const ProductDetails = () => {
   const [quantity, setQuantity] = useState(1);
   const [isScaleOpen, setIsScaleOpen] = useState(false);
   const [isLightboxOpen, setIsLightboxOpen] = useState(false);
-  const [isFavorite, setIsFavorite] = useState(false);
   const [specialInstructions, setSpecialInstructions] = useState('');
   const [imageError, setImageError] = useState(false);
   const [isScrolledHeader, setIsScrolledHeader] = useState(false);
 
-  // Check wishlist state from localStorage
-  useEffect(() => {
-    try {
-      const savedWishlist = JSON.parse(localStorage.getItem('cf_wishlist') || '[]');
-      setIsFavorite(savedWishlist.includes(id));
-    } catch (e) {
-      console.error(e);
-    }
-  }, [id]);
+  const isFavorite = checkIsFavorite(product?._id || id);
 
   // Track scroll for top sticky header bar
   useEffect(() => {
@@ -134,20 +127,8 @@ const ProductDetails = () => {
   };
 
   const toggleWishlist = () => {
-    try {
-      const savedWishlist = JSON.parse(localStorage.getItem('cf_wishlist') || '[]');
-      let updated;
-      if (isFavorite) {
-        updated = savedWishlist.filter(itemId => itemId !== product._id);
-        toast.info('Removed from favorites');
-      } else {
-        updated = [...savedWishlist, product._id];
-        toast.success('Saved to your favorites! ❤️');
-      }
-      localStorage.setItem('cf_wishlist', JSON.stringify(updated));
-      setIsFavorite(!isFavorite);
-    } catch (e) {
-      console.error(e);
+    if (product) {
+      toggleFavorite(product);
     }
   };
 
