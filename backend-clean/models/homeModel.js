@@ -2,6 +2,7 @@ import mongoose from 'mongoose';
 
 const homeSchema = mongoose.Schema({
   hero: {
+    enabled: { type: Boolean, default: true },
     title: { type: String, default: "FRESHER. CLEANER. BETTER." },
     subtitle: { type: String, default: "Carefully selected fresh produce, every day." },
     backgroundImage: { type: String, default: "https://images.unsplash.com/photo-1610348725531-843dff563e2c?auto=format&fit=crop&w=1200&q=80" },
@@ -32,13 +33,8 @@ const homeSchema = mongoose.Schema({
       }
     ]
   },
-        secondaryLink: { type: String, default: "/shop" },
-        image: { type: String, default: "https://images.unsplash.com/photo-1610832958506-aa56368176cf?auto=format&fit=crop&w=1200&q=80" },
-        accentTag: { type: String, default: "⚡ Delivered in 25–35 mins" },
-        ratingText: { type: String, default: "4.9 ★ (2.5k+ Reviews)" },
-        theme: { type: String, default: "emerald" }
-      }
-    ]
+  categoryMarquee: {
+    enabled: { type: Boolean, default: true }
   },
   featuredCategories: [{
     type: mongoose.Schema.Types.ObjectId,
@@ -63,6 +59,19 @@ const homeSchema = mongoose.Schema({
       code: { type: String, default: "FRESH30" },
       emoji: { type: String, default: "🎟️" }
     }
+  },
+  trending: {
+    enabled: { type: Boolean, default: true },
+    title: { type: String, default: "Trending Right Now" }
+  },
+  seasonal: {
+    enabled: { type: Boolean, default: true },
+    title: { type: String, default: "Seasonal Favorites" },
+    subtitle: { type: String, default: "Picked at the peak of flavor this season" },
+    products: [{
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Product'
+    }]
   },
   bundle: {
     enabled: { type: Boolean, default: true },
@@ -115,20 +124,32 @@ const homeSchema = mongoose.Schema({
       }
     ]
   },
+  testimonials: {
+    enabled: { type: Boolean, default: true },
+    title: { type: String, default: "What Our Customers Say" }
+  },
   newsletter: {
     enabled: { type: Boolean, default: true },
     badge: { type: String, default: "Join The Club" },
     title: { type: String, default: "Get Fresh Updates" },
     description: { type: String, default: "Subscribe to our newsletter and get 10% off your first order. Plus, receive weekly healthy recipes and exclusive deals." }
   },
-  seasonal: {
-    title: { type: String, default: "Seasonal Favorites" },
-    subtitle: { type: String, default: "Picked at the peak of flavor this season" },
-    products: [{
-      type: mongoose.Schema.Types.ObjectId,
-      ref: 'Product'
-    }]
-  }
+  comments: {
+    enabled: { type: Boolean, default: true }
+  },
+  customSections: [
+    {
+      id: { type: String },
+      enabled: { type: Boolean, default: true },
+      badge: { type: String, default: "Featured" },
+      title: { type: String, default: "Special Promotion" },
+      subtitle: { type: String, default: "Discover exclusive offers and seasonal picks" },
+      image: { type: String, default: "" },
+      ctaText: { type: String, default: "Explore Now" },
+      ctaLink: { type: String, default: "/shop" },
+      theme: { type: String, default: "emerald" }
+    }
+  ]
 }, { timestamps: true });
 
 const HomeConfig = mongoose.model('HomeConfig', homeSchema);
