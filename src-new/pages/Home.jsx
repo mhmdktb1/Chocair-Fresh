@@ -7,7 +7,6 @@ import PromoBanners from '../components/home/PromoBanners';
 import DealSection from '../components/home/DealSection';
 import FeaturesSection from '../components/home/FeaturesSection';
 import AboutSection from '../components/home/AboutSection';
-import TestimonialsSection from '../components/home/TestimonialsSection';
 import NewsletterSection from '../components/home/NewsletterSection';
 import CommentsSection from '../components/home/CommentsSection';
 import Footer from '../components/layout/Footer';
@@ -210,15 +209,12 @@ const Home = () => {
         <AboutSection data={activeHomeConfig.story} />
       )}
 
-      {/* 8. Customer Testimonials */}
-      <TestimonialsSection />
-
-      {/* 9. Newsletter Club */}
+      {/* 8. Newsletter Club */}
       {activeHomeConfig.newsletter?.enabled !== false && (
         <NewsletterSection data={activeHomeConfig.newsletter} />
       )}
 
-      {/* 10. Community Discussion */}
+      {/* 9. Customer Reviews & Community Discussion */}
       <CommentsSection />
 
       {/* 11. Modern Footer */}
