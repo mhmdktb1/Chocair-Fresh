@@ -390,7 +390,7 @@ const Checkout = () => {
                   <div className="form-card-inner">
                     <div className="form-input-group">
                       <label htmlFor="phone" className="modern-label">
-                        <Phone size={14} /> Phone Number (WhatsApp) <span className="req-star">*</span>
+                        <Phone size={14} /> WhatsApp Number <span className="req-star">*</span>
                       </label>
                       <input 
                         id="phone"
@@ -439,7 +439,7 @@ const Checkout = () => {
 
                       <div className="form-input-group">
                         <label htmlFor="phone" className="modern-label">
-                          <Phone size={14} /> Phone Number (WhatsApp) <span className="req-star">*</span>
+                          <Phone size={14} /> WhatsApp Number <span className="req-star">*</span>
                         </label>
                         <input 
                           id="phone"
@@ -485,7 +485,6 @@ const Checkout = () => {
                   </div>
                   <div>
                     <h2 className="section-box-title">Delivery Notes <span className="opt-tag">(Optional)</span></h2>
-                    <p className="section-box-subtitle">Notes or gate instructions for driver</p>
                   </div>
                 </div>
 
@@ -584,12 +583,6 @@ const Checkout = () => {
                     </div>
                   )}
                 </div>
-              </div>
-
-              {/* Quality Guarantee Box */}
-              <div className="checkout-guarantee-box">
-                <ShieldCheck size={16} className="shield-icon" />
-                <span>100% Satisfaction & farm fresh quality guaranteed.</span>
               </div>
 
               {/* Desktop Submit Action */}

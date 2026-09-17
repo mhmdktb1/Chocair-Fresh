@@ -417,9 +417,11 @@ const LocationPicker = ({ onLocationSelect, initialLocation, autoLocate = true }
             <span className="toters-card-label">
               Building details (Optional)
             </span>
-            <div className={`toters-card-address ${!hasBuildingDetails ? "placeholder" : ""}`}>
-              {hasBuildingDetails ? buildingSummaryText : "Building, floor & apartment..."}
-            </div>
+            {hasBuildingDetails && (
+              <div className="toters-card-address">
+                {buildingSummaryText}
+              </div>
+            )}
           </div>
         </div>
 
