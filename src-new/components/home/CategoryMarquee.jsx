@@ -5,14 +5,12 @@ import { useCategories } from '../../hooks/useCategories';
 import './CategoryMarquee.css';
 
 const defaultCategories = [
-  { id: '1', name: 'Fresh Fruits', icon: '🍎', color: '#ff7675', bg: 'linear-gradient(135deg, #ffeaa7 0%, #fab1a0 100%)', badge: 'Fresh' },
+  { id: '1', name: 'Fruits', icon: '🍎', color: '#ff7675', bg: 'linear-gradient(135deg, #ffeaa7 0%, #fab1a0 100%)', badge: 'Fresh' },
   { id: '2', name: 'Vegetables', icon: '🥦', color: '#00b894', bg: 'linear-gradient(135deg, #55efc4 0%, #81ecec 100%)', badge: 'Organic' },
-  { id: '3', name: 'Dairy & Eggs', icon: '🥛', color: '#0984e3', bg: 'linear-gradient(135deg, #74b9ff 0%, #a29bfe 100%)', badge: 'Daily' },
-  { id: '4', name: 'Bakery', icon: '🥖', color: '#e17055', bg: 'linear-gradient(135deg, #fdcb6e 0%, #e17055 100%)', badge: 'Artisan' },
-  { id: '5', name: 'Meat & Seafood', icon: '🥩', color: '#d63031', bg: 'linear-gradient(135deg, #ff7675 0%, #d63031 100%)', badge: 'Premium' },
-  { id: '6', name: 'Beverages', icon: '🥤', color: '#6c5ce7', bg: 'linear-gradient(135deg, #a29bfe 0%, #6c5ce7 100%)', badge: 'Cold' },
-  { id: '7', name: 'Snacks', icon: '🍿', color: '#fdcb6e', bg: 'linear-gradient(135deg, #ffeaa7 0%, #fdcb6e 100%)', badge: 'Crispy' },
-  { id: '8', name: 'Organic', icon: '🌿', color: '#00cec9', bg: 'linear-gradient(135deg, #55efc4 0%, #00b894 100%)', badge: '100% Bio' },
+  { id: '3', name: 'Herbs', icon: '🌿', color: '#00cec9', bg: 'linear-gradient(135deg, #81ecec 0%, #00b894 100%)', badge: 'Aromatic' },
+  { id: '4', name: 'Raw Nuts', icon: '🌰', color: '#e17055', bg: 'linear-gradient(135deg, #fdcb6e 0%, #e17055 100%)', badge: 'Natural' },
+  { id: '5', name: 'Cooked Nuts', icon: '🥜', color: '#d63031', bg: 'linear-gradient(135deg, #ff7675 0%, #d63031 100%)', badge: 'Roasted' },
+  { id: '6', name: 'Dates', icon: '🌴', color: '#6c5ce7', bg: 'linear-gradient(135deg, #ffeaa7 0%, #fdcb6e 100%)', badge: 'Premium' },
 ];
 
 const getCategoryVisuals = (name) => {
@@ -23,25 +21,22 @@ const getCategoryVisuals = (name) => {
   if (lower.includes('veg') || lower.includes('salad') || lower.includes('green')) {
     return { icon: '🥦', bg: 'linear-gradient(135deg, #55efc4 0%, #81ecec 100%)', badge: 'Organic' };
   }
-  if (lower.includes('dairy') || lower.includes('milk') || lower.includes('egg') || lower.includes('cheese')) {
-    return { icon: '🥛', bg: 'linear-gradient(135deg, #74b9ff 0%, #a29bfe 100%)', badge: 'Daily' };
+  if (lower.includes('herb') || lower.includes('spice') || lower.includes('mint') || lower.includes('parsley')) {
+    return { icon: '🌿', bg: 'linear-gradient(135deg, #81ecec 0%, #00b894 100%)', badge: 'Aromatic' };
   }
-  if (lower.includes('bake') || lower.includes('bread') || lower.includes('pastry')) {
-    return { icon: '🥖', bg: 'linear-gradient(135deg, #fdcb6e 0%, #e17055 100%)', badge: 'Artisan' };
+  if (lower.includes('raw nut') || lower.includes('almond') || lower.includes('walnut')) {
+    return { icon: '🌰', bg: 'linear-gradient(135deg, #fdcb6e 0%, #e17055 100%)', badge: 'Natural' };
   }
-  if (lower.includes('meat') || lower.includes('beef') || lower.includes('fish') || lower.includes('seafood')) {
-    return { icon: '🥩', bg: 'linear-gradient(135deg, #ff7675 0%, #d63031 100%)', badge: 'Premium' };
+  if (lower.includes('cooked nut') || lower.includes('roasted') || lower.includes('peanut') || lower.includes('pistachio')) {
+    return { icon: '🥜', bg: 'linear-gradient(135deg, #ff7675 0%, #d63031 100%)', badge: 'Roasted' };
   }
-  if (lower.includes('drink') || lower.includes('beverage') || lower.includes('juice')) {
-    return { icon: '🥤', bg: 'linear-gradient(135deg, #a29bfe 0%, #6c5ce7 100%)', badge: 'Cold' };
+  if (lower.includes('date') || lower.includes('medjool') || lower.includes('ajwa')) {
+    return { icon: '🌴', bg: 'linear-gradient(135deg, #ffeaa7 0%, #fdcb6e 100%)', badge: 'Premium' };
   }
-  if (lower.includes('snack') || lower.includes('nut') || lower.includes('chip')) {
-    return { icon: '🍿', bg: 'linear-gradient(135deg, #ffeaa7 0%, #fdcb6e 100%)', badge: 'Crispy' };
+  if (lower.includes('nut')) {
+    return { icon: '🌰', bg: 'linear-gradient(135deg, #fdcb6e 0%, #e17055 100%)', badge: 'Healthy' };
   }
-  if (lower.includes('herb') || lower.includes('spice')) {
-    return { icon: '🌱', bg: 'linear-gradient(135deg, #81ecec 0%, #00b894 100%)', badge: 'Pure' };
-  }
-  return { icon: '🌿', bg: 'linear-gradient(135deg, #55efc4 0%, #00b894 100%)', badge: 'Bio' };
+  return { icon: '✨', bg: 'linear-gradient(135deg, #55efc4 0%, #00b894 100%)', badge: 'Fresh' };
 };
 
 const CategoryMarquee = ({ categories: propCategories }) => {

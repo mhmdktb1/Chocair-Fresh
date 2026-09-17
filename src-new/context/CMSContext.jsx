@@ -47,7 +47,7 @@ export const CMSProvider = ({ children }) => {
         name: "Fruits",
         slug: "fruits",
         description: "Fresh seasonal fruits delivered daily",
-        image: "/assets/images/categories/fruits.jpg",
+        image: "/assets/images/products/fruits/apple-red.jpg",
         isVisible: true,
         order: 1,
         featured: true
@@ -57,7 +57,7 @@ export const CMSProvider = ({ children }) => {
         name: "Vegetables",
         slug: "vegetables",
         description: "Organic vegetables straight from the farm",
-        image: "/assets/images/categories/vegetables.jpg",
+        image: "/assets/images/products/vegetables/tomato.jpg",
         isVisible: true,
         order: 2,
         featured: true
@@ -66,31 +66,41 @@ export const CMSProvider = ({ children }) => {
         id: 3,
         name: "Herbs",
         slug: "herbs",
-        description: "Fresh herbs and spices for your kitchen",
-        image: "/assets/images/categories/herbs.jpg",
+        description: "Fresh culinary herbs and seasoning greens",
+        image: "/assets/images/products/herbs/parsley.jpg",
         isVisible: true,
         order: 3,
         featured: false
       },
       {
         id: 4,
-        name: "Dairy",
-        slug: "dairy",
-        description: "Fresh dairy products and cheese",
-        image: "/assets/images/categories/dairy.jpg",
+        name: "Raw Nuts",
+        slug: "raw-nuts",
+        description: "Natural unroasted whole raw nuts and seeds",
+        image: "/assets/images/products/nuts/almond-raw.jpg",
         isVisible: true,
         order: 4,
         featured: true
       },
       {
         id: 5,
-        name: "Bakery",
-        slug: "bakery",
-        description: "Freshly baked bread and pastries",
-        image: "/assets/images/categories/bakery.jpg",
+        name: "Cooked Nuts",
+        slug: "cooked-nuts",
+        description: "Crunchy oven-roasted salted and gourmet nuts",
+        image: "/assets/images/products/nuts/cashew-roasted.jpg",
         isVisible: true,
         order: 5,
         featured: false
+      },
+      {
+        id: 6,
+        name: "Dates",
+        slug: "dates",
+        description: "Premium Saudi & Lebanese dates, date paste & stuffed dates",
+        image: "/assets/images/products/dates/medjool-dates.jpg",
+        isVisible: true,
+        order: 6,
+        featured: true
       }
     ];
   });

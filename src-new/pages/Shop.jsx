@@ -31,14 +31,14 @@ const getCategoryEmoji = (name = '') => {
   const n = name.toLowerCase();
   if (n.includes('fruit') || n.includes('apple') || n.includes('berry')) return '🍎';
   if (n.includes('veg') || n.includes('greens') || n.includes('salad')) return '🥦';
-  if (n.includes('herb') || n.includes('mint') || n.includes('organic')) return '🌿';
+  if (n.includes('herb') || n.includes('mint') || n.includes('parsley')) return '🌿';
+  if (n.includes('cooked') || n.includes('roasted')) return '🥜';
+  if (n.includes('raw') || n.includes('almond') || n.includes('walnut')) return '🌰';
+  if (n.includes('date') || n.includes('medjool')) return '🌴';
+  if (n.includes('nut')) return '🌰';
   if (n.includes('dairy') || n.includes('milk') || n.includes('cheese') || n.includes('egg')) return '🥛';
-  if (n.includes('snack') || n.includes('nut') || n.includes('chip')) return '🍿';
-  if (n.includes('bakery') || n.includes('bread')) return '🥐';
-  if (n.includes('beverage') || n.includes('juice') || n.includes('drink')) return '🧃';
-  if (n.includes('meat') || n.includes('poultry')) return '🥩';
   if (n.includes('deal') || n.includes('offer')) return '🔥';
-  return '🧺';
+  return '✨';
 };
 
 const Shop = () => {
