@@ -73,6 +73,17 @@ const Shop = () => {
     }
   }, [searchParams]);
 
+  // Focus search input when requested via URL param (e.g. from bottom nav)
+  useEffect(() => {
+    if (shouldFocusSearch && searchInputRef.current) {
+      setTimeout(() => {
+        if (searchInputRef.current) {
+          searchInputRef.current.focus();
+        }
+      }, 100);
+    }
+  }, [shouldFocusSearch]);
+
   // Categories list with count - dynamically derived from products AND adminCategories
   const categoriesList = useMemo(() => {
     const allCount = products.length;

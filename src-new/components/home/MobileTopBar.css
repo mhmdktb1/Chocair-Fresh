@@ -243,3 +243,52 @@
     font-size: 0.75rem;
   }
 }
+
+/* Dark theme overrides for Mobile Top Bar */
+[data-theme="dark"] .mobile-top-bar-wrapper,
+.dark-theme .mobile-top-bar-wrapper {
+  background: #111827;
+  border-bottom-color: #1f2937;
+}
+
+[data-theme="dark"] .mobile-search-box,
+.dark-theme .mobile-search-box {
+  background: #1e293b;
+  border-color: #334155;
+}
+
+[data-theme="dark"] .mobile-search-box:focus-within,
+.dark-theme .mobile-search-box:focus-within {
+  background: #0f172a;
+  border-color: var(--primary);
+}
+
+[data-theme="dark"] .mobile-search-input,
+.dark-theme .mobile-search-input {
+  color: #f8fafc;
+}
+
+[data-theme="dark"] .location-title,
+.dark-theme .location-title {
+  color: #cbd5e1;
+}
+
+[data-theme="dark"] .location-title strong,
+.dark-theme .location-title strong {
+  color: #f8fafc;
+}
+
+[data-theme="dark"] .mobile-lang-pill-btn,
+[data-theme="dark"] .mobile-theme-pill-btn,
+.dark-theme .mobile-lang-pill-btn,
+.dark-theme .mobile-theme-pill-btn {
+  background: #1e293b;
+  border-color: #334155;
+  color: #e2e8f0;
+}
+
+[data-theme="dark"] .perk-pill,
+.dark-theme .perk-pill {
+  background: #1e293b;
+  color: #94a3b8;
+}

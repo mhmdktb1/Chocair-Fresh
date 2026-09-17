@@ -82,28 +82,34 @@
 .toters-search-icon {
   position: absolute;
   left: 0.85rem;
-  color: #64748b;
+  color: #94a3b8;
   pointer-events: none;
+  transition: color 0.2s ease;
+  z-index: 2;
+}
+
+.toters-search-box:focus-within .toters-search-icon {
+  color: var(--primary, #2ecc71);
 }
 
 .toters-search-input {
   width: 100%;
   padding: 0.65rem 2.2rem 0.65rem 2.4rem;
-  background: #f1f5f9;
-  border: 1.5px solid transparent;
+  background: var(--bg-input, #f8fafc);
+  border: 1.5px solid var(--border-color, #e2e8f0);
   border-radius: 14px;
   font-size: 0.88rem;
   font-weight: 500;
-  color: #0f172a;
+  color: var(--text-main, #0f172a);
   outline: none;
-  transition: all 0.2s ease;
+  transition: all 0.22s cubic-bezier(0.16, 1, 0.3, 1);
   box-sizing: border-box;
 }
 
 .toters-search-input:focus {
   background: #ffffff;
-  border-color: #16a34a;
-  box-shadow: 0 0 0 3px rgba(22, 163, 74, 0.12);
+  border-color: var(--primary, #2ecc71);
+  box-shadow: 0 0 0 3.5px rgba(46, 204, 113, 0.15);
 }
 
 .toters-search-clear {
@@ -119,6 +125,13 @@
   justify-content: center;
   color: #ffffff;
   cursor: pointer;
+  transition: all 0.15s ease;
+  z-index: 2;
+}
+
+.toters-search-clear:hover {
+  background: #94a3b8;
+  transform: scale(1.1);
 }
 
 .toters-filter-trigger-btn {
@@ -126,15 +139,21 @@
   width: 36px;
   height: 36px;
   border-radius: 12px;
-  background: #f1f5f9;
-  border: 1.5px solid #e2e8f0;
-  color: #334155;
+  background: var(--bg-input, #f1f5f9);
+  border: 1.5px solid var(--border-color, #e2e8f0);
+  color: var(--text-main, #334155);
   display: flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
   flex-shrink: 0;
   transition: all 0.15s ease;
+}
+
+.toters-filter-trigger-btn:hover {
+  background: #e2e8f0;
+  border-color: #cbd5e1;
+  transform: translateY(-1px);
 }
 
 .toters-filter-trigger-btn.active {
@@ -811,4 +830,41 @@
   .toters-horizontal-products-track {
     gap: 0.55rem;
   }
+}
+
+/* =========================================================
+   DARK THEME OVERRIDES FOR SHOP SEARCH DOCK
+   ========================================================= */
+[data-theme="dark"] .toters-unified-sticky-dock,
+.dark-theme .toters-unified-sticky-dock {
+  background: rgba(17, 24, 39, 0.96);
+  border-bottom-color: #1f2937;
+}
+
+[data-theme="dark"] .toters-search-input,
+.dark-theme .toters-search-input {
+  background: #1e293b;
+  border-color: #334155;
+  color: #f8fafc;
+}
+
+[data-theme="dark"] .toters-search-input:focus,
+.dark-theme .toters-search-input:focus {
+  background: #111827;
+  border-color: var(--primary, #2ecc71);
+}
+
+[data-theme="dark"] .toters-back-pill-btn,
+[data-theme="dark"] .toters-filter-trigger-btn,
+.dark-theme .toters-back-pill-btn,
+.dark-theme .toters-filter-trigger-btn {
+  background: #1e293b;
+  border-color: #334155;
+  color: #f8fafc;
+}
+
+[data-theme="dark"] .toters-search-clear,
+.dark-theme .toters-search-clear {
+  background: #475569;
+  color: #f8fafc;
 }
