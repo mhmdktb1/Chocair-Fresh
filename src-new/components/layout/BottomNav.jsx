@@ -11,8 +11,8 @@ const BottomNav = () => {
   const location = useLocation();
   const navigate = useNavigate();
 
-  // Hide bottom nav on admin routes and product details pages (so product sticky purchase dock shows)
-  if (location.pathname.startsWith('/admin') || location.pathname.startsWith('/product/') || location.pathname === '/product') {
+  // Hide bottom nav on admin routes, product details pages, and checkout (so checkout bottom dock has full focus)
+  if (location.pathname.startsWith('/admin') || location.pathname.startsWith('/product/') || location.pathname === '/product' || location.pathname === '/checkout') {
     return null;
   }
 

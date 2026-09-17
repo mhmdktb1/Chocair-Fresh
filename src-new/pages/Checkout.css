@@ -1,35 +1,36 @@
-/* =========================================================
-   CHOCAIR FRESH - SEAMLESS MODERN UNIFIED CHECKOUT
-   Single-Page, Frictionless, Mobile-First UX
+﻿/* =========================================================
+   CHOCAIR FRESH - COMPACT PREMIUM MOBILE-FIRST CHECKOUT
+   Ultra-clean, friction-free, modern grocery checkout UX
    ========================================================= */
 
 .checkout-page {
   min-height: 100vh;
   background-color: #f8fafc;
-  padding-bottom: 5.5rem;
+  padding-bottom: 4.5rem;
   width: 100%;
   max-width: 100vw;
   box-sizing: border-box;
   overflow-x: hidden;
+  color: #0f172a;
 }
 
 /* ---------------------------------------------------------
-   1. DESKTOP HEADER & BREADCRUMB
+   1. DESKTOP HEADER & BREADCRUMB (COMPACT)
    --------------------------------------------------------- */
 .checkout-header.desktop-only {
   background: #ffffff;
-  padding: 7.5rem 0 1.5rem;
-  border-bottom: 1px solid #edf2f7;
-  margin-bottom: 1.75rem;
+  padding: 5.5rem 0 1.25rem;
+  border-bottom: 1px solid #eef2f6;
+  margin-bottom: 1.25rem;
 }
 
 .checkout-breadcrumb {
   display: flex;
   align-items: center;
-  gap: 0.5rem;
-  font-size: 0.85rem;
+  gap: 0.4rem;
+  font-size: 0.8rem;
   color: #94a3b8;
-  margin-bottom: 0.6rem;
+  margin-bottom: 0.4rem;
 }
 
 .breadcrumb-link {
@@ -45,6 +46,7 @@
 
 .breadcrumb-sep {
   color: #cbd5e1;
+  font-size: 0.75rem;
 }
 
 .breadcrumb-active {
@@ -56,39 +58,41 @@
   display: flex;
   justify-content: space-between;
   align-items: flex-end;
-  gap: 1.5rem;
+  gap: 1rem;
 }
 
 .checkout-title {
-  font-size: 2.1rem;
+  font-size: 1.5rem;
   font-weight: 800;
   color: #0f172a;
-  letter-spacing: -0.025em;
+  letter-spacing: -0.02em;
   margin: 0;
   line-height: 1.2;
 }
 
 .checkout-subtitle {
   color: #64748b;
-  font-size: 0.95rem;
-  margin-top: 0.35rem;
+  font-size: 0.85rem;
+  margin-top: 0.2rem;
+  margin-bottom: 0;
 }
 
 .desktop-secure-badge {
   display: inline-flex;
   align-items: center;
-  gap: 0.4rem;
+  gap: 0.35rem;
   background: #f0fdf4;
   color: #15803d;
-  border: 1px solid #86efac;
-  padding: 6px 14px;
+  border: 1px solid #bbf7d0;
+  padding: 4px 12px;
   border-radius: 999px;
-  font-size: 0.82rem;
+  font-size: 0.75rem;
   font-weight: 700;
+  letter-spacing: 0.2px;
 }
 
 /* ---------------------------------------------------------
-   2. MOBILE TOP HEADER (STICKY)
+   2. MOBILE TOP HEADER (STICKY NATIVE FEEL)
    --------------------------------------------------------- */
 .checkout-mobile-header {
   display: none;
@@ -99,17 +103,19 @@
 }
 
 /* ---------------------------------------------------------
-   3. CHECKOUT GRID LAYOUT
+   3. CHECKOUT GRID LAYOUT (COMPACT & BALANCED)
    --------------------------------------------------------- */
 .checkout-container {
-  max-width: 1180px;
+  max-width: 1060px;
   margin: 0 auto;
+  padding: 0 1rem;
+  box-sizing: border-box;
 }
 
 .checkout-grid {
   display: grid;
-  grid-template-columns: 1fr 380px;
-  gap: 2rem;
+  grid-template-columns: 1fr 340px;
+  gap: 1.25rem;
   align-items: start;
 }
 
@@ -123,21 +129,21 @@
 .checkout-single-page-form {
   display: flex;
   flex-direction: column;
-  gap: 1.5rem;
+  gap: 1rem;
 }
 
 .checkout-alert-error {
   background: #fef2f2;
-  border: 1px solid #fca5a5;
+  border: 1px solid #fecaca;
   color: #b91c1c;
-  padding: 0.85rem 1.1rem;
-  border-radius: 14px;
-  font-size: 0.88rem;
+  padding: 0.7rem 0.95rem;
+  border-radius: 12px;
+  font-size: 0.82rem;
   font-weight: 600;
   display: flex;
   align-items: center;
-  gap: 0.6rem;
-  margin-bottom: 1.25rem;
+  gap: 0.5rem;
+  margin-bottom: 0.75rem;
 }
 
 .alert-icon {
@@ -147,13 +153,14 @@
 /* Section Box Wrapper */
 .checkout-section-box {
   background: #ffffff;
-  border-radius: 20px;
-  padding: 1.5rem;
-  border: 1px solid #edf2f7;
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.03);
+  border-radius: 14px;
+  padding: 1rem 1.15rem;
+  border: 1px solid #e2e8f0;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.02);
   display: flex;
   flex-direction: column;
-  gap: 1.25rem;
+  gap: 0.9rem;
+  transition: border-color 0.15s ease;
 }
 
 /* Compact Logged-in User Card Banner */
@@ -161,22 +168,21 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%);
-  border: 1.5px solid #86efac;
-  border-radius: 18px;
-  padding: 0.95rem 1.25rem;
-  box-shadow: 0 4px 12px rgba(22, 163, 74, 0.06);
+  background: linear-gradient(135deg, #f0fdf4 0%, #ecfdf5 100%);
+  border: 1px solid #bbf7d0;
+  border-radius: 14px;
+  padding: 0.75rem 1rem;
 }
 
 .user-logged-left {
   display: flex;
   align-items: center;
-  gap: 0.85rem;
+  gap: 0.75rem;
 }
 
 .user-avatar-icon {
-  width: 40px;
-  height: 40px;
+  width: 34px;
+  height: 34px;
   border-radius: 50%;
   background: #16a34a;
   color: #ffffff;
@@ -184,17 +190,17 @@
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
-  box-shadow: 0 2px 6px rgba(22, 163, 74, 0.2);
+  box-shadow: 0 2px 5px rgba(22, 163, 74, 0.15);
 }
 
 .user-logged-info {
   display: flex;
   flex-direction: column;
-  gap: 1px;
+  gap: 2px;
 }
 
 .user-ordering-label {
-  font-size: 0.68rem;
+  font-size: 0.65rem;
   text-transform: uppercase;
   font-weight: 700;
   color: #15803d;
@@ -203,14 +209,14 @@
 }
 
 .user-logged-name {
-  font-size: 0.98rem;
-  font-weight: 800;
+  font-size: 0.9rem;
+  font-weight: 700;
   color: #0f172a;
 }
 
 .user-logged-phone {
-  font-size: 0.78rem;
-  color: #334155;
+  font-size: 0.76rem;
+  color: #475569;
   font-weight: 600;
   display: inline-flex;
   align-items: center;
@@ -220,29 +226,29 @@
 .verified-pill {
   display: inline-flex;
   align-items: center;
-  gap: 3px;
+  gap: 2px;
   color: #15803d;
-  font-size: 0.68rem;
+  font-size: 0.65rem;
   font-weight: 700;
   background: #ffffff;
-  padding: 1px 6px;
-  border-radius: 6px;
+  padding: 1px 5px;
+  border-radius: 5px;
   border: 1px solid #86efac;
-  margin-left: 4px;
+  margin-left: 3px;
 }
 
 .section-box-header {
   display: flex;
   align-items: center;
-  gap: 0.85rem;
+  gap: 0.65rem;
   border-bottom: 1px solid #f1f5f9;
-  padding-bottom: 1rem;
+  padding-bottom: 0.65rem;
 }
 
 .section-header-icon-wrap {
-  width: 42px;
-  height: 42px;
-  border-radius: 12px;
+  width: 32px;
+  height: 32px;
+  border-radius: 9px;
   background: #f0fdf4;
   color: #16a34a;
   display: flex;
@@ -271,43 +277,43 @@
 }
 
 .section-box-title {
-  font-size: 1.15rem;
-  font-weight: 800;
+  font-size: 0.95rem;
+  font-weight: 700;
   color: #0f172a;
   margin: 0;
-  line-height: 1.2;
+  line-height: 1.25;
 }
 
 .section-box-subtitle {
-  font-size: 0.82rem;
+  font-size: 0.75rem;
   color: #64748b;
-  margin: 2px 0 0;
+  margin: 1px 0 0;
 }
 
 /* Form Inner Inputs */
 .form-card-inner {
   display: flex;
   flex-direction: column;
-  gap: 1rem;
+  gap: 0.75rem;
 }
 
 .form-grid-two {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 1rem;
+  gap: 0.75rem;
 }
 
 .form-input-group {
   display: flex;
   flex-direction: column;
-  gap: 0.4rem;
+  gap: 0.3rem;
 }
 
 .modern-label {
   display: flex;
   align-items: center;
-  gap: 0.4rem;
-  font-size: 0.82rem;
+  gap: 0.35rem;
+  font-size: 0.78rem;
   font-weight: 700;
   color: #334155;
 }
@@ -316,44 +322,30 @@
   color: #ef4444;
 }
 
-.opt-label,
 .opt-tag {
   color: #94a3b8;
-  font-size: 0.72rem;
+  font-size: 0.7rem;
   font-weight: 500;
-}
-
-.verified-badge {
-  display: inline-flex;
-  align-items: center;
-  gap: 3px;
-  color: #16a34a;
-  font-size: 0.72rem;
-  font-weight: 700;
-  background: #f0fdf4;
-  padding: 1px 6px;
-  border-radius: 6px;
-  margin-left: auto;
 }
 
 .modern-input,
 .modern-textarea {
   width: 100%;
-  padding: 0.75rem 0.95rem;
+  padding: 0.65rem 0.85rem;
   background: #f8fafc;
   border: 1.5px solid #e2e8f0;
-  border-radius: 12px;
-  font-size: 0.92rem;
+  border-radius: 10px;
+  font-size: 0.88rem;
   color: #0f172a;
   box-sizing: border-box;
-  transition: all 0.2s ease;
+  transition: all 0.15s ease;
   font-family: inherit;
 }
 
 .modern-textarea {
   resize: vertical;
-  min-height: 80px;
-  line-height: 1.5;
+  min-height: 60px;
+  line-height: 1.4;
 }
 
 .modern-input:focus,
@@ -361,64 +353,57 @@
   outline: none;
   background: #ffffff;
   border-color: #16a34a;
-  box-shadow: 0 0 0 3px rgba(22, 163, 74, 0.12);
+  box-shadow: 0 0 0 3px rgba(22, 163, 74, 0.1);
 }
 
 .modern-input::placeholder,
 .modern-textarea::placeholder {
   color: #94a3b8;
-  font-size: 0.85rem;
-}
-
-.location-picker-group {
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
-  margin-top: 0.25rem;
+  font-size: 0.82rem;
 }
 
 /* ---------------------------------------------------------
-   5. PAYMENT METHOD RADIO CARDS
+   5. PAYMENT METHOD SELECTOR CARDS (COMPACT & SLEEK)
    --------------------------------------------------------- */
 .modern-payment-options {
-  display: flex;
-  flex-direction: column;
-  gap: 0.75rem;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.65rem;
 }
 
 .payment-radio-card {
   display: flex;
-  align-items: flex-start;
+  align-items: center;
   background: #ffffff;
-  border: 2px solid #edf2f7;
-  border-radius: 16px;
-  padding: 1.1rem;
-  gap: 0.85rem;
+  border: 1.5px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 0.75rem 0.85rem;
+  gap: 0.65rem;
   cursor: pointer;
-  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  transition: all 0.15s ease;
   user-select: none;
+  box-sizing: border-box;
 }
 
 .payment-radio-card:hover {
   border-color: #cbd5e1;
-  transform: translateY(-1px);
+  background: #fafafa;
 }
 
 .payment-radio-card.selected {
   border-color: #16a34a;
-  background: #fafdfb;
-  box-shadow: 0 4px 16px rgba(22, 163, 74, 0.08);
+  background: #f0fdf4;
+  box-shadow: 0 2px 8px rgba(22, 163, 74, 0.06);
 }
 
 .radio-indicator {
-  width: 20px;
-  height: 20px;
+  width: 16px;
+  height: 16px;
   border-radius: 50%;
   border: 2px solid #cbd5e1;
   display: flex;
   align-items: center;
   justify-content: center;
-  margin-top: 2px;
   flex-shrink: 0;
   transition: all 0.15s ease;
 }
@@ -428,8 +413,8 @@
 }
 
 .radio-dot {
-  width: 10px;
-  height: 10px;
+  width: 8px;
+  height: 8px;
   border-radius: 50%;
   background: #16a34a;
   opacity: 0;
@@ -443,9 +428,9 @@
 }
 
 .payment-card-icon-wrap {
-  width: 44px;
-  height: 44px;
-  border-radius: 12px;
+  width: 34px;
+  height: 34px;
+  border-radius: 9px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -453,13 +438,15 @@
 }
 
 .payment-card-icon-wrap.cod {
-  background: #f0fdf4;
+  background: #ffffff;
   color: #16a34a;
+  border: 1px solid #dcfce7;
 }
 
 .payment-card-icon-wrap.whish {
-  background: #eff6ff;
+  background: #ffffff;
   color: #2563eb;
+  border: 1px solid #dbeafe;
 }
 
 .payment-card-info {
@@ -470,60 +457,66 @@
 .payment-title-row {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  gap: 0.5rem;
+  gap: 0.35rem;
 }
 
 .payment-title {
-  font-size: 0.98rem;
-  font-weight: 800;
+  font-size: 0.85rem;
+  font-weight: 700;
   color: #0f172a;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .popular-badge {
-  font-size: 0.68rem;
+  font-size: 0.62rem;
   font-weight: 700;
   color: #15803d;
   background: #dcfce7;
-  padding: 2px 7px;
-  border-radius: 6px;
+  padding: 1px 5px;
+  border-radius: 4px;
+  flex-shrink: 0;
 }
 
 .instant-badge {
-  font-size: 0.68rem;
+  font-size: 0.62rem;
   font-weight: 700;
   color: #2563eb;
   background: #dbeafe;
-  padding: 2px 7px;
-  border-radius: 6px;
+  padding: 1px 5px;
+  border-radius: 4px;
+  flex-shrink: 0;
 }
 
 .payment-desc {
-  font-size: 0.8rem;
+  font-size: 0.72rem;
   color: #64748b;
-  margin: 4px 0 0;
-  line-height: 1.4;
+  margin: 1px 0 0;
+  line-height: 1.3;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 /* Whish Instructions Card */
 .whish-instructions-card {
-  background: #ffffff;
+  background: #f8fafc;
   border: 1px solid #bfdbfe;
-  border-radius: 16px;
-  padding: 1.1rem;
-  box-shadow: 0 4px 12px rgba(37, 99, 235, 0.05);
-  margin-top: 0.5rem;
+  border-radius: 12px;
+  padding: 0.75rem 0.9rem;
+  margin-top: 0.25rem;
 }
 
 .whish-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 0.75rem;
+  margin-bottom: 0.5rem;
 }
 
 .whish-badge {
-  font-size: 0.75rem;
+  font-size: 0.7rem;
   font-weight: 700;
   color: #1e40af;
   text-transform: uppercase;
@@ -537,9 +530,9 @@
   background: #eff6ff;
   color: #2563eb;
   border: 1px solid #bfdbfe;
-  padding: 4px 9px;
-  border-radius: 8px;
-  font-size: 0.74rem;
+  padding: 3px 8px;
+  border-radius: 6px;
+  font-size: 0.7rem;
   font-weight: 700;
   cursor: pointer;
   transition: all 0.15s ease;
@@ -552,44 +545,44 @@
 
 .whish-account-row {
   display: flex;
-  align-items: baseline;
+  align-items: center;
   justify-content: space-between;
-  background: #f8fafc;
-  padding: 0.75rem 1rem;
-  border-radius: 10px;
+  background: #ffffff;
+  padding: 0.5rem 0.75rem;
+  border-radius: 8px;
   border: 1px dashed #93c5fd;
-  margin-bottom: 0.65rem;
+  margin-bottom: 0.5rem;
 }
 
 .whish-num {
-  font-size: 1.05rem;
+  font-size: 0.95rem;
   font-weight: 800;
   color: #1e293b;
   letter-spacing: 0.5px;
 }
 
 .whish-holder {
-  font-size: 0.82rem;
+  font-size: 0.78rem;
   font-weight: 600;
   color: #2563eb;
 }
 
 .whish-note {
-  font-size: 0.78rem;
+  font-size: 0.74rem;
   color: #475569;
-  line-height: 1.4;
+  line-height: 1.35;
   margin: 0;
 }
 
 .checkout-guarantee-box {
   display: flex;
   align-items: center;
-  gap: 0.6rem;
+  gap: 0.5rem;
   background: #f0fdf4;
-  padding: 0.85rem 1rem;
-  border-radius: 14px;
+  padding: 0.65rem 0.85rem;
+  border-radius: 10px;
   border: 1px solid #dcfce7;
-  font-size: 0.82rem;
+  font-size: 0.76rem;
   color: #166534;
   font-weight: 600;
 }
@@ -600,87 +593,93 @@
 }
 
 .desktop-submit-action {
-  margin-top: 0.5rem;
+  margin-top: 0.25rem;
 }
 
 .desktop-place-order-btn {
   width: 100%;
   justify-content: center;
-  padding: 1.05rem 1.5rem;
-  font-size: 1.1rem;
-  font-weight: 800;
-  border-radius: 16px;
-  box-shadow: 0 6px 20px rgba(22, 163, 74, 0.3);
-  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  padding: 0.85rem 1.25rem;
+  font-size: 0.98rem;
+  font-weight: 700;
+  border-radius: 12px;
+  background: linear-gradient(135deg, #16a34a 0%, #15803d 100%);
+  box-shadow: 0 4px 14px rgba(22, 163, 74, 0.25);
+  transition: all 0.15s ease;
 }
 
 .desktop-place-order-btn:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 10px 28px rgba(22, 163, 74, 0.4);
+  transform: translateY(-1px);
+  box-shadow: 0 6px 18px rgba(22, 163, 74, 0.35);
 }
 
 /* ---------------------------------------------------------
-   6. DESKTOP ORDER SUMMARY SIDEBAR
+   6. DESKTOP ORDER SUMMARY SIDEBAR (COMPACT)
    --------------------------------------------------------- */
 .checkout-summary-sidebar {
   position: sticky;
-  top: 95px;
+  top: 85px;
 }
 
 .checkout-summary-card {
   background: #ffffff;
-  padding: 1.5rem;
-  border-radius: 20px;
-  border: 1px solid #edf2f7;
-  box-shadow: 0 10px 30px -10px rgba(0, 0, 0, 0.05);
+  padding: 1.15rem;
+  border-radius: 14px;
+  border: 1px solid #e2e8f0;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.02);
 }
 
 .sidebar-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 1.1rem;
+  margin-bottom: 0.85rem;
+  padding-bottom: 0.65rem;
+  border-bottom: 1px solid #f1f5f9;
 }
 
 .sidebar-title {
-  font-size: 1.25rem;
+  font-size: 0.95rem;
   font-weight: 800;
   color: #0f172a;
   margin: 0;
 }
 
 .sidebar-items-count {
-  font-size: 0.8rem;
+  font-size: 0.74rem;
   color: #64748b;
   font-weight: 600;
+  background: #f1f5f9;
+  padding: 2px 7px;
+  border-radius: 6px;
 }
 
 .sidebar-items-list {
-  max-height: 260px;
+  max-height: 220px;
   overflow-y: auto;
   display: flex;
   flex-direction: column;
-  gap: 0.75rem;
-  margin-bottom: 1.25rem;
-  padding-right: 4px;
+  gap: 0.6rem;
+  margin-bottom: 0.85rem;
+  padding-right: 2px;
 }
 
 .sidebar-item-row {
   display: flex;
   align-items: center;
-  gap: 0.75rem;
+  gap: 0.65rem;
 }
 
 .sidebar-item-thumb {
   position: relative;
-  width: 48px;
-  height: 48px;
-  border-radius: 10px;
+  width: 38px;
+  height: 38px;
+  border-radius: 8px;
   background: #f8fafc;
   display: flex;
   align-items: center;
   justify-content: center;
-  border: 1px solid #f1f5f9;
+  border: 1px solid #eef2f6;
   flex-shrink: 0;
   padding: 2px;
 }
@@ -693,19 +692,19 @@
 
 .thumb-qty-pill {
   position: absolute;
-  top: -5px;
-  right: -5px;
+  top: -4px;
+  right: -4px;
   background: #0f172a;
   color: #ffffff;
-  font-size: 0.65rem;
+  font-size: 0.6rem;
   font-weight: 700;
-  width: 18px;
-  height: 18px;
+  width: 16px;
+  height: 16px;
   border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
-  border: 1.5px solid #ffffff;
+  border: 1px solid #ffffff;
 }
 
 .sidebar-item-info {
@@ -714,7 +713,7 @@
 }
 
 .sidebar-item-name {
-  font-size: 0.88rem;
+  font-size: 0.82rem;
   font-weight: 700;
   color: #0f172a;
   white-space: nowrap;
@@ -724,29 +723,29 @@
 }
 
 .sidebar-item-rate {
-  font-size: 0.74rem;
+  font-size: 0.7rem;
   color: #64748b;
 }
 
 .sidebar-item-price {
-  font-size: 0.92rem;
-  font-weight: 800;
+  font-size: 0.85rem;
+  font-weight: 700;
   color: #15803d;
 }
 
 .sidebar-calc-box {
   display: flex;
   flex-direction: column;
-  gap: 0.65rem;
+  gap: 0.45rem;
   border-top: 1px solid #f1f5f9;
-  padding-top: 1rem;
+  padding-top: 0.75rem;
 }
 
 .sidebar-calc-row {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  font-size: 0.88rem;
+  font-size: 0.8rem;
   color: #64748b;
 }
 
@@ -757,21 +756,21 @@
 
 .free-tag {
   color: #16a34a;
-  font-weight: 800;
+  font-weight: 700;
   background: #dcfce7;
-  padding: 1px 6px;
-  border-radius: 5px;
-  font-size: 0.75rem;
+  padding: 1px 5px;
+  border-radius: 4px;
+  font-size: 0.7rem;
 }
 
 .sidebar-divider {
   height: 1px;
   background: #f1f5f9;
-  margin: 0.35rem 0;
+  margin: 0.2rem 0;
 }
 
 .total-row {
-  margin-top: 0.25rem;
+  margin-top: 0.15rem;
 }
 
 .total-label-col {
@@ -780,41 +779,43 @@
 }
 
 .total-main-label {
-  font-size: 1.05rem;
+  font-size: 0.92rem;
   font-weight: 800;
   color: #0f172a;
 }
 
 .tax-hint {
-  font-size: 0.68rem;
+  font-size: 0.62rem;
   color: #94a3b8;
 }
 
 .total-final-val {
-  font-size: 1.35rem;
+  font-size: 1.15rem;
   font-weight: 800;
   color: #15803d;
-  letter-spacing: -0.02em;
+  letter-spacing: -0.01em;
 }
 
 .sidebar-security-badge {
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 0.4rem;
-  margin-top: 1.25rem;
-  font-size: 0.72rem;
+  gap: 0.35rem;
+  margin-top: 0.85rem;
+  padding-top: 0.65rem;
+  border-top: 1px solid #f8fafc;
+  font-size: 0.68rem;
   color: #94a3b8;
   font-weight: 600;
 }
 
 /* ---------------------------------------------------------
-   7. WHATSAPP OTP MODAL
+   7. WHATSAPP OTP MODAL (CLEAN & RESPONSIVE)
    --------------------------------------------------------- */
 .modal-overlay {
   position: fixed;
   inset: 0;
-  background: rgba(15, 23, 42, 0.65);
+  background: rgba(15, 23, 42, 0.6);
   backdrop-filter: blur(4px);
   -webkit-backdrop-filter: blur(4px);
   display: flex;
@@ -827,27 +828,27 @@
 .modal-content-card {
   position: relative;
   background: #ffffff;
-  border-radius: 24px;
-  padding: 2rem 1.75rem;
-  max-width: 420px;
+  border-radius: 18px;
+  padding: 1.5rem 1.35rem;
+  max-width: 380px;
   width: 100%;
-  box-shadow: 0 20px 40px -10px rgba(0, 0, 0, 0.2);
+  box-shadow: 0 15px 35px -5px rgba(0, 0, 0, 0.15);
   text-align: center;
   box-sizing: border-box;
-  animation: modalPop 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  animation: modalPop 0.2s ease-out;
 }
 
 @keyframes modalPop {
-  0% { transform: scale(0.95); opacity: 0; }
+  0% { transform: scale(0.96); opacity: 0; }
   100% { transform: scale(1); opacity: 1; }
 }
 
 .modal-close-btn {
   position: absolute;
-  top: 14px;
-  right: 14px;
-  width: 32px;
-  height: 32px;
+  top: 12px;
+  right: 12px;
+  width: 28px;
+  height: 28px;
   border-radius: 50%;
   background: #f1f5f9;
   color: #64748b;
@@ -865,61 +866,61 @@
 }
 
 .otp-icon-wrap {
-  width: 60px;
-  height: 60px;
+  width: 46px;
+  height: 46px;
   border-radius: 50%;
   background: #f0fdf4;
   color: #16a34a;
   display: flex;
   align-items: center;
   justify-content: center;
-  margin: 0 auto 1rem;
-  box-shadow: 0 4px 12px rgba(22, 163, 74, 0.15);
+  margin: 0 auto 0.75rem;
+  border: 1px solid #dcfce7;
 }
 
 .otp-title {
-  font-size: 1.35rem;
+  font-size: 1.15rem;
   font-weight: 800;
   color: #0f172a;
-  margin-bottom: 0.4rem;
+  margin: 0 0 0.3rem;
 }
 
 .otp-subtitle {
-  font-size: 0.85rem;
+  font-size: 0.8rem;
   color: #64748b;
-  line-height: 1.4;
-  margin-bottom: 1.25rem;
+  line-height: 1.35;
+  margin: 0 0 0.85rem;
 }
 
 .otp-error-banner {
   background: #fef2f2;
   color: #b91c1c;
-  padding: 0.6rem 0.8rem;
-  border-radius: 10px;
-  font-size: 0.78rem;
+  padding: 0.5rem 0.75rem;
+  border-radius: 8px;
+  font-size: 0.75rem;
   font-weight: 600;
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 0.4rem;
-  margin-bottom: 1rem;
+  gap: 0.35rem;
+  margin-bottom: 0.75rem;
 }
 
 .otp-form {
   display: flex;
   flex-direction: column;
-  gap: 1rem;
+  gap: 0.75rem;
 }
 
 .otp-input-wrap {
   display: flex;
   flex-direction: column;
-  gap: 0.4rem;
+  gap: 0.35rem;
   text-align: left;
 }
 
 .otp-label {
-  font-size: 0.78rem;
+  font-size: 0.74rem;
   font-weight: 700;
   color: #475569;
   text-align: center;
@@ -928,43 +929,43 @@
 .otp-pin-input {
   width: 100%;
   text-align: center;
-  font-size: 1.75rem;
+  font-size: 1.4rem;
   font-weight: 800;
-  letter-spacing: 12px;
-  padding: 0.65rem;
+  letter-spacing: 8px;
+  padding: 0.55rem;
   background: #f8fafc;
-  border: 2px solid #cbd5e1;
-  border-radius: 14px;
+  border: 1.5px solid #cbd5e1;
+  border-radius: 10px;
   color: #0f172a;
   box-sizing: border-box;
-  transition: all 0.2s ease;
+  transition: all 0.15s ease;
 }
 
 .otp-pin-input:focus {
   outline: none;
   background: #ffffff;
   border-color: #16a34a;
-  box-shadow: 0 0 0 3px rgba(22, 163, 74, 0.15);
+  box-shadow: 0 0 0 3px rgba(22, 163, 74, 0.12);
 }
 
 .otp-verify-btn {
   width: 100%;
   justify-content: center;
-  padding: 0.85rem;
-  font-size: 0.98rem;
+  padding: 0.75rem;
+  font-size: 0.9rem;
   font-weight: 700;
-  border-radius: 12px;
+  border-radius: 10px;
 }
 
 .otp-change-phone-btn {
   background: transparent;
   border: none;
   color: #64748b;
-  font-size: 0.78rem;
+  font-size: 0.74rem;
   font-weight: 600;
   cursor: pointer;
   text-decoration: underline;
-  margin-top: 0.25rem;
+  margin-top: 0.15rem;
 }
 
 .otp-change-phone-btn:hover {
@@ -972,7 +973,7 @@
 }
 
 /* ---------------------------------------------------------
-   8. MOBILE RESPONSIVE STYLES & FLOATING ACTION DOCK
+   8. MOBILE RESPONSIVE STYLES (MOBILE-FIRST OPTIMIZATION)
    --------------------------------------------------------- */
 .mobile-checkout-dock {
   display: none;
@@ -981,7 +982,7 @@
 @media (max-width: 968px) {
   .checkout-grid {
     grid-template-columns: minmax(0, 1fr);
-    gap: 1.25rem;
+    gap: 1rem;
     width: 100%;
   }
 }
@@ -996,7 +997,7 @@
 
   .checkout-page {
     padding-top: 0;
-    padding-bottom: 7.5rem; /* Space above sticky dock */
+    padding-bottom: 5rem; /* Compact clearance for bottom dock */
     width: 100% !important;
     max-width: 100vw !important;
     overflow-x: hidden !important;
@@ -1006,8 +1007,8 @@
   .checkout-container {
     width: 100% !important;
     max-width: 100% !important;
-    padding-left: 12px !important;
-    padding-right: 12px !important;
+    padding-left: 10px !important;
+    padding-right: 10px !important;
     box-sizing: border-box !important;
     overflow-x: hidden !important;
   }
@@ -1016,34 +1017,37 @@
     grid-template-columns: minmax(0, 1fr) !important;
     width: 100% !important;
     box-sizing: border-box !important;
-    gap: 0.9rem !important;
+    gap: 0.75rem !important;
   }
 
   .checkout-single-page-form {
     width: 100% !important;
     box-sizing: border-box !important;
-    gap: 0.9rem !important;
+    gap: 0.75rem !important;
   }
 
-  /* Native App Header */
+  /* Sleek Compact Mobile Header */
   .checkout-mobile-header {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: 0.75rem 1rem;
-    background: #ffffff;
-    border-bottom: 1px solid #edf2f7;
+    padding: 0.6rem 0.9rem;
+    background: rgba(255, 255, 255, 0.95);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    border-bottom: 1px solid #eef2f6;
     position: sticky;
     top: 0;
     z-index: 100;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.03);
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.03);
     width: 100%;
     box-sizing: border-box;
+    height: 48px;
   }
 
   .checkout-mobile-back-btn {
-    width: 34px;
-    height: 34px;
+    width: 32px;
+    height: 32px;
     background: #f1f5f9;
     border-radius: 50%;
     display: flex;
@@ -1052,35 +1056,59 @@
     color: #0f172a;
     border: none;
     cursor: pointer;
+    transition: background 0.15s ease;
+  }
+
+  .checkout-mobile-back-btn:active {
+    background: #e2e8f0;
   }
 
   .checkout-mobile-title-wrap {
-    text-align: center;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    line-height: 1.1;
   }
 
   .checkout-mobile-title {
-    font-size: 1rem;
+    font-size: 0.92rem;
     font-weight: 800;
     color: #0f172a;
-    line-height: 1.2;
     margin: 0;
   }
 
   .checkout-mobile-secure-badge {
-    font-size: 0.65rem;
+    font-size: 0.62rem;
     color: #16a34a;
     font-weight: 700;
     display: inline-flex;
     align-items: center;
-    gap: 3px;
+    gap: 2px;
+    margin-top: 1px;
   }
 
-  /* Mobile Top Accordion Order Summary */
+  .checkout-mobile-header-right {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    width: 32px;
+  }
+
+  .checkout-mobile-count-pill {
+    background: #f1f5f9;
+    color: #475569;
+    font-size: 0.72rem;
+    font-weight: 700;
+    padding: 2px 7px;
+    border-radius: 999px;
+  }
+
+  /* Compact Mobile Order Summary Accordion */
   .mobile-order-summary-toggle-bar {
     display: block;
     background: #ffffff;
-    border-bottom: 1px solid #edf2f7;
-    margin-bottom: 0.9rem;
+    border-bottom: 1px solid #eef2f6;
+    margin-bottom: 0.65rem;
     width: 100%;
     box-sizing: border-box;
   }
@@ -1090,7 +1118,7 @@
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: 0.85rem 1rem;
+    padding: 0.65rem 0.9rem;
     background: transparent;
     border: none;
     cursor: pointer;
@@ -1101,9 +1129,9 @@
   .toggle-left {
     display: flex;
     align-items: center;
-    gap: 0.5rem;
+    gap: 0.45rem;
     color: #0f172a;
-    font-size: 0.85rem;
+    font-size: 0.8rem;
     font-weight: 700;
   }
 
@@ -1112,40 +1140,40 @@
   }
 
   .toggle-price {
-    font-size: 1rem;
+    font-size: 0.92rem;
     font-weight: 800;
     color: #15803d;
   }
 
   .mobile-summary-expanded-content {
-    padding: 0 1rem 1rem;
+    padding: 0 0.9rem 0.75rem;
     background: #fafafa;
     border-top: 1px dashed #e2e8f0;
     box-sizing: border-box;
   }
 
   .mobile-summary-items-rail {
-    max-height: 200px;
+    max-height: 180px;
     overflow-y: auto;
     display: flex;
     flex-direction: column;
-    gap: 0.6rem;
-    padding: 0.75rem 0;
+    gap: 0.45rem;
+    padding: 0.6rem 0;
   }
 
   .mobile-summary-item-row {
     display: flex;
     align-items: center;
-    gap: 0.65rem;
+    gap: 0.55rem;
     width: 100%;
     box-sizing: border-box;
   }
 
   .mobile-item-thumb-box {
     position: relative;
-    width: 40px;
-    height: 40px;
-    border-radius: 8px;
+    width: 34px;
+    height: 34px;
+    border-radius: 7px;
     background: #ffffff;
     border: 1px solid #e2e8f0;
     display: flex;
@@ -1163,14 +1191,14 @@
 
   .mobile-item-qty-pill {
     position: absolute;
-    top: -4px;
-    right: -4px;
+    top: -3px;
+    right: -3px;
     background: #0f172a;
     color: #ffffff;
-    font-size: 0.6rem;
+    font-size: 0.55rem;
     font-weight: 700;
-    width: 16px;
-    height: 16px;
+    width: 14px;
+    height: 14px;
     border-radius: 50%;
     display: flex;
     align-items: center;
@@ -1183,7 +1211,7 @@
   }
 
   .mobile-item-name {
-    font-size: 0.82rem;
+    font-size: 0.78rem;
     font-weight: 700;
     color: #0f172a;
     margin: 0;
@@ -1193,35 +1221,34 @@
   }
 
   .mobile-item-unit-rate {
-    font-size: 0.7rem;
+    font-size: 0.68rem;
     color: #64748b;
   }
 
   .mobile-item-line-total {
-    font-size: 0.85rem;
-    font-weight: 800;
+    font-size: 0.8rem;
+    font-weight: 700;
     color: #15803d;
   }
 
-  /* Mobile Mini Summary Accordion Items */
   .mobile-summary-calc-box {
     display: flex;
     flex-direction: column;
-    gap: 0.45rem;
+    gap: 0.35rem;
     border-top: 1px solid #e2e8f0;
-    padding-top: 0.6rem;
+    padding-top: 0.5rem;
     box-sizing: border-box;
   }
 
   .calc-row {
     display: flex;
     justify-content: space-between;
-    font-size: 0.8rem;
+    font-size: 0.76rem;
     color: #64748b;
   }
 
   .calc-row.total {
-    font-size: 0.95rem;
+    font-size: 0.88rem;
     font-weight: 800;
     color: #0f172a;
   }
@@ -1233,81 +1260,87 @@
   .calc-divider {
     height: 1px;
     background: #e2e8f0;
-    margin: 2px 0;
+    margin: 1px 0;
   }
 
   .form-grid-two {
     grid-template-columns: 1fr;
-    gap: 0.75rem;
+    gap: 0.65rem;
     width: 100%;
     box-sizing: border-box;
   }
 
   .checkout-section-box {
-    padding: 1rem 0.85rem;
-    border-radius: 16px;
-    gap: 0.85rem;
+    padding: 0.85rem 0.85rem;
+    border-radius: 13px;
+    gap: 0.75rem;
     width: 100%;
     box-sizing: border-box;
   }
 
   .checkout-user-logged-banner {
-    padding: 0.85rem 0.95rem;
-    border-radius: 14px;
+    padding: 0.7rem 0.85rem;
+    border-radius: 12px;
     width: 100%;
     box-sizing: border-box;
   }
 
+  .modern-payment-options {
+    grid-template-columns: 1fr;
+    gap: 0.55rem;
+  }
+
   .payment-radio-card {
-    padding: 0.85rem 0.75rem;
-    gap: 0.65rem;
-    border-radius: 14px;
+    padding: 0.65rem 0.75rem;
+    gap: 0.55rem;
+    border-radius: 11px;
   }
 
   .payment-card-icon-wrap {
-    width: 38px;
-    height: 38px;
+    width: 32px;
+    height: 32px;
   }
 
   .whish-instructions-card {
-    padding: 0.85rem;
+    padding: 0.7rem;
+    border-radius: 10px;
   }
 
   .whish-account-row {
-    padding: 0.6rem 0.75rem;
+    padding: 0.45rem 0.65rem;
     flex-wrap: wrap;
-    gap: 0.35rem;
+    gap: 0.25rem;
   }
 
   .modal-overlay {
-    padding: 12px;
+    padding: 10px;
   }
 
   .modal-content-card {
-    padding: 1.5rem 1.25rem;
-    border-radius: 20px;
+    padding: 1.25rem 1.1rem;
+    border-radius: 16px;
     width: 100%;
     max-width: 100%;
   }
 
-  /* Floating Bottom Checkout Dock */
+  /* Floating Bottom Checkout Action Dock (Anchored Cleanly) */
   .mobile-checkout-dock {
     display: flex;
     align-items: center;
     justify-content: space-between;
     position: fixed;
-    bottom: 60px; /* Above BottomNav */
+    bottom: 0;
     left: 0;
     right: 0;
     width: 100%;
     max-width: 100vw;
-    background: rgba(255, 255, 255, 0.96);
-    backdrop-filter: blur(12px);
-    -webkit-backdrop-filter: blur(12px);
-    padding: 0.65rem 1rem;
+    background: rgba(255, 255, 255, 0.98);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    padding: 0.6rem 1rem calc(0.6rem + env(safe-area-inset-bottom, 0px));
     border-top: 1px solid #e2e8f0;
-    box-shadow: 0 -3px 14px rgba(0, 0, 0, 0.08);
-    z-index: 990;
+    box-shadow: 0 -3px 12px rgba(0, 0, 0, 0.05);
+    z-index: 999;
     box-sizing: border-box;
   }
 
@@ -1317,27 +1350,33 @@
   }
 
   .dock-total-label {
-    font-size: 0.7rem;
+    font-size: 0.65rem;
     color: #64748b;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
   }
 
   .dock-total-price {
-    font-size: 1.18rem;
+    font-size: 1.12rem;
     font-weight: 800;
     color: #15803d;
-    line-height: 1.2;
+    line-height: 1.15;
   }
 
   .mobile-dock-btn {
-    padding: 0.75rem 1.4rem !important;
-    font-size: 0.95rem !important;
+    padding: 0.65rem 1.25rem !important;
+    font-size: 0.88rem !important;
     font-weight: 700;
-    border-radius: 12px;
+    border-radius: 10px;
     display: inline-flex;
     align-items: center;
-    gap: 6px;
+    gap: 5px;
     background: linear-gradient(135deg, #16a34a 0%, #15803d 100%) !important;
-    box-shadow: 0 4px 14px rgba(22, 163, 74, 0.3) !important;
+    box-shadow: 0 3px 10px rgba(22, 163, 74, 0.25) !important;
+  }
+
+  .mobile-dock-btn:active {
+    transform: scale(0.98);
   }
 }
-

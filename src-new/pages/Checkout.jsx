@@ -253,15 +253,17 @@ const Checkout = () => {
           onClick={() => navigate('/cart')}
           aria-label="Back to Cart"
         >
-          <ArrowLeft size={20} />
+          <ArrowLeft size={18} />
         </button>
         <div className="checkout-mobile-title-wrap">
           <h1 className="checkout-mobile-title">Checkout</h1>
           <span className="checkout-mobile-secure-badge">
-            <Lock size={12} /> Secure & Encrypted
+            <Lock size={11} /> Secure & Encrypted
           </span>
         </div>
-        <div style={{ width: 34 }} />
+        <div className="checkout-mobile-header-right">
+          <span className="checkout-mobile-count-pill">{cartCount}</span>
+        </div>
       </header>
 
       {/* Mobile Collapsible Order Summary Accordion */}
