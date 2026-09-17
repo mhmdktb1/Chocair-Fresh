@@ -1,8 +1,9 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { 
   Phone, ArrowRight, ArrowLeft, CheckCircle, Loader2, User, 
-  MapPin, Mail, Calendar, ShieldCheck, Sparkles, Lock, MessageSquare, AlertCircle
+  MapPin, Mail, Calendar, ShieldCheck, Sparkles, Lock, MessageSquare, AlertCircle,
+  ChevronDown, Search, Check
 } from 'lucide-react';
 import { normalizeLebanesePhoneNumber, formatPhoneNumber } from '../utils/phoneUtils';
 import Navbar from '../components/layout/Navbar';
@@ -16,20 +17,90 @@ import './Login.css';
 
 const ADMIN_ACCESS_KEYS = ['tookm', 'admin-access', 'mhmd382'];
 
+const COUNTRIES = [
+  { code: 'LB', name: 'Lebanon', dialCode: '+961', flag: '🇱🇧' },
+  { code: 'AE', name: 'United Arab Emirates', dialCode: '+971', flag: '🇦🇪' },
+  { code: 'SA', name: 'Saudi Arabia', dialCode: '+966', flag: '🇸🇦' },
+  { code: 'QA', name: 'Qatar', dialCode: '+974', flag: '🇶🇦' },
+  { code: 'KW', name: 'Kuwait', dialCode: '+965', flag: '🇰🇼' },
+  { code: 'OM', name: 'Oman', dialCode: '+968', flag: '🇴🇲' },
+  { code: 'BH', name: 'Bahrain', dialCode: '+973', flag: '🇧🇭' },
+  { code: 'JO', name: 'Jordan', dialCode: '+962', flag: '🇯🇴' },
+  { code: 'EG', name: 'Egypt', dialCode: '+20', flag: '🇪🇬' },
+  { code: 'IQ', name: 'Iraq', dialCode: '+964', flag: '🇮🇶' },
+  { code: 'SY', name: 'Syria', dialCode: '+963', flag: '🇸🇾' },
+  { code: 'US', name: 'United States', dialCode: '+1', flag: '🇺🇸' },
+  { code: 'CA', name: 'Canada', dialCode: '+1', flag: '🇨🇦' },
+  { code: 'GB', name: 'United Kingdom', dialCode: '+44', flag: '🇬🇧' },
+  { code: 'FR', name: 'France', dialCode: '+33', flag: '🇫🇷' },
+  { code: 'DE', name: 'Germany', dialCode: '+49', flag: '🇩🇪' },
+  { code: 'IT', name: 'Italy', dialCode: '+39', flag: '🇮🇹' },
+  { code: 'ES', name: 'Spain', dialCode: '+34', flag: '🇪🇸' },
+  { code: 'TR', name: 'Turkey', dialCode: '+90', flag: '🇹🇷' },
+  { code: 'CY', name: 'Cyprus', dialCode: '+357', flag: '🇨🇾' },
+  { code: 'GR', name: 'Greece', dialCode: '+30', flag: '🇬🇷' },
+  { code: 'CH', name: 'Switzerland', dialCode: '+41', flag: '🇨🇭' },
+  { code: 'SE', name: 'Sweden', dialCode: '+46', flag: '🇸🇪' },
+  { code: 'NL', name: 'Netherlands', dialCode: '+31', flag: '🇳🇱' },
+  { code: 'BE', name: 'Belgium', dialCode: '+32', flag: '🇧🇪' },
+  { code: 'AT', name: 'Austria', dialCode: '+43', flag: '🇦🇹' },
+  { code: 'AU', name: 'Australia', dialCode: '+61', flag: '🇦🇺' },
+  { code: 'BR', name: 'Brazil', dialCode: '+55', flag: '🇧🇷' },
+  { code: 'RU', name: 'Russia', dialCode: '+7', flag: '🇷🇺' },
+  { code: 'IN', name: 'India', dialCode: '+91', flag: '🇮🇳' },
+  { code: 'CN', name: 'China', dialCode: '+86', flag: '🇨🇳' },
+  { code: 'MA', name: 'Morocco', dialCode: '+212', flag: '🇲🇦' },
+  { code: 'TN', name: 'Tunisia', dialCode: '+216', flag: '🇹🇳' },
+  { code: 'DZ', name: 'Algeria', dialCode: '+213', flag: '🇩🇿' },
+  { code: 'LY', name: 'Libya', dialCode: '+218', flag: '🇱🇾' },
+  { code: 'SD', name: 'Sudan', dialCode: '+249', flag: '🇸🇩' },
+  { code: 'YE', name: 'Yemen', dialCode: '+967', flag: '🇾🇪' },
+  { code: 'PK', name: 'Pakistan', dialCode: '+92', flag: '🇵🇰' },
+  { code: 'NG', name: 'Nigeria', dialCode: '+234', flag: '🇳🇬' },
+  { code: 'ZA', name: 'South Africa', dialCode: '+27', flag: '🇿🇦' }
+];
+
 const isAdminAccessKey = (value) => {
   if (!import.meta.env.DEV) return false;
   const input = (value || '').trim().toLowerCase();
   return ADMIN_ACCESS_KEYS.includes(input);
 };
 
+const getFullNormalizedPhone = (rawPhone, country) => {
+  const trimmed = (rawPhone || '').trim();
+  if (isAdminAccessKey(trimmed)) return trimmed.toLowerCase();
+  
+  if (trimmed.startsWith('+')) {
+    const cleaned = '+' + trimmed.replace(/\D/g, '');
+    return cleaned.length > 5 ? cleaned : null;
+  }
+  
+  if (country.code === 'LB') {
+    const lebNorm = normalizeLebanesePhoneNumber(trimmed);
+    if (lebNorm) return lebNorm;
+  }
+  
+  const cleanDigits = trimmed.replace(/\D/g, '').replace(/^0+/, '');
+  if (!cleanDigits || cleanDigits.length < 4) return null;
+  
+  return `${country.dialCode}${cleanDigits}`;
+};
+
 const Login = () => {
   const navigate = useNavigate();
   const { login } = useAuth();
   const [phoneNumber, setPhoneNumber] = useState('');
+  const [selectedCountry, setSelectedCountry] = useState(COUNTRIES[0]); // Default Lebanon (+961)
+  const [showCountryDropdown, setShowCountryDropdown] = useState(false);
+  const [countrySearch, setCountrySearch] = useState('');
   const [otp, setOtp] = useState('');
   const [step, setStep] = useState('PHONE'); // PHONE, OTP, REGISTER
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+
+  const countryDropdownRef = useRef(null);
+  const phoneInputRef = useRef(null);
+  const searchInputRef = useRef(null);
   
   // Registration State
   const [regData, setRegData] = useState({
@@ -40,20 +111,61 @@ const Login = () => {
     gender: 'select'
   });
 
+  // Close country dropdown on click outside
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (countryDropdownRef.current && !countryDropdownRef.current.contains(e.target)) {
+        setShowCountryDropdown(false);
+      }
+    };
+    if (showCountryDropdown) {
+      document.addEventListener('mousedown', handleClickOutside);
+      document.addEventListener('touchstart', handleClickOutside);
+    }
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener('touchstart', handleClickOutside);
+    };
+  }, [showCountryDropdown]);
+
+  useEffect(() => {
+    if (showCountryDropdown && searchInputRef.current) {
+      searchInputRef.current.focus();
+    }
+  }, [showCountryDropdown]);
+
+  const filteredCountries = COUNTRIES.filter((c) => {
+    const q = countrySearch.trim().toLowerCase();
+    if (!q) return true;
+    return (
+      c.name.toLowerCase().includes(q) ||
+      c.dialCode.toLowerCase().includes(q) ||
+      c.code.toLowerCase().includes(q)
+    );
+  });
+
+  const handleSelectCountry = (country) => {
+    setSelectedCountry(country);
+    setShowCountryDropdown(false);
+    setCountrySearch('');
+    if (phoneInputRef.current) {
+      phoneInputRef.current.focus();
+    }
+  };
+
   const handleSendOtp = async (e) => {
     e.preventDefault();
     setError('');
     setLoading(true);
 
     try {
-      let normalizedPhone;
-      if (isAdminAccessKey(phoneNumber)) {
-        normalizedPhone = phoneNumber.trim().toLowerCase();
-      } else {
-        normalizedPhone = normalizeLebanesePhoneNumber(phoneNumber);
-        if (!normalizedPhone) {
-          throw new Error('Please enter a valid Lebanese phone number (e.g., 70 123 456 or 03 123 456).');
-        }
+      const normalizedPhone = getFullNormalizedPhone(phoneNumber, selectedCountry);
+      if (!normalizedPhone) {
+        throw new Error(
+          selectedCountry.code === 'LB'
+            ? 'Please enter a valid Lebanese phone number (e.g., 70 123 456).'
+            : 'Please enter a valid phone number.'
+        );
       }
 
       // Call Backend API
@@ -71,7 +183,7 @@ const Login = () => {
         if (response.data.otp) {
           console.log('TEST OTP CODE:', response.data.otp);
           toast.success(`Verification Code: ${response.data.otp}`, { autoClose: 15000 });
-          // Autofill OTP for super fast testing
+          // Autofill OTP for fast testing
           setOtp(response.data.otp);
         }
         setStep('OTP');
@@ -125,7 +237,7 @@ const Login = () => {
     setLoading(true);
 
     try {
-      const normalizedPhone = normalizeLebanesePhoneNumber(phoneNumber);
+      const normalizedPhone = getFullNormalizedPhone(phoneNumber, selectedCountry);
       const response = await api.post('/users/auth/verify-otp', { 
         phone: normalizedPhone,
         code: otp 
@@ -167,7 +279,7 @@ const Login = () => {
         throw new Error('Name and Delivery Location are required');
       }
 
-      const normalizedPhone = normalizeLebanesePhoneNumber(phoneNumber);
+      const normalizedPhone = getFullNormalizedPhone(phoneNumber, selectedCountry);
       const response = await api.post('/users/auth/register', {
         phone: normalizedPhone,
         name: regData.name,
@@ -201,6 +313,8 @@ const Login = () => {
     }
   };
 
+  const currentFormattedPhone = getFullNormalizedPhone(phoneNumber, selectedCountry) || phoneNumber;
+
   return (
     <div className="login-page">
       {/* Desktop Navigation */}
@@ -230,20 +344,16 @@ const Login = () => {
       <div className="container login-container">
         <div className={`login-card ${step === 'REGISTER' ? 'wide-card' : ''}`}>
           
-          {/* Brand Logo & Header */}
+          {/* Header */}
           <div className="login-header">
-            <div className="login-brand-avatar">
-              <span className="brand-leaf-icon">🌱</span>
-            </div>
-            
             <h1 className="login-title">
-              {step === 'PHONE' && 'Welcome to Freshness'}
+              {step === 'PHONE' && 'Welcome to Chocair Fresh'}
               {step === 'OTP' && 'Verify Your Phone'}
               {step === 'REGISTER' && 'Complete Your Profile'}
             </h1>
             <p className="login-subtitle">
-              {step === 'PHONE' && 'Login or register in seconds with your WhatsApp number'}
-              {step === 'OTP' && `Enter the 6-digit WhatsApp code sent to ${formatPhoneNumber(normalizeLebanesePhoneNumber(phoneNumber)) || phoneNumber}`}
+              {step === 'PHONE' && 'Sign in with WhatsApp or Google'}
+              {step === 'OTP' && `Enter the 6-digit WhatsApp code sent to ${currentFormattedPhone}`}
               {step === 'REGISTER' && 'Set up your delivery details for 1-tap ordering'}
             </p>
           </div>
@@ -260,24 +370,70 @@ const Login = () => {
               <form onSubmit={handleSendOtp} className="login-form">
                 <div className="form-group">
                   <label className="login-input-label">Phone Number (WhatsApp)</label>
-                  <div className="modern-phone-wrapper">
-                    <div className="phone-country-pill">
-                      <span className="flag-emoji">🇱🇧</span>
-                      <span className="country-code">+961</span>
-                    </div>
+                  <div className="modern-phone-wrapper" ref={countryDropdownRef}>
+                    <button
+                      type="button"
+                      className="phone-country-pill"
+                      onClick={() => setShowCountryDropdown(prev => !prev)}
+                      aria-label="Select Country"
+                    >
+                      <span className="flag-emoji">{selectedCountry.flag}</span>
+                      <span className="country-code">{selectedCountry.dialCode}</span>
+                      <ChevronDown size={14} className={`country-chevron ${showCountryDropdown ? 'open' : ''}`} />
+                    </button>
+
                     <input
+                      ref={phoneInputRef}
                       type="tel"
-                      placeholder="70 123 456"
+                      placeholder={selectedCountry.code === 'LB' ? '70 123 456' : 'Phone number'}
                       value={phoneNumber}
                       onChange={(e) => setPhoneNumber(e.target.value)}
                       disabled={loading}
                       autoFocus
                       className="modern-phone-input"
                     />
+
+                    {/* Country Selector Dropdown */}
+                    {showCountryDropdown && (
+                      <div className="country-dropdown-menu">
+                        <div className="country-search-wrap">
+                          <Search size={14} className="country-search-icon" />
+                          <input
+                            ref={searchInputRef}
+                            type="text"
+                            placeholder="Search country or code..."
+                            value={countrySearch}
+                            onChange={(e) => setCountrySearch(e.target.value)}
+                            className="country-search-input"
+                            onClick={(e) => e.stopPropagation()}
+                          />
+                        </div>
+
+                        <div className="country-list-scroll">
+                          {filteredCountries.length === 0 ? (
+                            <div className="country-no-results">No countries found</div>
+                          ) : (
+                            filteredCountries.map((c) => {
+                              const isSelected = c.code === selectedCountry.code;
+                              return (
+                                <button
+                                  key={c.code}
+                                  type="button"
+                                  className={`country-option-item ${isSelected ? 'active' : ''}`}
+                                  onClick={() => handleSelectCountry(c)}
+                                >
+                                  <span className="country-option-flag">{c.flag}</span>
+                                  <span className="country-option-name">{c.name}</span>
+                                  <span className="country-option-dial">{c.dialCode}</span>
+                                  {isSelected && <Check size={14} className="country-check-icon" />}
+                                </button>
+                              );
+                            })
+                          )}
+                        </div>
+                      </div>
+                    )}
                   </div>
-                  <span className="login-input-hint">
-                    Instant login without passwords via WhatsApp OTP
-                  </span>
                 </div>
 
                 <Button variant="primary" type="submit" className="login-submit-btn" disabled={loading || !phoneNumber.trim()}>
@@ -290,7 +446,7 @@ const Login = () => {
               </form>
 
               <div className="auth-divider">
-                <span>or</span>
+                <span>OR</span>
               </div>
 
               <button
@@ -319,12 +475,6 @@ const Login = () => {
                 </svg>
                 Continue with Google
               </button>
-
-              {/* Trust Footer Badges */}
-              <div className="login-trust-footer">
-                <span className="trust-pill"><ShieldCheck size={14} /> 100% Secure</span>
-                <span className="trust-pill"><Sparkles size={14} /> Direct Farm Access</span>
-              </div>
             </div>
           )}
 
