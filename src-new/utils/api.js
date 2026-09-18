@@ -64,13 +64,22 @@ api.interceptors.response.use(
 export const getToken = () => localStorage.getItem('token');
 
 export const saveAuthData = (token, user) => {
-  localStorage.setItem('token', token);
-  localStorage.setItem('user', JSON.stringify(user));
+  if (token) {
+    localStorage.setItem('token', token);
+  }
+  if (user) {
+    localStorage.setItem('user', JSON.stringify(user));
+  }
 };
 
 export const getStoredUser = () => {
-  const user = localStorage.getItem('user');
-  return user ? JSON.parse(user) : null;
+  try {
+    const user = localStorage.getItem('user');
+    return user ? JSON.parse(user) : null;
+  } catch (err) {
+    console.error('Error parsing stored user data:', err);
+    return null;
+  }
 };
 
 export const clearAuthData = () => {

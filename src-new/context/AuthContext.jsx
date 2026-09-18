@@ -12,7 +12,15 @@ export const useAuth = () => {
 };
 
 export const AuthProvider = ({ children }) => {
-  const [user, setUser] = useState(null);
+  const [user, setUser] = useState(() => {
+    try {
+      const token = localStorage.getItem('token');
+      const stored = getStoredUser();
+      return token && stored ? stored : null;
+    } catch {
+      return null;
+    }
+  });
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -22,7 +30,7 @@ export const AuthProvider = ({ children }) => {
 
     if (storedUser && token) {
       setUser(storedUser);
-      // Validate with backend to refresh latest data & admin permissions
+      // Validate with backend in background to refresh latest data & permissions
       api.get('/users/profile')
         .then((res) => {
           if (res.data) {
@@ -31,10 +39,16 @@ export const AuthProvider = ({ children }) => {
             setUser(freshUser);
           }
         })
-        .catch(() => {
-          // Token expired or invalidated
-          clearAuthData();
-          setUser(null);
+        .catch((err) => {
+          // Only invalidate and clear session if server explicitly returns 401 or 403
+          const status = err.response?.status;
+          if (status === 401 || status === 403) {
+            clearAuthData();
+            setUser(null);
+          } else {
+            // Keep user session active on network timeouts or server cold starts
+            console.warn('Backend profile verification unavailable; preserving stored session:', err?.message || err);
+          }
         })
         .finally(() => {
           setLoading(false);
@@ -53,17 +67,21 @@ export const AuthProvider = ({ children }) => {
   };
 
   const logout = () => {
-    // Clear localStorage immediately
-    localStorage.removeItem('token');
-    localStorage.removeItem('user');
-    // Update state
+    clearAuthData();
     setUser(null);
   };
 
   const updateUser = (updatedData) => {
-    const newUser = { ...user, ...updatedData };
-    localStorage.setItem('user', JSON.stringify(newUser));
-    setUser(newUser);
+    setUser((prev) => {
+      const newUser = { ...(prev || {}), ...updatedData };
+      const token = localStorage.getItem('token');
+      if (token) {
+        saveAuthData(token, newUser);
+      } else {
+        localStorage.setItem('user', JSON.stringify(newUser));
+      }
+      return newUser;
+    });
   };
 
   const value = {
