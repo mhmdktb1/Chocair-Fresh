@@ -6,7 +6,8 @@ import {
   AlertCircle, Phone, Camera, Upload, Plus, ShieldCheck, Truck, 
   ArrowLeft, ArrowRight, CheckCircle, RefreshCw, Copy, Check, 
   MessageSquare, Home, Briefcase, Trash2, Heart, ExternalLink, 
-  Search, CheckCircle2, MapPinned, Globe, Moon, Sun, ShoppingCart, Sparkles
+  CheckCircle2, MapPinned, Globe, Moon, Sun, ShoppingCart, 
+  Eye, CreditCard, ChevronRight
 } from 'lucide-react';
 import Navbar from '../components/layout/Navbar';
 import LocationPicker from '../components/common/LocationPicker';
@@ -23,12 +24,21 @@ import { formatCurrency, formatDate } from '../utils/formatters';
 import { toast } from 'react-toastify';
 import './Profile.css';
 
+const formatOrderDateTime = (dateString) => {
+  if (!dateString) return '';
+  const d = new Date(dateString);
+  if (isNaN(d.getTime())) return formatDate(dateString);
+  const datePart = d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+  const timePart = d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
+  return `${datePart} • ${timePart}`;
+};
+
 const Profile = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const { user: authUser, updateUser, logout: authLogout, isAdmin } = useAuth();
   const { addToCart, setIsCartOpen } = useCart();
-  const { favorites, favoritesCount, toggleFavorite, isFavorite } = useFavorites();
+  const { favorites, favoritesCount, toggleFavorite } = useFavorites();
   const { language, setLanguage, toggleLanguage, theme, setTheme, toggleTheme, isDark } = useTheme();
   const t = translations[language] || translations.en;
 
@@ -38,7 +48,7 @@ const Profile = () => {
     orders: true,
     favorites: false,
     addresses: false,
-    preferences: false,
+    settings: false,
   });
   const [orders, setOrders] = useState([]);
   const [allProducts, setAllProducts] = useState([]);
@@ -47,8 +57,6 @@ const Profile = () => {
   const [isEditing, setIsEditing] = useState(false);
   const [formData, setFormData] = useState({});
   const [expandedOrder, setExpandedOrder] = useState(null);
-  const [orderFilter, setOrderFilter] = useState('all'); // 'all' | 'active' | 'delivered' | 'cancelled'
-  const [orderSearch, setOrderSearch] = useState('');
   const [copiedId, setCopiedId] = useState(null);
 
   // Phone Change State
@@ -106,7 +114,7 @@ const Profile = () => {
       else if (tab === 'orders') expandAndScrollToSection('orders');
       else if (tab === 'favorites') expandAndScrollToSection('favorites');
       else if (tab === 'addresses') expandAndScrollToSection('addresses');
-      else if (tab === 'settings' || tab === 'preferences') expandAndScrollToSection('preferences');
+      else if (tab === 'settings' || tab === 'preferences') expandAndScrollToSection('settings');
     }
   }, [location.state]);
 
@@ -138,7 +146,8 @@ const Profile = () => {
         }
 
         if (ordersRes.status === 'fulfilled' && ordersRes.value?.data) {
-          setOrders(ordersRes.value.data || []);
+          const fetchedOrders = ordersRes.value.data || [];
+          setOrders(fetchedOrders);
         }
 
         if (productsRes.status === 'fulfilled' && productsRes.value?.data) {
@@ -401,14 +410,12 @@ const Profile = () => {
       }
 
       if (addressForm.id) {
-        // Edit existing
         updatedAddresses = updatedAddresses.map(a => 
           a._id === addressForm.id || a.id === addressForm.id 
             ? { ...addressForm, _id: addressForm.id } 
             : a
         );
       } else {
-        // Add new
         updatedAddresses.push({
           ...addressForm,
           _id: Date.now().toString()
@@ -492,47 +499,6 @@ const Profile = () => {
     }
   };
 
-  // Order stats calculations
-  const totalSpent = useMemo(() => {
-    return orders
-      .filter(o => (o.status || '').toLowerCase() !== 'cancelled')
-      .reduce((acc, curr) => acc + (curr.totalPrice || 0), 0);
-  }, [orders]);
-
-  const activeOrdersCount = useMemo(() => {
-    return orders.filter(o => {
-      const st = (o.status || 'pending').toLowerCase();
-      return ['pending', 'processing', 'confirmed', 'shipped', 'out_for_delivery'].includes(st);
-    }).length;
-  }, [orders]);
-
-  // Filtered Orders
-  const filteredOrders = useMemo(() => {
-    return orders.filter(order => {
-      const status = (order.status || 'pending').toLowerCase();
-      
-      let matchesTab = true;
-      if (orderFilter === 'active') {
-        matchesTab = ['pending', 'processing', 'confirmed', 'shipped', 'out_for_delivery'].includes(status);
-      } else if (orderFilter === 'delivered') {
-        matchesTab = status === 'delivered';
-      } else if (orderFilter === 'cancelled') {
-        matchesTab = status === 'cancelled';
-      }
-
-      if (!matchesTab) return false;
-
-      if (orderSearch.trim()) {
-        const query = orderSearch.toLowerCase().trim();
-        const idMatch = order._id?.toLowerCase().includes(query);
-        const itemMatch = order.orderItems?.some(i => i.name?.toLowerCase().includes(query));
-        return idMatch || itemMatch;
-      }
-
-      return true;
-    });
-  }, [orders, orderFilter, orderSearch]);
-
   // Favorite Products list
   const favoriteProductsList = useMemo(() => {
     return allProducts.filter(p => favorites.includes((p._id || p.id).toString()));
@@ -560,14 +526,13 @@ const Profile = () => {
   };
 
   // ==========================================
-  // SECTION: PERSONAL PROFILE (EDIT)
+  // SECTION: PERSONAL DETAILS
   // ==========================================
   const renderProfile = () => (
     <div className="profile-section-card fade-in">
       <div className="section-header-row">
         <div>
           <h2 className="section-title">{t.personalDetails}</h2>
-          <p className="section-subtitle">Manage name, WhatsApp, and primary delivery spot</p>
         </div>
         {!isEditing ? (
           <button 
@@ -678,7 +643,6 @@ const Profile = () => {
                 <span className="location-main-text">
                   {formData.location ? (formData.location.startsWith('Lat:') ? 'Pinned GPS Location' : formData.location) : 'No primary delivery address set'}
                 </span>
-                <span className="location-sub-text">Lebanon Delivery Network</span>
               </div>
               <button 
                 type="button" 
@@ -695,14 +659,13 @@ const Profile = () => {
   );
 
   // ==========================================
-  // SECTION: ORDERS & DELIVERIES
+  // SECTION: MY ORDERS
   // ==========================================
   const renderOrders = () => (
     <div className="profile-section-card fade-in">
-      <div className="orders-section-header">
+      <div className="section-header-row">
         <div>
           <h2 className="section-title">{t.ordersDeliveries}</h2>
-          <p className="section-subtitle">Real-time status tracking, instant reordering, and item receipts</p>
         </div>
         <Button 
           variant="outline" 
@@ -714,75 +677,20 @@ const Profile = () => {
         </Button>
       </div>
 
-      {/* Orders Filter & Search Toolbar */}
-      <div className="orders-toolbar-wrap">
-        <div className="order-filter-chips">
-          <button 
-            type="button" 
-            className={`filter-chip ${orderFilter === 'all' ? 'active' : ''}`}
-            onClick={() => setOrderFilter('all')}
-          >
-            All ({orders.length})
-          </button>
-          <button 
-            type="button" 
-            className={`filter-chip ${orderFilter === 'active' ? 'active' : ''}`}
-            onClick={() => setOrderFilter('active')}
-          >
-            Active ({activeOrdersCount})
-          </button>
-          <button 
-            type="button" 
-            className={`filter-chip ${orderFilter === 'delivered' ? 'active' : ''}`}
-            onClick={() => setOrderFilter('delivered')}
-          >
-            Delivered
-          </button>
-          <button 
-            type="button" 
-            className={`filter-chip ${orderFilter === 'cancelled' ? 'active' : ''}`}
-            onClick={() => setOrderFilter('cancelled')}
-          >
-            Cancelled
-          </button>
-        </div>
-
-        <div className="order-search-box">
-          <Search size={14} className="search-icon" />
-          <input 
-            type="text" 
-            placeholder="Search orders or items..." 
-            value={orderSearch}
-            onChange={(e) => setOrderSearch(e.target.value)}
-          />
-          {orderSearch && (
-            <button type="button" className="clear-search-btn" onClick={() => setOrderSearch('')}>
-              <X size={13} />
-            </button>
-          )}
-        </div>
-      </div>
-
-      {filteredOrders.length === 0 ? (
+      {orders.length === 0 ? (
         <div className="empty-orders-view">
           <div className="empty-icon-circle">
             <ShoppingBag size={34} />
           </div>
           <h3>{t.noOrdersFound}</h3>
-          <p>
-            {orderSearch 
-              ? `No orders matching "${orderSearch}".`
-              : orderFilter !== 'all' 
-                ? `You have no ${orderFilter} orders.`
-                : "You haven't placed any orders yet."}
-          </p>
+          <p>You haven't placed any orders yet.</p>
           <Button variant="primary" onClick={() => navigate('/shop')} className="start-fresh-shop-btn">
             {t.exploreHarvest} <ArrowRight size={15} style={{ marginLeft: 6 }} />
           </Button>
         </div>
       ) : (
-        <div className="orders-cards-list">
-          {filteredOrders.map(order => {
+        <div className="compact-orders-list">
+          {orders.map(order => {
             const isExpanded = expandedOrder === order._id;
             const statusLower = (order.status || 'pending').toLowerCase();
             const progressStep = getOrderProgressStep(order.status);
@@ -792,12 +700,17 @@ const Profile = () => {
             return (
               <div 
                 key={order._id} 
-                className={`redesigned-order-card ${isExpanded ? 'is-expanded' : ''} ${isCancelled ? 'is-cancelled' : ''}`}
-                onClick={() => toggleOrder(order._id)}
+                className={`compact-order-card ${isExpanded ? 'is-expanded' : ''} ${isCancelled ? 'is-cancelled' : ''}`}
               >
-                {/* Order Top Bar */}
-                <div className="order-card-header">
-                  <div className="order-main-meta">
+                {/* Compact Row */}
+                <div 
+                  className="compact-order-row"
+                  onClick={() => toggleOrder(order._id)}
+                  role="button"
+                  tabIndex={0}
+                  aria-expanded={isExpanded}
+                >
+                  <div className="compact-order-meta">
                     <div className="order-code-badge">
                       <span className="order-id-label">{orderCode}</span>
                       <button 
@@ -809,99 +722,76 @@ const Profile = () => {
                         {copiedId === order._id ? <Check size={12} color="#16a34a" /> : <Copy size={12} />}
                       </button>
                     </div>
-                    <span className="order-date-tag">
-                      {formatDate(order.createdAt)}
+                    <span className="compact-order-date">
+                      {formatOrderDateTime(order.createdAt)}
                     </span>
                   </div>
 
-                  <div className="order-header-right">
+                  <div className="compact-order-actions">
                     <span className={`order-status-pill status-${statusLower}`}>
                       {order.status || 'Pending'}
                     </span>
                     <button 
                       type="button" 
-                      className="order-expand-toggle"
-                      aria-label={isExpanded ? "Collapse Order" : "Expand Order"}
+                      className={`order-view-toggle-btn ${isExpanded ? 'active' : ''}`}
+                      title={isExpanded ? "Collapse Details" : "View Details"}
+                      aria-label={isExpanded ? "Collapse Details" : "View Details"}
                     >
-                      {isExpanded ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+                      <Eye size={15} />
+                      {isExpanded ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
                     </button>
                   </div>
                 </div>
 
-                {/* Visual Order Progress Tracker */}
-                {!isCancelled && (
-                  <div className="order-progress-tracker" onClick={(e) => e.stopPropagation()}>
-                    <div className={`progress-step ${progressStep >= 1 ? 'completed' : ''} ${progressStep === 1 ? 'current' : ''}`}>
-                      <div className="step-dot">
-                        <Check size={10} strokeWidth={3} />
-                      </div>
-                      <span className="step-label">Placed</span>
-                    </div>
-
-                    <div className={`progress-line ${progressStep >= 2 ? 'completed' : ''}`} />
-
-                    <div className={`progress-step ${progressStep >= 2 ? 'completed' : ''} ${progressStep === 2 ? 'current' : ''}`}>
-                      <div className="step-dot">
-                        <Check size={10} strokeWidth={3} />
-                      </div>
-                      <span className="step-label">Confirmed</span>
-                    </div>
-
-                    <div className={`progress-line ${progressStep >= 3 ? 'completed' : ''}`} />
-
-                    <div className={`progress-step ${progressStep >= 3 ? 'completed' : ''} ${progressStep === 3 ? 'current' : ''}`}>
-                      <div className="step-dot">
-                        <Truck size={11} strokeWidth={2.5} />
-                      </div>
-                      <span className="step-label">On Way</span>
-                    </div>
-
-                    <div className={`progress-line ${progressStep >= 4 ? 'completed' : ''}`} />
-
-                    <div className={`progress-step ${progressStep >= 4 ? 'completed' : ''} ${progressStep === 4 ? 'current' : ''}`}>
-                      <div className="step-dot">
-                        <CheckCircle size={11} strokeWidth={2.5} />
-                      </div>
-                      <span className="step-label">Delivered</span>
-                    </div>
-                  </div>
-                )}
-
-                {/* Order Summary Bar */}
-                <div className="order-card-mid-summary">
-                  <div className="items-preview-stack">
-                    <div className="items-mini-thumbnails">
-                      {order.orderItems?.slice(0, 3).map((item, idx) => (
-                        <div key={idx} className="mini-thumb">
-                          {item.image ? (
-                            <img src={item.image} alt={item.name} />
-                          ) : (
-                            <Package size={13} color="#94a3b8" />
-                          )}
-                        </div>
-                      ))}
-                      {(order.orderItems?.length || 0) > 3 && (
-                        <div className="mini-thumb-more">
-                          +{(order.orderItems?.length || 0) - 3}
-                        </div>
-                      )}
-                    </div>
-                    <span className="order-item-count-text">
-                      {order.orderItems?.length || 0} items
-                    </span>
-                  </div>
-
-                  <div className="order-total-price-box">
-                    <span className="total-label">{t.totalAmount}</span>
-                    <span className="total-value">{formatCurrency(order.totalPrice || 0)}</span>
-                  </div>
-                </div>
-
-                {/* Expanded Details Drawer */}
+                {/* Expanded Full Order Details */}
                 {isExpanded && (
                   <div className="order-drawer-content fade-in" onClick={(e) => e.stopPropagation()}>
+                    {/* Visual Order Progress Tracker */}
+                    {!isCancelled ? (
+                      <div className="order-progress-tracker">
+                        <div className={`progress-step ${progressStep >= 1 ? 'completed' : ''} ${progressStep === 1 ? 'current' : ''}`}>
+                          <div className="step-dot">
+                            <Check size={10} strokeWidth={3} />
+                          </div>
+                          <span className="step-label">Placed</span>
+                        </div>
+
+                        <div className={`progress-line ${progressStep >= 2 ? 'completed' : ''}`} />
+
+                        <div className={`progress-step ${progressStep >= 2 ? 'completed' : ''} ${progressStep === 2 ? 'current' : ''}`}>
+                          <div className="step-dot">
+                            <Check size={10} strokeWidth={3} />
+                          </div>
+                          <span className="step-label">Confirmed</span>
+                        </div>
+
+                        <div className={`progress-line ${progressStep >= 3 ? 'completed' : ''}`} />
+
+                        <div className={`progress-step ${progressStep >= 3 ? 'completed' : ''} ${progressStep === 3 ? 'current' : ''}`}>
+                          <div className="step-dot">
+                            <Truck size={11} strokeWidth={2.5} />
+                          </div>
+                          <span className="step-label">On Way</span>
+                        </div>
+
+                        <div className={`progress-line ${progressStep >= 4 ? 'completed' : ''}`} />
+
+                        <div className={`progress-step ${progressStep >= 4 ? 'completed' : ''} ${progressStep === 4 ? 'current' : ''}`}>
+                          <div className="step-dot">
+                            <CheckCircle size={11} strokeWidth={2.5} />
+                          </div>
+                          <span className="step-label">Delivered</span>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="order-cancelled-banner">
+                        <AlertCircle size={15} /> Order Cancelled
+                      </div>
+                    )}
+
+                    {/* Line Items List */}
                     <div className="line-items-header">
-                      <span>Items</span>
+                      <span>Items ({order.orderItems?.length || 0})</span>
                       <span>Subtotal</span>
                     </div>
                     
@@ -928,6 +818,7 @@ const Profile = () => {
                       ))}
                     </div>
 
+                    {/* Meta Info Grid */}
                     <div className="order-meta-info-grid">
                       <div className="meta-info-card">
                         <div className="meta-card-title">
@@ -946,8 +837,27 @@ const Profile = () => {
                           {order.customerInfo?.phone ? formatPhoneNumber(order.customerInfo.phone) : (user.phone ? formatPhoneNumber(user.phone) : 'On file')}
                         </p>
                       </div>
+
+                      <div className="meta-info-card">
+                        <div className="meta-card-title">
+                          <CreditCard size={13} /> Payment
+                        </div>
+                        <p className="meta-card-text">
+                          {order.paymentMethod || 'Cash on Delivery'}
+                        </p>
+                      </div>
+
+                      <div className="meta-info-card total-highlight-card">
+                        <div className="meta-card-title">
+                          {t.totalAmount}
+                        </div>
+                        <p className="meta-card-text total-amount-value">
+                          {formatCurrency(order.totalPrice || 0)}
+                        </p>
+                      </div>
                     </div>
 
+                    {/* Order Action Buttons */}
                     <div className="order-actions-bar">
                       <button 
                         type="button" 
@@ -988,14 +898,13 @@ const Profile = () => {
   );
 
   // ==========================================
-  // SECTION: FAVORITES
+  // SECTION: FAVORITES (COMPACT & CLEAN)
   // ==========================================
   const renderFavorites = () => (
     <div className="profile-section-card fade-in">
       <div className="section-header-row">
         <div>
           <h2 className="section-title">{t.myFavorites}</h2>
-          <p className="section-subtitle">{t.favoritesSubtitle}</p>
         </div>
         <Button 
           variant="outline" 
@@ -1019,22 +928,22 @@ const Profile = () => {
           </Button>
         </div>
       ) : (
-        <div className="favorites-product-grid">
+        <div className="favorites-compact-grid">
           {favoriteProductsList.map((product) => {
             const inStock = (product.countInStock || 10) > 0;
             return (
-              <div key={product._id} className="favorite-item-card">
+              <div key={product._id} className="fav-compact-card">
                 <button
                   type="button"
-                  className="fav-remove-icon-btn"
+                  className="fav-compact-heart-btn"
                   onClick={() => toggleFavorite(product)}
                   title="Remove from favorites"
                   aria-label="Remove from favorites"
                 >
-                  <Heart size={16} fill="#ef4444" color="#ef4444" />
+                  <Heart size={14} fill="#ef4444" color="#ef4444" />
                 </button>
 
-                <Link to={`/product/${product._id}`} className="fav-item-image-wrap">
+                <Link to={`/product/${product._id}`} className="fav-compact-img-link">
                   <img 
                     src={product.image || 'https://images.unsplash.com/photo-1542838132-92c53300491e?auto=format&fit=crop&w=600&q=80'} 
                     alt={product.name}
@@ -1042,29 +951,26 @@ const Profile = () => {
                   />
                 </Link>
 
-                <div className="fav-item-info">
-                  <Link to={`/product/${product._id}`} className="fav-item-title-link">
-                    <h4 className="fav-item-title">{product.name}</h4>
+                <div className="fav-compact-body">
+                  <Link to={`/product/${product._id}`} className="fav-compact-title-link">
+                    <h4 className="fav-compact-name">{product.name}</h4>
                   </Link>
 
-                  <div className="fav-item-pricing-row">
-                    <span className="fav-item-price">{formatCurrency(product.price)}</span>
-                    {product.oldPrice && (
-                      <span className="fav-item-old-price">{formatCurrency(product.oldPrice)}</span>
-                    )}
-                    {product.unit && <span className="fav-item-unit">/ {product.unit}</span>}
+                  <div className="fav-compact-price-row">
+                    <span className="fav-compact-price">{formatCurrency(product.price)}</span>
+                    {product.unit && <span className="fav-compact-unit">/{product.unit}</span>}
                   </div>
 
                   <button
                     type="button"
-                    className="fav-add-cart-btn"
+                    className="fav-compact-add-btn"
                     disabled={!inStock}
                     onClick={() => {
                       addToCart(product, 1);
                       toast.success(`${product.name} added to cart!`);
                     }}
                   >
-                    <ShoppingCart size={14} />
+                    <ShoppingCart size={13} />
                     <span>{inStock ? t.addToCart : t.outOfStock}</span>
                   </button>
                 </div>
@@ -1087,7 +993,6 @@ const Profile = () => {
         <div className="section-header-row">
           <div>
             <h2 className="section-title">{t.savedAddresses}</h2>
-            <p className="section-subtitle">Manage delivery locations for quick checkout</p>
           </div>
           <button 
             type="button" 
@@ -1175,14 +1080,13 @@ const Profile = () => {
   };
 
   // ==========================================
-  // SECTION: SETTINGS & APPEARANCE
+  // SECTION: PREFERENCES (LANGUAGE & APPEARANCE ONLY)
   // ==========================================
   const renderSettings = () => (
     <div className="profile-section-card fade-in">
       <div className="section-header-row">
         <div>
           <h2 className="section-title">{t.preferencesSecurity}</h2>
-          <p className="section-subtitle">Language and theme preferences</p>
         </div>
       </div>
 
@@ -1334,7 +1238,7 @@ const Profile = () => {
       <div className="container profile-container">
         
         {/* ==========================================
-            HERO MEMBER IDENTITY CARD
+            MEMBER IDENTITY CARD (CLEAN & MINIMAL)
             ========================================== */}
         <div className="profile-hero-card">
           <div className="hero-card-left">
@@ -1370,45 +1274,9 @@ const Profile = () => {
               </div>
 
               <div className="hero-tier-tag-wrap">
-                <span className="hero-tier-tag">
-                  <Sparkles size={11} /> {isAdmin ? 'Store Administrator' : 'Fresh VIP Member'}
-                </span>
                 <span className="hero-loc-tag">
-                  <MapPin size={11} /> {user.location ? (user.location.startsWith('Lat:') ? 'Pinned Location' : user.location.slice(0, 22) + (user.location.length > 22 ? '...' : '')) : 'Lebanon'}
+                  <MapPin size={11} /> {user.location ? (user.location.startsWith('Lat:') ? 'Pinned Location' : user.location.slice(0, 24) + (user.location.length > 24 ? '...' : '')) : 'Lebanon'}
                 </span>
-              </div>
-            </div>
-          </div>
-
-          {/* Quick 3-Stat Counter Cards (Orders, Saved Addresses, Favorites) */}
-          <div className="hero-stats-row">
-            <div className="hero-stat-card" onClick={() => { setOrderFilter('all'); expandAndScrollToSection('orders'); }}>
-              <div className="stat-icon-wrap orders">
-                <Package size={17} />
-              </div>
-              <div className="stat-numbers">
-                <span className="stat-value">{orders.length}</span>
-                <span className="stat-label">{t.totalOrders}</span>
-              </div>
-            </div>
-
-            <div className="hero-stat-card" onClick={() => expandAndScrollToSection('addresses')}>
-              <div className="stat-icon-wrap addresses">
-                <MapPin size={17} />
-              </div>
-              <div className="stat-numbers">
-                <span className="stat-value">{user.addresses?.length || 1}</span>
-                <span className="stat-label">{t.savedSpots}</span>
-              </div>
-            </div>
-
-            <div className="hero-stat-card" onClick={() => expandAndScrollToSection('favorites')}>
-              <div className="stat-icon-wrap favorites">
-                <Heart size={17} />
-              </div>
-              <div className="stat-numbers">
-                <span className="stat-value">{favoritesCount}</span>
-                <span className="stat-label">{t.favorites}</span>
               </div>
             </div>
           </div>
@@ -1419,7 +1287,7 @@ const Profile = () => {
             ========================================== */}
         <div className="profile-accordion-container">
 
-          {/* 1. Profile Information */}
+          {/* 1. Personal Details */}
           <section id="section-profile" className={`accordion-card ${openSections.profile ? 'is-open' : ''}`}>
             <div 
               className="accordion-trigger-header"
@@ -1437,9 +1305,6 @@ const Profile = () => {
                     <h2 className="accordion-section-title">{t.personalDetails}</h2>
                     {user.phone && <span className="accordion-mini-chip verified"><CheckCircle2 size={11} /> {t.verified}</span>}
                   </div>
-                  <p className="accordion-summary-text">
-                    {user.name || 'Fresh Customer'} • {user.phone ? formatPhoneNumber(user.phone) : 'No phone linked'}
-                  </p>
                 </div>
               </div>
 
@@ -1458,7 +1323,7 @@ const Profile = () => {
             )}
           </section>
 
-          {/* 2. Orders & Deliveries */}
+          {/* 2. My Orders */}
           <section id="section-orders" className={`accordion-card ${openSections.orders ? 'is-open' : ''}`}>
             <div 
               className="accordion-trigger-header"
@@ -1474,21 +1339,12 @@ const Profile = () => {
                 <div className="accordion-title-col">
                   <div className="accordion-title-row">
                     <h2 className="accordion-section-title">{t.ordersDeliveries}</h2>
-                    {activeOrdersCount > 0 ? (
-                      <span className="accordion-mini-chip active-chip">
-                        <Truck size={10} /> {activeOrdersCount} {t.inTransit}
-                      </span>
-                    ) : (
+                    {orders.length > 0 && (
                       <span className="accordion-mini-chip neutral">
-                        {orders.length} {t.all}
+                        {orders.length}
                       </span>
                     )}
                   </div>
-                  <p className="accordion-summary-text">
-                    {orders.length === 0 
-                      ? 'No orders placed yet' 
-                      : `${orders.length} orders • Total spent ${formatCurrency(totalSpent)}`}
-                  </p>
                 </div>
               </div>
 
@@ -1523,13 +1379,12 @@ const Profile = () => {
                 <div className="accordion-title-col">
                   <div className="accordion-title-row">
                     <h2 className="accordion-section-title">{t.myFavorites}</h2>
-                    <span className="accordion-mini-chip neutral">
-                      {favoritesCount} {t.favorites}
-                    </span>
+                    {favoritesCount > 0 && (
+                      <span className="accordion-mini-chip neutral">
+                        {favoritesCount}
+                      </span>
+                    )}
                   </div>
-                  <p className="accordion-summary-text">
-                    {favoritesCount === 0 ? 'No favorites saved' : `${favoritesCount} saved fresh produce items`}
-                  </p>
                 </div>
               </div>
 
@@ -1564,15 +1419,12 @@ const Profile = () => {
                 <div className="accordion-title-col">
                   <div className="accordion-title-row">
                     <h2 className="accordion-section-title">{t.savedAddresses}</h2>
-                    <span className="accordion-mini-chip neutral">
-                      {(user.addresses?.length || 0)} {t.savedSpots}
-                    </span>
+                    {(user.addresses?.length || 0) > 0 && (
+                      <span className="accordion-mini-chip neutral">
+                        {user.addresses.length}
+                      </span>
+                    )}
                   </div>
-                  <p className="accordion-summary-text">
-                    {user.location 
-                      ? (user.location.startsWith('Lat:') ? 'Pinned Map Location' : user.location.slice(0, 32) + (user.location.length > 32 ? '...' : '')) 
-                      : 'Manage delivery addresses'}
-                  </p>
                 </div>
               </div>
 
@@ -1591,7 +1443,7 @@ const Profile = () => {
             )}
           </section>
 
-          {/* 5. Preferences & Settings */}
+          {/* 5. Preferences */}
           <section id="section-settings" className={`accordion-card ${openSections.settings ? 'is-open' : ''}`}>
             <div 
               className="accordion-trigger-header"
@@ -1608,9 +1460,6 @@ const Profile = () => {
                   <div className="accordion-title-row">
                     <h2 className="accordion-section-title">{t.preferencesSecurity}</h2>
                   </div>
-                  <p className="accordion-summary-text">
-                    {language === 'ar' ? 'اللغة العربية' : 'English'} • {isDark ? t.darkMode : t.lightMode}
-                  </p>
                 </div>
               </div>
 

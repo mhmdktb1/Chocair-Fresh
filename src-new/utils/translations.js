@@ -27,7 +27,7 @@ export const translations = {
 
     // Profile & Account
     profileTitle: 'My Account',
-    personalDetails: 'Personal Details & WhatsApp',
+    personalDetails: 'Personal Details',
     personalSubtitle: 'Manage your personal profile and primary delivery location',
     fullName: 'Full Name',
     whatsAppNumber: 'WhatsApp Number',
@@ -51,7 +51,7 @@ export const translations = {
     totalSaved: 'Saved',
 
     // Favorites Section
-    myFavorites: 'My Favorites',
+    myFavorites: 'Favorites',
     favoritesSubtitle: 'Your saved fresh produce and items for quick shopping',
     noFavoritesFound: 'No Favorites Yet',
     noFavoritesDesc: 'Save your favorite fresh fruits, veggies, and pantry picks for quick 1-tap reordering.',
@@ -62,7 +62,7 @@ export const translations = {
     outOfStock: 'Out of Stock',
 
     // Orders Accordion
-    ordersDeliveries: 'Orders & Live Deliveries',
+    ordersDeliveries: 'My Orders',
     all: 'All',
     active: 'Active',
     delivered: 'Delivered',
@@ -78,7 +78,7 @@ export const translations = {
     exploreHarvest: 'Explore Daily Harvest',
 
     // Saved Addresses
-    savedAddresses: 'Saved Delivery Addresses',
+    savedAddresses: 'Saved Addresses',
     addNewAddress: 'Add New Address',
     setDefault: 'Set as Default',
     remove: 'Remove',
@@ -86,7 +86,7 @@ export const translations = {
     noSavedAddresses: 'No Saved Addresses',
 
     // Preferences
-    preferencesSecurity: 'Preferences & Appearance',
+    preferencesSecurity: 'Preferences',
     languageOption: 'App Language',
     themeOption: 'Appearance & Theme',
     lightMode: 'Light Mode',
@@ -129,7 +129,7 @@ export const translations = {
 
     // Profile & Account
     profileTitle: 'حسابي الشخصي',
-    personalDetails: 'البيانات الشخصية والواتساب',
+    personalDetails: 'التفاصيل الشخصية',
     personalSubtitle: 'إدارة معلومات حسابك وعنوان التوصيل الرئيسي',
     fullName: 'الاسم الكامل',
     whatsAppNumber: 'رقم الواتساب',
@@ -153,7 +153,7 @@ export const translations = {
     totalSaved: 'المحفوظات',
 
     // Favorites Section
-    myFavorites: 'منتجاتي المفضلة',
+    myFavorites: 'المفضلة',
     favoritesSubtitle: 'منتجاتك الطازجة المفضلة لطلبها سريعاً بلمسة واحدة',
     noFavoritesFound: 'لا توجد عناصر بالمفضلة بعد',
     noFavoritesDesc: 'احفظ فواكهك وخضارك المفضلة للوصول إليها وإضافتها لسلتك فوراً.',
@@ -164,7 +164,7 @@ export const translations = {
     outOfStock: 'غير متوفر حالياً',
 
     // Orders Accordion
-    ordersDeliveries: 'الطلبات والتوصيل المباشر',
+    ordersDeliveries: 'طلباتي',
     all: 'الكل',
     active: 'النشطة',
     delivered: 'تم التوصيل',
@@ -180,7 +180,7 @@ export const translations = {
     exploreHarvest: 'تصفح قطاف اليوم',
 
     // Saved Addresses
-    savedAddresses: 'عناوين التوصيل المحفوظة',
+    savedAddresses: 'العناوين المحفوظة',
     addNewAddress: 'إضافة عنوان جديد',
     setDefault: 'تعيين كرئيسي',
     remove: 'حذف',
@@ -188,7 +188,7 @@ export const translations = {
     noSavedAddresses: 'لا توجد عناوين محفوظة',
 
     // Preferences
-    preferencesSecurity: 'التفضيلات والمظهر',
+    preferencesSecurity: 'التفضيلات',
     languageOption: 'لغة التطبيق',
     themeOption: 'المظهر والسمة',
     lightMode: 'الوضع الفاتح',
