@@ -1,0 +1,36 @@
+<svg viewBox="0 0 200 200" width="200" height="200" xmlns="http://www.w3.org/2000/svg">
+          <defs>
+            <radialGradient id="avoSkin" cx="40%" cy="30%" r="70%">
+              <stop offset="0%" stop-color="#43A047"/>
+              <stop offset="85%" stop-color="#2E7D32"/>
+              <stop offset="100%" stop-color="#1B5E20"/>
+            </radialGradient>
+            <radialGradient id="avoFlesh" cx="45%" cy="40%" r="65%">
+              <stop offset="0%" stop-color="#FFF9C4"/>
+              <stop offset="50%" stop-color="#DCEDC8"/>
+              <stop offset="90%" stop-color="#C5E1A5"/>
+              <stop offset="100%" stop-color="#A5D6A7"/>
+            </radialGradient>
+            <radialGradient id="seedGrad" cx="35%" cy="35%" r="65%">
+              <stop offset="0%" stop-color="#A1887F"/>
+              <stop offset="60%" stop-color="#6D4C41"/>
+              <stop offset="100%" stop-color="#3E2723"/>
+            </radialGradient>
+            <filter id="shadow" x="-10%" y="-10%" width="130%" height="130%">
+              <feDropShadow dx="0" dy="6" stdDeviation="4" flood-opacity="0.15"/>
+            </filter>
+          </defs>
+          <path d="M100 35 C95 20 85 18 80 20 C85 28 92 30 100 35 Z" fill="#66BB6A"/>
+          <path d="M100 35 C108 22 120 22 122 25 C118 32 108 34 100 35 Z" fill="#81C784"/>
+          <path d="M100 35 C80 35 62 60 62 90 C62 105 50 120 50 142 C50 168 72 186 100 186 C128 186 150 168 150 142 C150 120 138 105 138 90 C138 60 120 35 100 35 Z" fill="url(#avoSkin)" filter="url(#shadow)"/>
+          <path d="M100 44 C84 44 70 66 70 92 C70 106 59 120 59 140 C59 162 77 178 100 178 C123 178 141 162 141 140 C141 120 130 106 130 92 C130 66 116 44 100 44 Z" fill="url(#avoFlesh)"/>
+          <circle cx="100" cy="132" r="32" fill="url(#seedGrad)"/>
+          <ellipse cx="90" cy="120" rx="9" ry="5" transform="rotate(-30 90 120)" fill="#ffffff" opacity="0.3"/>
+          <circle cx="85" cy="85" r="6" fill="#212121"/>
+          <circle cx="83" cy="83" r="2.2" fill="#ffffff"/>
+          <circle cx="115" cy="85" r="6" fill="#212121"/>
+          <circle cx="113" cy="83" r="2.2" fill="#ffffff"/>
+          <circle cx="76" cy="94" r="6" fill="#FF8A80" opacity="0.65"/>
+          <circle cx="124" cy="94" r="6" fill="#FF8A80" opacity="0.65"/>
+          <path d="M94 92 Q100 100 106 92" stroke="#2E7D32" stroke-width="3" stroke-linecap="round" fill="none"/>
+        </svg>

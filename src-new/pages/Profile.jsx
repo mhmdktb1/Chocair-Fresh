@@ -12,6 +12,12 @@ import {
 import Navbar from '../components/layout/Navbar';
 import LocationPicker from '../components/common/LocationPicker';
 import api, { getStoredUser, clearAuthData, saveAuthData, getAssetUrl } from '../utils/api';
+import { 
+  getUserAvatarUrl, 
+  isMascotAvatar, 
+  MASCOTS, 
+  getDeterministicMascotKey 
+} from '../utils/mascotAvatars';
 import { useAuth } from '../context/AuthContext';
 import { useCart } from '../context/CartContext';
 import { useFavorites } from '../context/FavoritesContext';
@@ -381,6 +387,32 @@ const Profile = () => {
     }, 100);
   };
 
+  const handleSelectMascot = async (mascotKey) => {
+    try {
+      setLoading(true);
+      setShowAvatarModal(false);
+      
+      const response = await api.put('/users/profile', {
+        name: user.name,
+        location: user.location,
+        mascot: mascotKey,
+        avatar: '', // Clear custom photo to use selected mascot
+        addresses: user.addresses || []
+      });
+      
+      const updatedUser = response.data;
+      setUser(updatedUser);
+      setFormData(updatedUser);
+      saveAuthData(localStorage.getItem('token'), updatedUser);
+      if (updateUser) updateUser(updatedUser);
+      toast.success('Mascot updated!');
+    } catch (err) {
+      toast.error('Failed to update mascot');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   // Saved Addresses Management
   const handleOpenAddAddress = () => {
     setAddressForm({
@@ -512,8 +544,9 @@ const Profile = () => {
     return null;
   }
 
-  const avatarUrl = user.avatar || formData.avatar;
-  const fullAvatarUrl = avatarUrl ? getAssetUrl(avatarUrl) : '';
+  const currentUserData = { ...user, ...formData };
+  const avatarDisplayUrl = getUserAvatarUrl(currentUserData);
+  const isMascot = isMascotAvatar(currentUserData);
 
   // Order Progress Stage Helper
   const getOrderProgressStep = (status) => {
@@ -1246,15 +1279,13 @@ const Profile = () => {
               <div 
                 className="hero-avatar" 
                 onClick={() => setShowAvatarModal(true)}
-                title="Change Photo"
+                title="Change Avatar"
               >
-                {fullAvatarUrl ? (
-                  <img src={fullAvatarUrl} alt={user.name} className="avatar-img" />
-                ) : (
-                  <div className="avatar-letter">
-                    {user.name ? user.name.charAt(0).toUpperCase() : <User size={32} />}
-                  </div>
-                )}
+                <img 
+                  src={avatarDisplayUrl} 
+                  alt={user.name || 'User Avatar'} 
+                  className={`avatar-img ${isMascot ? 'mascot-avatar-img' : ''}`} 
+                />
                 <div className="avatar-camera-overlay">
                   <Camera size={13} />
                 </div>
@@ -1482,16 +1513,42 @@ const Profile = () => {
       </div>
 
       {/* ==========================================
-          MODAL: CHANGE AVATAR PHOTO
+          MODAL: CHANGE AVATAR PHOTO / MASCOT
           ========================================== */}
       {showAvatarModal && (
         <div className="modal-overlay" onClick={() => setShowAvatarModal(false)}>
-          <div className="modal-content-card" onClick={(e) => e.stopPropagation()}>
+          <div className="modal-content-card avatar-modal-card" onClick={(e) => e.stopPropagation()}>
             <div className="modal-top-bar">
-              <h3 className="modal-title">Change Profile Photo</h3>
+              <h3 className="modal-title">Choose Your Avatar</h3>
               <button type="button" className="modal-x-btn" onClick={() => setShowAvatarModal(false)}>
                 <X size={17} />
               </button>
+            </div>
+
+            <div className="mascot-selection-section">
+              <label className="mascot-section-label">Fresh Fruit & Veggie Mascots</label>
+              <div className="mascot-grid">
+                {MASCOTS.map((m) => {
+                  const currentMascotKey = user.mascot || getDeterministicMascotKey(user._id || user.phone || user.name);
+                  const isSelected = (!user.avatar || isMascot) && currentMascotKey === m.key;
+                  return (
+                    <button
+                      key={m.key}
+                      type="button"
+                      className={`mascot-grid-item ${isSelected ? 'selected' : ''}`}
+                      onClick={() => handleSelectMascot(m.key)}
+                      title={m.name}
+                    >
+                      <img src={m.image} alt={m.name} className="mascot-thumb" />
+                      <span className="mascot-thumb-name">{m.name}</span>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            <div className="avatar-modal-divider">
+              <span>or use your custom photo</span>
             </div>
 
             <div className="avatar-options-stack">

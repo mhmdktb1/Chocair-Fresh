@@ -113,6 +113,13 @@
   height: 100%;
   border-radius: 50%;
   object-fit: cover;
+  transition: transform 0.2s ease;
+}
+
+.avatar-img.mascot-avatar-img {
+  object-fit: contain;
+  padding: 6px;
+  background: radial-gradient(circle, #ffffff 40%, #f0fdf4 100%);
 }
 
 .avatar-letter {
@@ -1899,6 +1906,108 @@
 .modal-x-btn:hover {
   background: var(--cf-slate-200);
   color: var(--cf-dark-900);
+}
+
+.avatar-modal-card {
+  max-width: 520px;
+  max-height: 90vh;
+  overflow-y: auto;
+}
+
+.mascot-selection-section {
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+  margin-bottom: 1.1rem;
+}
+
+.mascot-section-label {
+  font-size: 0.82rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--cf-slate-600);
+}
+
+.mascot-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 0.65rem;
+}
+
+@media (max-width: 480px) {
+  .mascot-grid {
+    grid-template-columns: repeat(3, 1fr);
+    gap: 0.5rem;
+  }
+}
+
+.mascot-grid-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.65rem 0.4rem;
+  border-radius: 12px;
+  border: 1.5px solid var(--cf-slate-200);
+  background: #ffffff;
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.mascot-grid-item:hover {
+  border-color: #22c55e;
+  background: #f0fdf4;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(34, 197, 94, 0.15);
+}
+
+.mascot-grid-item.selected {
+  border-color: var(--cf-green-600);
+  background: #dcfce7;
+  box-shadow: 0 0 0 2px var(--cf-green-600);
+}
+
+.mascot-thumb {
+  width: 52px;
+  height: 52px;
+  object-fit: contain;
+  transition: transform 0.2s ease;
+}
+
+.mascot-grid-item:hover .mascot-thumb {
+  transform: scale(1.08);
+}
+
+.mascot-thumb-name {
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: var(--cf-dark-800);
+  text-align: center;
+  line-height: 1.2;
+}
+
+.avatar-modal-divider {
+  display: flex;
+  align-items: center;
+  text-align: center;
+  margin: 0.75rem 0 1rem 0;
+  color: var(--cf-slate-400);
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.avatar-modal-divider::before,
+.avatar-modal-divider::after {
+  content: '';
+  flex: 1;
+  border-bottom: 1px solid var(--cf-slate-200);
+}
+
+.avatar-modal-divider span {
+  padding: 0 0.75rem;
 }
 
 .avatar-options-stack {

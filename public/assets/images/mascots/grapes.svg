@@ -1,0 +1,37 @@
+<svg viewBox="0 0 200 200" width="200" height="200" xmlns="http://www.w3.org/2000/svg">
+          <defs>
+            <radialGradient id="grapeGrad" cx="35%" cy="30%" r="65%">
+              <stop offset="0%" stop-color="#9575CD"/>
+              <stop offset="65%" stop-color="#5E35B1"/>
+              <stop offset="100%" stop-color="#311B92"/>
+            </radialGradient>
+            <filter id="shadow" x="-10%" y="-10%" width="130%" height="130%">
+              <feDropShadow dx="0" dy="6" stdDeviation="4" flood-opacity="0.15"/>
+            </filter>
+          </defs>
+          <path d="M100 48 C96 32 105 20 112 16 C110 24 104 34 102 48 Z" fill="#6D4C41"/>
+          <path d="M102 42 C120 30 140 38 138 50 C125 54 110 50 102 42 Z" fill="#66BB6A"/>
+          <path d="M88 38 Q80 32 82 24 Q86 20 90 26" stroke="#4CAF50" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+          <g filter="url(#shadow)">
+            <circle cx="100" cy="165" r="18" fill="url(#grapeGrad)"/>
+            <circle cx="82" cy="140" r="21" fill="url(#grapeGrad)"/>
+            <circle cx="118" cy="140" r="21" fill="url(#grapeGrad)"/>
+            <circle cx="65" cy="105" r="23" fill="url(#grapeGrad)"/>
+            <circle cx="135" cy="105" r="23" fill="url(#grapeGrad)"/>
+            <circle cx="75" cy="72" r="22" fill="url(#grapeGrad)"/>
+            <circle cx="125" cy="72" r="22" fill="url(#grapeGrad)"/>
+            <circle cx="100" cy="105" r="28" fill="url(#grapeGrad)"/>
+          </g>
+          <circle cx="92" cy="95" r="4" fill="#ffffff" opacity="0.35"/>
+          <circle cx="68" cy="64" r="3.5" fill="#ffffff" opacity="0.35"/>
+          <circle cx="120" cy="64" r="3.5" fill="#ffffff" opacity="0.35"/>
+          <circle cx="89" cy="106" r="5.5" fill="#ffffff"/>
+          <circle cx="89" cy="106" r="4" fill="#212121"/>
+          <circle cx="87" cy="104" r="1.6" fill="#ffffff"/>
+          <circle cx="111" cy="106" r="5.5" fill="#ffffff"/>
+          <circle cx="111" cy="106" r="4" fill="#212121"/>
+          <circle cx="109" cy="104" r="1.6" fill="#ffffff"/>
+          <circle cx="80" cy="114" r="4.5" fill="#FF80AB" opacity="0.8"/>
+          <circle cx="120" cy="114" r="4.5" fill="#FF80AB" opacity="0.8"/>
+          <path d="M95 115 Q100 122 105 115" stroke="#ffffff" stroke-width="2.5" stroke-linecap="round" fill="none"/>
+        </svg>

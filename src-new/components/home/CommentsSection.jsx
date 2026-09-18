@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Trash2, User, MoreHorizontal, Star } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import api from '../../utils/api';
+import { getUserAvatarUrl, isMascotAvatar } from '../../utils/mascotAvatars';
 import './CommentsSection.css';
 import { toast } from 'react-toastify';
 
@@ -76,13 +77,11 @@ const CommentItem = ({ comment, onReply, onDelete, currentUser, activeReplyId, s
   return (
     <div className="comment-item">
       <div className="comment-avatar">
-        {comment.user.avatar ? (
-          <img src={comment.user.avatar} alt={comment.user.name} />
-        ) : (
-          <div className="avatar-placeholder">
-            <User size={16} />
-          </div>
-        )}
+        <img 
+          src={getUserAvatarUrl(comment.user)} 
+          alt={comment.user?.name || 'User'} 
+          className={isMascotAvatar(comment.user) ? 'mascot-avatar-thumb' : ''}
+        />
       </div>
       
       <div className="comment-content-wrapper">
@@ -289,7 +288,11 @@ const CommentsSection = () => {
             <div className={`compact-review-form ${isFocused ? 'focused' : ''}`}>
               <div className="review-input-row">
                 <div className="user-avatar-small">
-                  {user.avatar ? <img src={user.avatar} alt="" /> : <User size={16} />}
+                  <img 
+                    src={getUserAvatarUrl(user)} 
+                    alt={user.name || 'User'} 
+                    className={isMascotAvatar(user) ? 'mascot-avatar-thumb' : ''}
+                  />
                 </div>
                 <div className="input-wrapper">
                   {isFocused && (

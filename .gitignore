@@ -22,6 +22,9 @@ backend-clean/.env
 backend-clean/.env.*
 !backend-clean/.env.example
 
+backend-clean/uploads/*
+!backend-clean/uploads/.gitkeep
+
 # Unrelated nested projects
 sports-court-app/
 

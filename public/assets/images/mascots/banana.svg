@@ -1,0 +1,25 @@
+<svg viewBox="0 0 200 200" width="200" height="200" xmlns="http://www.w3.org/2000/svg">
+          <defs>
+            <linearGradient id="bananaGrad" x1="20%" y1="0%" x2="80%" y2="100%">
+              <stop offset="0%" stop-color="#FFEE58"/>
+              <stop offset="50%" stop-color="#FDD835"/>
+              <stop offset="100%" stop-color="#FBC02D"/>
+            </linearGradient>
+            <filter id="shadow" x="-10%" y="-10%" width="130%" height="130%">
+              <feDropShadow dx="0" dy="6" stdDeviation="4" flood-opacity="0.15"/>
+            </filter>
+          </defs>
+          <path d="M145 32 C125 30 110 40 92 65 C70 95 60 135 78 168 C90 188 115 188 135 178 C115 168 95 140 98 105 C100 78 122 55 145 42 Z" fill="url(#bananaGrad)" filter="url(#shadow)"/>
+          <path d="M142 35 C118 48 98 78 98 110 C98 140 114 165 130 175" stroke="#F57F17" stroke-width="2.5" stroke-linecap="round" opacity="0.4" fill="none"/>
+          <path d="M145 32 L155 22 C152 20 148 20 142 24 L142 34 Z" fill="#8D6E63"/>
+          <path d="M145 32 L150 25" stroke="#689F38" stroke-width="4" stroke-linecap="round"/>
+          <path d="M78 168 L70 178 C73 182 78 182 84 178 L80 170 Z" fill="#5D4037"/>
+          <path d="M130 48 C112 65 96 95 96 122" stroke="#ffffff" stroke-width="3.5" stroke-linecap="round" opacity="0.5" fill="none"/>
+          <circle cx="95" cy="105" r="6.5" fill="#212121"/>
+          <circle cx="93" cy="102" r="2.4" fill="#ffffff"/>
+          <circle cx="120" cy="100" r="6.5" fill="#212121"/>
+          <circle cx="118" cy="97" r="2.4" fill="#ffffff"/>
+          <circle cx="86" cy="115" r="5.5" fill="#FF80AB" opacity="0.75"/>
+          <circle cx="128" cy="108" r="5.5" fill="#FF80AB" opacity="0.75"/>
+          <path d="M102 112 Q110 122 118 110" stroke="#BF360C" stroke-width="3" stroke-linecap="round" fill="none"/>
+        </svg>

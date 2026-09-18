@@ -1,5 +1,6 @@
 import { useState, useMemo } from "react";
 import { useAdmin } from "../../context/AdminContext";
+import { getUserAvatarUrl } from "../../utils/mascotAvatars";
 import { 
   Search, 
   Trash2, 
@@ -121,7 +122,7 @@ function AdminUsers() {
               <div key={user.id} className="admin-user-card">
                 <div className="user-card-top">
                   <div className="user-avatar-circle" style={isAdmin ? { background: 'linear-gradient(135deg, #c2410c, #ea580c)' } : {}}>
-                    {user.name?.charAt(0)?.toUpperCase() || 'U'}
+                    <img src={getUserAvatarUrl(user)} alt={user.name || 'User'} />
                   </div>
                   <div className="user-card-header-info">
                     <h3 className="user-card-name">{user.name || 'Anonymous User'}</h3>

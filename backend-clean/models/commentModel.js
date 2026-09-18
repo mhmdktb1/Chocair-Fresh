@@ -35,7 +35,7 @@ const commentSchema = mongoose.Schema({
 commentSchema.pre(/^find/, function(next) {
   this.populate({
     path: 'user',
-    select: 'name avatar'
+    select: 'name avatar mascot'
   });
   next();
 });

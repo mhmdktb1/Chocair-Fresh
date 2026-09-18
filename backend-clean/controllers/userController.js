@@ -6,6 +6,7 @@ import User from '../models/userModel.js';
 import OTP from '../models/otpModel.js';
 import generateToken from '../utils/generateToken.js';
 import { sendWhatsAppOtp } from '../utils/whatsappService.js';
+import { getRandomMascot, getDeterministicMascot } from '../utils/mascotAvatars.js';
 
 // ==========================================
 // GENERATE OTP CODE
@@ -43,6 +44,8 @@ const sendOTP = asyncHandler(async (req, res) => {
           email: adminUser.email,
           phone: adminUser.phone,
           isAdmin: adminUser.isAdmin,
+          avatar: adminUser.avatar,
+          mascot: adminUser.mascot || getRandomMascot(),
         }
       });
     }
@@ -86,14 +89,10 @@ const sendOTP = asyncHandler(async (req, res) => {
     message: 'OTP sent successfully',
   };
 
-  // FOR TESTING: Expose OTP in response so it autofills in testing mode
-  responsePayload.otp = code;
-  /*
-  // In strict production, OTP is NEVER returned in the API response:
-  if (process.env.NODE_ENV === 'development' || process.env.NODE_ENV === 'test') {
+  // Only expose OTP in non-production environments for testing/dev
+  if (process.env.NODE_ENV !== 'production') {
     responsePayload.otp = code;
   }
-  */
 
   res.status(200).json(responsePayload);
 });
@@ -111,8 +110,6 @@ const verifyOTP = asyncHandler(async (req, res) => {
     throw new Error('Phone number and OTP code are required');
   }
 
-  // TEMPORARILY DISABLED FOR TESTING: Allow OTP verification to pass for any code
-  /*
   // Find OTP record
   const otpRecord = await OTP.findOne({
     phone,
@@ -129,7 +126,6 @@ const verifyOTP = asyncHandler(async (req, res) => {
   // Mark OTP as verified
   otpRecord.verified = true;
   await otpRecord.save();
-  */
 
   // Check if user exists
   let user = await User.findOne({ phone });
@@ -138,20 +134,13 @@ const verifyOTP = asyncHandler(async (req, res) => {
   // If user not found with normalized phone, try searching without prefix
   if (!user && phone.startsWith('+961')) {
     const localPhone = phone.replace('+961', '');
-    // Try exact match with local number (e.g. "70123456")
-    // Or with leading zero if it was an 03 number (e.g. "03123456" -> "3123456" in normalized, but maybe "03123456" in DB?)
-    // Actually, normalized 03 is +9613xxxxxx. Local is 3xxxxxx.
-    // DB might have 03xxxxxx.
-    
-    // Search for both local variants
     user = await User.findOne({ 
       $or: [
-        { phone: localPhone }, // e.g. "70123456"
-        { phone: `0${localPhone}` } // e.g. "070123456" (unlikely) or "03xxxxxx"
+        { phone: localPhone },
+        { phone: `0${localPhone}` }
       ]
     });
 
-    // If found, update their phone number to the new normalized format
     if (user) {
       console.log(`Migrating user ${user._id} phone from ${user.phone} to ${phone}`);
       user.phone = phone;
@@ -160,6 +149,10 @@ const verifyOTP = asyncHandler(async (req, res) => {
   }
 
   if (user) {
+    if (!user.mascot) {
+      user.mascot = getRandomMascot();
+      await user.save();
+    }
     // Existing user - return user data (they're now logged in)
     res.status(200).json({
       success: true,
@@ -170,6 +163,8 @@ const verifyOTP = asyncHandler(async (req, res) => {
         name: user.name,
         phone: user.phone,
         email: user.email,
+        avatar: user.avatar,
+        mascot: user.mascot,
         age: user.age,
         gender: user.gender,
         isAdmin: user.isAdmin,
@@ -205,7 +200,7 @@ const registerUser = asyncHandler(async (req, res) => {
     throw new Error('User already exists with this phone number');
   }
 
-  // Create user
+  // Create user with a random mascot
   const user = await User.create({
     phone,
     name,
@@ -213,6 +208,7 @@ const registerUser = asyncHandler(async (req, res) => {
     age: age || undefined,
     gender: gender || undefined,
     location: location || undefined,
+    mascot: getRandomMascot(),
   });
 
   res.status(201).json({
@@ -224,6 +220,8 @@ const registerUser = asyncHandler(async (req, res) => {
       phone: user.phone,
       email: user.email,
       location: user.location,
+      avatar: user.avatar,
+      mascot: user.mascot,
       age: user.age,
       gender: user.gender,
       isAdmin: user.isAdmin,
@@ -240,6 +238,10 @@ const getUserProfile = asyncHandler(async (req, res) => {
   const user = await User.findById(req.user._id);
 
   if (user) {
+    if (!user.mascot) {
+      user.mascot = getRandomMascot();
+      await user.save();
+    }
     res.json({
       _id: user._id,
       name: user.name,
@@ -247,6 +249,7 @@ const getUserProfile = asyncHandler(async (req, res) => {
       email: user.email,
       location: user.location,
       avatar: user.avatar,
+      mascot: user.mascot,
       age: user.age,
       gender: user.gender,
       isAdmin: user.isAdmin,
@@ -272,7 +275,9 @@ const updateUserProfile = asyncHandler(async (req, res) => {
     user.age = req.body.age || user.age;
     user.gender = req.body.gender || user.gender;
     user.location = req.body.location || user.location;
-    user.avatar = req.body.avatar || user.avatar;
+    if (req.body.avatar !== undefined) user.avatar = req.body.avatar;
+    if (req.body.mascot !== undefined) user.mascot = req.body.mascot;
+    if (!user.mascot) user.mascot = getRandomMascot();
 
     if (req.body.addresses) {
       user.addresses = req.body.addresses;
@@ -287,6 +292,7 @@ const updateUserProfile = asyncHandler(async (req, res) => {
       email: updatedUser.email,
       location: updatedUser.location,
       avatar: updatedUser.avatar,
+      mascot: updatedUser.mascot,
       age: updatedUser.age,
       gender: updatedUser.gender,
       isAdmin: updatedUser.isAdmin,
@@ -346,6 +352,7 @@ const updateUserPhone = asyncHandler(async (req, res) => {
 
   // Update user phone
   user.phone = phone;
+  if (!user.mascot) user.mascot = getRandomMascot();
   const updatedUser = await user.save();
 
   res.json({
@@ -357,6 +364,7 @@ const updateUserPhone = asyncHandler(async (req, res) => {
       email: updatedUser.email,
       location: updatedUser.location,
       avatar: updatedUser.avatar,
+      mascot: updatedUser.mascot,
       age: updatedUser.age,
       gender: updatedUser.gender,
       isAdmin: updatedUser.isAdmin,
@@ -387,6 +395,8 @@ const getUsers = asyncHandler(async (req, res) => {
         phone: 1,
         isAdmin: 1,
         location: 1,
+        avatar: 1,
+        mascot: 1,
         createdAt: 1,
         orderCount: { $size: '$ordersData' },
         totalSpent: { $sum: '$ordersData.totalPrice' },
@@ -584,7 +594,11 @@ const googleAuth = asyncHandler(async (req, res) => {
       email: verifiedEmail ? verifiedEmail.toLowerCase() : undefined,
       googleId: verifiedGoogleId,
       avatar: verifiedAvatar,
+      mascot: getRandomMascot(),
     });
+  } else if (!user.mascot) {
+    user.mascot = getRandomMascot();
+    await user.save();
   }
 
   res.status(200).json({
@@ -596,6 +610,7 @@ const googleAuth = asyncHandler(async (req, res) => {
       phone: user.phone,
       email: user.email,
       avatar: user.avatar,
+      mascot: user.mascot,
       location: user.location,
       age: user.age,
       gender: user.gender,

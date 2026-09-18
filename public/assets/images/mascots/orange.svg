@@ -1,0 +1,34 @@
+<svg viewBox="0 0 200 200" width="200" height="200" xmlns="http://www.w3.org/2000/svg">
+          <defs>
+            <radialGradient id="orangeGrad" cx="35%" cy="35%" r="65%">
+              <stop offset="0%" stop-color="#FFB74D"/>
+              <stop offset="60%" stop-color="#FB8C00"/>
+              <stop offset="100%" stop-color="#E65100"/>
+            </radialGradient>
+            <linearGradient id="orgLeaf" x1="0%" y1="0%" x2="100%" y2="100%">
+              <stop offset="0%" stop-color="#81C784"/>
+              <stop offset="100%" stop-color="#2E7D32"/>
+            </linearGradient>
+            <filter id="shadow" x="-10%" y="-10%" width="130%" height="130%">
+              <feDropShadow dx="0" dy="6" stdDeviation="4" flood-opacity="0.15"/>
+            </filter>
+          </defs>
+          <path d="M100 48 L100 32" stroke="#5D4037" stroke-width="4.5" stroke-linecap="round"/>
+          <path d="M100 42 C118 26 142 32 145 45 C130 52 112 48 100 42 Z" fill="url(#orgLeaf)"/>
+          <path d="M102 43 Q122 42 138 45" stroke="#1B5E20" stroke-width="2" fill="none" stroke-linecap="round"/>
+          <circle cx="100" cy="116" r="62" fill="url(#orangeGrad)" filter="url(#shadow)"/>
+          <circle cx="138" cy="85" r="1.5" fill="#BF360C" opacity="0.4"/>
+          <circle cx="145" cy="120" r="1.5" fill="#BF360C" opacity="0.4"/>
+          <circle cx="65" cy="150" r="1.5" fill="#BF360C" opacity="0.4"/>
+          <ellipse cx="68" cy="85" rx="14" ry="22" transform="rotate(-30 68 85)" fill="#ffffff" opacity="0.35"/>
+          <circle cx="78" cy="112" r="7.5" fill="#212121"/>
+          <circle cx="76" cy="109" r="2.8" fill="#ffffff"/>
+          <circle cx="81" cy="114" r="1.2" fill="#ffffff"/>
+          <circle cx="122" cy="112" r="7.5" fill="#212121"/>
+          <circle cx="120" cy="109" r="2.8" fill="#ffffff"/>
+          <circle cx="125" cy="114" r="1.2" fill="#ffffff"/>
+          <circle cx="67" cy="124" r="7" fill="#FF5252" opacity="0.75"/>
+          <circle cx="133" cy="124" r="7" fill="#FF5252" opacity="0.75"/>
+          <path d="M90 122 Q100 138 110 122 Z" fill="#BF360C"/>
+          <path d="M94 128 Q100 135 106 128" fill="#FF8A80"/>
+        </svg>

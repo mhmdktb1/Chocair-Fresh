@@ -1,5 +1,6 @@
 import mongoose from 'mongoose';
 import bcrypt from 'bcryptjs';
+import { getRandomMascot, MASCOT_KEYS } from '../utils/mascotAvatars.js';
 
 const userSchema = new mongoose.Schema(
   {
@@ -44,9 +45,15 @@ const userSchema = new mongoose.Schema(
       unique: true,
       sparse: true,
     },
-    // Profile picture (optional)
+    // Profile picture (optional custom URL)
     avatar: {
       type: String,
+    },
+    // Mascot avatar key (e.g., 'apple', 'avocado', 'carrot', etc.)
+    mascot: {
+      type: String,
+      enum: MASCOT_KEYS,
+      default: getRandomMascot,
     },
     // Saved addresses for faster checkout
     addresses: [
@@ -64,6 +71,14 @@ const userSchema = new mongoose.Schema(
     timestamps: true,
   }
 );
+
+// Pre-save hook: ensure user has a mascot assigned
+userSchema.pre('save', function (next) {
+  if (!this.mascot) {
+    this.mascot = getRandomMascot();
+  }
+  next();
+});
 
 // Instance method to check if user has completed profile
 userSchema.methods.isProfileComplete = function () {

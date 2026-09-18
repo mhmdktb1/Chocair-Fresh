@@ -1,0 +1,30 @@
+<svg viewBox="0 0 200 200" width="200" height="200" xmlns="http://www.w3.org/2000/svg">
+          <defs>
+            <radialGradient id="eggGrad" cx="35%" cy="35%" r="65%">
+              <stop offset="0%" stop-color="#9C27B0"/>
+              <stop offset="60%" stop-color="#6A1B9A"/>
+              <stop offset="100%" stop-color="#311B92"/>
+            </radialGradient>
+            <linearGradient id="calyxGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+              <stop offset="0%" stop-color="#81C784"/>
+              <stop offset="100%" stop-color="#2E7D32"/>
+            </linearGradient>
+            <filter id="shadow" x="-10%" y="-10%" width="130%" height="130%">
+              <feDropShadow dx="0" dy="6" stdDeviation="4" flood-opacity="0.15"/>
+            </filter>
+          </defs>
+          <path d="M100 45 C98 30 102 18 108 14 C112 18 106 32 103 45 Z" fill="#5D4037"/>
+          <path d="M100 50 C80 50 72 75 70 105 C66 142 75 182 100 182 C125 182 138 145 135 105 C132 75 120 50 100 50 Z" fill="url(#eggGrad)" filter="url(#shadow)"/>
+          <path d="M100 42 C92 48 80 52 68 62 C78 68 88 64 92 68 C96 74 100 82 100 82 C100 82 104 74 108 68 C112 64 122 68 132 62 C120 52 108 48 100 42 Z" fill="url(#calyxGrad)"/>
+          <ellipse cx="80" cy="110" rx="9" ry="26" transform="rotate(-15 80 110)" fill="#ffffff" opacity="0.3"/>
+          <circle cx="76" cy="145" r="4.5" fill="#ffffff" opacity="0.2"/>
+          <circle cx="88" cy="122" r="6" fill="#ffffff"/>
+          <circle cx="88" cy="122" r="4.5" fill="#212121"/>
+          <circle cx="86" cy="120" r="1.8" fill="#ffffff"/>
+          <circle cx="114" cy="122" r="6" fill="#ffffff"/>
+          <circle cx="114" cy="122" r="4.5" fill="#212121"/>
+          <circle cx="112" cy="120" r="1.8" fill="#ffffff"/>
+          <circle cx="78" cy="130" r="6" fill="#EA80FC" opacity="0.7"/>
+          <circle cx="124" cy="130" r="6" fill="#EA80FC" opacity="0.7"/>
+          <path d="M95 132 Q101 140 107 132" stroke="#ffffff" stroke-width="3" stroke-linecap="round" fill="none"/>
+        </svg>

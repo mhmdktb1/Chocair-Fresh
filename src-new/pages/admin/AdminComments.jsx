@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Trash2, Search, MessageSquare, X } from 'lucide-react';
 import api from '../../utils/api';
+import { getUserAvatarUrl, isMascotAvatar } from '../../utils/mascotAvatars';
 import { toast } from 'react-toastify';
 import './AdminComments.css';
 import './AdminComponents.css';
@@ -88,11 +89,11 @@ const AdminComments = () => {
               <div className="comment-card-top">
                 <div className="user-cell">
                   <div className="user-avatar-small">
-                    {comment.user?.avatar ? (
-                      <img src={comment.user.avatar} alt={comment.user.name} />
-                    ) : (
-                      <span>{comment.user?.name?.charAt(0)?.toUpperCase() || '?'}</span>
-                    )}
+                    <img 
+                      src={getUserAvatarUrl(comment.user)} 
+                      alt={comment.user?.name || 'User'} 
+                      className={isMascotAvatar(comment.user) ? 'mascot-avatar-thumb' : ''}
+                    />
                   </div>
                   <div>
                     <span className="comment-user-name">{comment.user?.name || 'Deleted User'}</span>

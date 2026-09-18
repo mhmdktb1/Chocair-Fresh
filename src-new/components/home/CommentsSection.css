@@ -121,6 +121,13 @@
   object-fit: cover;
 }
 
+.user-avatar-small img.mascot-avatar-thumb,
+.comment-avatar img.mascot-avatar-thumb {
+  object-fit: contain;
+  padding: 2px;
+  background: #ffffff;
+}
+
 .input-wrapper {
   flex-grow: 1;
 }

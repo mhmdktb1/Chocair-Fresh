@@ -1,0 +1,42 @@
+<svg viewBox="0 0 200 200" width="200" height="200" xmlns="http://www.w3.org/2000/svg">
+          <defs>
+            <radialGradient id="floretDark" cx="40%" cy="30%" r="70%">
+              <stop offset="0%" stop-color="#4CAF50"/>
+              <stop offset="70%" stop-color="#2E7D32"/>
+              <stop offset="100%" stop-color="#1B5E20"/>
+            </radialGradient>
+            <radialGradient id="floretLight" cx="35%" cy="30%" r="70%">
+              <stop offset="0%" stop-color="#81C784"/>
+              <stop offset="70%" stop-color="#43A047"/>
+              <stop offset="100%" stop-color="#2E7D32"/>
+            </radialGradient>
+            <linearGradient id="stalkGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+              <stop offset="0%" stop-color="#A5D6A7"/>
+              <stop offset="50%" stop-color="#C8E6C9"/>
+              <stop offset="100%" stop-color="#81C784"/>
+            </linearGradient>
+            <filter id="shadow" x="-10%" y="-10%" width="130%" height="130%">
+              <feDropShadow dx="0" dy="6" stdDeviation="4" flood-opacity="0.15"/>
+            </filter>
+          </defs>
+          <path d="M80 110 C80 145 74 165 74 180 C74 186 85 188 100 188 C115 188 126 186 126 180 C126 165 120 145 120 110 Z" fill="url(#stalkGrad)" filter="url(#shadow)"/>
+          <g filter="url(#shadow)">
+            <circle cx="65" cy="85" r="32" fill="url(#floretDark)"/>
+            <circle cx="135" cy="85" r="32" fill="url(#floretDark)"/>
+            <circle cx="100" cy="60" r="38" fill="url(#floretLight)"/>
+            <circle cx="62" cy="62" r="24" fill="url(#floretLight)"/>
+            <circle cx="138" cy="62" r="24" fill="url(#floretLight)"/>
+            <circle cx="100" cy="92" r="28" fill="url(#floretDark)"/>
+          </g>
+          <circle cx="90" cy="50" r="4" fill="#A5D6A7" opacity="0.6"/>
+          <circle cx="112" cy="52" r="5" fill="#A5D6A7" opacity="0.6"/>
+          <circle cx="60" cy="78" r="4" fill="#81C784" opacity="0.6"/>
+          <circle cx="140" cy="78" r="4" fill="#81C784" opacity="0.6"/>
+          <circle cx="88" cy="142" r="5.5" fill="#212121"/>
+          <circle cx="86" cy="140" r="2" fill="#ffffff"/>
+          <circle cx="112" cy="142" r="5.5" fill="#212121"/>
+          <circle cx="110" cy="140" r="2" fill="#ffffff"/>
+          <circle cx="78" cy="149" r="5.5" fill="#FF8A80" opacity="0.75"/>
+          <circle cx="122" cy="149" r="5.5" fill="#FF8A80" opacity="0.75"/>
+          <path d="M92 150 Q100 162 108 150" stroke="#1B5E20" stroke-width="3" stroke-linecap="round" fill="none"/>
+        </svg>

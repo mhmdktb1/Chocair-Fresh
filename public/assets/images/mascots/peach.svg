@@ -1,0 +1,32 @@
+<svg viewBox="0 0 200 200" width="200" height="200" xmlns="http://www.w3.org/2000/svg">
+          <defs>
+            <radialGradient id="peachGrad" cx="35%" cy="30%" r="70%">
+              <stop offset="0%" stop-color="#FFE082"/>
+              <stop offset="35%" stop-color="#FFAB91"/>
+              <stop offset="70%" stop-color="#FF7043"/>
+              <stop offset="100%" stop-color="#E64A19"/>
+            </radialGradient>
+            <linearGradient id="peachLeaf" x1="0%" y1="0%" x2="100%" y2="100%">
+              <stop offset="0%" stop-color="#81C784"/>
+              <stop offset="100%" stop-color="#388E3C"/>
+            </linearGradient>
+            <filter id="shadow" x="-10%" y="-10%" width="130%" height="130%">
+              <feDropShadow dx="0" dy="6" stdDeviation="4" flood-opacity="0.15"/>
+            </filter>
+          </defs>
+          <path d="M100 50 L100 34" stroke="#5D4037" stroke-width="4" stroke-linecap="round"/>
+          <path d="M100 44 C82 30 65 35 60 44 C72 52 90 48 100 44 Z" fill="url(#peachLeaf)"/>
+          <path d="M100 44 C118 30 138 35 142 44 C130 52 110 48 100 44 Z" fill="url(#peachLeaf)"/>
+          <path d="M100 54 C72 54 44 75 44 114 C44 150 72 178 98 182 C100 182 102 182 102 182 C128 178 156 150 156 114 C156 75 128 54 100 54 Z" fill="url(#peachGrad)" filter="url(#shadow)"/>
+          <path d="M100 54 Q100 85 104 115" stroke="#D84315" stroke-width="2.5" stroke-linecap="round" opacity="0.35" fill="none"/>
+          <ellipse cx="70" cy="90" rx="14" ry="22" transform="rotate(-25 70 90)" fill="#ffffff" opacity="0.35"/>
+          <circle cx="78" cy="116" r="7" fill="#212121"/>
+          <circle cx="76" cy="113" r="2.6" fill="#ffffff"/>
+          <circle cx="80" cy="118" r="1.1" fill="#ffffff"/>
+          <circle cx="122" cy="116" r="7" fill="#212121"/>
+          <circle cx="120" cy="113" r="2.6" fill="#ffffff"/>
+          <circle cx="124" cy="118" r="1.1" fill="#ffffff"/>
+          <circle cx="67" cy="126" r="7.5" fill="#FF5252" opacity="0.75"/>
+          <circle cx="133" cy="126" r="7.5" fill="#FF5252" opacity="0.75"/>
+          <path d="M92 126 Q100 136 108 126" stroke="#BF360C" stroke-width="3" stroke-linecap="round" fill="none"/>
+        </svg>

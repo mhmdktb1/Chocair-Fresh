@@ -409,6 +409,49 @@ describe('User and Auth API', () => {
     expect(res.body.message).toMatch(/already in use/i);
   });
 
+  it('MASCOT AVATAR SYSTEM: automatically assigns mascot key on registration and profile fetch', async () => {
+    const validMascots = [
+      'apple', 'avocado', 'banana', 'broccoli', 'carrot',
+      'eggplant', 'grapes', 'lemon', 'orange', 'peach',
+      'strawberry', 'watermelon'
+    ];
+
+    // 1. New user registration receives mascot
+    const regRes = await request(app)
+      .post('/api/users/auth/register')
+      .send({
+        phone: '+96170999111',
+        name: 'Mascot Test User',
+        email: 'mascot@example.com'
+      });
+
+    expect(regRes.status).toBe(201);
+    expect(regRes.body.user.mascot).toBeDefined();
+    expect(validMascots).toContain(regRes.body.user.mascot);
+
+    const testToken = regRes.body.token;
+
+    // 2. User can update mascot
+    const updateRes = await request(app)
+      .put('/api/users/profile')
+      .set('Authorization', `Bearer ${testToken}`)
+      .send({
+        name: 'Mascot Test User',
+        mascot: 'strawberry'
+      });
+
+    expect(updateRes.status).toBe(200);
+    expect(updateRes.body.mascot).toBe('strawberry');
+
+    // 3. GET profile returns updated mascot
+    const getRes = await request(app)
+      .get('/api/users/profile')
+      .set('Authorization', `Bearer ${testToken}`);
+
+    expect(getRes.status).toBe(200);
+    expect(getRes.body.mascot).toBe('strawberry');
+  });
+
   it('ADMIN ACCESS CONTROL: non-admin cannot delete users, admin cannot delete admin', async () => {
     // Non-admin attempts to delete user
     const nonAdminDel = await request(app)

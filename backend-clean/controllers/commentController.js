@@ -10,7 +10,7 @@ const getComments = asyncHandler(async (req, res) => {
       path: 'replies',
       populate: {
         path: 'user',
-        select: 'name avatar'
+        select: 'name avatar mascot'
       }
     })
     .sort({ createdAt: -1 });
@@ -23,7 +23,7 @@ const getComments = asyncHandler(async (req, res) => {
 // @access  Private/Admin
 const getAllComments = asyncHandler(async (req, res) => {
   const comments = await Comment.find({})
-    .populate('user', 'name email avatar')
+    .populate('user', 'name email avatar mascot')
     .sort({ createdAt: -1 });
   res.json(comments);
 });
