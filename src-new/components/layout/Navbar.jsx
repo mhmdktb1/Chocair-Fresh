@@ -11,9 +11,6 @@ import {
   Info, 
   Package, 
   ChevronRight, 
-  Globe, 
-  Moon, 
-  Sun,
   Flame,
   CheckCircle,
   CornerDownLeft
@@ -58,7 +55,7 @@ const Navbar = () => {
   const searchInputRef = useRef(null);
   const { cartCount } = useCart();
   const { user, logout } = useAuth();
-  const { language, toggleLanguage, theme, toggleTheme, isDark } = useTheme();
+  const { language } = useTheme();
   const t = translations[language] || translations.en;
   const navigate = useNavigate();
 
@@ -305,29 +302,8 @@ const Navbar = () => {
             </span>
           </div>
 
-          {/* Right Action Icons (Language, Theme, Cart & Account) */}
+          {/* Right Action Icons (Cart & Account) */}
           <div className="nav-actions">
-            {/* Quick Language Toggle */}
-            <button 
-              type="button" 
-              className="icon-btn desktop-only lang-toggle-pill"
-              onClick={toggleLanguage}
-              title={language === 'en' ? 'Switch to Arabic' : 'Switch to English'}
-            >
-              <Globe size={15} />
-              <span>{language === 'en' ? 'عربي' : 'EN'}</span>
-            </button>
-
-            {/* Quick Dark/Light Mode Toggle */}
-            <button 
-              type="button" 
-              className="icon-btn desktop-only theme-toggle-btn"
-              onClick={toggleTheme}
-              title={isDark ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
-            >
-              {isDark ? <Sun size={18} /> : <Moon size={18} />}
-            </button>
-
             {user ? (
               <Link to="/profile" className="icon-btn desktop-only" title="My Account">
                 <User size={22} fill="#2e7d32" color="#2e7d32" />

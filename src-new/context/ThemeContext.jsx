@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useEffect } from 'react';
 
 const ThemeContext = createContext();
 
@@ -11,81 +11,43 @@ export const useTheme = () => {
 };
 
 export const ThemeProvider = ({ children }) => {
-  const [theme, setTheme] = useState(() => {
-    try {
-      const savedTheme = localStorage.getItem('cf_theme');
-      if (savedTheme === 'dark' || savedTheme === 'light') return savedTheme;
-      if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
-        return 'dark';
-      }
-      return 'light';
-    } catch {
-      return 'light';
-    }
-  });
-
-  const [language, setLanguage] = useState(() => {
-    try {
-      const savedLang = localStorage.getItem('cf_lang');
-      return savedLang === 'ar' ? 'ar' : 'en';
-    } catch {
-      return 'en';
-    }
-  });
+  // Theme locked to Light Mode & Language locked to English for now
+  const theme = 'light';
+  const language = 'en';
 
   useEffect(() => {
     try {
-      localStorage.setItem('cf_theme', theme);
+      localStorage.setItem('cf_theme', 'light');
+      localStorage.setItem('cf_lang', 'en');
     } catch (e) {
-      console.error(e);
+      // ignore
     }
 
     const root = document.documentElement;
-    if (theme === 'dark') {
-      root.setAttribute('data-theme', 'dark');
-      root.classList.add('dark-theme');
-    } else {
-      root.setAttribute('data-theme', 'light');
-      root.classList.remove('dark-theme');
-    }
-  }, [theme]);
+    root.setAttribute('data-theme', 'light');
+    root.classList.remove('dark-theme');
 
-  useEffect(() => {
-    try {
-      localStorage.setItem('cf_lang', language);
-    } catch (e) {
-      console.error(e);
-    }
+    root.setAttribute('lang', 'en');
+    root.setAttribute('dir', 'ltr');
+    root.classList.remove('rtl-mode');
+  }, []);
 
-    const root = document.documentElement;
-    root.setAttribute('lang', language);
-    root.setAttribute('dir', language === 'ar' ? 'rtl' : 'ltr');
-    if (language === 'ar') {
-      root.classList.add('rtl-mode');
-    } else {
-      root.classList.remove('rtl-mode');
-    }
-  }, [language]);
-
-  const toggleTheme = () => {
-    setTheme(prev => (prev === 'dark' ? 'light' : 'dark'));
-  };
-
-  const toggleLanguage = () => {
-    setLanguage(prev => (prev === 'ar' ? 'en' : 'ar'));
-  };
+  const toggleTheme = () => {};
+  const toggleLanguage = () => {};
+  const setTheme = () => {};
+  const setLanguage = () => {};
 
   return (
     <ThemeContext.Provider
       value={{
-        theme,
+        theme: 'light',
         setTheme,
         toggleTheme,
-        isDark: theme === 'dark',
-        language,
+        isDark: false,
+        language: 'en',
         setLanguage,
         toggleLanguage,
-        isRTL: language === 'ar'
+        isRTL: false
       }}
     >
       {children}

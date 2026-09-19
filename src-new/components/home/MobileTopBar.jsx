@@ -1,13 +1,13 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { MapPin, Search, ChevronDown, Clock, Sparkles, Tag, ShieldCheck, Globe, Moon, Sun } from 'lucide-react';
+import { MapPin, Search, ChevronDown, Clock, Sparkles } from 'lucide-react';
 import { useTheme } from '../../context/ThemeContext';
 import { translations } from '../../utils/translations';
 import './MobileTopBar.css';
 
 const MobileTopBar = () => {
   const navigate = useNavigate();
-  const { language, toggleLanguage, theme, toggleTheme, isDark } = useTheme();
+  const { language } = useTheme();
   const t = translations[language] || translations.en;
   const [searchValue, setSearchValue] = useState('');
 
@@ -26,7 +26,7 @@ const MobileTopBar = () => {
 
   return (
     <div className="mobile-top-bar-wrapper">
-      {/* Location, Speed & Quick Lang/Theme Strip */}
+      {/* Location & Speed Strip */}
       <div className="mobile-location-strip">
         <div className="location-info">
           <div className="location-pin-box">
@@ -45,25 +45,6 @@ const MobileTopBar = () => {
         </div>
 
         <div className="mobile-top-actions-group">
-          <button 
-            type="button" 
-            className="mobile-lang-pill-btn"
-            onClick={toggleLanguage}
-            title={language === 'en' ? 'Switch to Arabic' : 'Switch to English'}
-          >
-            <Globe size={11} />
-            <span>{language === 'en' ? 'عربي' : 'EN'}</span>
-          </button>
-
-          <button 
-            type="button" 
-            className="mobile-theme-pill-btn"
-            onClick={toggleTheme}
-            title={isDark ? 'Light mode' : 'Dark mode'}
-          >
-            {isDark ? <Sun size={12} /> : <Moon size={12} />}
-          </button>
-
           <div className="mobile-top-badge" onClick={() => navigate('/shop?discount=true')}>
             <Sparkles size={12} />
             <span>{t.offers}</span>

@@ -6,7 +6,7 @@ import {
   AlertCircle, Phone, Camera, Upload, Plus, ShieldCheck, Truck, 
   ArrowLeft, ArrowRight, CheckCircle, RefreshCw, Copy, Check, 
   MessageSquare, Home, Briefcase, Trash2, Heart, ExternalLink, 
-  CheckCircle2, MapPinned, Globe, Moon, Sun, ShoppingCart, 
+  CheckCircle2, MapPinned, ShoppingCart, 
   Eye, CreditCard, ChevronRight, Clock
 } from 'lucide-react';
 import Navbar from '../components/layout/Navbar';
@@ -45,7 +45,7 @@ const Profile = () => {
   const { user: authUser, updateUser, logout: authLogout, isAdmin } = useAuth();
   const { addToCart, setIsCartOpen } = useCart();
   const { favorites, favoritesCount, toggleFavorite } = useFavorites();
-  const { language, setLanguage, toggleLanguage, theme, setTheme, toggleTheme, isDark } = useTheme();
+  const { language } = useTheme();
   const t = translations[language] || translations.en;
 
   const cachedUser = getStoredUser() || authUser || null;
@@ -1125,7 +1125,7 @@ const Profile = () => {
   };
 
   // ==========================================
-  // SECTION: PREFERENCES (LANGUAGE & APPEARANCE ONLY)
+  // SECTION: PREFERENCES & ACCOUNT SETTINGS
   // ==========================================
   const renderSettings = () => (
     <div className="profile-section-card fade-in">
@@ -1136,60 +1136,6 @@ const Profile = () => {
       </div>
 
       <div className="settings-groups-stack">
-        {/* Language & Theme Selectors */}
-        <div className="settings-group-card">
-          {/* Language */}
-          <div className="settings-toggle-row">
-            <div className="toggle-text-col">
-              <span className="toggle-title">
-                <Globe size={14} style={{ display: 'inline', marginRight: 5 }} /> {t.languageOption}
-              </span>
-            </div>
-            <div className="segmented-choice-pill">
-              <button 
-                type="button" 
-                className={`choice-btn ${language === 'en' ? 'active' : ''}`}
-                onClick={() => setLanguage('en')}
-              >
-                English
-              </button>
-              <button 
-                type="button" 
-                className={`choice-btn ${language === 'ar' ? 'active' : ''}`}
-                onClick={() => setLanguage('ar')}
-              >
-                العربية
-              </button>
-            </div>
-          </div>
-
-          {/* Theme */}
-          <div className="settings-toggle-row">
-            <div className="toggle-text-col">
-              <span className="toggle-title">
-                {isDark ? <Moon size={14} style={{ display: 'inline', marginRight: 5 }} /> : <Sun size={14} style={{ display: 'inline', marginRight: 5 }} />}
-                {t.themeOption}
-              </span>
-            </div>
-            <div className="segmented-choice-pill">
-              <button 
-                type="button" 
-                className={`choice-btn ${theme === 'light' ? 'active' : ''}`}
-                onClick={() => setTheme('light')}
-              >
-                <Sun size={13} /> {t.lightMode}
-              </button>
-              <button 
-                type="button" 
-                className={`choice-btn ${theme === 'dark' ? 'active' : ''}`}
-                onClick={() => setTheme('dark')}
-              >
-                <Moon size={13} /> {t.darkMode}
-              </button>
-            </div>
-          </div>
-        </div>
-
         {/* Admin Shortcut if applicable */}
         {isAdmin && (
           <div className="settings-group-card admin-highlight-card">
@@ -1252,23 +1198,6 @@ const Profile = () => {
           <h1 className="profile-mobile-title">{t.profileTitle}</h1>
         </div>
         <div className="profile-header-actions">
-          <button 
-            type="button" 
-            className="profile-mobile-lang-btn"
-            onClick={toggleLanguage}
-            title={language === 'en' ? 'عربي' : 'EN'}
-          >
-            <Globe size={13} />
-            <span>{language === 'en' ? 'عربي' : 'EN'}</span>
-          </button>
-          <button 
-            type="button" 
-            className="profile-mobile-theme-btn"
-            onClick={toggleTheme}
-            title={isDark ? 'Light' : 'Dark'}
-          >
-            {isDark ? <Sun size={14} /> : <Moon size={14} />}
-          </button>
           <button 
             type="button" 
             className="profile-mobile-logout-icon-btn"
