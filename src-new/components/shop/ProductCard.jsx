@@ -67,7 +67,7 @@ const ProductCard = ({ product }) => {
                 }}
                 aria-label="Decrease quantity"
               >
-                <Minus size={12} />
+                <Minus size={12} strokeWidth={2.5} />
               </button>
               <span className="card-stepper-qty">{cartItem.quantity}</span>
               <button 
@@ -80,7 +80,7 @@ const ProductCard = ({ product }) => {
                 }}
                 aria-label="Increase quantity"
               >
-                <Plus size={12} />
+                <Plus size={12} strokeWidth={2.5} />
               </button>
             </div>
           ) : (
@@ -95,7 +95,7 @@ const ProductCard = ({ product }) => {
               title="Add to Cart"
               aria-label={`Add ${product.name} to cart`}
             >
-              <Plus size={16} />
+              <Plus size={16} strokeWidth={2.8} />
             </button>
           )}
         </div>
