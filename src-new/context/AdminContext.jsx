@@ -14,9 +14,23 @@ export const useAdmin = () => {
 
 export const AdminProvider = ({ children }) => {
   const { isAdmin } = useAuth();
-  const [products, setProducts] = useState([]);
+  const [products, setProducts] = useState(() => {
+    try {
+      const cached = localStorage.getItem('cf_cached_products');
+      return cached ? JSON.parse(cached) : [];
+    } catch {
+      return [];
+    }
+  });
   const [orders, setOrders] = useState([]);
-  const [categories, setCategories] = useState([]);
+  const [categories, setCategories] = useState(() => {
+    try {
+      const cached = localStorage.getItem('cf_cached_categories');
+      return cached ? JSON.parse(cached) : [];
+    } catch {
+      return [];
+    }
+  });
   const [heroSlides, setHeroSlides] = useState([]);
   const [users, setUsers] = useState([]); 
   const [loading, setLoading] = useState(false);
@@ -64,9 +78,16 @@ export const AdminProvider = ({ children }) => {
 
   const fetchProducts = async () => {
     try {
-      setLoading(true);
+      const hasCached = products && products.length > 0;
+      if (!hasCached) setLoading(true);
       const response = await api.get("/products");
-      setProducts(response.data.map(mapProduct));
+      const mapped = response.data.map(mapProduct);
+      setProducts(mapped);
+      try {
+        localStorage.setItem('cf_cached_products', JSON.stringify(mapped));
+      } catch (e) {
+        // ignore quota
+      }
     } catch (e) {
       console.error("Failed to load products", e);
       setError("Failed to load products");
@@ -88,6 +109,11 @@ export const AdminProvider = ({ children }) => {
     try {
       const response = await api.get("/categories");
       setCategories(response.data);
+      try {
+        localStorage.setItem('cf_cached_categories', JSON.stringify(response.data));
+      } catch (e) {
+        // ignore quota
+      }
     } catch (e) {
       console.error("Failed to load categories", e);
     }

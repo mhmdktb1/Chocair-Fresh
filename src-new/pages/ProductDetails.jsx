@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { 
   Minus, 
   Plus, 
@@ -12,6 +12,7 @@ import {
 import Navbar from '../components/layout/Navbar';
 import { useCart } from '../context/CartContext';
 import { useFavorites } from '../context/FavoritesContext';
+import { useAdmin } from '../context/AdminContext';
 import { useCategories } from '../hooks/useCategories';
 import api from '../utils/api';
 import Button from '../components/common/Button';
@@ -26,12 +27,15 @@ const FALLBACK_IMAGE = 'https://images.unsplash.com/photo-1542838132-92c53300491
 const ProductDetails = () => {
   const { id } = useParams();
   const navigate = useNavigate();
+  const location = useLocation();
+  const { products: allProducts } = useAdmin();
   const { cartItems, addToCart, updateQuantity } = useCart();
   const { isFavorite: checkIsFavorite, toggleFavorite } = useFavorites();
   const { categories } = useCategories();
   
-  const [product, setProduct] = useState(null);
-  const [loading, setLoading] = useState(true);
+  const initialProduct = location.state?.product || allProducts?.find(p => (p._id || p.id) === id) || null;
+  const [product, setProduct] = useState(initialProduct);
+  const [loading, setLoading] = useState(!initialProduct);
   const [error, setError] = useState(null);
   const [quantity, setQuantity] = useState(1);
   const [isScaleOpen, setIsScaleOpen] = useState(false);
@@ -54,7 +58,7 @@ const ProductDetails = () => {
   useEffect(() => {
     const fetchProduct = async () => {
       try {
-        setLoading(true);
+        if (!product) setLoading(true);
         setImageError(false);
         const response = await api.get(`/products/${id}`);
         const data = response.data;
@@ -81,7 +85,7 @@ const ProductDetails = () => {
         }
       } catch (err) {
         console.error(err);
-        setError('Failed to load product details');
+        if (!product) setError('Failed to load product details');
       } finally {
         setLoading(false);
       }

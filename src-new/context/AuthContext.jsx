@@ -21,7 +21,7 @@ export const AuthProvider = ({ children }) => {
       return null;
     }
   });
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     // Check for stored user on mount
@@ -49,15 +49,11 @@ export const AuthProvider = ({ children }) => {
             // Keep user session active on network timeouts or server cold starts
             console.warn('Backend profile verification unavailable; preserving stored session:', err?.message || err);
           }
-        })
-        .finally(() => {
-          setLoading(false);
         });
     } else {
       // If either is missing, ensure we start clean
       clearAuthData();
       setUser(null);
-      setLoading(false);
     }
   }, []);
 

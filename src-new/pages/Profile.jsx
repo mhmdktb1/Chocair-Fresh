@@ -48,7 +48,8 @@ const Profile = () => {
   const { language, setLanguage, toggleLanguage, theme, setTheme, toggleTheme, isDark } = useTheme();
   const t = translations[language] || translations.en;
 
-  const [user, setUser] = useState(null);
+  const cachedUser = getStoredUser() || authUser || null;
+  const [user, setUser] = useState(cachedUser);
   const [openSections, setOpenSections] = useState({
     profile: false,
     orders: true,
@@ -59,9 +60,9 @@ const Profile = () => {
   const [orders, setOrders] = useState([]);
   const [allProducts, setAllProducts] = useState([]);
   const [loading, setLoading] = useState(false);
-  const [initialLoading, setInitialLoading] = useState(true);
+  const [initialLoading, setInitialLoading] = useState(!cachedUser);
   const [isEditing, setIsEditing] = useState(false);
-  const [formData, setFormData] = useState({});
+  const [formData, setFormData] = useState(cachedUser || {});
   const [expandedOrder, setExpandedOrder] = useState(null);
   const [copiedId, setCopiedId] = useState(null);
 

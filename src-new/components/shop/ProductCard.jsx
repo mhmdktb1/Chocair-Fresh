@@ -41,13 +41,13 @@ const ProductCard = ({ product }) => {
           <Heart size={18} fill={isFav ? '#e74c3c' : 'none'} color={isFav ? '#e74c3c' : 'currentColor'} />
         </button>
 
-        <Link to={`/product/${product._id}`}>
+        <Link to={`/product/${product._id}`} state={{ product }}>
           <img src={product.image} alt={product.name} className="product-image" loading="lazy" />
         </Link>
         
         {/* Overlay Actions */}
         <div className="product-actions-overlay">
-          <Link to={`/product/${product._id}`} className="action-btn quick-view" title="Quick View">
+          <Link to={`/product/${product._id}`} state={{ product }} className="action-btn quick-view" title="Quick View">
             <Eye size={18} />
           </Link>
           
@@ -109,7 +109,7 @@ const ProductCard = ({ product }) => {
           <span className="review-count">({reviews})</span>
         </div>
         
-        <Link to={`/product/${product._id}`} style={{ textDecoration: 'none' }}>
+        <Link to={`/product/${product._id}`} state={{ product }} style={{ textDecoration: 'none' }}>
           <h3 className="product-name">{product.name}</h3>
         </Link>
         

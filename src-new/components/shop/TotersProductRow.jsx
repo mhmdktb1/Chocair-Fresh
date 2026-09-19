@@ -121,7 +121,7 @@ const TotersProductRow = ({ title, type, productId = null, category = null, limi
                 key={item._id} 
                 className="toters-item-card"
                 onClick={() => {
-                  navigate(`/product/${item._id}`);
+                  navigate(`/product/${item._id}`, { state: { product: item } });
                   window.scrollTo({ top: 0, behavior: 'smooth' });
                 }}
               >
