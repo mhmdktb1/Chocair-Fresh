@@ -17,7 +17,7 @@ import {
   refreshRecommendations,
   getRecommendationStatus
 } from '../controllers/recommendationController.js';
-import { protect, admin } from '../../middleware/authMiddleware.js';
+import { protect, admin, optionalProtect } from '../../middleware/authMiddleware.js';
 
 const router = express.Router();
 
@@ -36,8 +36,8 @@ router.get('/new', getNewArrivals);
 // Get top rated products
 router.get('/top-rated', getTopRated);
 
-// Get personalized recommendations (Just For You)
-router.get('/personalized', protect, getPersonalized);
+// Get personalized recommendations (Just For You / For You - authenticated or guest)
+router.get('/personalized', optionalProtect, getPersonalized);
 
 // Refresh knowledge maps (Admin only)
 router.post('/refresh', protect, admin, refreshRecommendations);

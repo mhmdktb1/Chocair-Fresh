@@ -5,7 +5,7 @@ import ProductCard from './ProductCard';
 import api from '../../utils/api';
 import './RecommendationRow.css';
 
-const RecommendationRow = ({ title, type, productId = null, limit = 8, cartItems = [], items = [] }) => {
+const RecommendationRow = ({ title, subtitle = null, type, productId = null, limit = 8, cartItems = [], items = [] }) => {
   const navigate = useNavigate();
   const [products, setProducts] = useState(items || []);
   const [loading, setLoading] = useState(true);
@@ -51,7 +51,8 @@ const RecommendationRow = ({ title, type, productId = null, limit = 8, cartItems
           case 'top-rated': // Top Rated
             response = await api.get(`/recommend/top-rated?limit=${limit}&t=${t}`);
             break;
-          case 'personalized': // Just For You
+          case 'personalized': // Just For You / For You
+          case 'for-you':
             response = await api.get(`/recommend/personalized?limit=${limit}&t=${t}`);
             break;
           case 'related': // Frequently Bought Together
@@ -83,7 +84,7 @@ const RecommendationRow = ({ title, type, productId = null, limit = 8, cartItems
         }
 
         // Fallback: If ML recommendations return 0 items (cold start), fetch general catalog products
-        if (loadedItems.length === 0 && (type === 'popular' || type === 'new' || type === 'personalized')) {
+        if (loadedItems.length === 0 && (type === 'popular' || type === 'new' || type === 'personalized' || type === 'for-you')) {
           const fallbackRes = await api.get(`/products?limit=${limit}`);
           const fallbackData = Array.isArray(fallbackRes.data) ? fallbackRes.data : fallbackRes.data?.products || [];
           loadedItems = fallbackData.map(p => ({ ...p, _id: p._id || p.id })).slice(0, limit);
@@ -198,12 +199,13 @@ const RecommendationRow = ({ title, type, productId = null, limit = 8, cartItems
                   name: product.name,
                   category: product.category,
                   price: product.price,
-                  unit: product.unit,
-                  rating: 5,
-                  reviews: 0,
+                  unit: product.unit || 'kg',
+                  rating: product.rating !== undefined ? product.rating : 5,
+                  reviews: product.numReviews !== undefined ? product.numReviews : (product.reviews || 0),
                   image: product.image,
-                  isNew: false,
-                  discount: 0
+                  countInStock: product.countInStock !== undefined ? product.countInStock : 99,
+                  isNew: product.isNew || false,
+                  discount: product.discount || 0
                 }} 
               />
             </div>

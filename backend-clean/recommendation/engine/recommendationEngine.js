@@ -36,8 +36,25 @@ let productCategories = null;
 async function loadKnowledge() {
   try {
     const dataDir = path.join(__dirname, '../data');
-    // Path to ML artifacts
-    const mlDir = path.join(__dirname, '../../../../recommendation_ml');
+
+    // Path to ML artifacts (support multiple directory structures)
+    const possibleMlDirs = [
+      path.join(__dirname, '../../../recommendation_ml'),
+      path.join(__dirname, '../../../../recommendation_ml'),
+      path.join(process.cwd(), 'recommendation_ml'),
+      path.join(process.cwd(), '../recommendation_ml')
+    ];
+
+    let mlDir = possibleMlDirs[0];
+    for (const dir of possibleMlDirs) {
+      try {
+        await fs.access(dir);
+        mlDir = dir;
+        break;
+      } catch {
+        // Continue searching
+      }
+    }
 
     const associationsPath = path.join(dataDir, 'product-associations.json');
     const popularityPath = path.join(dataDir, 'product-popularity.json');
@@ -134,8 +151,22 @@ export async function getProductRecommendations(productId, options = {}) {
   // Determine user segment boost
   let boostCategories = [];
   if (userId && userClusters && userClusters.user_clusters) {
-    const clusterId = userClusters.user_clusters[userId];
-    if (clusterId !== undefined && userClusters.cluster_definitions[clusterId]) {
+    const rawUserId = String(userId).trim();
+    const cleanPhone = rawUserId.replace(/[^0-9]/g, '');
+
+    let clusterId = userClusters.user_clusters[userId] ?? userClusters.user_clusters[rawUserId];
+
+    if (clusterId === undefined && cleanPhone) {
+      for (const [clusterKey, cId] of Object.entries(userClusters.user_clusters)) {
+        const cleanClusterKey = clusterKey.replace('.0', '').replace(/[^0-9]/g, '');
+        if (cleanClusterKey && (cleanClusterKey === cleanPhone || cleanClusterKey.endsWith(cleanPhone) || cleanPhone.endsWith(cleanClusterKey))) {
+          clusterId = cId;
+          break;
+        }
+      }
+    }
+
+    if (clusterId !== undefined && userClusters.cluster_definitions && userClusters.cluster_definitions[clusterId]) {
       boostCategories = userClusters.cluster_definitions[clusterId].boost_categories || [];
     }
   }
@@ -163,8 +194,9 @@ export async function getProductRecommendations(productId, options = {}) {
        const cat = productCategories[targetProductId];
        if (cat) {
            const isBoosted = boostCategories.some(bc => 
-               cat.toLowerCase().includes(bc.toLowerCase()) || 
-               bc.toLowerCase().includes(cat.toLowerCase())
+               String(cat).toLowerCase() === String(bc).toLowerCase() ||
+               String(cat).toLowerCase().includes(String(bc).toLowerCase()) || 
+               String(bc).toLowerCase().includes(String(cat).toLowerCase())
            );
            if (isBoosted) boost = 1.5;
        }
@@ -310,8 +342,22 @@ export async function getCartRecommendations(cartItems, options = {}) {
   // Determine user segment boost
   let boostCategories = [];
   if (userId && userClusters && userClusters.user_clusters) {
-    const clusterId = userClusters.user_clusters[userId];
-    if (clusterId !== undefined && userClusters.cluster_definitions[clusterId]) {
+    const rawUserId = String(userId).trim();
+    const cleanPhone = rawUserId.replace(/[^0-9]/g, '');
+
+    let clusterId = userClusters.user_clusters[userId] ?? userClusters.user_clusters[rawUserId];
+
+    if (clusterId === undefined && cleanPhone) {
+      for (const [clusterKey, cId] of Object.entries(userClusters.user_clusters)) {
+        const cleanClusterKey = clusterKey.replace('.0', '').replace(/[^0-9]/g, '');
+        if (cleanClusterKey && (cleanClusterKey === cleanPhone || cleanClusterKey.endsWith(cleanPhone) || cleanPhone.endsWith(cleanClusterKey))) {
+          clusterId = cId;
+          break;
+        }
+      }
+    }
+
+    if (clusterId !== undefined && userClusters.cluster_definitions && userClusters.cluster_definitions[clusterId]) {
       boostCategories = userClusters.cluster_definitions[clusterId].boost_categories || [];
     }
   }
@@ -363,8 +409,9 @@ export async function getCartRecommendations(cartItems, options = {}) {
        const cat = productCategories[productId];
        if (cat) {
            const isBoosted = boostCategories.some(bc => 
-               cat.toLowerCase().includes(bc.toLowerCase()) || 
-               bc.toLowerCase().includes(cat.toLowerCase())
+               String(cat).toLowerCase() === String(bc).toLowerCase() ||
+               String(cat).toLowerCase().includes(String(bc).toLowerCase()) || 
+               String(bc).toLowerCase().includes(String(cat).toLowerCase())
            );
            if (isBoosted) totalScore *= 1.5;
        }

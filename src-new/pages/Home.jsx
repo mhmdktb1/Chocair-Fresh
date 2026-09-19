@@ -167,12 +167,12 @@ const Home = () => {
         <PromoBanners data={activeHomeConfig.promos} />
       )}
 
-      {/* 4. Recommendation Rows: Trending by ML Engine & Seasonal by Admin */}
+      {/* 4. Recommendation Rows: For You by ML Engine & Seasonal by Admin */}
       <div className="container home-recommendations-container">
-        {/* 1. Trending by Backend Engine */}
+        {/* 1. Personalized Recommendations (For You) by Backend Engine */}
         <RecommendationRow 
-          title="Trending Right Now" 
-          type="popular" 
+          title="For You" 
+          type="personalized" 
           limit={8}
         />
 

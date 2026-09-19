@@ -369,62 +369,194 @@ export const getTopRated = asyncHandler(async (req, res) => {
 });
 
 /**
- * @desc    Get personalized recommendations (Just For You)
+ * @desc    Get personalized recommendations (Just For You / For You)
  * @route   GET /api/recommend/personalized
- * @access  Private
+ * @access  Public (Optional auth for tailored user profile & order history)
  */
 export const getPersonalized = asyncHandler(async (req, res) => {
-  const { limit = 10 } = req.query;
-  const userId = req.user._id; // Assumes auth middleware adds user to req
+  const { limit = 8 } = req.query;
+  const user = req.user;
 
-  // 1. Get user's last 5 orders
-  const orders = await Order.find({ user: userId })
-    .sort({ createdAt: -1 })
-    .limit(5)
-    .populate('orderItems.product');
+  // 1. If user is logged in, extract their past purchase history and category preferences
+  if (user) {
+    const userId = user._id;
+    const userPhone = user.phone;
 
-  // 2. Extract product IDs from orders
-  const purchasedProductIds = new Set();
-  orders.forEach(order => {
-    order.orderItems.forEach(item => {
-      if (item.product) purchasedProductIds.add(item.product.toString());
+    const orderConditions = [{ user: userId }];
+    if (userPhone) {
+      orderConditions.push({ 'customerInfo.phone': userPhone });
+    }
+
+    const orders = await Order.find({ $or: orderConditions })
+      .sort({ createdAt: -1 })
+      .limit(10)
+      .populate('orderItems.product');
+
+    const purchasedProductIds = new Set();
+    const categoryFrequency = {};
+
+    orders.forEach((order) => {
+      const items = order.orderItems || order.items || [];
+      items.forEach((item) => {
+        if (item.product) {
+          const pId = item.product._id ? item.product._id.toString() : item.product.toString();
+          purchasedProductIds.add(pId);
+          const cat = item.product.category;
+          if (cat) {
+            categoryFrequency[cat] = (categoryFrequency[cat] || 0) + (item.qty || item.quantity || 1);
+          }
+        }
+      });
     });
+
+    // If user has past purchases, compute recommendation engine candidates
+    if (purchasedProductIds.size > 0) {
+      const candidateMap = new Map();
+
+      for (const productId of purchasedProductIds) {
+        try {
+          const recs = await getProductRecommendations(productId, {
+            limit: 6,
+            excludeIds: Array.from(purchasedProductIds),
+            userId: userPhone || userId.toString(),
+          });
+
+          recs.forEach((rec) => {
+            const pId = String(rec.productId);
+            if (purchasedProductIds.has(pId)) return;
+
+            const existing = candidateMap.get(pId);
+            if (existing) {
+              existing.score += rec.score;
+              existing.associationCount = (existing.associationCount || 0) + (rec.associationCount || 0);
+            } else {
+              candidateMap.set(pId, {
+                productId: pId,
+                score: rec.score,
+                associationCount: rec.associationCount || 0,
+                popularity: rec.popularity || 0,
+              });
+            }
+          });
+        } catch (err) {
+          // Continue if any single product association lookup fails
+        }
+      }
+
+      // Identify top categories user likes
+      const favoriteCategories = Object.entries(categoryFrequency)
+        .sort((a, b) => b[1] - a[1])
+        .map(([cat]) => cat);
+
+      let candidates = Array.from(candidateMap.values());
+
+      // If we need more items to fill the limit, find top-rated products from favorite categories
+      if (candidates.length < Number(limit) && favoriteCategories.length > 0) {
+        const excludedIds = [...Array.from(purchasedProductIds), ...candidates.map((c) => c.productId)];
+        const categoryFillers = await Product.find({
+          category: { $in: favoriteCategories },
+          _id: { $nin: excludedIds },
+          countInStock: { $gt: 0 },
+        })
+          .sort({ rating: -1, numReviews: -1 })
+          .limit(Number(limit) - candidates.length);
+
+        categoryFillers.forEach((doc) => {
+          candidates.push({
+            productId: doc._id.toString(),
+            score: (doc.rating || 4.5) * 5,
+            associationCount: 0,
+            popularity: doc.numReviews || 0,
+            product: doc,
+          });
+        });
+      }
+
+      if (candidates.length > 0) {
+        candidates.sort((a, b) => b.score - a.score);
+
+        const enriched = await Promise.all(
+          candidates.slice(0, Number(limit)).map(async (rec) => {
+            if (rec.product) {
+              return {
+                product: rec.product,
+                score: rec.score,
+                associationCount: rec.associationCount || 0,
+                popularity: rec.popularity || 0,
+                isPersonalized: true,
+              };
+            }
+            const productDoc = await Product.findById(rec.productId).select(
+              'name price image category countInStock unit rating numReviews'
+            );
+            return {
+              product: productDoc,
+              score: rec.score,
+              associationCount: rec.associationCount || 0,
+              popularity: rec.popularity || 0,
+              isPersonalized: true,
+            };
+          })
+        );
+
+        const valid = enriched.filter((r) => r.product !== null);
+        if (valid.length > 0) {
+          return res.json({
+            success: true,
+            count: valid.length,
+            data: valid,
+            isPersonalized: true,
+          });
+        }
+      }
+    }
+  }
+
+  // Fallback for guests, new users, or accounts without order history:
+  // Intelligent diverse recommendations across high-rated categories
+  const topProducts = await Product.find({ countInStock: { $gt: 0 } })
+    .sort({ rating: -1, numReviews: -1, createdAt: -1 })
+    .limit(Number(limit) * 2)
+    .select('name price image category countInStock unit rating numReviews');
+
+  // Distribute evenly across distinct categories for variety
+  const categoryBuckets = {};
+  topProducts.forEach((p) => {
+    const cat = p.category || 'General';
+    if (!categoryBuckets[cat]) categoryBuckets[cat] = [];
+    categoryBuckets[cat].push(p);
   });
 
-  // 3. If no orders, return top rated as fallback (to avoid duplicating Best Sellers)
-  if (purchasedProductIds.size === 0) {
-    return getTopRated(req, res);
+  const balancedList = [];
+  const categories = Object.keys(categoryBuckets);
+  let round = 0;
+  while (balancedList.length < Number(limit) && balancedList.length < topProducts.length) {
+    let addedInRound = false;
+    for (const cat of categories) {
+      if (categoryBuckets[cat][round]) {
+        balancedList.push({
+          product: categoryBuckets[cat][round],
+          score: categoryBuckets[cat][round].rating || 5,
+          isPersonalized: false,
+        });
+        addedInRound = true;
+        if (balancedList.length >= Number(limit)) break;
+      }
+    }
+    if (!addedInRound) break;
+    round++;
   }
 
-  // 4. Get recommendations for each purchased product
-  const recommendations = new Map(); // Use map to deduplicate and sum scores
-  
-  for (const productId of purchasedProductIds) {
-    const recs = await getProductRecommendations(productId, { limit: 5 });
-    recs.forEach(rec => {
-      if (purchasedProductIds.has(rec.productId)) return; // Don't recommend what they already bought
-      
-      const currentScore = recommendations.get(rec.productId) || 0;
-      recommendations.set(rec.productId, currentScore + rec.score);
+  if (balancedList.length === 0 && topProducts.length > 0) {
+    topProducts.slice(0, Number(limit)).forEach((p) => {
+      balancedList.push({ product: p, score: p.rating || 5, isPersonalized: false });
     });
   }
-
-  // 5. Sort by score
-  const sortedRecs = Array.from(recommendations.entries())
-    .sort((a, b) => b[1] - a[1])
-    .slice(0, Number(limit));
-
-  // 6. Fetch full product details
-  const enrichedRecs = await Promise.all(
-    sortedRecs.map(async ([productId, score]) => {
-      const product = await Product.findById(productId).select('name price image category countInStock unit rating numReviews');
-      return { product, score };
-    })
-  );
 
   res.json({
     success: true,
-    count: enrichedRecs.length,
-    data: enrichedRecs.filter(r => r.product)
+    count: balancedList.length,
+    data: balancedList,
+    isPersonalized: false,
   });
 });

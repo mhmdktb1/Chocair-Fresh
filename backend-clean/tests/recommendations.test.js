@@ -185,4 +185,53 @@ describe('Recommendation API', () => {
     expect(adminRes.status).toBe(200);
     expect(adminRes.body.success).toBe(true);
   });
+
+  // ================= PERSONALIZED ("FOR YOU") RECOMMENDATION TESTS =================
+
+  it('GET /api/recommend/personalized (guest) - returns smart diverse recommendations', async () => {
+    const res = await request(app).get('/api/recommend/personalized?limit=2');
+    expect(res.status).toBe(200);
+    expect(res.body.success).toBe(true);
+    expect(Array.isArray(res.body.data)).toBe(true);
+    expect(res.body.data.length).toBeGreaterThanOrEqual(1);
+    expect(res.body.data[0].product).toBeDefined();
+  });
+
+  it('GET /api/recommend/personalized (logged-in user with orders) - delivers personalized recommendations', async () => {
+    // Create an order for user
+    await Order.create({
+      user: user._id,
+      customerInfo: {
+        name: user.name,
+        phone: user.phone,
+        address: '123 Test St',
+      },
+      orderItems: [
+        {
+          name: p1.name,
+          qty: 2,
+          image: p1.image || 'test.jpg',
+          price: p1.price,
+          product: p1._id,
+        },
+      ],
+      paymentMethod: 'Cash on Delivery',
+      itemsPrice: 6.0,
+      totalPrice: 6.0,
+      status: 'Delivered',
+      isPaid: true,
+      isDelivered: true,
+    });
+
+    const res = await request(app)
+      .get('/api/recommend/personalized?limit=5')
+      .set('Authorization', `Bearer ${userToken}`);
+
+    expect(res.status).toBe(200);
+    expect(res.body.success).toBe(true);
+    expect(Array.isArray(res.body.data)).toBe(true);
+    expect(res.body.data.length).toBeGreaterThanOrEqual(1);
+    // Verified that recommendations return populated product details
+    expect(res.body.data[0].product.name).toBeDefined();
+  });
 });
