@@ -3,7 +3,7 @@ import { useNavigate, Link } from 'react-router-dom';
 import { 
   CheckCircle, CreditCard, Truck, MapPin, X, ArrowLeft, ArrowRight,
   ShieldCheck, Lock, ChevronDown, ChevronUp, ShoppingBag, Phone, User,
-  MessageSquare, AlertCircle, Copy, Check, Sparkles
+  MessageSquare, AlertCircle, Copy, Check, Sparkles, Clock, Zap, Calendar, Sun
 } from 'lucide-react';
 import { toast } from 'react-toastify';
 import { useCart } from '../context/CartContext';
@@ -44,6 +44,36 @@ const Checkout = () => {
   });
 
   const [paymentMethod, setPaymentMethod] = useState("Cash on Delivery");
+
+  // Delivery Timing Preference State
+  const [deliveryPreference, setDeliveryPreference] = useState("asap"); // 'asap' | 'anytime' | 'schedule'
+  const [scheduledDayOption, setScheduledDayOption] = useState("today"); // 'today' | 'tomorrow' | 'custom'
+  
+  const todayIso = new Date().toISOString().split('T')[0];
+  const tomorrowDateObj = new Date();
+  tomorrowDateObj.setDate(tomorrowDateObj.getDate() + 1);
+  const tomorrowIso = tomorrowDateObj.toISOString().split('T')[0];
+
+  const [scheduledDate, setScheduledDate] = useState(todayIso);
+  const [scheduledTimeSlot, setScheduledTimeSlot] = useState("Morning (09:00 AM - 12:00 PM)");
+
+  const getFormattedDeliveryPreference = () => {
+    if (deliveryPreference === 'asap') {
+      return 'ASAP (Fastest Delivery)';
+    }
+    if (deliveryPreference === 'anytime') {
+      return 'Anytime Today (Not in a hurry)';
+    }
+    if (deliveryPreference === 'schedule') {
+      const dayLabel = scheduledDayOption === 'today' 
+        ? `Today (${scheduledDate})` 
+        : scheduledDayOption === 'tomorrow' 
+          ? `Tomorrow (${scheduledDate})` 
+          : scheduledDate;
+      return `Scheduled: ${dayLabel} • ${scheduledTimeSlot}`;
+    }
+    return 'ASAP';
+  };
 
   useEffect(() => {
     if (user) {
@@ -91,6 +121,7 @@ const Checkout = () => {
 
   const createOrder = async (authToken = null) => {
     try {
+      const formattedDeliveryPref = getFormattedDeliveryPreference();
       const orderData = {
         orderItems: cartItems.map(item => ({
           name: item.name,
@@ -105,8 +136,13 @@ const Checkout = () => {
           phone: user?.phone || formData.phone,
           address: formData.address,
           googleMapsLink: formData.googleMapsLink,
-          additionalInfo: formData.additionalInfo || ''
+          additionalInfo: formData.additionalInfo || '',
+          deliveryPreference: formattedDeliveryPref,
+          deliveryType: deliveryPreference,
+          deliveryDate: deliveryPreference === 'schedule' ? scheduledDate : '',
+          deliveryTimeSlot: deliveryPreference === 'schedule' ? scheduledTimeSlot : ''
         },
+        deliveryPreference: formattedDeliveryPref,
         paymentMethod: paymentMethod,
         itemsPrice: cartTotal,
         shippingPrice: shippingCost,
@@ -312,6 +348,14 @@ const Checkout = () => {
                 <span>Delivery</span>
                 <span>{shippingCost === 0 ? <strong style={{ color: '#16a34a' }}>FREE</strong> : formatCurrency(shippingCost)}</span>
               </div>
+              <div className="calc-row">
+                <span>Timing</span>
+                <span style={{ fontWeight: 700, color: '#15803d' }}>
+                  {deliveryPreference === 'asap' && '⚡ ASAP'}
+                  {deliveryPreference === 'anytime' && '🕒 Anytime'}
+                  {deliveryPreference === 'schedule' && `📅 ${scheduledDayOption === 'today' ? 'Today' : scheduledDayOption === 'tomorrow' ? 'Tomorrow' : scheduledDate}`}
+                </span>
+              </div>
               <div className="calc-divider" />
               <div className="calc-row total">
                 <span>Total</span>
@@ -477,29 +521,160 @@ const Checkout = () => {
                 </div>
               </div>
 
-              {/* BOX 3: Additional Information / Order Notes */}
+              {/* BOX 3: Delivery Timing Preference */}
               <div className="checkout-section-box">
                 <div className="section-box-header">
-                  <div className="section-header-icon-wrap notes-icon">
-                    <MessageSquare size={18} />
+                  <div className="section-header-icon-wrap timing-icon">
+                    <Clock size={18} />
                   </div>
                   <div>
-                    <h2 className="section-box-title">Delivery Notes <span className="opt-tag">(Optional)</span></h2>
+                    <h2 className="section-box-title">Delivery Time Preference</h2>
+                    <p className="section-box-subtitle">Choose when you would like to receive your order</p>
                   </div>
                 </div>
 
                 <div className="form-card-inner">
-                  <div className="form-input-group">
-                    <textarea 
-                      id="additionalInfo"
-                      name="additionalInfo"
-                      rows={2}
-                      placeholder="e.g. Ring bell twice, leave with concierge, or call on arrival..." 
-                      value={formData.additionalInfo}
-                      onChange={handleInputChange}
-                      className="modern-textarea"
-                    />
+                  <div className="delivery-timing-grid">
+                    {/* ASAP */}
+                    <div 
+                      className={`timing-radio-card ${deliveryPreference === 'asap' ? 'selected' : ''}`}
+                      onClick={() => setDeliveryPreference('asap')}
+                    >
+                      <div className="timing-card-header">
+                        <div className="radio-indicator">
+                          <div className="radio-dot" />
+                        </div>
+                        <div className="timing-icon-badge asap">
+                          <Zap size={14} />
+                        </div>
+                        <span className="timing-pill asap-pill">Fastest</span>
+                      </div>
+                      <div className="timing-card-info">
+                        <strong className="timing-card-title">ASAP</strong>
+                        <p className="timing-card-desc">Express fresh delivery (~30–60 min)</p>
+                      </div>
+                    </div>
+
+                    {/* Anytime */}
+                    <div 
+                      className={`timing-radio-card ${deliveryPreference === 'anytime' ? 'selected' : ''}`}
+                      onClick={() => setDeliveryPreference('anytime')}
+                    >
+                      <div className="timing-card-header">
+                        <div className="radio-indicator">
+                          <div className="radio-dot" />
+                        </div>
+                        <div className="timing-icon-badge anytime">
+                          <Clock size={14} />
+                        </div>
+                        <span className="timing-pill anytime-pill">Flexible</span>
+                      </div>
+                      <div className="timing-card-info">
+                        <strong className="timing-card-title">Anytime Today</strong>
+                        <p className="timing-card-desc">Flexible delivery (not in a hurry)</p>
+                      </div>
+                    </div>
+
+                    {/* Schedule */}
+                    <div 
+                      className={`timing-radio-card ${deliveryPreference === 'schedule' ? 'selected' : ''}`}
+                      onClick={() => setDeliveryPreference('schedule')}
+                    >
+                      <div className="timing-card-header">
+                        <div className="radio-indicator">
+                          <div className="radio-dot" />
+                        </div>
+                        <div className="timing-icon-badge schedule">
+                          <Calendar size={14} />
+                        </div>
+                        <span className="timing-pill schedule-pill">Planned</span>
+                      </div>
+                      <div className="timing-card-info">
+                        <strong className="timing-card-title">Schedule Time</strong>
+                        <p className="timing-card-desc">Pick preferred date & slot</p>
+                      </div>
+                    </div>
                   </div>
+
+                  {/* Scheduled Date & Window Picker */}
+                  {deliveryPreference === 'schedule' && (
+                    <div className="schedule-picker-box">
+                      {/* Date Selection */}
+                      <div className="schedule-section">
+                        <label className="schedule-label">
+                          <Calendar size={13} /> Delivery Date
+                        </label>
+                        <div className="schedule-pills-row">
+                          <button
+                            type="button"
+                            className={`schedule-pill-btn ${scheduledDayOption === 'today' ? 'active' : ''}`}
+                            onClick={() => {
+                              setScheduledDayOption('today');
+                              setScheduledDate(todayIso);
+                            }}
+                          >
+                            Today
+                          </button>
+                          <button
+                            type="button"
+                            className={`schedule-pill-btn ${scheduledDayOption === 'tomorrow' ? 'active' : ''}`}
+                            onClick={() => {
+                              setScheduledDayOption('tomorrow');
+                              setScheduledDate(tomorrowIso);
+                            }}
+                          >
+                            Tomorrow
+                          </button>
+                          <button
+                            type="button"
+                            className={`schedule-pill-btn ${scheduledDayOption === 'custom' ? 'active' : ''}`}
+                            onClick={() => setScheduledDayOption('custom')}
+                          >
+                            Choose Date
+                          </button>
+                        </div>
+                        {scheduledDayOption === 'custom' && (
+                          <input
+                            type="date"
+                            min={todayIso}
+                            value={scheduledDate}
+                            onChange={(e) => setScheduledDate(e.target.value)}
+                            className="modern-input schedule-custom-date"
+                          />
+                        )}
+                      </div>
+
+                      {/* Time Slot Selection */}
+                      <div className="schedule-section">
+                        <label className="schedule-label">
+                          <Clock size={13} /> Preferred Time Window
+                        </label>
+                        <div className="schedule-pills-row time-slots">
+                          <button
+                            type="button"
+                            className={`schedule-pill-btn ${scheduledTimeSlot === 'Morning (09:00 AM - 12:00 PM)' ? 'active' : ''}`}
+                            onClick={() => setScheduledTimeSlot('Morning (09:00 AM - 12:00 PM)')}
+                          >
+                            🌅 Morning (9 AM - 12 PM)
+                          </button>
+                          <button
+                            type="button"
+                            className={`schedule-pill-btn ${scheduledTimeSlot === 'Afternoon (12:00 PM - 04:00 PM)' ? 'active' : ''}`}
+                            onClick={() => setScheduledTimeSlot('Afternoon (12:00 PM - 4 PM)')}
+                          >
+                            ☀️ Afternoon (12 PM - 4 PM)
+                          </button>
+                          <button
+                            type="button"
+                            className={`schedule-pill-btn ${scheduledTimeSlot === 'Evening (04:00 PM - 08:00 PM)' ? 'active' : ''}`}
+                            onClick={() => setScheduledTimeSlot('Evening (4 PM - 8 PM)')}
+                          >
+                            🌙 Evening (4 PM - 8 PM)
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  )}
                 </div>
               </div>
 
@@ -585,6 +760,33 @@ const Checkout = () => {
                 </div>
               </div>
 
+              {/* BOX 5: Delivery Notes / Special Instructions */}
+              <div className="checkout-section-box">
+                <div className="section-box-header">
+                  <div className="section-header-icon-wrap notes-icon">
+                    <MessageSquare size={18} />
+                  </div>
+                  <div>
+                    <h2 className="section-box-title">Delivery Notes <span className="opt-tag">(Optional)</span></h2>
+                    <p className="section-box-subtitle">Special instructions for the courier</p>
+                  </div>
+                </div>
+
+                <div className="form-card-inner">
+                  <div className="form-input-group">
+                    <textarea 
+                      id="additionalInfo"
+                      name="additionalInfo"
+                      rows={2}
+                      placeholder="e.g. Ring bell twice, leave with concierge, or call on arrival..." 
+                      value={formData.additionalInfo}
+                      onChange={handleInputChange}
+                      className="modern-textarea"
+                    />
+                  </div>
+                </div>
+              </div>
+
               {/* Desktop Submit Action */}
               <div className="desktop-submit-action desktop-only">
                 <Button 
@@ -642,6 +844,14 @@ const Checkout = () => {
                     ) : (
                       formatCurrency(shippingCost)
                     )}
+                  </span>
+                </div>
+                <div className="sidebar-calc-row">
+                  <span>Timing</span>
+                  <span className="calc-val" style={{ color: '#15803d', fontWeight: 700 }}>
+                    {deliveryPreference === 'asap' && '⚡ ASAP'}
+                    {deliveryPreference === 'anytime' && '🕒 Anytime (Flexible)'}
+                    {deliveryPreference === 'schedule' && `📅 ${scheduledDayOption === 'today' ? 'Today' : scheduledDayOption === 'tomorrow' ? 'Tomorrow' : scheduledDate}`}
                   </span>
                 </div>
                 

@@ -31,6 +31,14 @@ const orderSchema = mongoose.Schema(
       country: { type: String, default: 'Lebanon' },
       googleMapsLink: { type: String },
       additionalInfo: { type: String },
+      deliveryPreference: { type: String, default: 'ASAP' },
+      deliveryType: { type: String, default: 'asap' },
+      deliveryDate: { type: String },
+      deliveryTimeSlot: { type: String },
+    },
+    deliveryPreference: {
+      type: String,
+      default: 'ASAP',
     },
     paymentMethod: {
       type: String,

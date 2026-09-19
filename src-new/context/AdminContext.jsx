@@ -58,6 +58,7 @@ export const AdminProvider = ({ children }) => {
     total: o.totalPrice || o.total || 0,
     status: o.status || "Pending",
     date: o.createdAt || o.date || new Date().toISOString(),
+    deliveryPreference: o.deliveryPreference || o.customerInfo?.deliveryPreference,
     shippingAddress: o.customerInfo || o.shippingAddress
   });
 

@@ -719,6 +719,15 @@ function AdminOrders() {
                     <span>{selectedOrder.shippingAddress.address}</span>
                   </div>
                 )}
+                {(selectedOrder.deliveryPreference || selectedOrder.shippingAddress?.deliveryPreference) && (
+                  <div style={{ fontSize: '0.82rem', color: '#0f766e', background: '#f0fdfa', border: '1px solid #ccfbf1', borderRadius: '8px', padding: '0.45rem 0.65rem', marginTop: '0.5rem', display: 'flex', alignItems: 'flex-start', gap: '0.4rem' }}>
+                    <Clock size={14} color="#0d9488" style={{ flexShrink: 0, marginTop: '2px' }} />
+                    <div>
+                      <strong style={{ display: 'block', fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.3px', color: '#0f766e' }}>Delivery Preference:</strong>
+                      <span>{selectedOrder.deliveryPreference || selectedOrder.shippingAddress?.deliveryPreference}</span>
+                    </div>
+                  </div>
+                )}
                 {(selectedOrder.shippingAddress?.additionalInfo || selectedOrder.additionalInfo) && (
                   <div style={{ fontSize: '0.82rem', color: '#6b21a8', background: '#faf5ff', border: '1px solid #e9d5ff', borderRadius: '8px', padding: '0.45rem 0.65rem', marginTop: '0.5rem', display: 'flex', alignItems: 'flex-start', gap: '0.4rem' }}>
                     <MessageCircle size={14} style={{ flexShrink: 0, marginTop: '2px' }} />

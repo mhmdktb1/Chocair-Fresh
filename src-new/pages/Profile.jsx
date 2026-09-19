@@ -7,7 +7,7 @@ import {
   ArrowLeft, ArrowRight, CheckCircle, RefreshCw, Copy, Check, 
   MessageSquare, Home, Briefcase, Trash2, Heart, ExternalLink, 
   CheckCircle2, MapPinned, Globe, Moon, Sun, ShoppingCart, 
-  Eye, CreditCard, ChevronRight
+  Eye, CreditCard, ChevronRight, Clock
 } from 'lucide-react';
 import Navbar from '../components/layout/Navbar';
 import LocationPicker from '../components/common/LocationPicker';
@@ -879,6 +879,17 @@ const Profile = () => {
                           {order.paymentMethod || 'Cash on Delivery'}
                         </p>
                       </div>
+
+                      {(order.customerInfo?.deliveryPreference || order.deliveryPreference) && (
+                        <div className="meta-info-card">
+                          <div className="meta-card-title">
+                            <Clock size={13} /> Delivery Timing
+                          </div>
+                          <p className="meta-card-text" style={{ color: '#15803d', fontWeight: 600 }}>
+                            {order.customerInfo?.deliveryPreference || order.deliveryPreference}
+                          </p>
+                        </div>
+                      )}
 
                       <div className="meta-info-card total-highlight-card">
                         <div className="meta-card-title">
