@@ -218,23 +218,24 @@ const Shop = () => {
     return sections;
   }, [categoriesList, filteredProducts]);
 
-  // ScrollSpy to track active section while scrolling in "All" view with smooth centering
+  // ScrollSpy to track active section while scrolling in "All" view with calm, non-laggy centering
   useEffect(() => {
     if (selectedCategory !== 'all' || searchQuery) return;
 
     let rafId = null;
-    let lastSection = null;
+    let scrollTimeout = null;
+    let currentSection = 'all';
 
     const handleScroll = () => {
       if (rafId) return;
       rafId = requestAnimationFrame(() => {
         rafId = null;
-        const scrollPosition = window.scrollY + 200;
-        let currentSection = 'all';
+        const scrollPosition = window.scrollY + 220;
+        let detectedSection = 'all';
 
         // Check if user is near top
         if (window.scrollY < 120) {
-          currentSection = 'all';
+          detectedSection = 'all';
         } else {
           for (const section of categorizedSections) {
             const el = document.getElementById(`cat-section-${section.id}`);
@@ -242,30 +243,34 @@ const Shop = () => {
               const top = el.offsetTop;
               const height = el.offsetHeight;
               if (scrollPosition >= top && scrollPosition < top + height) {
-                currentSection = section.id;
+                detectedSection = section.id;
                 break;
               }
             }
           }
         }
 
-        setActiveSpyCategory(currentSection);
+        // Instantly update active visual indicator
+        setActiveSpyCategory(detectedSection);
 
-        // Only scroll the track if the highlighted section actually changed
-        if (currentSection !== lastSection) {
-          lastSection = currentSection;
-          const activeBtn = document.getElementById(`tab-btn-${currentSection}`);
-          if (activeBtn && categoryTrackRef.current) {
-            const track = categoryTrackRef.current;
-            const btnLeft = activeBtn.offsetLeft;
-            const btnWidth = activeBtn.offsetWidth;
-            const trackWidth = track.offsetWidth;
-            const targetScrollLeft = btnLeft - (trackWidth / 2) + (btnWidth / 2);
-            track.scrollTo({
-              left: Math.max(0, targetScrollLeft),
-              behavior: 'smooth'
-            });
-          }
+        // Calm, relaxed horizontal rail centering when user settles on a category
+        if (detectedSection !== currentSection) {
+          currentSection = detectedSection;
+          clearTimeout(scrollTimeout);
+          scrollTimeout = setTimeout(() => {
+            const activeBtn = document.getElementById(`tab-btn-${detectedSection}`);
+            if (activeBtn && categoryTrackRef.current) {
+              const track = categoryTrackRef.current;
+              const btnLeft = activeBtn.offsetLeft;
+              const btnWidth = activeBtn.offsetWidth;
+              const trackWidth = track.offsetWidth;
+              const targetScrollLeft = btnLeft - (trackWidth / 2) + (btnWidth / 2);
+              track.scrollTo({
+                left: Math.max(0, targetScrollLeft),
+                behavior: 'smooth'
+              });
+            }
+          }, 180);
         }
       });
     };
@@ -274,6 +279,7 @@ const Shop = () => {
     return () => {
       window.removeEventListener('scroll', handleScroll);
       if (rafId) cancelAnimationFrame(rafId);
+      if (scrollTimeout) clearTimeout(scrollTimeout);
     };
   }, [selectedCategory, searchQuery, categorizedSections]);
 
