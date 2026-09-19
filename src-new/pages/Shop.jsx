@@ -218,44 +218,63 @@ const Shop = () => {
     return sections;
   }, [categoriesList, filteredProducts]);
 
-  // ScrollSpy to track active section while scrolling in "All" view
+  // ScrollSpy to track active section while scrolling in "All" view with smooth centering
   useEffect(() => {
     if (selectedCategory !== 'all' || searchQuery) return;
 
-    const handleScroll = () => {
-      const scrollPosition = window.scrollY + 180;
-      let currentSection = 'all';
+    let rafId = null;
+    let lastSection = null;
 
-      for (const section of categorizedSections) {
-        const el = document.getElementById(`cat-section-${section.id}`);
-        if (el) {
-          const top = el.offsetTop;
-          const height = el.offsetHeight;
-          if (scrollPosition >= top && scrollPosition < top + height) {
-            currentSection = section.id;
-            break;
+    const handleScroll = () => {
+      if (rafId) return;
+      rafId = requestAnimationFrame(() => {
+        rafId = null;
+        const scrollPosition = window.scrollY + 200;
+        let currentSection = 'all';
+
+        // Check if user is near top
+        if (window.scrollY < 120) {
+          currentSection = 'all';
+        } else {
+          for (const section of categorizedSections) {
+            const el = document.getElementById(`cat-section-${section.id}`);
+            if (el) {
+              const top = el.offsetTop;
+              const height = el.offsetHeight;
+              if (scrollPosition >= top && scrollPosition < top + height) {
+                currentSection = section.id;
+                break;
+              }
+            }
           }
         }
-      }
 
-      setActiveSpyCategory(currentSection);
+        setActiveSpyCategory(currentSection);
 
-      // Auto scroll the category tabs rail horizontally
-      const activeBtn = document.getElementById(`tab-btn-${currentSection}`);
-      if (activeBtn && categoryTrackRef.current) {
-        const track = categoryTrackRef.current;
-        const btnLeft = activeBtn.offsetLeft;
-        const btnWidth = activeBtn.offsetWidth;
-        const trackWidth = track.offsetWidth;
-        track.scrollTo({
-          left: btnLeft - (trackWidth / 2) + (btnWidth / 2),
-          behavior: 'smooth'
-        });
-      }
+        // Only scroll the track if the highlighted section actually changed
+        if (currentSection !== lastSection) {
+          lastSection = currentSection;
+          const activeBtn = document.getElementById(`tab-btn-${currentSection}`);
+          if (activeBtn && categoryTrackRef.current) {
+            const track = categoryTrackRef.current;
+            const btnLeft = activeBtn.offsetLeft;
+            const btnWidth = activeBtn.offsetWidth;
+            const trackWidth = track.offsetWidth;
+            const targetScrollLeft = btnLeft - (trackWidth / 2) + (btnWidth / 2);
+            track.scrollTo({
+              left: Math.max(0, targetScrollLeft),
+              behavior: 'smooth'
+            });
+          }
+        }
+      });
     };
 
     window.addEventListener('scroll', handleScroll, { passive: true });
-    return () => window.removeEventListener('scroll', handleScroll);
+    return () => {
+      window.removeEventListener('scroll', handleScroll);
+      if (rafId) cancelAnimationFrame(rafId);
+    };
   }, [selectedCategory, searchQuery, categorizedSections]);
 
   const handleSearchChange = (e) => {
@@ -399,12 +418,24 @@ const Shop = () => {
         <nav className="toters-category-snap-rail" aria-label="Aisle Categories">
           <div className="toters-rail-scroll-track" ref={categoryTrackRef}>
             {categoriesList.map((cat) => {
-              const isSelected = selectedCategory === 'all'
-                ? cat.id === 'all'
-                : (selectedCategory === cat.id || 
-                   selectedCategory === cat.name || 
-                   selectedCategoryObj?.id === cat.id || 
-                   selectedCategoryObj?.name?.toLowerCase() === cat.name?.toLowerCase());
+              // Explicitly chosen/filtered category
+              const isChosen = selectedCategory !== 'all' && (
+                selectedCategory === cat.id || 
+                selectedCategory === cat.name || 
+                selectedCategoryObj?.id === cat.id || 
+                selectedCategoryObj?.name?.toLowerCase() === cat.name?.toLowerCase()
+              );
+
+              // ScrollSpy active category while browsing all aisles
+              const isBrowsingHere = selectedCategory === 'all' && !searchQuery && (
+                activeSpyCategory === cat.id || (activeSpyCategory === 'all' && cat.id === 'all')
+              );
+
+              const tabClass = isChosen 
+                ? 'is-chosen' 
+                : isBrowsingHere 
+                  ? 'is-browsing' 
+                  : '';
 
               return (
                 <button
@@ -412,7 +443,7 @@ const Shop = () => {
                   id={`tab-btn-${cat.id}`}
                   type="button"
                   onClick={() => handleCategoryTabClick(cat.id)}
-                  className={`toters-category-tab ${isSelected ? 'active' : ''}`}
+                  className={`toters-category-tab ${tabClass}`}
                 >
                   <span className="tab-emoji">{cat.emoji}</span>
                   <span className="tab-name">{cat.name}</span>
