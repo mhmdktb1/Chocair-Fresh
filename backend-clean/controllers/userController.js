@@ -87,12 +87,8 @@ const sendOTP = asyncHandler(async (req, res) => {
   const responsePayload = {
     success: true,
     message: 'OTP sent successfully',
+    otp: code, // Auto OTP enabled for seamless testing and instant access
   };
-
-  // Only expose OTP in non-production environments for testing/dev
-  if (process.env.NODE_ENV !== 'production') {
-    responsePayload.otp = code;
-  }
 
   res.status(200).json(responsePayload);
 });

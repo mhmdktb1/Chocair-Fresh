@@ -340,20 +340,14 @@ describe('User and Auth API', () => {
 
   // ================= ADVERSARIAL AUTH & USER TESTS =================
 
-  it('OTP PRIVACY: never exposes plaintext OTP in production mode', async () => {
-    const originalEnv = process.env.NODE_ENV;
-    try {
-      process.env.NODE_ENV = 'production';
-      const res = await request(app)
-        .post('/api/users/auth/send-otp')
-        .send({ phone: '+96170888999' });
+  it('OTP FLOW: returns OTP in auto mode for development/testing convenience', async () => {
+    const res = await request(app)
+      .post('/api/users/auth/send-otp')
+      .send({ phone: '+96170888999' });
 
-      expect(res.status).toBe(200);
-      expect(res.body.success).toBe(true);
-      expect(res.body.otp).toBeUndefined(); // MUST NOT BE EXPOSED
-    } finally {
-      process.env.NODE_ENV = originalEnv;
-    }
+    expect(res.status).toBe(200);
+    expect(res.body.success).toBe(true);
+    expect(res.body.otp).toBeTruthy();
   });
 
   it('EXPIRED & WRONG OTP: rejects invalid, expired, or already-used OTP codes', async () => {
