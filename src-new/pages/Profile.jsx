@@ -427,43 +427,74 @@ const Profile = () => {
     setShowAddressModal(true);
   };
 
+  const handleEditAddress = (addr) => {
+    setAddressForm({
+      id: addr._id || addr.id,
+      label: addr.label || 'Home',
+      address: addr.address || '',
+      city: addr.city || 'Beirut',
+      notes: addr.notes || '',
+      isDefault: Boolean(addr.isDefault)
+    });
+    setShowAddressModal(true);
+  };
+
   const handleSaveAddress = async (e) => {
-    e.preventDefault();
-    if (!addressForm.address.trim()) {
+    if (e && e.preventDefault) e.preventDefault();
+    if (!addressForm.address || !addressForm.address.trim()) {
       toast.error('Please enter a valid address');
       return;
     }
 
     setLoading(true);
     try {
-      let updatedAddresses = [...(user.addresses || [])];
+      const currentAddresses = Array.isArray(user.addresses) ? [...user.addresses] : [];
 
-      if (addressForm.isDefault) {
-        updatedAddresses = updatedAddresses.map(a => ({ ...a, isDefault: false }));
-      }
-
+      let updatedAddresses;
       if (addressForm.id) {
-        updatedAddresses = updatedAddresses.map(a => 
-          a._id === addressForm.id || a.id === addressForm.id 
-            ? { ...addressForm, _id: addressForm.id } 
-            : a
-        );
-      } else {
-        updatedAddresses.push({
-          ...addressForm,
-          _id: Date.now().toString()
+        updatedAddresses = currentAddresses.map((a) => {
+          const match = (a._id && a._id === addressForm.id) || (a.id && a.id === addressForm.id);
+          if (match) {
+            const item = {
+              label: addressForm.label || 'Home',
+              address: addressForm.address.trim(),
+              city: addressForm.city || 'Beirut',
+              notes: addressForm.notes || '',
+              isDefault: Boolean(addressForm.isDefault),
+            };
+            if (a._id && /^[0-9a-fA-F]{24}$/.test(String(a._id))) {
+              item._id = a._id;
+            }
+            return item;
+          }
+          return addressForm.isDefault ? { ...a, isDefault: false } : a;
         });
+      } else {
+        if (addressForm.isDefault) {
+          currentAddresses.forEach((a) => { a.isDefault = false; });
+        }
+        const newAddr = {
+          label: addressForm.label || 'Home',
+          address: addressForm.address.trim(),
+          city: addressForm.city || 'Beirut',
+          notes: addressForm.notes || '',
+          isDefault: addressForm.isDefault || currentAddresses.length === 0,
+        };
+        updatedAddresses = [...currentAddresses, newAddr];
       }
 
       let newLocation = user.location;
       if (addressForm.isDefault || !newLocation) {
-        newLocation = addressForm.address;
+        newLocation = addressForm.address.trim();
       }
 
       const response = await api.put('/users/profile', {
-        ...user,
+        name: user.name,
+        email: user.email,
         location: newLocation,
-        addresses: updatedAddresses
+        avatar: user.avatar,
+        mascot: user.mascot,
+        addresses: updatedAddresses,
       });
 
       const updatedUser = response.data;
@@ -475,7 +506,7 @@ const Profile = () => {
       toast.success(addressForm.id ? 'Address updated!' : 'Address added!');
     } catch (err) {
       console.error('Failed to save address', err);
-      toast.error('Failed to save address');
+      toast.error(err.response?.data?.message || 'Failed to save address');
     } finally {
       setLoading(false);
     }
@@ -486,10 +517,15 @@ const Profile = () => {
     
     setLoading(true);
     try {
-      const updatedAddresses = (user.addresses || []).filter(a => a._id !== addressId && a.id !== addressId);
+      const currentAddresses = Array.isArray(user.addresses) ? user.addresses : [];
+      const updatedAddresses = currentAddresses.filter(a => a._id !== addressId && a.id !== addressId);
       const response = await api.put('/users/profile', {
-        ...user,
-        addresses: updatedAddresses
+        name: user.name,
+        email: user.email,
+        location: user.location,
+        avatar: user.avatar,
+        mascot: user.mascot,
+        addresses: updatedAddresses,
       });
 
       const updatedUser = response.data;
@@ -499,7 +535,8 @@ const Profile = () => {
       if (updateUser) updateUser(updatedUser);
       toast.success('Address removed');
     } catch (err) {
-      toast.error('Failed to remove address');
+      console.error('Failed to remove address', err);
+      toast.error(err.response?.data?.message || 'Failed to remove address');
     } finally {
       setLoading(false);
     }
@@ -508,15 +545,20 @@ const Profile = () => {
   const handleSetDefaultAddress = async (address) => {
     setLoading(true);
     try {
-      const updatedAddresses = (user.addresses || []).map(a => ({
+      const currentAddresses = Array.isArray(user.addresses) ? user.addresses : [];
+      const targetId = address._id || address.id;
+      const updatedAddresses = currentAddresses.map(a => ({
         ...a,
-        isDefault: (a._id === address._id || a.id === address.id)
+        isDefault: (a._id === targetId || a.id === targetId)
       }));
 
       const response = await api.put('/users/profile', {
-        ...user,
+        name: user.name,
+        email: user.email,
         location: address.address,
-        addresses: updatedAddresses
+        avatar: user.avatar,
+        mascot: user.mascot,
+        addresses: updatedAddresses,
       });
 
       const updatedUser = response.data;
@@ -526,7 +568,8 @@ const Profile = () => {
       if (updateUser) updateUser(updatedUser);
       toast.success('Default address updated!');
     } catch (err) {
-      toast.error('Failed to set default address');
+      console.error('Failed to set default address', err);
+      toast.error(err.response?.data?.message || 'Failed to set default address');
     } finally {
       setLoading(false);
     }
@@ -1107,6 +1150,15 @@ const Profile = () => {
                   <div className="address-card-actions">
                     <button 
                       type="button" 
+                      className="addr-action-btn edit"
+                      onClick={() => handleEditAddress(addr)}
+                      title="Edit Address"
+                    >
+                      <Edit2 size={14} />
+                      <span>{t.edit || 'Edit'}</span>
+                    </button>
+                    <button 
+                      type="button" 
                       className="addr-action-btn delete"
                       onClick={() => handleDeleteAddress(addr._id || addr.id)}
                       title="Delete Address"
@@ -1670,14 +1722,29 @@ const Profile = () => {
                 </div>
               </div>
 
+              {/* Direct Address Input */}
+              <div className="form-group-wrap">
+                <label className="modal-input-label">Street / Area / Building Address *</label>
+                <input 
+                  type="text" 
+                  className="modal-field-input"
+                  placeholder="e.g. Beirut, Hamra, Makdessi St., Sunrise Bldg 3rd Fl"
+                  value={addressForm.address}
+                  onChange={(e) => setAddressForm(prev => ({ ...prev, address: e.target.value }))}
+                  required
+                />
+              </div>
+
               {/* Location Picker */}
               <div className="form-group-wrap">
-                <label className="modal-input-label">Location on Map & Details</label>
+                <label className="modal-input-label">Pin Location on Map / GPS (Optional)</label>
                 <div className="address-picker-container">
                   <LocationPicker 
                     onLocationSelect={(locData) => {
-                      const addr = typeof locData === 'string' ? locData : locData.address;
-                      setAddressForm(prev => ({ ...prev, address: addr }));
+                      const addr = typeof locData === 'string' ? locData : (locData?.address || '');
+                      if (addr) {
+                        setAddressForm(prev => ({ ...prev, address: addr }));
+                      }
                     }}
                     initialLocation={addressForm.address}
                   />

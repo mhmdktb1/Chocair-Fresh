@@ -58,10 +58,11 @@ const userSchema = new mongoose.Schema(
     // Saved addresses for faster checkout
     addresses: [
       {
-        label: String, // e.g., "Home", "Work"
-        address: String,
-        city: String,
-        postalCode: String,
+        label: { type: String, default: 'Home' },
+        address: { type: String, required: true },
+        city: { type: String, default: 'Beirut' },
+        notes: { type: String, default: '' },
+        postalCode: { type: String, default: '' },
         country: { type: String, default: 'Lebanon' },
         isDefault: { type: Boolean, default: false },
       },

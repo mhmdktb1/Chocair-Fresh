@@ -316,8 +316,24 @@ const updateUserProfile = asyncHandler(async (req, res) => {
     if (req.body.mascot !== undefined) user.mascot = req.body.mascot;
     if (!user.mascot) user.mascot = getRandomMascot();
 
-    if (req.body.addresses) {
-      user.addresses = req.body.addresses;
+    if (req.body.addresses !== undefined && Array.isArray(req.body.addresses)) {
+      user.addresses = req.body.addresses
+        .filter((addr) => addr && typeof addr === 'object' && typeof addr.address === 'string' && addr.address.trim())
+        .map((addr) => {
+          const cleanAddr = {
+            label: addr.label || 'Home',
+            address: addr.address.trim(),
+            city: addr.city || 'Beirut',
+            notes: addr.notes || '',
+            postalCode: addr.postalCode || '',
+            country: addr.country || 'Lebanon',
+            isDefault: Boolean(addr.isDefault),
+          };
+          if (addr._id && mongoose.Types.ObjectId.isValid(String(addr._id)) && String(addr._id).length === 24) {
+            cleanAddr._id = addr._id;
+          }
+          return cleanAddr;
+        });
     }
 
     const updatedUser = await user.save();

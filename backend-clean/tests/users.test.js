@@ -322,6 +322,60 @@ describe('User and Auth API', () => {
     expect(res.body.location).toBe('Beirut, Hamra');
   });
 
+  it('PUT /api/users/profile - seamlessly adds and manages saved addresses without casting errors', async () => {
+    // 1. Add new address (even with client-side temporary timestamps or string IDs)
+    const addRes = await request(app)
+      .put('/api/users/profile')
+      .set('Authorization', `Bearer ${userToken}`)
+      .send({
+        addresses: [
+          {
+            label: 'Home',
+            address: 'Beirut, Hamra, Bliss Street, Bldg 42, 3rd Floor',
+            notes: 'Ring the bell twice',
+            isDefault: true,
+          },
+        ],
+      });
+
+    expect(addRes.status).toBe(200);
+    expect(addRes.body.addresses).toHaveLength(1);
+    expect(addRes.body.addresses[0].label).toBe('Home');
+    expect(addRes.body.addresses[0].address).toBe('Beirut, Hamra, Bliss Street, Bldg 42, 3rd Floor');
+    expect(addRes.body.addresses[0].notes).toBe('Ring the bell twice');
+    expect(addRes.body.addresses[0].isDefault).toBe(true);
+    expect(addRes.body.addresses[0]._id).toBeTruthy();
+
+    const savedId = addRes.body.addresses[0]._id;
+
+    // 2. Add second address and update first
+    const secondRes = await request(app)
+      .put('/api/users/profile')
+      .set('Authorization', `Bearer ${userToken}`)
+      .send({
+        addresses: [
+          {
+            _id: savedId,
+            label: 'Home',
+            address: 'Beirut, Hamra, Bliss Street, Bldg 42, 3rd Floor',
+            notes: 'Leave with concierge',
+            isDefault: false,
+          },
+          {
+            label: 'Work',
+            address: 'Beirut, Downtown, Weygand St',
+            notes: '',
+            isDefault: true,
+          },
+        ],
+      });
+
+    expect(secondRes.status).toBe(200);
+    expect(secondRes.body.addresses).toHaveLength(2);
+    expect(secondRes.body.addresses[0].notes).toBe('Leave with concierge');
+    expect(secondRes.body.addresses[1].label).toBe('Work');
+  });
+
   it('GET /api/users - returns all users for admin and blocks non-admins', async () => {
     // Non-admin request
     const userRes = await request(app)
