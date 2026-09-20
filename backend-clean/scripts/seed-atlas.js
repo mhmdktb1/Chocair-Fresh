@@ -77,6 +77,14 @@ const categories = [
 
 const users = [
   {
+    name: "Admin User",
+    phone: "+96170516382",
+    email: "admin@chocair.com",
+    location: "Beirut",
+    isAdmin: true,
+    addresses: []
+  },
+  {
     name: "mhmd ktb",
     phone: "+9618199999",
     email: null,

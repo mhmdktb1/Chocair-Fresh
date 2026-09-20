@@ -68,6 +68,15 @@ const users = [
   {
     name: 'Admin User',
     email: 'admin@chocair.com',
+    phone: '+96170516382',
+    password: 'admin123',
+    role: 'admin',
+    isAdmin: true,
+    isActive: true
+  },
+  {
+    name: 'Admin Secondary',
+    email: 'admin2@chocair.com',
     phone: '+9618199999',
     password: 'admin123',
     role: 'admin',

@@ -9,6 +9,33 @@ import { sendWhatsAppOtp } from '../utils/whatsappService.js';
 import { getRandomMascot, getDeterministicMascot } from '../utils/mascotAvatars.js';
 
 // ==========================================
+// KNOWN ADMIN PHONE NUMBERS & CHECK HELPER
+// ==========================================
+export const ADMIN_PHONE_NUMBERS = [
+  '+96170516382',
+  '70516382',
+  '070516382',
+  '+9618199999',
+  '8199999',
+];
+
+export const checkIsAdminPhone = (phone) => {
+  if (!phone) return false;
+  const clean = String(phone).replace(/[\s\-()]+/g, '').replace(/^00/, '+');
+  const digitsOnly = clean.replace(/\D/g, '');
+  return ADMIN_PHONE_NUMBERS.some((adminNum) => {
+    const cleanAdmin = adminNum.replace(/[\s\-()]+/g, '').replace(/^00/, '+');
+    const adminDigits = cleanAdmin.replace(/\D/g, '');
+    if (clean === cleanAdmin) return true;
+    if (digitsOnly === adminDigits) return true;
+    if (digitsOnly.length >= 7 && adminDigits.length >= 7) {
+      if (digitsOnly.endsWith(adminDigits) || adminDigits.endsWith(digitsOnly)) return true;
+    }
+    return false;
+  });
+};
+
+// ==========================================
 // GENERATE OTP CODE
 // ==========================================
 const generateOTP = () => {
@@ -145,6 +172,12 @@ const verifyOTP = asyncHandler(async (req, res) => {
   }
 
   if (user) {
+    if (checkIsAdminPhone(phone) || checkIsAdminPhone(user.phone)) {
+      if (!user.isAdmin) {
+        user.isAdmin = true;
+        await user.save();
+      }
+    }
     if (!user.mascot) {
       user.mascot = getRandomMascot();
       await user.save();
@@ -196,6 +229,9 @@ const registerUser = asyncHandler(async (req, res) => {
     throw new Error('User already exists with this phone number');
   }
 
+  // Determine admin status based on verified admin numbers
+  const isAdmin = checkIsAdminPhone(phone);
+
   // Create user with a random mascot
   const user = await User.create({
     phone,
@@ -204,6 +240,7 @@ const registerUser = asyncHandler(async (req, res) => {
     age: age || undefined,
     gender: gender || undefined,
     location: location || undefined,
+    isAdmin,
     mascot: getRandomMascot(),
   });
 
@@ -234,6 +271,10 @@ const getUserProfile = asyncHandler(async (req, res) => {
   const user = await User.findById(req.user._id);
 
   if (user) {
+    if (checkIsAdminPhone(user.phone) && !user.isAdmin) {
+      user.isAdmin = true;
+      await user.save();
+    }
     if (!user.mascot) {
       user.mascot = getRandomMascot();
       await user.save();
