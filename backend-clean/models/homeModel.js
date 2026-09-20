@@ -70,39 +70,40 @@ const homeSchema = mongoose.Schema({
   },
   story: {
     enabled: { type: Boolean, default: true },
-    title: { type: String, default: "Cultivating Goodness" },
-    subtitle: { type: String, default: "Fresh from the farm, straight to your table." },
-    description: { type: String, default: "Chocair Fresh started with a simple mission: bridging the gap between local farmers and your kitchen. We believe everyone deserves authentic, chemical-free produce." },
-    image: { type: String, default: "https://images.unsplash.com/photo-1542838132-92c53300491e?ixlib=rb-4.0.3&auto=format&fit=crop&w=1000&q=80" },
-    yearsOfService: { type: String, default: "15+" }
+    title: { type: String, default: "Our Story" },
+    subtitle: { type: String, default: "" },
+    lead: { type: String, default: "We started with a simple idea: fresh produce should feel better from the moment you order it to the moment it reaches your kitchen." },
+    description: { type: String, default: "At Chocair Fresh, we carefully select, check, and pack every order before it leaves us. We focus on the little details — choosing clean, good-looking pieces and packing them neatly so your order arrives the way you’d expect it to." },
+    image: { type: String, default: "" },
+    yearsOfService: { type: String, default: "" }
   },
   features: {
     enabled: { type: Boolean, default: true },
-    pillText: { type: String, default: "Key Benefits" },
-    title: { type: String, default: "Why Choose Us" },
+    pillText: { type: String, default: "" },
+    title: { type: String, default: "What We Offer" },
     items: [
       {
-        title: { type: String, default: "100% Organic" },
-        description: { type: String, default: "Certified organic produce sourced directly from sustainable local farms." },
-        icon: { type: String, default: "Leaf" },
+        title: { type: String, default: "Carefully Selected" },
+        description: { type: String, default: "Fresh, quality produce carefully chosen for every order." },
+        icon: { type: String, default: "Sparkles" },
         color: { type: String, default: "#2ecc71" }
       },
       {
-        title: { type: String, default: "Fast Delivery" },
-        description: { type: String, default: "Same-day delivery for orders placed before 2 PM. Freshness guaranteed." },
-        icon: { type: String, default: "Truck" },
+        title: { type: String, default: "Checked & Packed" },
+        description: { type: String, default: "Every item is checked and neatly packed before it leaves us." },
+        icon: { type: String, default: "PackageCheck" },
         color: { type: String, default: "#3498db" }
       },
       {
-        title: { type: String, default: "Quality Check" },
-        description: { type: String, default: "Every item is hand-picked and quality checked before it reaches your door." },
-        icon: { type: String, default: "ShieldCheck" },
+        title: { type: String, default: "Fast Delivery" },
+        description: { type: String, default: "Your order arrives quickly, fresh and ready for your kitchen." },
+        icon: { type: String, default: "Truck" },
         color: { type: String, default: "#9b59b6" }
       },
       {
-        title: { type: String, default: "24/7 Support" },
-        description: { type: String, default: "Our dedicated support team is always here to help you with your needs." },
-        icon: { type: String, default: "Clock" },
+        title: { type: String, default: "Quality Guarantee" },
+        description: { type: String, default: "Not satisfied with something? We’ll make it right." },
+        icon: { type: String, default: "ShieldCheck" },
         color: { type: String, default: "#e67e22" }
       }
     ]

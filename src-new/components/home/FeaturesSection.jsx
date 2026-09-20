@@ -1,148 +1,114 @@
-import React, { useEffect, useRef, useState } from 'react';
-import { Truck, Leaf, ShieldCheck, Clock, Award, Heart, Sparkles, Zap } from 'lucide-react';
+import React from 'react';
+import { Sparkles, PackageCheck, Truck, ShieldCheck, Leaf, Clock, Award, Heart, CheckCircle2 } from 'lucide-react';
 import './FeaturesSection.css';
 
-const defaultFeatures = [
+const defaultOfferings = [
 	{
 		id: 1,
-		icon: Leaf,
-		title: '100% Organic',
-		description:
-			'Certified organic produce sourced directly from sustainable local farms.',
-		color: '#2ecc71',
+		icon: Sparkles,
+		iconName: 'Sparkles',
+		title: 'Carefully Selected',
+		description: 'Fresh, quality produce carefully chosen for every order.',
 	},
 	{
 		id: 2,
-		icon: Truck,
-		title: 'Fast Delivery',
-		description:
-			'Same-day delivery for orders placed before 2 PM. Freshness guaranteed.',
-		color: '#3498db',
+		icon: PackageCheck,
+		iconName: 'PackageCheck',
+		title: 'Checked & Packed',
+		description: 'Every item is checked and neatly packed before it leaves us.',
 	},
 	{
 		id: 3,
-		icon: ShieldCheck,
-		title: 'Quality Check',
-		description:
-			'Every item is hand-picked and quality checked before it reaches your door.',
-		color: '#9b59b6',
+		icon: Truck,
+		iconName: 'Truck',
+		title: 'Fast Delivery',
+		description: 'Your order arrives quickly, fresh and ready for your kitchen.',
 	},
 	{
 		id: 4,
-		icon: Clock,
-		title: '24/7 Support',
-		description:
-			'Our dedicated support team is always here to help you with your needs.',
-		color: '#e67e22',
+		icon: ShieldCheck,
+		iconName: 'ShieldCheck',
+		title: 'Quality Guarantee',
+		description: 'Not satisfied with something? We’ll make it right.',
 	},
 ];
 
-const getIconComponent = (iconName, fallback = Leaf) => {
+const getIconComponent = (iconName, fallback = Sparkles) => {
 	if (!iconName) return fallback;
 	if (typeof iconName !== 'string') return iconName;
 	switch (iconName.toLowerCase()) {
-		case 'leaf': return Leaf;
-		case 'truck': return Truck;
+		case 'sparkles':
+		case 'sparkle':
+			return Sparkles;
+		case 'packagecheck':
+		case 'package':
+		case 'packed':
+		case 'box':
+			return PackageCheck;
+		case 'truck':
+		case 'delivery':
+			return Truck;
 		case 'shieldcheck':
-		case 'shield': return ShieldCheck;
-		case 'clock': return Clock;
-		case 'award': return Award;
-		case 'heart': return Heart;
-		case 'sparkles': return Sparkles;
-		case 'zap': return Zap;
-		default: return Leaf;
+		case 'shield':
+		case 'guarantee':
+			return ShieldCheck;
+		case 'checkcircle':
+		case 'checkcircle2':
+			return CheckCircle2;
+		case 'leaf':
+		case 'organic':
+			return Leaf;
+		case 'clock':
+			return Clock;
+		case 'award':
+			return Award;
+		case 'heart':
+			return Heart;
+		default:
+			return fallback;
 	}
 };
 
 const FeaturesSection = ({ data }) => {
-	const sectionRef = useRef(null);
-	const [isVisible, setIsVisible] = useState(false);
+	const title = data?.title === 'Why Choose Us' || !data?.title ? 'What We Offer' : data.title;
 
-	const pillText = data?.pillText || 'Key Benefits';
-	const title = data?.title || 'Why Choose Us';
-
-	const displayFeatures = React.useMemo(() => {
-		if (data?.items && Array.isArray(data.items) && data.items.length > 0) {
-			return data.items.map((item, index) => ({
-				id: item._id || item.id || index + 1,
-				icon: getIconComponent(item.icon, defaultFeatures[index % defaultFeatures.length]?.icon),
-				title: item.title || defaultFeatures[index % defaultFeatures.length]?.title,
-				description: item.description || defaultFeatures[index % defaultFeatures.length]?.description,
-				color: item.color || defaultFeatures[index % defaultFeatures.length]?.color || '#2ecc71',
-			}));
+	const items = React.useMemo(() => {
+		if (data?.items && Array.isArray(data.items) && data.items.length === 4) {
+			const isOldDefault = data.items.some(it => it.title === '100% Organic');
+			if (!isOldDefault) {
+				return data.items.map((item, index) => ({
+					id: item._id || item.id || index + 1,
+					icon: getIconComponent(item.icon, defaultOfferings[index]?.icon || Sparkles),
+					title: item.title || defaultOfferings[index]?.title,
+					description: item.description || defaultOfferings[index]?.description,
+				}));
+			}
 		}
-		return defaultFeatures;
+		return defaultOfferings;
 	}, [data]);
 
-	useEffect(() => {
-		const observer = new IntersectionObserver(
-			([entry]) => {
-				if (entry.isIntersecting) {
-					setIsVisible(true);
-					observer.disconnect();
-				}
-			},
-			{ threshold: 0.1 }
-		);
-
-		if (sectionRef.current) {
-			observer.observe(sectionRef.current);
-		}
-
-		return () => {
-			if (sectionRef.current) {
-				observer.disconnect();
-			}
-		};
-	}, []);
-
 	return (
-		<div className="section-features" ref={sectionRef}>
+		<section className="section-offerings" aria-label="What We Offer">
 			<div className="container">
-				<div className="features-header">
-					<span
-						className="features-keyword-pill"
-						style={{
-							display: 'block',
-							margin: '0 auto 1rem auto',
-						}}
-					>
-						{pillText}
-					</span>
-					<span
-						className="features-title"
-						style={{ display: 'block' }}
-					>
-						{title}
-					</span>
+				<div className="offerings-header">
+					<h2 className="offerings-title">{title}</h2>
 				</div>
-				<div className={`features-grid ${isVisible ? 'animate' : ''}`}>
-					{displayFeatures.map((feature, index) => {
-						const IconComponent = feature.icon;
+				<div className="offerings-grid">
+					{items.map((item) => {
+						const IconComponent = item.icon;
 						return (
-							<div
-								key={feature.id}
-								className="feature-card"
-								style={{ transitionDelay: `${index * 100}ms` }}
-							>
-								<div
-									className="feature-icon-wrapper"
-									style={{
-										background: `${feature.color}20`,
-										color: feature.color,
-										boxShadow: `0 10px 20px -10px ${feature.color}60`,
-									}}
-								>
-									<IconComponent size={32} />
+							<div key={item.id} className="offering-card">
+								<div className="offering-icon-wrapper" aria-hidden="true">
+									<IconComponent size={24} strokeWidth={1.8} />
 								</div>
-								<h3 className="feature-title">{feature.title}</h3>
-								<p className="feature-desc">{feature.description}</p>
+								<h3 className="offering-title">{item.title}</h3>
+								<p className="offering-desc">{item.description}</p>
 							</div>
 						);
 					})}
 				</div>
 			</div>
-		</div>
+		</section>
 	);
 };
 

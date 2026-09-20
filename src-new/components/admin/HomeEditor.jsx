@@ -88,21 +88,21 @@ const HomeEditor = () => {
     },
     story: { 
       enabled: true,
-      title: 'Cultivating Goodness', 
-      subtitle: 'Fresh from the farm, straight to your table.', 
-      description: 'Chocair Fresh started with a simple mission: bridging the gap between local farmers and your kitchen. We believe everyone deserves authentic, chemical-free produce.', 
-      image: 'https://images.unsplash.com/photo-1542838132-92c53300491e?ixlib=rb-4.0.3&auto=format&fit=crop&w=1000&q=80',
-      yearsOfService: '15+'
+      title: 'Our Story', 
+      subtitle: '', 
+      description: 'At Chocair Fresh, we carefully select, check, and pack every order before it leaves us. We focus on the little details — choosing clean, good-looking pieces and packing them neatly so your order arrives the way you’d expect it to.', 
+      image: '',
+      yearsOfService: ''
     },
     features: {
       enabled: true,
-      pillText: 'Key Benefits',
-      title: 'Why Choose Us',
+      pillText: '',
+      title: 'What We Offer',
       items: [
-        { title: '100% Organic', description: 'Certified organic produce sourced directly from sustainable local farms.', icon: 'Leaf', color: '#2ecc71' },
-        { title: 'Fast Delivery', description: 'Same-day delivery for orders placed before 2 PM. Freshness guaranteed.', icon: 'Truck', color: '#3498db' },
-        { title: 'Quality Check', description: 'Every item is hand-picked and quality checked before it reaches your door.', icon: 'ShieldCheck', color: '#9b59b6' },
-        { title: '24/7 Support', description: 'Our dedicated support team is always here to help you with your needs.', icon: 'Clock', color: '#e67e22' }
+        { title: 'Carefully Selected', description: 'Fresh, quality produce carefully chosen for every order.', icon: 'Sparkles', color: '#2ecc71' },
+        { title: 'Checked & Packed', description: 'Every item is checked and neatly packed before it leaves us.', icon: 'PackageCheck', color: '#3498db' },
+        { title: 'Fast Delivery', description: 'Your order arrives quickly, fresh and ready for your kitchen.', icon: 'Truck', color: '#9b59b6' },
+        { title: 'Quality Guarantee', description: 'Not satisfied with something? We’ll make it right.', icon: 'ShieldCheck', color: '#e67e22' }
       ]
     },
     newsletter: {

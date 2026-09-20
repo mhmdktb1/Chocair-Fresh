@@ -1,66 +1,27 @@
 import React from 'react';
-import { useNavigate } from 'react-router-dom';
-import { ArrowRight } from 'lucide-react';
-import Button from '../common/Button';
-import { parseHighlightedText } from '../../utils/textUtils';
 import './AboutSection.css';
 
+const DEFAULT_LEAD = "We started with a simple idea: fresh produce should feel better from the moment you order it to the moment it reaches your kitchen.";
+const DEFAULT_BODY = "At Chocair Fresh, we carefully select, check, and pack every order before it leaves us. We focus on the little details — choosing clean, good-looking pieces and packing them neatly so your order arrives the way you’d expect it to.";
+
 const AboutSection = ({ data }) => {
-  const navigate = useNavigate();
-  const {
-    title = "Cultivating Goodness",
-    subtitle = "Fresh from the farm, straight to your table.",
-    description = "Chocair Fresh started with a simple mission: bridging the gap between local farmers and your kitchen. We believe everyone deserves authentic, chemical-free produce.",
-    image = "https://images.unsplash.com/photo-1542838132-92c53300491e?ixlib=rb-4.0.3&auto=format&fit=crop&w=1000&q=80",
-    yearsOfService = "15+"
-  } = data || {};
+  const title = (data?.title && data.title !== 'Cultivating Goodness') ? data.title : 'Our Story';
+  
+  const isOldDefault = data?.description?.includes('bridging the gap between local farmers');
+  const lead = (data?.lead && !isOldDefault) ? data.lead : DEFAULT_LEAD;
+  const body = (data?.description && !isOldDefault) ? data.description : DEFAULT_BODY;
 
   return (
-    <section id="about" className="home-about-section">
-      
-      {/* Hero Banner */}
-      <div className="about-hero-banner">
-        <div className="about-hero-content">
-          <h2 className="about-hero-title">{parseHighlightedText(title)}</h2>
-          <p className="about-hero-subtitle">
-            {subtitle}
-          </p>
-        </div>
-      </div>
-
-      <div className="about-container">
-        {/* Content Grid */}
-        <div className="about-content-grid">
-          
-          {/* Image Side */}
-          <div className="about-image-wrapper">
-            <img 
-              src={image || "https://images.unsplash.com/photo-1542838132-92c53300491e?ixlib=rb-4.0.3&auto=format&fit=crop&w=1000&q=80"} 
-              alt={title || "About Us"} 
-              className="about-main-img"
-              loading="lazy"
-            />
-            <div className="about-stat-badge">
-              <span className="stat-number">{yearsOfService}</span>
-              <span className="stat-label">Years of Service</span>
-            </div>
+    <section id="about" className="home-story-section" aria-label="Our Story">
+      <div className="container">
+        <div className="story-card">
+          <div className="story-header">
+            <h2 className="story-title">{title}</h2>
           </div>
-          
-          {/* Text Side */}
-          <div className="about-text-content">
-            <h3 className="story-title">Our Story</h3>
-            <p className="story-paragraph">
-              {description}
-            </p>
-            
-            <div className="about-cta">
-              <Button variant="primary" onClick={() => navigate('/about')} className="flex items-center gap-2">
-                <span>Read Full Story</span>
-                <ArrowRight size={18} />
-              </Button>
-            </div>
+          <div className="story-content">
+            <p className="story-lead">{lead}</p>
+            <p className="story-body">{body}</p>
           </div>
-
         </div>
       </div>
     </section>
