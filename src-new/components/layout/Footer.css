@@ -56,7 +56,7 @@
   color: var(--primary, #2ecc71);
 }
 
-.footer-address-link {
+.footer-address-location {
   display: inline-flex;
   align-items: center;
   gap: 0.45rem;
@@ -64,29 +64,11 @@
   color: var(--text-light, #64748b);
   font-weight: 500;
   line-height: 1.4;
-  text-decoration: none;
-  transition: color 0.2s ease, transform 0.2s ease;
-}
-
-.footer-address-link:hover {
-  color: var(--primary, #2ecc71);
-  transform: translateX(2px);
 }
 
 .footer-icon-pin {
   color: var(--primary, #2ecc71);
   flex-shrink: 0;
-}
-
-.footer-ext-icon {
-  color: var(--text-light, #94a3b8);
-  opacity: 0.7;
-  transition: opacity 0.2s ease;
-}
-
-.footer-address-link:hover .footer-ext-icon {
-  opacity: 1;
-  color: var(--primary, #2ecc71);
 }
 
 /* Actions Row (WhatsApp & Socials) */
@@ -208,40 +190,6 @@
   height: 100%;
   border: none;
   pointer-events: auto;
-}
-
-.footer-map-overlay-btn {
-  position: absolute;
-  bottom: 8px;
-  right: 8px;
-  display: inline-flex;
-  align-items: center;
-  gap: 0.35rem;
-  background: rgba(255, 255, 255, 0.95);
-  backdrop-filter: blur(4px);
-  color: var(--text-main, #1e293b);
-  border: 1px solid rgba(0, 0, 0, 0.08);
-  padding: 0.3rem 0.65rem;
-  border-radius: 9999px;
-  font-size: 0.75rem;
-  font-weight: 700;
-  text-decoration: none;
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
-  transition: all 0.2s ease;
-}
-
-.footer-map-overlay-btn svg {
-  color: #ef4444;
-}
-
-.footer-map-overlay-btn:hover {
-  background: var(--primary, #2ecc71);
-  color: #ffffff;
-  border-color: var(--primary, #2ecc71);
-}
-
-.footer-map-overlay-btn:hover svg {
-  color: #ffffff;
 }
 
 /* 2. Bottom Copyright Row */

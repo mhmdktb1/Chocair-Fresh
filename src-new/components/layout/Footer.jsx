@@ -4,8 +4,7 @@ import {
   MapPin, 
   Facebook, 
   Instagram, 
-  MessageCircle,
-  ExternalLink 
+  MessageCircle
 } from 'lucide-react';
 import './Footer.css';
 
@@ -24,17 +23,10 @@ const Footer = () => {
               <Link to="/" className="footer-brand">
                 Chocair<span className="brand-highlight">Fresh</span>
               </Link>
-              <a 
-                href="https://maps.app.goo.gl/RdwRYKiHhTusYpG18" 
-                target="_blank" 
-                rel="noopener noreferrer" 
-                className="footer-address-link"
-                title="Open location in Google Maps"
-              >
+              <div className="footer-address-location">
                 <MapPin size={16} className="footer-icon-pin" />
                 <span>Chocair Market "Anas Fruits", Beirut</span>
-                <ExternalLink size={13} className="footer-ext-icon" />
-              </a>
+              </div>
             </div>
 
             {/* Actions: WhatsApp + Socials */}
@@ -96,16 +88,6 @@ const Footer = () => {
                 loading="lazy"
                 title="Chocair Market Anas Fruits Google Maps Location"
               ></iframe>
-              <a 
-                href="https://maps.app.goo.gl/RdwRYKiHhTusYpG18" 
-                target="_blank" 
-                rel="noopener noreferrer"
-                className="footer-map-overlay-btn"
-                title="Open in Google Maps App"
-              >
-                <MapPin size={13} />
-                <span>View on Maps</span>
-              </a>
             </div>
           </div>
 
