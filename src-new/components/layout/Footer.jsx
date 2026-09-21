@@ -2,8 +2,9 @@ import React from 'react';
 import { Link } from 'react-router-dom';
 import { 
   MapPin, 
-  Facebook, 
+  Clock,
   Instagram, 
+  Facebook, 
   MessageCircle
 } from 'lucide-react';
 import './Footer.css';
@@ -14,32 +15,54 @@ const Footer = () => {
   return (
     <footer className="clean-footer">
       <div className="container footer-content-wrap">
-        {/* Main Grid: Info + Pinned Map */}
+        {/* Main Grid: Brand & Contact Info | Navigation | Big Pinned Map */}
         <div className="footer-layout-grid">
           
-          {/* Left Details: Brand, Address, WhatsApp, Socials */}
-          <div className="footer-details-col">
+          {/* Brand & Store Info Column */}
+          <div className="footer-info-col">
             <div className="footer-brand-section">
               <Link to="/" className="footer-brand">
                 Chocair<span className="brand-highlight">Fresh</span>
               </Link>
-              <div className="footer-address-location">
-                <MapPin size={16} className="footer-icon-pin" />
-                <span>Chocair Market "Anas Fruits", Beirut</span>
+              <p className="footer-tagline">
+                Premium hand-picked produce, fruits, and daily essentials delivered fresh to your door in Beirut.
+              </p>
+            </div>
+
+            {/* Quick Details (Address, Hours) */}
+            <div className="footer-meta-list">
+              <div className="footer-meta-item">
+                <MapPin size={17} className="footer-meta-icon pin-icon" />
+                <div>
+                  <span className="footer-meta-title">Store Location</span>
+                  <p className="footer-meta-text">Chocair Market "Anas Fruits", Beirut</p>
+                </div>
+              </div>
+              <div className="footer-meta-item">
+                <Clock size={17} className="footer-meta-icon clock-icon" />
+                <div>
+                  <span className="footer-meta-title">Opening Hours</span>
+                  <p className="footer-meta-text">Mon – Sun: 7:30 AM – 10:30 PM</p>
+                </div>
               </div>
             </div>
 
             {/* Actions: WhatsApp + Socials */}
             <div className="footer-actions-row">
               <a 
-                href="https://wa.me/96171866828" 
+                href="https://wa.me/96171966828" 
                 target="_blank" 
                 rel="noopener noreferrer" 
-                className="footer-contact-link footer-wa-link"
-                aria-label="WhatsApp +961 71 866 828"
+                className="footer-wa-badge-btn"
+                aria-label="WhatsApp +961 71 966 828"
               >
-                <MessageCircle size={18} className="footer-wa-icon" />
-                <span>+961 71 866 828</span>
+                <div className="wa-icon-bubble">
+                  <MessageCircle size={18} className="footer-wa-icon" />
+                </div>
+                <div className="wa-btn-text">
+                  <span className="wa-label">WhatsApp Order & Support</span>
+                  <span className="wa-number">+961 71 966 828</span>
+                </div>
               </a>
 
               <div className="footer-social-cluster">
@@ -76,28 +99,52 @@ const Footer = () => {
             </div>
           </div>
 
-          {/* Right: Compact Pinned Map Card */}
+          {/* Quick Links Column */}
+          <div className="footer-nav-col">
+            <h4 className="footer-col-title">Quick Links</h4>
+            <ul className="footer-nav-links">
+              <li><Link to="/shop">Shop Fresh Produce</Link></li>
+              <li><Link to="/about">Our Story & Quality</Link></li>
+              <li><Link to="/cart">My Cart</Link></li>
+              <li><Link to="/profile">My Orders</Link></li>
+            </ul>
+          </div>
+
+          {/* Big Map Column: Full Pinned Map */}
           <div className="footer-map-col">
-            <div className="footer-map-card">
-              <iframe 
-                src="https://maps.google.com/maps?q=WHVR%2BGVR+Chocair+Market+%22Anas+Fruits%22,+Beirut&t=&z=16&ie=UTF8&iwloc=&output=embed" 
-                width="100%" 
-                height="100%" 
-                style={{ border: 0 }} 
-                allowFullScreen="" 
-                loading="lazy"
-                title="Chocair Market Anas Fruits Google Maps Location"
-              ></iframe>
+            <div className="footer-map-container">
+              <div className="footer-map-header">
+                <div className="map-badge">
+                  <span className="live-dot"></span>
+                  <span>Store Location</span>
+                </div>
+                <span className="map-location-label">Beirut, Lebanon</span>
+              </div>
+              <div className="footer-map-card">
+                <iframe 
+                  src="https://maps.google.com/maps?q=WHVR%2BGVR+Chocair+Market+%22Anas+Fruits%22,+Beirut&t=&z=16&ie=UTF8&iwloc=&output=embed" 
+                  width="100%" 
+                  height="100%" 
+                  style={{ border: 0 }} 
+                  allowFullScreen="" 
+                  loading="lazy"
+                  title="Chocair Market Anas Fruits Google Maps Location"
+                ></iframe>
+              </div>
             </div>
           </div>
 
         </div>
 
-        {/* Minimal Copyright Bottom Strip */}
+        {/* Bottom Strip */}
         <div className="footer-bottom-row">
           <p className="footer-copyright">
             &copy; {currentYear} <strong>Chocair Fresh</strong>. All rights reserved.
           </p>
+          <div className="footer-bottom-badges">
+            <span className="trust-pill">🌱 100% Fresh Guaranteed</span>
+            <span className="trust-pill">⚡ Fast Beirut Delivery</span>
+          </div>
         </div>
       </div>
     </footer>

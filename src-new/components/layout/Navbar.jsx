@@ -379,7 +379,7 @@ const Navbar = () => {
             </Link>
 
             <a 
-              href="https://wa.me/" 
+              href="https://wa.me/96171966828" 
               target="_blank" 
               rel="noopener noreferrer" 
               className="curtain-nav-item whatsapp-item" 

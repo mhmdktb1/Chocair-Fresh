@@ -323,7 +323,7 @@ const Profile = () => {
     e.stopPropagation();
     const orderCode = `#${order._id.slice(-6).toUpperCase()}`;
     const text = encodeURIComponent(`Hi Chocair Fresh! I need assistance with my Order ${orderCode}.`);
-    window.open(`https://wa.me/96170123456?text=${text}`, '_blank');
+    window.open(`https://wa.me/96171966828?text=${text}`, '_blank');
   };
 
   const toggleOrder = (orderId) => {
