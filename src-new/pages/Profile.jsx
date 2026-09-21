@@ -7,7 +7,7 @@ import {
   ArrowLeft, ArrowRight, CheckCircle, RefreshCw, Copy, Check, 
   MessageSquare, Home, Briefcase, Trash2, Heart, ExternalLink, 
   CheckCircle2, MapPinned, ShoppingCart, 
-  Eye, CreditCard, ChevronRight, Clock
+  Eye, CreditCard, ChevronRight, Clock, Sparkles
 } from 'lucide-react';
 import Navbar from '../components/layout/Navbar';
 import LocationPicker from '../components/common/LocationPicker';
