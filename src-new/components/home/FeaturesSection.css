@@ -1,24 +1,56 @@
-/* What We Offer Section */
+/* ==========================================================================
+   What We Offer Section - Modern Scene & Mobile-Optimized Grid
+   ========================================================================== */
+
 .section-offerings {
-  background: var(--bg-body, #f8f9fa);
-  padding: clamp(3rem, 5vw, 4.5rem) 0;
+  background: var(--bg-body, #f8fafc);
+  padding: clamp(3.5rem, 6vw, 5rem) 0;
   border-top: 1px solid var(--border-color, #e2e8f0);
   border-bottom: 1px solid var(--border-color, #e2e8f0);
+  position: relative;
 }
 
 .offerings-header {
   text-align: center;
-  margin-bottom: clamp(2rem, 3.5vw, 2.75rem);
+  max-width: 620px;
+  margin: 0 auto clamp(2rem, 4vw, 3rem);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.offerings-pre-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.35rem 0.85rem;
+  border-radius: 9999px;
+  background: rgba(46, 204, 113, 0.12);
+  color: #1e824c;
+  font-size: 0.8125rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  margin-bottom: 0.75rem;
 }
 
 .offerings-title {
-  font-size: clamp(1.6rem, 3vw, 2.1rem);
-  font-weight: 700;
-  color: var(--text-main, #2c3e50);
-  letter-spacing: -0.02em;
+  font-size: clamp(1.85rem, 3.2vw, 2.5rem);
+  font-weight: 800;
+  color: var(--text-main, #1e293b);
+  letter-spacing: -0.025em;
+  line-height: 1.2;
+  margin: 0 0 0.65rem 0;
+}
+
+.offerings-subtitle {
+  font-size: clamp(0.925rem, 1.5vw, 1.05rem);
+  color: var(--text-light, #64748b);
+  line-height: 1.6;
   margin: 0;
 }
 
+/* 4-Column Desktop / 2-Column Tablet Grid */
 .offerings-grid {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
@@ -28,54 +60,113 @@
 .offering-card {
   background: var(--bg-card, #ffffff);
   border: 1px solid var(--border-color, #e2e8f0);
-  border-radius: 1rem;
-  padding: 1.5rem 1.25rem;
+  border-radius: 1.15rem;
+  padding: 1.5rem 1.35rem;
   display: flex;
   flex-direction: column;
-  align-items: flex-start;
-  transition: transform 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+  justify-content: space-between;
+  gap: 1.25rem;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.03);
+  transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1), 
+              border-color 0.25s ease, 
+              box-shadow 0.25s ease;
+  position: relative;
 }
 
 .offering-card:hover {
-  border-color: rgba(46, 204, 113, 0.4);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.04);
+  transform: translateY(-4px);
+  border-color: rgba(46, 204, 113, 0.45);
+  box-shadow: 0 12px 28px -6px rgba(46, 204, 113, 0.12), 0 4px 12px rgba(0, 0, 0, 0.04);
+}
+
+.offering-card-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
 }
 
 .offering-icon-wrapper {
   width: 44px;
   height: 44px;
-  border-radius: 0.625rem;
-  background: rgba(46, 204, 113, 0.1);
+  border-radius: 0.75rem;
+  background: linear-gradient(135deg, rgba(46, 204, 113, 0.15), rgba(39, 174, 96, 0.08));
   color: #1e824c;
   display: flex;
   align-items: center;
   justify-content: center;
-  margin-bottom: 1rem;
   flex-shrink: 0;
+  box-shadow: inset 0 0 0 1px rgba(46, 204, 113, 0.2);
 }
 
-[data-theme="dark"] .offering-icon-wrapper,
-.dark-theme .offering-icon-wrapper {
-  background: rgba(46, 204, 113, 0.15);
-  color: #2ecc71;
+.offering-step-pill {
+  font-size: 0.6875rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  padding: 0.25rem 0.55rem;
+  border-radius: 9999px;
+  background: var(--bg-body, #f1f5f9);
+  color: #64748b;
+  border: 1px solid var(--border-color, #e2e8f0);
+}
+
+.offering-card-body {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
 }
 
 .offering-title {
   font-size: 1.05rem;
-  font-weight: 600;
-  color: var(--text-main, #2c3e50);
-  margin: 0 0 0.4rem 0;
+  font-weight: 700;
+  color: var(--text-main, #1e293b);
+  margin: 0;
   line-height: 1.35;
 }
 
 .offering-desc {
-  font-size: 0.875rem;
+  font-size: 0.85rem;
   color: var(--text-light, #64748b);
   line-height: 1.5;
   margin: 0;
 }
 
-/* Tablet & Smaller Screens */
+/* ==========================================================================
+   Dark Mode Support
+   ========================================================================== */
+
+[data-theme="dark"] .section-offerings,
+.dark-theme .section-offerings {
+  background: var(--bg-body, #0a0f1d);
+  border-color: #1a2436;
+}
+
+[data-theme="dark"] .offering-card,
+.dark-theme .offering-card {
+  background: var(--bg-card, #131d2e);
+  border-color: var(--border-color, #1e2d45);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
+}
+
+[data-theme="dark"] .offering-icon-wrapper,
+.dark-theme .offering-icon-wrapper {
+  background: rgba(46, 204, 113, 0.16);
+  color: #2ecc71;
+  box-shadow: inset 0 0 0 1px rgba(46, 204, 113, 0.3);
+}
+
+[data-theme="dark"] .offering-step-pill,
+.dark-theme .offering-step-pill {
+  background: #0e1626;
+  color: #94a3b8;
+  border-color: #1e2d45;
+}
+
+/* ==========================================================================
+   Responsive Breakpoints
+   ========================================================================== */
+
 @media (max-width: 992px) {
   .offerings-grid {
     grid-template-columns: repeat(2, 1fr);
@@ -83,21 +174,70 @@
   }
 }
 
-/* Mobile Screens */
-@media (max-width: 540px) {
+@media (max-width: 640px) {
   .section-offerings {
-    padding: 2.25rem 0;
+    padding: 2.75rem 0;
   }
 
+  .offerings-header {
+    margin-bottom: 1.5rem;
+  }
+
+  .offerings-pre-badge {
+    font-size: 0.75rem;
+    padding: 0.28rem 0.7rem;
+    margin-bottom: 0.5rem;
+  }
+
+  .offerings-title {
+    font-size: 1.65rem;
+    margin-bottom: 0.45rem;
+  }
+
+  .offerings-subtitle {
+    font-size: 0.875rem;
+  }
+
+  /* 2x2 grid on mobile screens for balanced visual scene */
   .offerings-grid {
-    grid-template-columns: 1fr;
-    gap: 0.85rem;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 0.75rem;
   }
 
   .offering-card {
-    padding: 1.25rem;
-    border-radius: 0.875rem;
+    padding: 1rem;
+    border-radius: 0.95rem;
+    gap: 0.85rem;
   }
+
+  .offering-icon-wrapper {
+    width: 38px;
+    height: 38px;
+    border-radius: 0.65rem;
+  }
+
+  .offering-step-pill {
+    font-size: 0.625rem;
+    padding: 0.15rem 0.45rem;
+  }
+
+  .offering-title {
+    font-size: 0.9375rem;
+  }
+
+  .offering-desc {
+    font-size: 0.775rem;
+    line-height: 1.45;
+  }
+}
+
+@media (max-width: 380px) {
+  /* Extra narrow devices */
+  .offerings-grid {
+    grid-template-columns: 1fr;
+    gap: 0.65rem;
+  }
+}
 
   .offering-icon-wrapper {
     width: 38px;
