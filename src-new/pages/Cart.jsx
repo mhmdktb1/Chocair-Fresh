@@ -482,11 +482,9 @@ const Cart = () => {
                         </Link>
                         <span className="cart-item-unit-rate">
                           {formatCurrency(item.price)} / {normalizeUnit(item.unit)}
-                          {item.quantity > 1 && (
-                            <span style={{ marginLeft: 6, color: '#16a34a', fontWeight: 600 }}>
-                              ({formatQuantityWithUnit(item.quantity, item.unit)})
-                            </span>
-                          )}
+                          <span style={{ marginLeft: 6, color: '#16a34a', fontWeight: 600 }}>
+                            • Total: {formatQuantityWithUnit(item.quantity, item.unit)}
+                          </span>
                         </span>
                         {item.instruction ? (
                           <div className="cart-item-instruction-box">

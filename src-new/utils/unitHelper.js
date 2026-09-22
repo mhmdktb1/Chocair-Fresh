@@ -70,13 +70,19 @@ export const formatUnitRate = (price, unit) => {
 };
 
 /**
- * Formats quantity along with unit for display in carts, checkout, invoices, and orders
- * Example:
- * 2 × 1kg -> "2 × 1kg (2kg)"
- * 2 × 500g -> "2 × 500g (1kg)"
- * 3 × 200g -> "3 × 200g (600g)"
+ * Formats quantity along with unit for display in carts, checkout, invoices, and orders.
+ * Kept clean and simple:
+ * 4 × 200g -> "800g"
+ * 2 × 500g -> "1kg"
+ * 3 × 500g -> "1.5kg"
+ * 1 × 500g -> "500g"
+ * 3 × 1kg -> "3kg"
+ * 1 × 1kg -> "1kg"
+ * 1 × bunch -> "1 bunch"
  * 3 × bunch -> "3 bunches"
+ * 1 × piece -> "1 piece"
  * 2 × piece -> "2 pieces"
+ * 1 × pack -> "1 pack"
  * 4 × pack -> "4 packs"
  */
 export const formatQuantityWithUnit = (quantity, unit) => {
@@ -84,17 +90,24 @@ export const formatQuantityWithUnit = (quantity, unit) => {
   const qty = Number(quantity) || 1;
 
   switch (norm) {
-    case '1kg':
-      return qty === 1 ? '1kg' : `${qty} × 1kg (${qty}kg)`;
+    case '1kg': {
+      const kg = qty * 1;
+      return `${kg}kg`;
+    }
     case '500g': {
       const totalKg = qty * 0.5;
-      const weightStr = totalKg >= 1 ? `${totalKg % 1 === 0 ? totalKg.toFixed(0) : totalKg.toFixed(1)}kg` : `${qty * 500}g`;
-      return qty === 1 ? '500g' : `${qty} × 500g (${weightStr})`;
+      if (totalKg >= 1) {
+        return `${totalKg % 1 === 0 ? totalKg.toFixed(0) : totalKg.toFixed(1)}kg`;
+      }
+      return `${qty * 500}g`;
     }
     case '200g': {
       const totalG = qty * 200;
-      const weightStr = totalG >= 1000 ? `${(totalG / 1000).toFixed(1)}kg` : `${totalG}g`;
-      return qty === 1 ? '200g' : `${qty} × 200g (${weightStr})`;
+      if (totalG >= 1000) {
+        const kg = totalG / 1000;
+        return `${kg % 1 === 0 ? kg.toFixed(0) : kg.toFixed(1)}kg`;
+      }
+      return `${totalG}g`;
     }
     case 'bunch':
       return `${qty} ${qty === 1 ? 'bunch' : 'bunches'}`;
@@ -115,27 +128,27 @@ export const getPresetOptions = (unit) => {
   switch (norm) {
     case '1kg':
       return [
-        { qty: 1, label: '1 kg' },
-        { qty: 2, label: '2 kg' },
-        { qty: 3, label: '3 kg' },
-        { qty: 5, label: '5 kg' },
-        { qty: 10, label: '10 kg' },
+        { qty: 1, label: '1kg' },
+        { qty: 2, label: '2kg' },
+        { qty: 3, label: '3kg' },
+        { qty: 5, label: '5kg' },
+        { qty: 10, label: '10kg' },
       ];
     case '500g':
       return [
-        { qty: 1, label: '500g (1x)' },
-        { qty: 2, label: '1 kg (2x)' },
-        { qty: 3, label: '1.5 kg (3x)' },
-        { qty: 4, label: '2 kg (4x)' },
-        { qty: 6, label: '3 kg (6x)' },
+        { qty: 1, label: '500g' },
+        { qty: 2, label: '1kg' },
+        { qty: 3, label: '1.5kg' },
+        { qty: 4, label: '2kg' },
+        { qty: 6, label: '3kg' },
       ];
     case '200g':
       return [
-        { qty: 1, label: '200g (1x)' },
-        { qty: 2, label: '400g (2x)' },
-        { qty: 3, label: '600g (3x)' },
-        { qty: 4, label: '800g (4x)' },
-        { qty: 5, label: '1 kg (5x)' },
+        { qty: 1, label: '200g' },
+        { qty: 2, label: '400g' },
+        { qty: 3, label: '600g' },
+        { qty: 4, label: '800g' },
+        { qty: 5, label: '1kg' },
       ];
     case 'bunch':
       return [

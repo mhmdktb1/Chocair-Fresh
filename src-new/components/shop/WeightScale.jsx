@@ -61,8 +61,8 @@ const WeightScale = ({ isOpen, onClose, onConfirm, initialWeight = 1, pricePerUn
 
         <div className="scale-display">
           <div>
-            <span className="weight-value">{units}</span>
-            <span className="weight-unit">× {normUnit} ({weightDisplay})</span>
+            <span className="weight-value">{weightDisplay}</span>
+            <span className="weight-unit">({normUnit} base)</span>
           </div>
           <div className="calculated-price">
             Total: ${totalPrice}
