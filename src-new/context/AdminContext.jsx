@@ -1,6 +1,7 @@
 import { createContext, useContext, useState, useEffect } from "react";
 import api from "../utils/api";
 import { useAuth } from "./AuthContext";
+import { normalizeUnit } from "../utils/unitHelper";
 
 const AdminContext = createContext();
 
@@ -44,8 +45,8 @@ export const AdminProvider = ({ children }) => {
     category: p.category ? String(p.category).trim() : "Uncategorized",
     categories: [p.category ? String(p.category).trim() : "Uncategorized"], // Backend only has single category
     price: p.price,
-    priceUnit: p.unit || "kg", 
-    unit: p.unit || "kg",
+    priceUnit: normalizeUnit(p.unit), 
+    unit: normalizeUnit(p.unit),
     stock: p.countInStock !== undefined ? p.countInStock : p.stock,
     image: p.image,
     description: p.description,
@@ -67,7 +68,7 @@ export const AdminProvider = ({ children }) => {
       price: item.price !== undefined ? item.price : (item.product?.price || 0),
       total: (item.qty || item.quantity || 1) * (item.price !== undefined ? item.price : (item.product?.price || 0)),
       image: item.image || item.product?.image,
-      unit: item.unit || item.product?.unit || "kg",
+      unit: normalizeUnit(item.unit || item.product?.unit),
       instruction: item.instruction || item.instructions || item.specialInstructions || item.note || item.notes || ""
     })),
     total: o.totalPrice || o.total || 0,
@@ -165,6 +166,7 @@ export const AdminProvider = ({ children }) => {
   const addProduct = async (productData) => {
     try {
       // Map UI data to Backend data
+      const selectedUnit = normalizeUnit(productData.unit || productData.priceUnit);
       const payload = {
         name: productData.name,
         price: parseFloat(productData.price),
@@ -173,7 +175,7 @@ export const AdminProvider = ({ children }) => {
         brand: productData.brand || "Chocair",
         category: productData.category,
         countInStock: parseInt(productData.stock),
-        unit: productData.unit || "kg",
+        unit: selectedUnit,
       };
 
       const response = await api.post("/products", payload);
@@ -188,6 +190,7 @@ export const AdminProvider = ({ children }) => {
 
   const updateProduct = async (id, productData) => {
     try {
+      const selectedUnit = normalizeUnit(productData.unit || productData.priceUnit);
       const payload = {
         name: productData.name,
         price: parseFloat(productData.price),
@@ -196,7 +199,7 @@ export const AdminProvider = ({ children }) => {
         brand: productData.brand || "Chocair",
         category: productData.category,
         countInStock: parseInt(productData.stock),
-        unit: productData.unit || "kg",
+        unit: selectedUnit,
       };
 
       const response = await api.put(`/products/${id}`, payload);

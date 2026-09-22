@@ -19,6 +19,7 @@ import Button from '../components/common/Button';
 import Loading from '../components/common/Loading';
 import WeightScale from '../components/shop/WeightScale';
 import TotersProductRow from '../components/shop/TotersProductRow';
+import { normalizeUnit, formatQuantityWithUnit, getPresetOptions } from '../utils/unitHelper';
 import { toast } from 'react-toastify';
 import './ProductDetails.css';
 
@@ -81,8 +82,6 @@ const ProductDetails = () => {
           if (inCart.instruction) {
             setSpecialInstructions(inCart.instruction);
           }
-        } else if (data.unit === 'kg' || data.unit === 'g' || data.unit === '1kg') {
-          setQuantity(1.0);
         } else {
           setQuantity(1);
         }
@@ -99,16 +98,15 @@ const ProductDetails = () => {
     }
   }, [id]);
 
-  const isWeightBased = ['kg', 'g', '1kg'].includes(product?.unit?.toLowerCase());
+  const normUnit = normalizeUnit(product?.unit);
+  const isWeightBased = ['1kg', '500g', '200g'].includes(normUnit);
   const existingCartItem = cartItems.find(item => item._id === product?._id);
 
   const handleQuantityChange = (delta) => {
-    const step = isWeightBased ? 0.5 : 1;
-    let newQty = quantity + (delta * step);
-    newQty = Math.round(newQty * 100) / 100;
-    const minQty = isWeightBased ? 0.5 : 1;
+    let newQty = quantity + delta;
+    newQty = Math.max(1, Math.round(newQty));
     
-    if (newQty >= minQty && newQty <= (product?.countInStock || 100)) {
+    if (newQty >= 1 && newQty <= (product?.countInStock || 100)) {
       setQuantity(newQty);
       if (existingCartItem) {
         updateQuantity(product._id, newQty, specialInstructions);
@@ -125,10 +123,11 @@ const ProductDetails = () => {
     }
   };
 
-  const handleWeightConfirm = (weight) => {
-    setQuantity(weight);
+  const handleWeightConfirm = (weightUnits) => {
+    const qty = Math.max(1, Math.round(weightUnits));
+    setQuantity(qty);
     if (existingCartItem) {
-      updateQuantity(product._id, weight, specialInstructions);
+      updateQuantity(product._id, qty, specialInstructions);
     }
     setIsScaleOpen(false);
   };
@@ -162,12 +161,13 @@ const ProductDetails = () => {
 
   const handleAddToCartOrUpdate = () => {
     if (!product) return;
+    const unitText = formatQuantityWithUnit(quantity, normUnit);
     if (!existingCartItem) {
-      addToCart(product, quantity, specialInstructions);
-      toast.success(`Added ${quantity} ${product.unit || 'items'} to cart!`, { icon: '🛒' });
+      addToCart({ ...product, unit: normUnit }, quantity, specialInstructions);
+      toast.success(`Added ${unitText} to cart!`, { icon: '🛒' });
     } else {
       updateQuantity(product._id, quantity, specialInstructions);
-      toast.success(`Cart updated to ${quantity} ${product.unit || 'items'}!`, { icon: '✅' });
+      toast.success(`Cart updated to ${unitText}!`, { icon: '✅' });
     }
   };
 
@@ -192,17 +192,7 @@ const ProductDetails = () => {
   const lbpPrice = Math.round(product.price * 89500).toLocaleString('en-US');
   const points = Math.round(product.price * 105);
 
-  const formatUnitDisplay = (qty, unit) => {
-    const isW = ['kg', 'g', '1kg'].includes(unit?.toLowerCase());
-    if (isW) {
-      if (qty >= 1) return `${Math.round(qty * 1000)} g`;
-      return `${Math.round(qty * 1000)} g`;
-    }
-    return `${qty} ${unit || 'piece'}`;
-  };
-
-  const weightPresets = [0.5, 1.0, 1.5, 2.0, 3.0, 5.0, 10.0];
-  const unitPresets = [1, 2, 3, 5, 10];
+  const presets = getPresetOptions(normUnit);
   const displayImage = !imageError && product.image ? product.image : FALLBACK_IMAGE;
 
   return (
@@ -272,7 +262,7 @@ const ProductDetails = () => {
           <div className="toters-info-header">
             <h1 className="toters-product-name">{product.name}</h1>
             <div className="toters-unit-subtitle">
-              {product.unit === 'kg' ? '500 g' : (product.unit || '500 g')}
+              Per {normUnit}
             </div>
 
             <div className="toters-price-strip">
@@ -287,7 +277,7 @@ const ProductDetails = () => {
           {/* Preset Weight / Quantity Chips */}
           <div className="toters-presets-section">
             <div className="toters-presets-label">
-              <span>{isWeightBased ? 'Choose Weight:' : 'Choose Quantity:'}</span>
+              <span>{isWeightBased ? 'Choose Produce Weight:' : 'Choose Quantity:'}</span>
               {isWeightBased && (
                 <button 
                   className="toters-scale-link"
@@ -299,19 +289,16 @@ const ProductDetails = () => {
             </div>
 
             <div className="toters-chips-scroll">
-              {(isWeightBased ? weightPresets : unitPresets).map((preset) => {
-                const isSelected = quantity === preset;
-                const label = isWeightBased 
-                  ? (preset >= 1 ? `${preset * 1000} g` : `${preset * 1000} g`)
-                  : `${preset} ${preset === 1 ? 'item' : 'items'}`;
+              {presets.map((preset) => {
+                const isSelected = quantity === preset.qty;
                 return (
                   <button
-                    key={preset}
+                    key={preset.qty}
                     type="button"
                     className={`toters-preset-chip ${isSelected ? 'active' : ''}`}
-                    onClick={() => setPresetQuantity(preset)}
+                    onClick={() => setPresetQuantity(preset.qty)}
                   >
-                    {label}
+                    {preset.label}
                   </button>
                 );
               })}
@@ -358,7 +345,7 @@ const ProductDetails = () => {
             type="button" 
             className="toters-step-btn minus"
             onClick={() => handleQuantityChange(-1)} 
-            disabled={quantity <= (isWeightBased ? 0.5 : 1)}
+            disabled={quantity <= 1}
             aria-label="Decrease"
           >
             <Minus size={20} />
@@ -369,7 +356,7 @@ const ProductDetails = () => {
             onClick={() => isWeightBased && setIsScaleOpen(true)}
             title={isWeightBased ? "Tap to open scale" : ""}
           >
-            {formatUnitDisplay(quantity, product.unit)}
+            {formatQuantityWithUnit(quantity, normUnit)}
           </span>
 
           <button 
@@ -417,7 +404,7 @@ const ProductDetails = () => {
           onConfirm={handleWeightConfirm}
           initialWeight={quantity}
           pricePerUnit={product.price}
-          unit={product.unit}
+          unit={normUnit}
         />
       )}
     </div>

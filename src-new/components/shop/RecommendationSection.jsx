@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import api from '../../utils/api';
 import ProductCard from './ProductCard';
+import { normalizeUnit } from '../../utils/unitHelper';
 import './RecommendationSection.css';
 
 const RecommendationSection = ({ currentProductId }) => {
@@ -49,7 +50,7 @@ const RecommendationSection = ({ currentProductId }) => {
               name: item.product.name,
               category: item.product.category,
               price: item.product.price,
-              unit: item.product.unit, // Ensure unit is passed if available in backend response
+              unit: normalizeUnit(item.product.unit),
               rating: 5, // Default
               reviews: 0, // Default
               image: item.product.image,

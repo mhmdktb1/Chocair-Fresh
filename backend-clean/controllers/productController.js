@@ -4,6 +4,19 @@ import Product from '../models/productModel.js';
 // Helper to escape regex special characters
 const escapeRegex = (str) => String(str).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 
+// Normalize unit to one of the 6 allowed units: 1kg, 500g, 200g, bunch, piece, pack
+const normalizeUnit = (rawUnit) => {
+  if (!rawUnit) return '1kg';
+  const u = String(rawUnit).trim().toLowerCase();
+  if (u === '1kg' || u === '1 kg' || u === 'kg' || u === 'kilogram' || u === 'kilograms' || u === 'kilo') return '1kg';
+  if (u === '500g' || u === '500 g' || u === '0.5kg' || u === 'half kg' || u === 'g') return '500g';
+  if (u === '200g' || u === '200 g' || u === '0.2kg' || u === '250g' || u === '250 g') return '200g';
+  if (u === 'bunch' || u === 'bunches' || u === 'bundle' || u === 'bundles') return 'bunch';
+  if (u === 'piece' || u === 'peice' || u === 'pieces' || u === 'peices' || u === 'pcs' || u === 'pc' || u === 'unit') return 'piece';
+  if (u === 'pack' || u === 'packs' || u === 'box' || u === 'boxes' || u === 'jar' || u === 'bottle') return 'pack';
+  return '1kg';
+};
+
 // @desc    Fetch all products (supports category, keyword, and limit query params)
 // @route   GET /api/products
 // @access  Public
@@ -116,7 +129,7 @@ const createProduct = asyncHandler(async (req, res) => {
     brand: brand ? brand.trim() : 'Chocair Fresh',
     category: category ? category.trim() : 'general',
     countInStock: numStock,
-    unit: unit ? unit.trim() : 'kg',
+    unit: normalizeUnit(unit),
   });
 
   const createdProduct = await product.save();
@@ -199,7 +212,7 @@ const updateProduct = asyncHandler(async (req, res) => {
       res.status(400);
       throw new Error('Unit must be a string');
     }
-    product.unit = unit.trim();
+    product.unit = normalizeUnit(unit);
   }
 
   const updatedProduct = await product.save();

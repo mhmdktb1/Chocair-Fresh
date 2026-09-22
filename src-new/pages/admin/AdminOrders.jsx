@@ -26,6 +26,7 @@ import {
   Send,
   ExternalLink
 } from "lucide-react";
+import { normalizeUnit, formatQuantityWithUnit } from "../../utils/unitHelper";
 import './AdminComponents.css';
 
 // Normalize phone numbers for WhatsApp URL scheme
@@ -93,7 +94,7 @@ export const formatWhatsAppOrderMessage = (order) => {
   if (items.length > 0) {
     items.forEach((item, idx) => {
       const qty = item.quantity || 1;
-      const unit = item.unit || 'unit';
+      const unit = normalizeUnit(item.unit);
       const itemTotal = Number(item.total || (item.price * qty) || 0).toFixed(2);
       text += ` ${idx + 1}. *${item.name}* (x${qty} ${unit}) — $${itemTotal}\n`;
       if (item.instruction) {
@@ -1072,7 +1073,7 @@ function AdminOrders() {
                         <div className="order-modal-item-info">
                           <div className="order-modal-item-name">{item.name}</div>
                           <div className="order-modal-item-qty">
-                            ${Number(item.price || 0).toFixed(2)} × {item.quantity} {item.unit || 'unit'}
+                            ${Number(item.price || 0).toFixed(2)} × {item.quantity} ({normalizeUnit(item.unit)})
                           </div>
                           {item.instruction && (
                             <div className="order-modal-item-instruction">

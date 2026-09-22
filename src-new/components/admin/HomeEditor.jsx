@@ -25,6 +25,7 @@ import {
   ChevronRight,
   Eye
 } from 'lucide-react';
+import { normalizeUnit } from '../../utils/unitHelper';
 import './HomeEditor.css';
 
 const HomeEditor = () => {
@@ -894,7 +895,7 @@ const HomeEditor = () => {
                           />
                           <div className="search-result-text">
                             <span className="search-result-name">{product.name}</span>
-                            <span className="search-result-price">${Number(product.price || 0).toFixed(2)} / {product.unit || 'kg'}</span>
+                            <span className="search-result-price">${Number(product.price || 0).toFixed(2)} / {normalizeUnit(product.unit)}</span>
                           </div>
                           <Plus size={16} className="add-icon" />
                         </div>

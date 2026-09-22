@@ -4,6 +4,7 @@ import { Plus, Minus, Eye, Star, Heart } from 'lucide-react';
 import { useCart } from '../../context/CartContext';
 import { useFavorites } from '../../context/FavoritesContext';
 import { formatCurrency } from '../../utils/formatters';
+import { normalizeUnit } from '../../utils/unitHelper';
 import './ProductCard.css';
 
 const ProductCard = ({ product }) => {
@@ -90,7 +91,7 @@ const ProductCard = ({ product }) => {
               onClick={(e) => {
                 e.preventDefault();
                 e.stopPropagation();
-                addToCart(product);
+                addToCart({ ...product, unit: normalizeUnit(product.unit) });
               }}
               title="Add to Cart"
               aria-label={`Add ${product.name} to cart`}
@@ -122,7 +123,7 @@ const ProductCard = ({ product }) => {
               </span>
             )}
           </div>
-          {product.unit && <span className="unit-label">/ {product.unit}</span>}
+          <span className="unit-label">/ {normalizeUnit(product.unit)}</span>
         </div>
       </div>
     </div>

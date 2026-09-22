@@ -13,6 +13,7 @@ import Button from '../components/common/Button';
 import ProductCard from '../components/shop/ProductCard';
 import CartRecommendations from '../components/shop/CartRecommendations';
 import { formatCurrency } from '../utils/formatters';
+import { normalizeUnit, formatQuantityWithUnit, formatUnitRate } from '../utils/unitHelper';
 import { toast } from 'react-toastify';
 import './Cart.css';
 
@@ -480,7 +481,12 @@ const Cart = () => {
                           {item.name}
                         </Link>
                         <span className="cart-item-unit-rate">
-                          {formatCurrency(item.price)} {item.unit ? `/ ${item.unit}` : ''}
+                          {formatCurrency(item.price)} / {normalizeUnit(item.unit)}
+                          {item.quantity > 1 && (
+                            <span style={{ marginLeft: 6, color: '#16a34a', fontWeight: 600 }}>
+                              ({formatQuantityWithUnit(item.quantity, item.unit)})
+                            </span>
+                          )}
                         </span>
                         {item.instruction ? (
                           <div className="cart-item-instruction-box">

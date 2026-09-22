@@ -10,6 +10,7 @@ import { useCart } from '../context/CartContext';
 import { useAuth } from '../context/AuthContext';
 import { normalizeLebanesePhoneNumber } from '../utils/phoneUtils';
 import { formatCurrency } from '../utils/formatters';
+import { normalizeUnit, formatQuantityWithUnit } from '../utils/unitHelper';
 import Navbar from '../components/layout/Navbar';
 import Button from '../components/common/Button';
 import LocationPicker from '../components/common/LocationPicker';
@@ -128,7 +129,7 @@ const Checkout = () => {
           qty: item.quantity,
           image: item.image,
           price: item.price,
-          unit: item.unit || 'kg',
+          unit: normalizeUnit(item.unit),
           instruction: item.instruction || item.specialInstructions || '',
           product: item._id || item.id
         })),
@@ -332,7 +333,10 @@ const Checkout = () => {
                   </div>
                   <div className="mobile-item-info">
                     <h4 className="mobile-item-name">{item.name}</h4>
-                    <span className="mobile-item-unit-rate">{formatCurrency(item.price)} each</span>
+                    <span className="mobile-item-unit-rate">
+                      {formatCurrency(item.price)} / {normalizeUnit(item.unit)}
+                      {item.quantity > 1 && ` (${formatQuantityWithUnit(item.quantity, item.unit)})`}
+                    </span>
                     {item.instruction && (
                       <span className="mobile-item-instruction" style={{ display: 'block', fontSize: '0.75rem', color: '#16a34a', marginTop: '2px', fontStyle: 'italic' }}>
                         Note: "{item.instruction}"
@@ -828,7 +832,10 @@ const Checkout = () => {
                     </div>
                     <div className="sidebar-item-info">
                       <h4 className="sidebar-item-name">{item.name}</h4>
-                      <span className="sidebar-item-rate">{formatCurrency(item.price)} each</span>
+                      <span className="sidebar-item-rate">
+                        {formatCurrency(item.price)} / {normalizeUnit(item.unit)}
+                        {item.quantity > 1 && ` (${formatQuantityWithUnit(item.quantity, item.unit)})`}
+                      </span>
                       {item.instruction && (
                         <span className="sidebar-item-instruction" style={{ display: 'block', fontSize: '0.75rem', color: '#16a34a', marginTop: '2px', fontStyle: 'italic' }}>
                           Note: "{item.instruction}"

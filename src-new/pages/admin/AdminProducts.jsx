@@ -1,6 +1,7 @@
 import { useState, useMemo } from "react";
 import { useAdmin } from "../../context/AdminContext";
 import { useCMS } from "../../context/CMSContext";
+import { ALLOWED_UNITS, normalizeUnit, formatUnitRate } from "../../utils/unitHelper";
 import { 
   Plus, 
   Edit2, 
@@ -29,8 +30,8 @@ function AdminProducts() {
     category: "",
     categories: [],
     price: "",
-    priceUnit: "kg",
-    unit: "kg",
+    priceUnit: "1kg",
+    unit: "1kg",
     stock: "",
     image: "",
     featured: false,
@@ -57,13 +58,14 @@ function AdminProducts() {
   const handleOpenModal = (product = null) => {
     if (product) {
       setEditingProduct(product);
+      const normalizedU = normalizeUnit(product.priceUnit || product.unit);
       setFormData({
         name: product.name || "",
         category: product.category || "",
         categories: product.categories?.length ? product.categories : [product.category || ""].filter(Boolean),
         price: product.price !== undefined ? String(product.price) : "",
-        priceUnit: product.priceUnit || "kg",
-        unit: product.unit || "kg",
+        priceUnit: normalizedU,
+        unit: normalizedU,
         stock: product.stock !== undefined ? String(product.stock) : "50",
         image: product.image || "",
         featured: product.featured || false,
@@ -78,8 +80,8 @@ function AdminProducts() {
         category: defaultCat,
         categories: defaultCat ? [defaultCat] : [],
         price: "",
-        priceUnit: "kg",
-        unit: "kg",
+        priceUnit: "1kg",
+        unit: "1kg",
         stock: "50",
         image: "",
         featured: false,
@@ -116,6 +118,7 @@ function AdminProducts() {
     }
 
     const selectedCat = formData.category || formData.categories[0] || (categories[0] ? categories[0].name : "General");
+    const chosenUnit = normalizeUnit(formData.unit || formData.priceUnit);
 
     const productData = {
       name: formData.name.trim(),
@@ -123,8 +126,8 @@ function AdminProducts() {
       categories: formData.categories.length > 0 ? formData.categories : [selectedCat],
       price: parseFloat(formData.price),
       stock: parseInt(formData.stock, 10),
-      priceUnit: formData.priceUnit || 'kg',
-      unit: formData.unit || 'kg',
+      priceUnit: chosenUnit,
+      unit: chosenUnit,
       featured: formData.featured || false,
       description: formData.description || '',
       image: formData.image.trim() || '/assets/images/products/placeholder.jpg'
@@ -279,7 +282,7 @@ function AdminProducts() {
                   <div className="product-card-metrics">
                     <span className="product-price-pill">
                       ${Number(product.price || 0).toFixed(2)}
-                      <span style={{ fontSize: '0.75rem', fontWeight: 500, color: '#64748b' }}>/{product.priceUnit || product.unit || 'kg'}</span>
+                      <span style={{ fontSize: '0.75rem', fontWeight: 500, color: '#64748b' }}>/{normalizeUnit(product.priceUnit || product.unit)}</span>
                     </span>
 
                     <span className={`product-stock-pill ${isOutOfStock || isLowStock ? 'stock-low' : 'stock-in'}`}>
@@ -380,17 +383,12 @@ function AdminProducts() {
                       value={formData.priceUnit}
                       onChange={(e) => setFormData({ ...formData, priceUnit: e.target.value, unit: e.target.value })}
                     >
-                      {pricingRules?.availableUnits?.map(u => (
-                        <option key={u.value} value={u.value}>{u.label}</option>
-                      )) || (
-                        <>
-                          <option value="kg">Per Kilogram (kg)</option>
-                          <option value="box">Per Box</option>
-                          <option value="piece">Per Piece</option>
-                          <option value="bundle">Per Bundle</option>
-                          <option value="pack">Per Pack</option>
-                        </>
-                      )}
+                      <option value="1kg">1kg (Per Kilogram)</option>
+                      <option value="500g">500g (Per 500 grams)</option>
+                      <option value="200g">200g (Per 200 grams)</option>
+                      <option value="bunch">bunch (Per Bunch)</option>
+                      <option value="piece">piece (Per Piece)</option>
+                      <option value="pack">pack (Per Pack)</option>
                     </select>
                   </div>
                 </div>

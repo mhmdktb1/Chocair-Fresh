@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { ArrowRight, ArrowLeft } from 'lucide-react';
 import ProductCard from './ProductCard';
 import api from '../../utils/api';
+import { normalizeUnit } from '../../utils/unitHelper';
 import './RecommendationRow.css';
 
 const RecommendationRow = ({ title, subtitle = null, type, productId = null, limit = 8, cartItems = [], items = [] }) => {
@@ -199,7 +200,7 @@ const RecommendationRow = ({ title, subtitle = null, type, productId = null, lim
                   name: product.name,
                   category: product.category,
                   price: product.price,
-                  unit: product.unit || 'kg',
+                  unit: normalizeUnit(product.unit),
                   rating: product.rating !== undefined ? product.rating : 5,
                   reviews: product.numReviews !== undefined ? product.numReviews : (product.reviews || 0),
                   image: product.image,

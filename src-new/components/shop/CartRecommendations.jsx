@@ -3,6 +3,7 @@ import { Sparkles } from 'lucide-react';
 import ProductCard from './ProductCard';
 import api from '../../utils/api';
 import { useCart } from '../../context/CartContext';
+import { normalizeUnit } from '../../utils/unitHelper';
 import './CartRecommendations.css';
 
 const CartRecommendations = ({ limit = 8 }) => {
@@ -82,7 +83,7 @@ const CartRecommendations = ({ limit = 8 }) => {
                 name: product.name,
                 category: product.category,
                 price: product.price,
-                unit: product.unit,
+                unit: normalizeUnit(product.unit),
                 rating: product.rating || 4.9,
                 reviews: product.reviews || 16,
                 image: product.image,

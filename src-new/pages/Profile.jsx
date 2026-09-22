@@ -27,6 +27,7 @@ import Button from '../components/common/Button';
 import Loading from '../components/common/Loading';
 import { normalizeLebanesePhoneNumber, formatPhoneNumber } from '../utils/phoneUtils';
 import { formatCurrency, formatDate } from '../utils/formatters';
+import { normalizeUnit } from '../utils/unitHelper';
 import { toast } from 'react-toastify';
 import './Profile.css';
 
@@ -1079,7 +1080,7 @@ const Profile = () => {
 
                   <div className="fav-compact-price-row">
                     <span className="fav-compact-price">{formatCurrency(product.price)}</span>
-                    {product.unit && <span className="fav-compact-unit">/{product.unit}</span>}
+                    <span className="fav-compact-unit">/{normalizeUnit(product.unit)}</span>
                   </div>
 
                   <button
@@ -1087,7 +1088,7 @@ const Profile = () => {
                     className="fav-compact-add-btn"
                     disabled={!inStock}
                     onClick={() => {
-                      addToCart(product, 1);
+                      addToCart({ ...product, unit: normalizeUnit(product.unit) }, 1);
                       toast.success(`${product.name} added to cart!`);
                     }}
                   >

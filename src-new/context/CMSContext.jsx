@@ -1,4 +1,5 @@
 import { createContext, useContext, useState, useEffect } from "react";
+import { ALLOWED_UNITS, normalizeUnit } from "../utils/unitHelper";
 
 const CMSContext = createContext();
 
@@ -154,24 +155,36 @@ export const CMSProvider = ({ children }) => {
     ];
   });
 
-  // Pricing Rules & Logic
+  // Pricing Rules & Logic (strictly: 1kg, 500g, 200g, bunch, piece, pack)
   const [pricingRules, setPricingRules] = useState(() => {
-    const saved = localStorage.getItem("cms_pricing_rules");
-    return saved ? JSON.parse(saved) : {
-      defaultUnit: "kg",
+    const defaultRules = {
+      defaultUnit: "1kg",
       availableUnits: [
-        { value: "kg", label: "Kilogram (kg)", base: 1 },
-        { value: "500g", label: "500 grams", base: 0.5 },
-        { value: "250g", label: "250 grams", base: 0.25 },
-        { value: "200g", label: "200 grams", base: 0.2 },
-        { value: "pcs", label: "Per Piece", base: null },
-        { value: "bunch", label: "Per Bunch", base: null },
-        { value: "pack", label: "Per Pack", base: null },
-        { value: "jar", label: "Per Jar", base: null },
-        { value: "bottle", label: "Per Bottle", base: null }
+        { value: "1kg", label: "1kg (Kilogram)", base: 1.0 },
+        { value: "500g", label: "500g (500 grams)", base: 0.5 },
+        { value: "200g", label: "200g (200 grams)", base: 0.2 },
+        { value: "bunch", label: "Bunch (Per Bunch)", base: null },
+        { value: "piece", label: "Piece (Per Piece)", base: null },
+        { value: "pack", label: "Pack (Per Pack)", base: null }
       ],
       autoCalculate: true
     };
+    try {
+      const saved = localStorage.getItem("cms_pricing_rules");
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        // Ensure units are normalized strictly to the 6 allowed units
+        return {
+          ...defaultRules,
+          ...parsed,
+          defaultUnit: normalizeUnit(parsed.defaultUnit || "1kg"),
+          availableUnits: defaultRules.availableUnits
+        };
+      }
+    } catch (e) {
+      console.error("Failed to parse pricing rules", e);
+    }
+    return defaultRules;
   });
 
   // Enhanced Products with CMS features (pricing, categories, featured)
@@ -291,15 +304,18 @@ export const CMSProvider = ({ children }) => {
   const calculatePrice = (basePrice, basePriceUnit, targetUnit) => {
     if (!pricingRules.autoCalculate) return basePrice;
 
-    const baseUnitData = pricingRules.availableUnits.find(u => u.value === basePriceUnit);
-    const targetUnitData = pricingRules.availableUnits.find(u => u.value === targetUnit);
+    const baseNorm = normalizeUnit(basePriceUnit);
+    const targetNorm = normalizeUnit(targetUnit);
+
+    const baseUnitData = pricingRules.availableUnits.find(u => u.value === baseNorm);
+    const targetUnitData = pricingRules.availableUnits.find(u => u.value === targetNorm);
 
     if (!baseUnitData || !targetUnitData || !baseUnitData.base || !targetUnitData.base) {
-      return basePrice; // Can't calculate for non-weight units
+      return basePrice; // Can't calculate conversion for non-weight units
     }
 
     // Calculate price per kg, then convert to target unit
-    const pricePerKg = basePrice / baseUnitData.base;
+    const pricePerKg = Number(basePrice) / baseUnitData.base;
     return (pricePerKg * targetUnitData.base).toFixed(2);
   };
 

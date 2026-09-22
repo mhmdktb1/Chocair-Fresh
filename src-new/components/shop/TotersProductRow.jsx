@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { Plus, ArrowRight } from 'lucide-react';
 import { useCart } from '../../context/CartContext';
 import api from '../../utils/api';
+import { normalizeUnit, formatQuantityWithUnit } from '../../utils/unitHelper';
 import './TotersProductRow.css';
 
 const FALLBACK_IMAGE = 'https://images.unsplash.com/photo-1542838132-92c53300491e?auto=format&fit=crop&w=600&q=80';
@@ -82,8 +83,7 @@ const TotersProductRow = ({ title, type, productId = null, category = null, limi
   const handleQuickAdd = (e, item) => {
     e.preventDefault();
     e.stopPropagation();
-    const qty = item.unit === 'kg' || item.unit === 'g' || item.unit === '1kg' ? 1.0 : 1;
-    addToCart(item, qty);
+    addToCart({ ...item, unit: normalizeUnit(item.unit) }, 1);
   };
 
   if (!loading && products.length === 0) return null;
@@ -113,8 +113,8 @@ const TotersProductRow = ({ title, type, productId = null, category = null, limi
         ) : (
           products.map(item => {
             const inCartItem = cartItems.find(c => c._id === item._id);
-            const isWeight = item.unit === 'kg' || item.unit === 'g' || item.unit === '1kg';
-            const unitLabel = item.unit === 'kg' ? '1,000 g' : (item.unit === 'g' ? '500 g' : item.unit || '500 g');
+            const normU = normalizeUnit(item.unit);
+            const unitLabel = `Per ${normU}`;
 
             return (
               <div 
@@ -135,7 +135,7 @@ const TotersProductRow = ({ title, type, productId = null, category = null, limi
 
                   {inCartItem ? (
                     <div className="toters-in-cart-badge">
-                      {isWeight ? `${Math.round(inCartItem.quantity * 1000)} g` : `${inCartItem.quantity} in cart`}
+                      {formatQuantityWithUnit(inCartItem.quantity, normU)}
                     </div>
                   ) : (
                     <button 
