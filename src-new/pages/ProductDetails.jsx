@@ -78,6 +78,9 @@ const ProductDetails = () => {
         const inCart = cartItems.find(item => item._id === data._id);
         if (inCart) {
           setQuantity(inCart.quantity);
+          if (inCart.instruction) {
+            setSpecialInstructions(inCart.instruction);
+          }
         } else if (data.unit === 'kg' || data.unit === 'g' || data.unit === '1kg') {
           setQuantity(1.0);
         } else {
@@ -108,7 +111,7 @@ const ProductDetails = () => {
     if (newQty >= minQty && newQty <= (product?.countInStock || 100)) {
       setQuantity(newQty);
       if (existingCartItem) {
-        updateQuantity(product._id, newQty);
+        updateQuantity(product._id, newQty, specialInstructions);
       }
     }
   };
@@ -117,7 +120,7 @@ const ProductDetails = () => {
     if (product && qty <= (product.countInStock || 100)) {
       setQuantity(qty);
       if (existingCartItem) {
-        updateQuantity(product._id, qty);
+        updateQuantity(product._id, qty, specialInstructions);
       }
     }
   };
@@ -125,7 +128,7 @@ const ProductDetails = () => {
   const handleWeightConfirm = (weight) => {
     setQuantity(weight);
     if (existingCartItem) {
-      updateQuantity(product._id, weight);
+      updateQuantity(product._id, weight, specialInstructions);
     }
     setIsScaleOpen(false);
   };
@@ -160,10 +163,10 @@ const ProductDetails = () => {
   const handleAddToCartOrUpdate = () => {
     if (!product) return;
     if (!existingCartItem) {
-      addToCart(product, quantity);
+      addToCart(product, quantity, specialInstructions);
       toast.success(`Added ${quantity} ${product.unit || 'items'} to cart!`, { icon: '🛒' });
     } else {
-      updateQuantity(product._id, quantity);
+      updateQuantity(product._id, quantity, specialInstructions);
       toast.success(`Cart updated to ${quantity} ${product.unit || 'items'}!`, { icon: '✅' });
     }
   };

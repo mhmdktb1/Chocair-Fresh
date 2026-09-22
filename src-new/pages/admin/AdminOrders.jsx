@@ -19,9 +19,99 @@ import {
   X,
   Sparkles,
   ArrowRight,
-  SlidersHorizontal
+  SlidersHorizontal,
+  Share2,
+  Copy,
+  Check,
+  Send,
+  ExternalLink
 } from "lucide-react";
 import './AdminComponents.css';
+
+// Normalize phone numbers for WhatsApp URL scheme
+export const normalizePhoneForWhatsApp = (phone) => {
+  if (!phone) return '';
+  let cleaned = String(phone).replace(/[^\d]/g, '');
+  if (cleaned.startsWith('0') && cleaned.length === 8) {
+    cleaned = '961' + cleaned.slice(1);
+  } else if (cleaned.length === 8 && ['7', '3', '8', '1'].includes(cleaned[0])) {
+    cleaned = '961' + cleaned;
+  }
+  return cleaned;
+};
+
+// Generate a simplified, highly organized, emoji-enhanced WhatsApp order message
+export const formatWhatsAppOrderMessage = (order) => {
+  if (!order) return '';
+  const shortId = order.id ? `#${order.id.slice(-6).toUpperCase()}` : '#ORDER';
+
+  let formattedDate = '';
+  try {
+    const d = new Date(order.date);
+    formattedDate = d.toLocaleDateString([], {
+      day: 'numeric',
+      month: 'short',
+      year: 'numeric'
+    }) + ' at ' + d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  } catch {
+    formattedDate = order.date || 'Recent';
+  }
+
+  const customerName = order.customer || 'Customer';
+  const phone = order.phone || '';
+  const address = order.shippingAddress?.address || (typeof order.shippingAddress === 'string' ? order.shippingAddress : '') || '';
+  const deliveryPref = order.deliveryPreference || order.shippingAddress?.deliveryPreference || '';
+  const instructions = order.shippingAddress?.additionalInfo || order.additionalInfo || '';
+  const mapsLink = order.googleMapsLink || '';
+  const items = Array.isArray(order.items) ? order.items : [];
+
+  let text = `🍏 *CHOCAIR FRESH — ORDER SUMMARY*\n`;
+  text += `━━━━━━━━━━━━━━━━━━━━━\n`;
+  text += `🧾 *Order ID:* ${shortId}\n`;
+  text += `📅 *Date:* ${formattedDate}\n`;
+  text += `⚡ *Status:* *${order.status || 'Pending'}*\n\n`;
+
+  text += `👤 *CUSTOMER & DELIVERY*\n`;
+  text += `• *Name:* ${customerName}\n`;
+  if (phone) {
+    text += `• *Phone:* ${phone}\n`;
+  }
+  if (address) {
+    text += `• *Address:* ${address}\n`;
+  }
+  if (deliveryPref) {
+    text += `• *Delivery Slot:* ${deliveryPref}\n`;
+  }
+  if (instructions) {
+    text += `• *Special Notes:* "${instructions}"\n`;
+  }
+  if (mapsLink) {
+    text += `• *Location (Maps):* ${mapsLink}\n`;
+  }
+
+  text += `\n🛒 *ITEMS ORDERED (${items.length}):*\n`;
+  if (items.length > 0) {
+    items.forEach((item, idx) => {
+      const qty = item.quantity || 1;
+      const unit = item.unit || 'unit';
+      const itemTotal = Number(item.total || (item.price * qty) || 0).toFixed(2);
+      text += ` ${idx + 1}. *${item.name}* (x${qty} ${unit}) — $${itemTotal}\n`;
+      if (item.instruction) {
+        text += `    ↳ 📝 Note: _${item.instruction}_\n`;
+      }
+    });
+  } else {
+    text += `• No items specified\n`;
+  }
+
+  text += `━━━━━━━━━━━━━━━━━━━━━\n`;
+  text += `💵 *TOTAL AMOUNT: $${Number(order.total || 0).toFixed(2)}*\n`;
+  text += `💳 *Payment:* ${order.paymentMethod || 'Cash on Delivery'}\n`;
+  text += `━━━━━━━━━━━━━━━━━━━━━\n`;
+  text += `🌱 _Chocair Fresh • Quality & Freshness Delivered_`;
+
+  return text;
+};
 
 function AdminOrders() {
   const { orders, updateOrderStatus, deleteOrder } = useAdmin();
@@ -32,6 +122,9 @@ function AdminOrders() {
   const [currentPage, setCurrentPage] = useState(1);
   const [selectedOrder, setSelectedOrder] = useState(null);
   const [isFilterModalOpen, setIsFilterModalOpen] = useState(false);
+  const [toastMessage, setToastMessage] = useState(null);
+  const [showWaPreview, setShowWaPreview] = useState(false);
+  const [copiedId, setCopiedId] = useState(null);
   const ordersPerPage = 12;
 
   const hasActiveFilters = dateFilter !== "today" || sortBy !== "date-desc";
@@ -179,15 +272,86 @@ function AdminOrders() {
     }
   };
 
-  // Helper to build a direct WhatsApp link
-  const getWhatsAppLink = (order) => {
-    if (!order.phone) return null;
-    const cleanPhone = order.phone.replace(/[^0-9+]/g, '');
-    const text = encodeURIComponent(
-      `Hello ${order.customer || 'Customer'}, this is Chocair Fresh regarding your Order #${order.id?.substring(order.id.length - 6) || order.id}. Total: $${Number(order.total || 0).toFixed(2)}.`
-    );
-    return `https://wa.me/${cleanPhone}?text=${text}`;
+  // Build direct WhatsApp link with customer
+  const getCustomerWhatsAppUrl = useCallback((order) => {
+    if (!order) return "#";
+    const message = formatWhatsAppOrderMessage(order);
+    const cleanPhone = normalizePhoneForWhatsApp(order.phone);
+    if (cleanPhone) {
+      return `https://wa.me/${cleanPhone}?text=${encodeURIComponent(message)}`;
+    }
+    return `https://api.whatsapp.com/send?text=${encodeURIComponent(message)}`;
+  }, []);
+
+  // Build generic WhatsApp share link for driver / staff / any contact
+  const getGeneralWhatsAppUrl = useCallback((order) => {
+    if (!order) return "#";
+    const message = formatWhatsAppOrderMessage(order);
+    return `https://api.whatsapp.com/send?text=${encodeURIComponent(message)}`;
+  }, []);
+
+  const fallbackCopy = (text, orderId, shortId) => {
+    const textarea = document.createElement('textarea');
+    textarea.value = text;
+    textarea.style.position = 'fixed';
+    textarea.style.opacity = '0';
+    document.body.appendChild(textarea);
+    textarea.select();
+    try {
+      document.execCommand('copy');
+      setCopiedId(orderId);
+      setToastMessage(`Order ${shortId} details copied!`);
+      setTimeout(() => {
+        setCopiedId(null);
+        setToastMessage(null);
+      }, 2500);
+    } catch {
+      alert('Could not auto-copy. Please copy manually from the preview.');
+    }
+    document.body.removeChild(textarea);
   };
+
+  // Copy simplified formatted text to clipboard
+  const handleCopyOrder = useCallback((order) => {
+    if (!order) return;
+    const text = formatWhatsAppOrderMessage(order);
+    const shortId = order.id ? `#${order.id.slice(-6).toUpperCase()}` : '';
+
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(text).then(() => {
+        setCopiedId(order.id);
+        setToastMessage(`Order ${shortId} details copied to clipboard!`);
+        setTimeout(() => {
+          setCopiedId(null);
+          setToastMessage(null);
+        }, 2500);
+      }).catch(() => {
+        fallbackCopy(text, order.id, shortId);
+      });
+    } else {
+      fallbackCopy(text, order.id, shortId);
+    }
+  }, []);
+
+  // Native share or fallback to generic WhatsApp share
+  const handleShareGeneric = useCallback((order) => {
+    if (!order) return;
+    const text = formatWhatsAppOrderMessage(order);
+    const shortId = order.id ? `#${order.id.slice(-6).toUpperCase()}` : '#ORDER';
+
+    if (navigator.share) {
+      navigator.share({
+        title: `Chocair Fresh - Order ${shortId}`,
+        text: text,
+      }).catch((err) => {
+        if (err.name !== 'AbortError') {
+          window.open(getGeneralWhatsAppUrl(order), '_blank', 'noopener,noreferrer');
+        }
+      });
+    } else {
+      window.open(getGeneralWhatsAppUrl(order), '_blank', 'noopener,noreferrer');
+    }
+  }, [getGeneralWhatsAppUrl]);
 
   // Formatted date string
   const formatOrderDate = (dateStr) => {
@@ -374,6 +538,13 @@ function AdminOrders() {
                     <span className="order-items-count">{itemsCount} item{itemsCount > 1 ? 's' : ''}</span>
                   </div>
                 </div>
+
+                {order.items?.some(i => i.instruction) && (
+                  <div className="order-card-has-instructions">
+                    <MessageCircle size={12} color="#059669" />
+                    <span>Special item instructions included</span>
+                  </div>
+                )}
 
                 {/* Desktop Action Bar */}
                 <div className="order-card-actions order-actions-desktop" onClick={(e) => e.stopPropagation()}>
@@ -773,6 +944,12 @@ function AdminOrders() {
                           <div className="order-modal-item-qty">
                             ${Number(item.price || 0).toFixed(2)} × {item.quantity} {item.unit || 'unit'}
                           </div>
+                          {item.instruction && (
+                            <div className="order-modal-item-instruction">
+                              <span className="order-instruction-label">Customer Note:</span>
+                              <span className="order-instruction-text">"{item.instruction}"</span>
+                            </div>
+                          )}
                         </div>
                         <div className="order-modal-item-total">
                           ${Number(item.total || (item.price * item.quantity) || 0).toFixed(2)}

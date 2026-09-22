@@ -34,7 +34,7 @@ const POPULAR_CATEGORIES = [
 ];
 
 const Cart = () => {
-  const { cartItems, updateQuantity, removeFromCart, clearCart, cartTotal, cartCount } = useCart();
+  const { cartItems, updateQuantity, updateItemInstruction, removeFromCart, clearCart, cartTotal, cartCount } = useCart();
   const { products, loading: productsLoading } = useProducts();
   const { favorites } = useFavorites();
   const navigate = useNavigate();
@@ -482,6 +482,47 @@ const Cart = () => {
                         <span className="cart-item-unit-rate">
                           {formatCurrency(item.price)} {item.unit ? `/ ${item.unit}` : ''}
                         </span>
+                        {item.instruction ? (
+                          <div className="cart-item-instruction-box">
+                            <MessageSquare size={12} className="cart-instruction-icon" />
+                            <span className="cart-instruction-text">"{item.instruction}"</span>
+                            <button
+                              type="button"
+                              className="cart-instruction-edit-btn"
+                              onClick={() => {
+                                const newNote = window.prompt(`Edit instructions for ${item.name}:`, item.instruction || '');
+                                if (newNote !== null) {
+                                  updateItemInstruction(item._id, newNote.trim());
+                                }
+                              }}
+                              title="Edit instruction"
+                            >
+                              Edit
+                            </button>
+                            <button
+                              type="button"
+                              className="cart-instruction-remove-btn"
+                              onClick={() => updateItemInstruction(item._id, '')}
+                              title="Remove instruction"
+                            >
+                              ×
+                            </button>
+                          </div>
+                        ) : (
+                          <button
+                            type="button"
+                            className="cart-item-add-instruction-btn"
+                            onClick={() => {
+                              const newNote = window.prompt(`Special instructions for ${item.name} (e.g. extra ripe, green, sliced):`);
+                              if (newNote !== null && newNote.trim()) {
+                                updateItemInstruction(item._id, newNote.trim());
+                              }
+                            }}
+                          >
+                            <MessageSquare size={11} />
+                            <span>Add note</span>
+                          </button>
+                        )}
                       </div>
 
                       <button 

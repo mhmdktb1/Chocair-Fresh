@@ -915,6 +915,11 @@ const Profile = () => {
                             <span className="item-qty-rate">
                               {item.qty} × {formatCurrency(item.price)}
                             </span>
+                            {item.instruction && (
+                              <span className="item-instruction-note" style={{ display: 'block', fontSize: '0.74rem', color: '#16a34a', marginTop: '2px', fontStyle: 'italic' }}>
+                                Note: "{item.instruction}"
+                              </span>
+                            )}
                           </div>
                           <span className="item-row-total">
                             {formatCurrency(item.qty * item.price)}

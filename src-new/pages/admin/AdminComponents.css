@@ -1462,6 +1462,51 @@
   flex-shrink: 0;
 }
 
+/* Order Item Special Instructions */
+.order-modal-item-instruction {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  background: #fef3c7;
+  border: 1px solid #fde68a;
+  color: #92400e;
+  border-radius: 6px;
+  padding: 0.2rem 0.5rem;
+  margin-top: 0.35rem;
+  font-size: 0.76rem;
+  max-width: 100%;
+}
+
+.order-instruction-label {
+  font-weight: 700;
+  color: #b45309;
+  text-transform: uppercase;
+  font-size: 0.68rem;
+  letter-spacing: 0.3px;
+}
+
+.order-instruction-text {
+  font-style: italic;
+  font-weight: 600;
+  color: #78350f;
+  word-break: break-word;
+}
+
+.order-card-has-instructions {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.74rem;
+  font-weight: 600;
+  color: #047857;
+  background: #ecfdf5;
+  border: 1px solid #a7f3d0;
+  border-radius: 6px;
+  padding: 0.25rem 0.5rem;
+  margin-top: 0.4rem;
+  width: fit-content;
+}
+
 /* Empty State Box */
 .admin-empty-state {
   background: #ffffff;

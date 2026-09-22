@@ -131,7 +131,7 @@ export const sendWhatsAppOrderNotification = async (phone, order, options = {}) 
 
   try {
     const itemsSummary = (order.orderItems || [])
-      .map((item) => `• ${item.name} (${item.qty}x) - $${(item.price * item.qty).toFixed(2)}`)
+      .map((item) => `• ${item.name} (${item.qty}x) - $${(item.price * item.qty).toFixed(2)}${item.instruction ? `\n   ↳ 📝 Note: "${item.instruction}"` : ''}`)
       .join('\n');
 
     const messageText = isAdmin

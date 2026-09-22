@@ -22,17 +22,25 @@ export const useCartLogic = () => {
     }
   }, [cartItems]);
 
-  const addToCart = (product, quantity = 1) => {
+  const addToCart = (product, quantity = 1, instruction = undefined) => {
     setCartItems(prevItems => {
       const existingItem = prevItems.find(item => item._id === product._id);
       if (existingItem) {
         return prevItems.map(item => 
           item._id === product._id 
-            ? { ...item, quantity: item.quantity + quantity } 
+            ? { 
+                ...item, 
+                quantity: item.quantity + quantity,
+                instruction: instruction !== undefined ? instruction : (item.instruction || product.instruction || '')
+              } 
             : item
         );
       }
-      return [...prevItems, { ...product, quantity }];
+      return [...prevItems, { 
+        ...product, 
+        quantity, 
+        instruction: instruction !== undefined ? instruction : (product.instruction || '') 
+      }];
     });
     setIsCartOpen(true); // Open cart when adding item
   };
@@ -41,7 +49,7 @@ export const useCartLogic = () => {
     setCartItems(prevItems => prevItems.filter(item => item._id !== productId));
   };
 
-  const updateQuantity = (productId, newQuantity) => {
+  const updateQuantity = (productId, newQuantity, instruction = undefined) => {
     if (newQuantity < 1) {
       removeFromCart(productId);
       return;
@@ -49,7 +57,21 @@ export const useCartLogic = () => {
     setCartItems(prevItems => 
       prevItems.map(item => 
         item._id === productId 
-          ? { ...item, quantity: newQuantity } 
+          ? { 
+              ...item, 
+              quantity: newQuantity,
+              ...(instruction !== undefined ? { instruction } : {})
+            } 
+          : item
+      )
+    );
+  };
+
+  const updateItemInstruction = (productId, instruction) => {
+    setCartItems(prevItems => 
+      prevItems.map(item => 
+        item._id === productId 
+          ? { ...item, instruction } 
           : item
       )
     );
@@ -67,6 +89,7 @@ export const useCartLogic = () => {
     addToCart,
     removeFromCart,
     updateQuantity,
+    updateItemInstruction,
     clearCart,
     isCartOpen,
     setIsCartOpen,

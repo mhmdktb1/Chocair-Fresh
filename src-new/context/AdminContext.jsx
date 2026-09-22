@@ -67,7 +67,8 @@ export const AdminProvider = ({ children }) => {
       price: item.price !== undefined ? item.price : (item.product?.price || 0),
       total: (item.qty || item.quantity || 1) * (item.price !== undefined ? item.price : (item.product?.price || 0)),
       image: item.image || item.product?.image,
-      unit: item.unit || item.product?.unit || "kg"
+      unit: item.unit || item.product?.unit || "kg",
+      instruction: item.instruction || item.instructions || item.specialInstructions || item.note || item.notes || ""
     })),
     total: o.totalPrice || o.total || 0,
     status: o.status || "Pending",

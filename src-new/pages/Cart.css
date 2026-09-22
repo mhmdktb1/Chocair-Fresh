@@ -1328,6 +1328,88 @@
   margin: 1rem 0;
 }
 
+/* Item Instruction / Notes inside Cart */
+.cart-item-instruction-box {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  background: #f0fdf4;
+  border: 1px solid #bbf7d0;
+  border-radius: 6px;
+  padding: 0.25rem 0.5rem;
+  margin-top: 0.35rem;
+  max-width: 100%;
+}
+
+.cart-instruction-icon {
+  color: #16a34a;
+  flex-shrink: 0;
+}
+
+.cart-instruction-text {
+  font-size: 0.76rem;
+  color: #15803d;
+  font-style: italic;
+  font-weight: 500;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 220px;
+}
+
+.cart-instruction-edit-btn {
+  background: none;
+  border: none;
+  color: #16a34a;
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-decoration: underline;
+  cursor: pointer;
+  padding: 0 2px;
+}
+
+.cart-instruction-edit-btn:hover {
+  color: #15803d;
+}
+
+.cart-instruction-remove-btn {
+  background: none;
+  border: none;
+  color: #94a3b8;
+  font-size: 0.85rem;
+  line-height: 1;
+  cursor: pointer;
+  padding: 0 2px;
+  margin-left: 2px;
+}
+
+.cart-instruction-remove-btn:hover {
+  color: #ef4444;
+}
+
+.cart-item-add-instruction-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  background: transparent;
+  border: 1px dashed #cbd5e1;
+  color: #64748b;
+  font-size: 0.72rem;
+  font-weight: 600;
+  border-radius: 6px;
+  padding: 0.2rem 0.45rem;
+  margin-top: 0.35rem;
+  cursor: pointer;
+  width: fit-content;
+  transition: all 0.15s ease;
+}
+
+.cart-item-add-instruction-btn:hover {
+  border-color: #16a34a;
+  color: #16a34a;
+  background: #f0fdf4;
+}
+
 .total-row {
   display: flex;
   justify-content: space-between;

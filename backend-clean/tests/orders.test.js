@@ -58,7 +58,8 @@ describe('Order API', () => {
       name: 'Test Orange',
       qty: 2,
       price: 2.00,
-      image: 'orange.jpg'
+      image: 'orange.jpg',
+      instruction: 'Extra ripe please'
     }],
     customerInfo: {
       name: 'John Doe',
@@ -80,6 +81,7 @@ describe('Order API', () => {
     expect(res.status).toBe(201);
     expect(res.body.totalPrice).toBe(9.00);
     expect(res.body.orderItems).toHaveLength(1);
+    expect(res.body.orderItems[0].instruction).toBe('Extra ripe please');
 
     const updatedProduct = await Product.findById(productId);
     expect(updatedProduct.countInStock).toBe(98);

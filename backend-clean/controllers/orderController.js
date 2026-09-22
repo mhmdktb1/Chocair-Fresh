@@ -51,6 +51,7 @@ const addOrderItems = asyncHandler(async (req, res) => {
     const normalizedOrderItems = orderItems.map((item) => ({
       ...item,
       image: item.image || '/assets/images/placeholder-product.jpg',
+      instruction: item.instruction || item.instructions || item.specialInstructions || item.note || item.notes || '',
     }));
 
     const order = new Order({

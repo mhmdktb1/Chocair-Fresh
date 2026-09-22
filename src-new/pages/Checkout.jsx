@@ -128,6 +128,8 @@ const Checkout = () => {
           qty: item.quantity,
           image: item.image,
           price: item.price,
+          unit: item.unit || 'kg',
+          instruction: item.instruction || item.specialInstructions || '',
           product: item._id || item.id
         })),
         customerInfo: {
@@ -331,6 +333,11 @@ const Checkout = () => {
                   <div className="mobile-item-info">
                     <h4 className="mobile-item-name">{item.name}</h4>
                     <span className="mobile-item-unit-rate">{formatCurrency(item.price)} each</span>
+                    {item.instruction && (
+                      <span className="mobile-item-instruction" style={{ display: 'block', fontSize: '0.75rem', color: '#16a34a', marginTop: '2px', fontStyle: 'italic' }}>
+                        Note: "{item.instruction}"
+                      </span>
+                    )}
                   </div>
                   <span className="mobile-item-line-total">
                     {formatCurrency(item.price * item.quantity)}
@@ -822,6 +829,11 @@ const Checkout = () => {
                     <div className="sidebar-item-info">
                       <h4 className="sidebar-item-name">{item.name}</h4>
                       <span className="sidebar-item-rate">{formatCurrency(item.price)} each</span>
+                      {item.instruction && (
+                        <span className="sidebar-item-instruction" style={{ display: 'block', fontSize: '0.75rem', color: '#16a34a', marginTop: '2px', fontStyle: 'italic' }}>
+                          Note: "{item.instruction}"
+                        </span>
+                      )}
                     </div>
                     <span className="sidebar-item-price">
                       {formatCurrency(item.price * item.quantity)}
