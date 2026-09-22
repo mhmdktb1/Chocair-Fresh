@@ -145,10 +145,6 @@ const Footer = () => {
           <p className="footer-copyright">
             &copy; {currentYear} <strong>Chocair Fresh</strong>. All rights reserved.
           </p>
-          <div className="footer-bottom-badges">
-            <span className="trust-pill">🌱 100% Fresh Guaranteed</span>
-            <span className="trust-pill">⚡ Fast Beirut Delivery</span>
-          </div>
         </div>
       </div>
     </footer>

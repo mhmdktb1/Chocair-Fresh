@@ -94,17 +94,45 @@ const Profile = () => {
   const [showLogoutModal, setShowLogoutModal] = useState(false);
 
   const toggleSection = (sectionKey) => {
-    setOpenSections(prev => ({
-      ...prev,
-      [sectionKey]: !prev[sectionKey]
-    }));
+    const isMobile = typeof window !== 'undefined' && window.innerWidth <= 768;
+    setOpenSections(prev => {
+      const willBeOpen = !prev[sectionKey];
+      if (isMobile) {
+        // On mobile, opening a section automatically closes any other open section
+        return {
+          profile: false,
+          orders: false,
+          favorites: false,
+          addresses: false,
+          settings: false,
+          [sectionKey]: willBeOpen
+        };
+      }
+      return {
+        ...prev,
+        [sectionKey]: willBeOpen
+      };
+    });
   };
 
   const expandAndScrollToSection = (sectionKey) => {
-    setOpenSections(prev => ({
-      ...prev,
-      [sectionKey]: true
-    }));
+    const isMobile = typeof window !== 'undefined' && window.innerWidth <= 768;
+    setOpenSections(prev => {
+      if (isMobile) {
+        return {
+          profile: false,
+          orders: false,
+          favorites: false,
+          addresses: false,
+          settings: false,
+          [sectionKey]: true
+        };
+      }
+      return {
+        ...prev,
+        [sectionKey]: true
+      };
+    });
     setTimeout(() => {
       const el = document.getElementById(`section-${sectionKey}`);
       if (el) {
