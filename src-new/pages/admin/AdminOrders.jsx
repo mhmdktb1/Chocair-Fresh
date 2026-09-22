@@ -506,7 +506,8 @@ function AdminOrders() {
             const itemsCount = Array.isArray(order.items) 
               ? order.items.reduce((sum, item) => sum + (item.quantity || 1), 0)
               : (order.itemCount || 1);
-            const waLink = getWhatsAppLink(order);
+            const customerWaUrl = order.phone ? getCustomerWhatsAppUrl(order) : null;
+            const genericWaUrl = getGeneralWhatsAppUrl(order);
 
             return (
               <div 
@@ -548,20 +549,51 @@ function AdminOrders() {
 
                 {/* Desktop Action Bar */}
                 <div className="order-card-actions order-actions-desktop" onClick={(e) => e.stopPropagation()}>
-                  {/* Contact Actions */}
+                  {/* Contact & Share Actions */}
                   <div className="order-actions-contact">
-                    {waLink && (
+                    {customerWaUrl ? (
                       <a
-                        href={waLink}
+                        href={customerWaUrl}
                         target="_blank"
                         rel="noopener noreferrer"
                         className="action-btn action-btn-whatsapp"
-                        title="Chat on WhatsApp"
+                        title="Chat & share simplified summary with customer on WhatsApp"
+                      >
+                        <MessageCircle size={15} />
+                        <span>WhatsApp</span>
+                      </a>
+                    ) : (
+                      <a
+                        href={genericWaUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="action-btn action-btn-whatsapp"
+                        title="Share simplified summary on WhatsApp"
                       >
                         <MessageCircle size={15} />
                         <span>WhatsApp</span>
                       </a>
                     )}
+
+                    <button
+                      type="button"
+                      className="action-btn action-btn-share"
+                      onClick={() => handleShareGeneric(order)}
+                      title="Share / Forward order to driver or staff"
+                    >
+                      <Share2 size={14} />
+                      <span>Share</span>
+                    </button>
+
+                    <button
+                      type="button"
+                      className={`action-btn action-btn-copy-sm ${copiedId === order.id ? 'copied' : ''}`}
+                      onClick={() => handleCopyOrder(order)}
+                      title="Copy simplified WhatsApp text"
+                      aria-label="Copy order details"
+                    >
+                      {copiedId === order.id ? <Check size={14} color="#16a34a" /> : <Copy size={14} />}
+                    </button>
 
                     {order.phone && (
                       <a
@@ -685,18 +717,36 @@ function AdminOrders() {
                   </div>
 
                   <div className="order-mobile-quick-actions">
-                    {waLink && (
-                      <a
-                        href={waLink}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="action-btn action-btn-whatsapp action-btn-icon-only"
-                        title="Chat on WhatsApp"
-                        aria-label="Chat on WhatsApp"
-                      >
-                        <MessageCircle size={16} />
-                      </a>
-                    )}
+                    <a
+                      href={customerWaUrl || genericWaUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="action-btn action-btn-whatsapp action-btn-icon-only"
+                      title="Share simplified summary on WhatsApp"
+                      aria-label="Share on WhatsApp"
+                    >
+                      <MessageCircle size={16} />
+                    </a>
+
+                    <button
+                      type="button"
+                      className="action-btn action-btn-share action-btn-icon-only"
+                      onClick={() => handleShareGeneric(order)}
+                      title="Forward to driver / staff"
+                      aria-label="Forward order"
+                    >
+                      <Share2 size={15} />
+                    </button>
+
+                    <button
+                      type="button"
+                      className={`action-btn action-btn-copy-sm action-btn-icon-only ${copiedId === order.id ? 'copied' : ''}`}
+                      onClick={() => handleCopyOrder(order)}
+                      title="Copy order details"
+                      aria-label="Copy order details"
+                    >
+                      {copiedId === order.id ? <Check size={15} color="#16a34a" /> : <Copy size={15} />}
+                    </button>
 
                     {order.phone && (
                       <a
@@ -924,6 +974,86 @@ function AdminOrders() {
                 )}
               </div>
 
+              {/* WhatsApp Share & Dispatch Section */}
+              <div className="admin-order-share-card">
+                <div className="admin-order-share-header">
+                  <div className="admin-order-share-title">
+                    <MessageCircle size={16} color="#16a34a" />
+                    <span>WhatsApp Order Share & Dispatch</span>
+                  </div>
+                  <button
+                    type="button"
+                    className="admin-share-preview-toggle"
+                    onClick={() => setShowWaPreview(prev => !prev)}
+                  >
+                    {showWaPreview ? 'Hide Message Preview' : 'Preview Message'}
+                  </button>
+                </div>
+
+                <div className="admin-order-share-actions">
+                  {selectedOrder.phone && (
+                    <a
+                      href={getCustomerWhatsAppUrl(selectedOrder)}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="action-btn action-btn-whatsapp share-action-btn"
+                      title="Send organized order summary to customer on WhatsApp"
+                    >
+                      <MessageCircle size={15} />
+                      <span>WhatsApp Customer</span>
+                    </a>
+                  )}
+
+                  <a
+                    href={getGeneralWhatsAppUrl(selectedOrder)}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="action-btn action-btn-share share-action-btn"
+                    title="Forward organized order summary to driver, staff, or WhatsApp chat"
+                  >
+                    <Share2 size={15} />
+                    <span>Forward to Driver / Staff</span>
+                  </a>
+
+                  <button
+                    type="button"
+                    className={`action-btn action-btn-copy share-action-btn ${copiedId === selectedOrder.id ? 'copied' : ''}`}
+                    onClick={() => handleCopyOrder(selectedOrder)}
+                    title="Copy organized order summary text"
+                  >
+                    {copiedId === selectedOrder.id ? (
+                      <>
+                        <Check size={15} color="#16a34a" />
+                        <span>Copied!</span>
+                      </>
+                    ) : (
+                      <>
+                        <Copy size={15} />
+                        <span>Copy Details</span>
+                      </>
+                    )}
+                  </button>
+                </div>
+
+                {showWaPreview && (
+                  <div className="admin-order-wa-preview">
+                    <div className="admin-order-wa-preview-header">
+                      <span>Organized WhatsApp Summary</span>
+                      <button
+                        type="button"
+                        className="admin-order-wa-copy-link"
+                        onClick={() => handleCopyOrder(selectedOrder)}
+                      >
+                        {copiedId === selectedOrder.id ? 'Copied to Clipboard!' : 'Copy Text'}
+                      </button>
+                    </div>
+                    <pre className="admin-order-wa-preview-text">
+                      {formatWhatsAppOrderMessage(selectedOrder)}
+                    </pre>
+                  </div>
+                )}
+              </div>
+
               {/* Items List */}
               <div>
                 <div style={{ fontSize: '0.88rem', fontWeight: 700, color: '#334155', marginBottom: '0.5rem' }}>
@@ -998,7 +1128,10 @@ function AdminOrders() {
             <div className="admin-modal-footer">
               <button 
                 className="admin-modal-btn btn-cancel" 
-                onClick={() => setSelectedOrder(null)}
+                onClick={() => {
+                  setSelectedOrder(null);
+                  setShowWaPreview(false);
+                }}
               >
                 Close
               </button>
@@ -1007,6 +1140,7 @@ function AdminOrders() {
                 onClick={() => {
                   handleDeleteOrder(selectedOrder.id, selectedOrder.customer);
                   setSelectedOrder(null);
+                  setShowWaPreview(false);
                 }}
                 style={{ padding: '0.65rem 1rem' }}
               >
@@ -1015,6 +1149,14 @@ function AdminOrders() {
               </button>
             </div>
           </div>
+        </div>
+      )}
+
+      {/* Floating Copy Feedback Toast */}
+      {toastMessage && (
+        <div className="admin-orders-toast">
+          <Check size={16} color="#16a34a" />
+          <span>{toastMessage}</span>
         </div>
       )}
     </div>
