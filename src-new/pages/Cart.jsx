@@ -2,13 +2,18 @@ import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { 
   Trash2, Plus, Minus, ArrowRight, ShoppingBag, ArrowLeft, 
-  Truck, CheckCircle, Tag, Lock, MessageSquare, AlertCircle, Check
+  Truck, CheckCircle, Tag, Lock, MessageSquare, AlertCircle, Check,
+  Search, Sparkles, Heart, Zap, ShieldCheck, Leaf, Copy, ChevronRight, Flame
 } from 'lucide-react';
 import { useCart } from '../context/CartContext';
+import { useProducts } from '../hooks/useProducts';
+import { useFavorites } from '../context/FavoritesContext';
 import Navbar from '../components/layout/Navbar';
 import Button from '../components/common/Button';
+import ProductCard from '../components/shop/ProductCard';
 import CartRecommendations from '../components/shop/CartRecommendations';
 import { formatCurrency } from '../utils/formatters';
+import { toast } from 'react-toastify';
 import './Cart.css';
 
 const FREE_SHIPPING_THRESHOLD = 50;
@@ -20,14 +25,18 @@ const PROMO_CODES = {
 };
 
 const POPULAR_CATEGORIES = [
-  { name: 'Fruits', icon: '🍎', slug: 'fruits' },
-  { name: 'Vegetables', icon: '🥦', slug: 'vegetables' },
-  { name: 'Herbs & Greens', icon: '🌿', slug: 'herbs' },
-  { name: 'Dairy & Eggs', icon: '🧀', slug: 'dairy' },
+  { name: 'Fruits', icon: '🍎', slug: 'Fruits', countText: 'Apples, Berries, Citrus' },
+  { name: 'Vegetables', icon: '🥦', slug: 'Vegetables', countText: 'Crisp Greens, Roots' },
+  { name: 'Herbs & Greens', icon: '🌿', slug: 'Herbs', countText: 'Mint, Basil, Rosemary' },
+  { name: 'Dairy & Eggs', icon: '🧀', slug: 'Dairy', countText: 'Farm Milk & Cheeses' },
+  { name: 'Bakery', icon: '🥐', slug: 'Bakery', countText: 'Artisan Breads' },
+  { name: 'Pantry', icon: '🍯', slug: 'Pantry', countText: 'Raw Honey & Olive Oils' },
 ];
 
 const Cart = () => {
   const { cartItems, updateQuantity, removeFromCart, clearCart, cartTotal, cartCount } = useCart();
+  const { products, loading: productsLoading } = useProducts();
+  const { favorites } = useFavorites();
   const navigate = useNavigate();
   
   // UI States
@@ -35,6 +44,7 @@ const Cart = () => {
   const [appliedPromo, setAppliedPromo] = useState(null);
   const [promoError, setPromoError] = useState('');
   const [confirmClear, setConfirmClear] = useState(false);
+  const [copiedCode, setCopiedCode] = useState(false);
 
   // Calculations
   const isFreeShippingByThreshold = cartTotal >= FREE_SHIPPING_THRESHOLD;
@@ -85,9 +95,21 @@ const Cart = () => {
     }
   };
 
+  const handleCopyCode = (code = 'FRESH10') => {
+    if (navigator.clipboard) {
+      navigator.clipboard.writeText(code);
+    }
+    setCopiedCode(true);
+    toast.success(`Coupon code ${code} copied!`);
+    setTimeout(() => setCopiedCode(false), 3000);
+  };
+
   if (cartItems.length === 0) {
+    const popularProducts = (products || []).slice(0, 6);
+
     return (
-      <div className="cart-page">
+      <div className="cart-page empty-cart-view">
+        {/* Desktop Navigation */}
         <div className="cart-desktop-nav">
           <Navbar />
         </div>
@@ -97,55 +119,230 @@ const Cart = () => {
           <button 
             type="button" 
             className="cart-mobile-back-btn" 
-            onClick={() => navigate('/shop')}
-            aria-label="Back to shop"
+            onClick={() => navigate(-1)}
+            aria-label="Go Back"
           >
             <ArrowLeft size={20} />
           </button>
           <div className="cart-mobile-title-wrap">
             <h1 className="cart-mobile-title">Shopping Basket</h1>
-            <span className="cart-mobile-count">0 items</span>
+            <span className="cart-mobile-count empty-count-badge">0 items</span>
           </div>
-          <div style={{ width: 36 }} />
+          <button 
+            type="button" 
+            className="cart-mobile-search-btn"
+            onClick={() => navigate('/shop?focus=search')}
+            aria-label="Search produce"
+          >
+            <Search size={18} />
+          </button>
         </header>
 
         <div className="container cart-empty-container">
           <div className="empty-cart-card">
+            
+            {/* Top Organic Badge */}
+            <div className="empty-fresh-pill">
+              <Leaf size={14} className="empty-leaf-icon" />
+              <span>100% Farm Fresh & Organic</span>
+            </div>
+
+            {/* Glowing Mascot / Basket Animation */}
             <div className="empty-cart-icon-wrapper">
-              <ShoppingBag size={56} className="empty-bag-icon" />
+              <div className="empty-glow-circle" />
+              <div className="empty-mascot-cluster">
+                <img 
+                  src="/assets/images/mascots/avocado.svg" 
+                  alt="Avocado mascot" 
+                  className="empty-floating-mascot mascot-left" 
+                  onError={(e) => { e.currentTarget.style.display = 'none'; }}
+                />
+                <div className="empty-bag-circle">
+                  <ShoppingBag size={46} className="empty-bag-icon" />
+                </div>
+                <img 
+                  src="/assets/images/mascots/apple.svg" 
+                  alt="Apple mascot" 
+                  className="empty-floating-mascot mascot-right"
+                  onError={(e) => { e.currentTarget.style.display = 'none'; }}
+                />
+              </div>
               <span className="empty-icon-sparkle">✨</span>
             </div>
             
             <h2 className="empty-title">Your Basket is Empty</h2>
             <p className="empty-subtitle">
-              Looks like you haven't added any fresh fruits, vegetables, or artisan farm goods yet.
+              Looks like you haven't picked your fresh harvest yet. Discover fresh orchard fruits, crisp farm vegetables, and organic goods!
             </p>
 
+            {/* Primary & Secondary Call to Action */}
+            <div className="empty-cta-group">
+              <Button 
+                variant="primary" 
+                size="large"
+                className="empty-start-btn"
+                onClick={() => navigate('/shop')}
+              >
+                <span>Start Fresh Shopping</span>
+                <ArrowRight size={18} />
+              </Button>
+              <button 
+                type="button"
+                className="empty-browse-btn"
+                onClick={() => navigate('/shop?focus=search')}
+              >
+                <Search size={16} />
+                <span>Search Products</span>
+              </button>
+            </div>
+
+            {/* Welcome Promo Voucher Banner */}
+            <div className="empty-promo-voucher" onClick={() => handleCopyCode('FRESH10')}>
+              <div className="voucher-left">
+                <div className="voucher-icon-box">
+                  <Tag size={18} />
+                </div>
+                <div className="voucher-texts">
+                  <span className="voucher-tagline">First Order Welcome Gift</span>
+                  <div className="voucher-code-row">
+                    <span className="voucher-code">FRESH10</span>
+                    <span className="voucher-desc">10% Off All Produce</span>
+                  </div>
+                </div>
+              </div>
+              <button 
+                type="button" 
+                className={`voucher-copy-btn ${copiedCode ? 'copied' : ''}`}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleCopyCode('FRESH10');
+                }}
+              >
+                {copiedCode ? (
+                  <>
+                    <Check size={14} />
+                    <span>Copied</span>
+                  </>
+                ) : (
+                  <>
+                    <Copy size={14} />
+                    <span>Copy</span>
+                  </>
+                )}
+              </button>
+            </div>
+
+            {/* Saved Wishlist Items Reminder (if any) */}
+            {favorites && favorites.length > 0 && (
+              <div className="empty-wishlist-card" onClick={() => navigate('/shop')}>
+                <div className="wishlist-reminder-left">
+                  <div className="wishlist-icon-wrap">
+                    <Heart size={16} fill="#ef4444" color="#ef4444" />
+                  </div>
+                  <div className="wishlist-reminder-text">
+                    <strong>You have {favorites.length} saved {favorites.length === 1 ? 'item' : 'items'}</strong>
+                    <span>Jump in and add your favorites to basket</span>
+                  </div>
+                </div>
+                <ChevronRight size={18} className="wishlist-arrow" />
+              </div>
+            )}
+
+            {/* Interactive Category Chips */}
             <div className="empty-category-shortcuts">
-              <span className="shortcuts-label">Explore popular categories:</span>
-              <div className="shortcut-chips">
+              <div className="shortcuts-header-row">
+                <span className="shortcuts-label">Explore by Category</span>
+                <Link to="/shop" className="shortcuts-view-all">View All →</Link>
+              </div>
+              <div className="shortcut-chips-scroll">
                 {POPULAR_CATEGORIES.map((cat) => (
                   <button
                     key={cat.slug}
                     type="button"
-                    className="shortcut-chip"
+                    className="shortcut-chip-card"
                     onClick={() => navigate(`/shop?category=${cat.slug}`)}
                   >
-                    <span className="chip-emoji">{cat.icon}</span>
-                    <span>{cat.name}</span>
+                    <div className="chip-emoji-box">
+                      <span className="chip-emoji">{cat.icon}</span>
+                    </div>
+                    <div className="chip-meta">
+                      <span className="chip-name">{cat.name}</span>
+                      <span className="chip-sub">{cat.countText}</span>
+                    </div>
                   </button>
                 ))}
               </div>
             </div>
 
-            <Button 
-              variant="primary" 
-              size="large"
-              className="empty-start-btn"
-              onClick={() => navigate('/shop')}
-            >
-              Start Fresh Shopping <ArrowRight size={18} style={{ marginLeft: 8 }} />
-            </Button>
+            {/* Popular Farm Picks Carousel */}
+            {popularProducts.length > 0 && (
+              <div className="empty-trending-section">
+                <div className="trending-section-header">
+                  <div className="trending-title-wrap">
+                    <div className="trending-icon-badge">
+                      <Flame size={16} />
+                    </div>
+                    <div className="trending-texts">
+                      <h3 className="trending-title">Trending Farm Harvests</h3>
+                      <span className="trending-subtitle">Frequently enjoyed by our community</span>
+                    </div>
+                  </div>
+                  <Link to="/shop" className="trending-see-all">See All</Link>
+                </div>
+
+                <div className="empty-products-track">
+                  {popularProducts.map((prod) => (
+                    <div key={prod._id || prod.id} className="empty-prod-card-wrap">
+                      <ProductCard product={prod} />
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Mobile Perks / Trust Grid */}
+            <div className="empty-perks-grid">
+              <div className="empty-perk-card">
+                <div className="perk-icon-wrap express">
+                  <Zap size={18} />
+                </div>
+                <div className="perk-text-wrap">
+                  <strong>45-Min Express</strong>
+                  <span>Fast doorstep dispatch</span>
+                </div>
+              </div>
+
+              <div className="empty-perk-card">
+                <div className="perk-icon-wrap organic">
+                  <Leaf size={18} />
+                </div>
+                <div className="perk-text-wrap">
+                  <strong>Daily Harvest</strong>
+                  <span>Picked fresh each morning</span>
+                </div>
+              </div>
+
+              <div className="empty-perk-card">
+                <div className="perk-icon-wrap shipping">
+                  <Truck size={18} />
+                </div>
+                <div className="perk-text-wrap">
+                  <strong>Free Delivery $50+</strong>
+                  <span>Zero shipping fee on large orders</span>
+                </div>
+              </div>
+
+              <div className="empty-perk-card">
+                <div className="perk-icon-wrap trust">
+                  <ShieldCheck size={18} />
+                </div>
+                <div className="perk-text-wrap">
+                  <strong>100% Guarantee</strong>
+                  <span>Satisfaction or refund</span>
+                </div>
+              </div>
+            </div>
+
           </div>
         </div>
       </div>
