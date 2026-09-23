@@ -5,6 +5,7 @@ import { useCart } from '../../context/CartContext';
 import { useFavorites } from '../../context/FavoritesContext';
 import { formatCurrency } from '../../utils/formatters';
 import { normalizeUnit } from '../../utils/unitHelper';
+import { getAssetUrl } from '../../utils/api';
 import './ProductCard.css';
 
 const ProductCard = ({ product }) => {
@@ -43,7 +44,13 @@ const ProductCard = ({ product }) => {
         </button>
 
         <Link to={`/product/${product._id}`} state={{ product }}>
-          <img src={product.image} alt={product.name} className="product-image" loading="lazy" />
+          <img 
+            src={getAssetUrl(product.image) || '/assets/images/products/placeholder.jpg'} 
+            alt={product.name} 
+            className="product-image" 
+            loading="lazy" 
+            onError={(e) => { e.currentTarget.src = '/assets/images/products/placeholder.jpg'; }}
+          />
         </Link>
         
         {/* Overlay Actions */}

@@ -1,5 +1,7 @@
 import { useState, useMemo } from "react";
 import { useAdmin } from "../../context/AdminContext";
+import { getAssetUrl } from "../../utils/api";
+import ImageUploadPicker from "../../components/admin/ImageUploadPicker";
 import { Plus, Edit2, Trash2, Search, X, Grid3x3, Check, AlertCircle } from "lucide-react";
 import './AdminComponents.css';
 
@@ -164,7 +166,7 @@ function AdminCategories() {
               {/* Image or initial */}
               {category.image ? (
                 <img 
-                  src={category.image} 
+                  src={getAssetUrl(category.image)} 
                   alt={category.name}
                   className="category-card-image"
                   onError={(e) => { e.currentTarget.style.display = 'none'; }}
@@ -239,16 +241,12 @@ function AdminCategories() {
                   />
                 </div>
 
-                <div className="admin-form-group">
-                  <label className="admin-form-label">Category Image URL</label>
-                  <input
-                    type="text"
-                    className="admin-form-input"
-                    placeholder="/assets/images/categories/... or https://..."
-                    value={formData.image}
-                    onChange={(e) => setFormData({ ...formData, image: e.target.value })}
-                  />
-                </div>
+                <ImageUploadPicker
+                  value={formData.image}
+                  onChange={(newUrl) => setFormData({ ...formData, image: newUrl })}
+                  label="Category Image (Camera or Gallery)"
+                  fallbackPlaceholder="/assets/images/categories/placeholder.jpg"
+                />
 
                 <div style={{ 
                   display: 'flex', 

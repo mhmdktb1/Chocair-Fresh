@@ -2,6 +2,8 @@ import { useState, useMemo } from "react";
 import { useAdmin } from "../../context/AdminContext";
 import { useCMS } from "../../context/CMSContext";
 import { ALLOWED_UNITS, normalizeUnit, formatUnitRate } from "../../utils/unitHelper";
+import { getAssetUrl } from "../../utils/api";
+import ImageUploadPicker from "../../components/admin/ImageUploadPicker";
 import { 
   Plus, 
   Edit2, 
@@ -268,7 +270,7 @@ function AdminProducts() {
               <div key={product.id} className="admin-product-card">
                 {/* Product Thumbnail */}
                 <img
-                  src={product.image || '/assets/images/products/placeholder.jpg'}
+                  src={getAssetUrl(product.image) || '/assets/images/products/placeholder.jpg'}
                   alt={product.name}
                   className="product-card-thumbnail"
                   onError={(e) => { e.currentTarget.src = '/assets/images/products/placeholder.jpg'; }}
@@ -406,28 +408,13 @@ function AdminProducts() {
                   />
                 </div>
 
-                {/* Image URL with Preview */}
-                <div className="admin-form-group">
-                  <label className="admin-form-label">Image URL or Path</label>
-                  <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
-                    <input
-                      type="text"
-                      className="admin-form-input"
-                      style={{ flex: 1 }}
-                      placeholder="https://... or /assets/images/products/..."
-                      value={formData.image}
-                      onChange={(e) => setFormData({ ...formData, image: e.target.value })}
-                    />
-                    {formData.image && (
-                      <img 
-                        src={formData.image} 
-                        alt="Preview" 
-                        style={{ width: 40, height: 40, borderRadius: 6, objectFit: 'cover', border: '1px solid #e2e8f0' }}
-                        onError={(e) => { e.currentTarget.style.display = 'none'; }}
-                      />
-                    )}
-                  </div>
-                </div>
+                {/* Image Upload / Camera / Gallery / URL */}
+                <ImageUploadPicker
+                  value={formData.image}
+                  onChange={(newUrl) => setFormData({ ...formData, image: newUrl })}
+                  label="Product Image (Camera or Gallery)"
+                  fallbackPlaceholder="/assets/images/products/placeholder.jpg"
+                />
 
                 {/* Featured Toggle */}
                 <div style={{ 

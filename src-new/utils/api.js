@@ -17,8 +17,16 @@ export const API_HOST = API_BASE_URL.replace(/\/api\/?$/, '');
 
 export const getAssetUrl = (url) => {
   if (!url) return '';
-  if (url.startsWith('http://') || url.startsWith('https://') || url.startsWith('data:')) {
+  if (
+    url.startsWith('http://') || 
+    url.startsWith('https://') || 
+    url.startsWith('data:') || 
+    url.startsWith('blob:')
+  ) {
     return url;
+  }
+  if (url.startsWith('/assets/') || url.startsWith('assets/')) {
+    return url.startsWith('/') ? url : `/${url}`;
   }
   const cleanPath = url.startsWith('/') ? url : `/${url}`;
   return `${API_HOST}${cleanPath}`;

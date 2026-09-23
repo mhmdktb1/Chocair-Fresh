@@ -14,7 +14,7 @@ import { useCart } from '../context/CartContext';
 import { useFavorites } from '../context/FavoritesContext';
 import { useAdmin } from '../context/AdminContext';
 import { useCategories } from '../hooks/useCategories';
-import api from '../utils/api';
+import api, { getAssetUrl } from '../utils/api';
 import Button from '../components/common/Button';
 import Loading from '../components/common/Loading';
 import WeightScale from '../components/shop/WeightScale';
@@ -193,7 +193,8 @@ const ProductDetails = () => {
   const points = Math.round(product.price * 105);
 
   const presets = getPresetOptions(normUnit);
-  const displayImage = !imageError && product.image ? product.image : FALLBACK_IMAGE;
+  const rawImage = !imageError && product.image ? getAssetUrl(product.image) : FALLBACK_IMAGE;
+  const displayImage = rawImage || FALLBACK_IMAGE;
 
   return (
     <div className="product-details-page toters-mode">

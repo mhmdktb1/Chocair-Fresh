@@ -16,20 +16,33 @@ const storage = multer.diskStorage({
     cb(null, 'uploads/');
   },
   filename(req, file, cb) {
-    const rawExt = path.extname(file.originalname).toLowerCase();
-    const safeExt = ['.jpg', '.jpeg', '.png', '.webp'].includes(rawExt) ? rawExt : '.png';
+    let rawExt = path.extname(file.originalname).toLowerCase();
+    if (!rawExt && file.mimetype) {
+      if (file.mimetype === 'image/jpeg') rawExt = '.jpg';
+      else if (file.mimetype === 'image/png') rawExt = '.png';
+      else if (file.mimetype === 'image/webp') rawExt = '.webp';
+    }
+    const safeExt = ['.jpg', '.jpeg', '.png', '.webp'].includes(rawExt) ? rawExt : '.jpg';
     const safeBase = `image-${Date.now()}-${Math.round(Math.random() * 1e9)}`;
     cb(null, `${safeBase}${safeExt}`);
   },
 });
 
 function checkFileType(file, cb) {
-  const filetypes = /jpg|jpeg|png|webp/;
-  const extname = filetypes.test(path.extname(file.originalname).toLowerCase());
-  const allowedMimeTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/jpg'];
-  const mimetype = allowedMimeTypes.includes(file.mimetype);
+  const allowedMimeTypes = [
+    'image/jpeg', 
+    'image/png', 
+    'image/webp', 
+    'image/jpg', 
+    'image/heic', 
+    'image/heif'
+  ];
+  const filetypes = /jpg|jpeg|png|webp|heic|heif/i;
+  const rawExt = path.extname(file.originalname).toLowerCase().replace('.', '');
+  const extValid = !rawExt || filetypes.test(rawExt);
+  const mimetypeValid = !file.mimetype || file.mimetype.startsWith('image/') || allowedMimeTypes.includes(file.mimetype);
 
-  if (extname && mimetype) {
+  if (mimetypeValid && extValid) {
     return cb(null, true);
   } else {
     cb(new Error('Images only (jpg, jpeg, png, webp)!'));
@@ -39,7 +52,7 @@ function checkFileType(file, cb) {
 const upload = multer({
   storage,
   limits: {
-    fileSize: 5 * 1024 * 1024, // 5MB limit
+    fileSize: 15 * 1024 * 1024, // 15MB limit for high-res mobile camera photos
   },
   fileFilter: function (req, file, cb) {
     checkFileType(file, cb);

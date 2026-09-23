@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Plus, ArrowRight } from 'lucide-react';
 import { useCart } from '../../context/CartContext';
-import api from '../../utils/api';
+import api, { getAssetUrl } from '../../utils/api';
 import { normalizeUnit, formatQuantityWithUnit } from '../../utils/unitHelper';
 import './TotersProductRow.css';
 
@@ -127,7 +127,7 @@ const TotersProductRow = ({ title, type, productId = null, category = null, limi
               >
                 <div className="toters-img-box">
                   <img 
-                    src={item.image || FALLBACK_IMAGE} 
+                    src={getAssetUrl(item.image) || FALLBACK_IMAGE} 
                     alt={item.name} 
                     loading="lazy"
                     onError={(e) => { e.target.src = FALLBACK_IMAGE; }}
