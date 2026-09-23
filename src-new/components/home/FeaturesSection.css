@@ -239,21 +239,7 @@
   }
 }
 
-  .offering-icon-wrapper {
-    width: 38px;
-    height: 38px;
-    margin-bottom: 0.75rem;
-  }
-
-  .offering-title {
-    font-size: 1rem;
-  }
-
-  .offering-desc {
-    font-size: 0.85rem;
-  }
-}
-
+@media (max-width: 640px) {
   .features-header {
     margin-bottom: 1.25rem;
   }
