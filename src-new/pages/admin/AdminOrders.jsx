@@ -24,7 +24,13 @@ import {
   Copy,
   Check,
   Send,
-  ExternalLink
+  ExternalLink,
+  Receipt,
+  User,
+  ShoppingBag,
+  CreditCard,
+  ChevronDown,
+  Info
 } from "lucide-react";
 import { normalizeUnit, formatQuantityWithUnit } from "../../utils/unitHelper";
 import './AdminComponents.css';
@@ -902,256 +908,329 @@ function AdminOrders() {
         </div>
       )}
 
-      {/* Order Details Slide-Up Sheet / Modal */}
-      {selectedOrder && (
-        <div className="admin-modal-backdrop" onClick={() => setSelectedOrder(null)}>
-          <div className="admin-modal-dialog" onClick={(e) => e.stopPropagation()}>
-            <div className="admin-modal-header">
-              <div>
-                <h3>Order #{selectedOrder.id?.slice(-6).toUpperCase() || selectedOrder.id}</h3>
-                <span style={{ fontSize: '0.78rem', color: '#64748b' }}>
-                  Placed on {new Date(selectedOrder.date).toLocaleString()}
-                </span>
-              </div>
-              <button className="modal-close-btn" onClick={() => setSelectedOrder(null)}>
-                <X size={18} />
-              </button>
-            </div>
+      {/* Order Details Redesigned Mobile Bottom Sheet / Modal */}
+      {selectedOrder && (() => {
+        const modalShortId = selectedOrder.id ? `#${selectedOrder.id.slice(-6).toUpperCase()}` : '#ORDER';
+        const modalCustomerPhone = selectedOrder.phone || '';
+        const modalDeliveryAddress = selectedOrder.shippingAddress?.address || (typeof selectedOrder.shippingAddress === 'string' ? selectedOrder.shippingAddress : '') || '';
+        const modalDeliverySlot = selectedOrder.deliveryPreference || selectedOrder.shippingAddress?.deliveryPreference || '';
+        const modalNotes = selectedOrder.shippingAddress?.additionalInfo || selectedOrder.additionalInfo || '';
+        const totalUnitsCount = Array.isArray(selectedOrder.items) 
+          ? selectedOrder.items.reduce((sum, item) => sum + (Number(item.quantity) || 1), 0)
+          : (selectedOrder.itemCount || 0);
 
-            <div className="admin-modal-body">
-              {/* Customer Info Box */}
-              <div style={{ background: '#f8fafc', padding: '0.85rem', borderRadius: '10px', border: '1px solid #e2e8f0' }}>
-                <div style={{ fontWeight: 700, fontSize: '0.92rem', color: '#0f172a', marginBottom: '0.35rem' }}>
-                  {selectedOrder.customer || 'Guest Customer'}
-                </div>
-                {selectedOrder.phone && (
-                  <div style={{ fontSize: '0.85rem', color: '#475569', display: 'flex', alignItems: 'center', gap: '0.5rem', marginTop: '0.2rem' }}>
-                    <Phone size={14} color="#64748b" />
-                    <span>{selectedOrder.phone}</span>
-                  </div>
-                )}
-                {selectedOrder.email && (
-                  <div style={{ fontSize: '0.85rem', color: '#475569', marginTop: '0.2rem' }}>
-                    {selectedOrder.email}
-                  </div>
-                )}
-                {selectedOrder.shippingAddress?.address && (
-                  <div style={{ fontSize: '0.85rem', color: '#475569', marginTop: '0.35rem', display: 'flex', alignItems: 'flex-start', gap: '0.4rem' }}>
-                    <MapPin size={14} color="#16a34a" style={{ flexShrink: 0, marginTop: '2px' }} />
-                    <span>{selectedOrder.shippingAddress.address}</span>
-                  </div>
-                )}
-                {(selectedOrder.deliveryPreference || selectedOrder.shippingAddress?.deliveryPreference) && (
-                  <div style={{ fontSize: '0.82rem', color: '#0f766e', background: '#f0fdfa', border: '1px solid #ccfbf1', borderRadius: '8px', padding: '0.45rem 0.65rem', marginTop: '0.5rem', display: 'flex', alignItems: 'flex-start', gap: '0.4rem' }}>
-                    <Clock size={14} color="#0d9488" style={{ flexShrink: 0, marginTop: '2px' }} />
-                    <div>
-                      <strong style={{ display: 'block', fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.3px', color: '#0f766e' }}>Delivery Preference:</strong>
-                      <span>{selectedOrder.deliveryPreference || selectedOrder.shippingAddress?.deliveryPreference}</span>
-                    </div>
-                  </div>
-                )}
-                {(selectedOrder.shippingAddress?.additionalInfo || selectedOrder.additionalInfo) && (
-                  <div style={{ fontSize: '0.82rem', color: '#6b21a8', background: '#faf5ff', border: '1px solid #e9d5ff', borderRadius: '8px', padding: '0.45rem 0.65rem', marginTop: '0.5rem', display: 'flex', alignItems: 'flex-start', gap: '0.4rem' }}>
-                    <MessageCircle size={14} style={{ flexShrink: 0, marginTop: '2px' }} />
-                    <div>
-                      <strong style={{ display: 'block', fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.3px', color: '#7e22ce' }}>Notes / Instructions:</strong>
-                      <span>{selectedOrder.shippingAddress?.additionalInfo || selectedOrder.additionalInfo}</span>
-                    </div>
-                  </div>
-                )}
-                {selectedOrder.googleMapsLink && (
-                  <div style={{ marginTop: '0.6rem' }}>
-                    <a
-                      href={selectedOrder.googleMapsLink}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="action-btn action-btn-map"
-                      style={{ display: 'inline-flex' }}
-                    >
-                      <MapPin size={14} />
-                      <span>Open Delivery Address on Maps</span>
-                    </a>
-                  </div>
-                )}
+        return (
+          <div className="admin-modal-backdrop" onClick={() => { setSelectedOrder(null); setShowWaPreview(false); }}>
+            <div className="admin-modal-dialog order-details-sheet" onClick={(e) => e.stopPropagation()}>
+              
+              {/* Top Handle for mobile gestures */}
+              <div className="order-sheet-handle-bar">
+                <div className="order-sheet-handle"></div>
               </div>
 
-              {/* WhatsApp Share & Dispatch Section */}
-              <div className="admin-order-share-card">
-                <div className="admin-order-share-header">
-                  <div className="admin-order-share-title">
-                    <MessageCircle size={16} color="#16a34a" />
-                    <span>WhatsApp Order Share & Dispatch</span>
+              {/* Sheet Header */}
+              <div className="order-sheet-header">
+                <div className="order-sheet-title-box">
+                  <div className="order-sheet-id-line">
+                    <span className="order-sheet-id">{modalShortId}</span>
+                    <span className={`order-status-badge ${getStatusBadgeClass(selectedOrder.status)}`}>
+                      {getStatusIcon(selectedOrder.status)}
+                      <span>{selectedOrder.status}</span>
+                    </span>
                   </div>
-                  <button
-                    type="button"
-                    className="admin-share-preview-toggle"
-                    onClick={() => setShowWaPreview(prev => !prev)}
-                  >
-                    {showWaPreview ? 'Hide Message Preview' : 'Preview Message'}
-                  </button>
+                  <span className="order-sheet-time">
+                    {new Date(selectedOrder.date).toLocaleString([], {
+                      month: 'short',
+                      day: 'numeric',
+                      year: 'numeric',
+                      hour: '2-digit',
+                      minute: '2-digit'
+                    })}
+                  </span>
+                </div>
+                <button 
+                  className="modal-close-btn order-sheet-close-btn" 
+                  onClick={() => { setSelectedOrder(null); setShowWaPreview(false); }}
+                  aria-label="Close details"
+                >
+                  <X size={18} />
+                </button>
+              </div>
+
+              <div className="admin-modal-body order-sheet-body">
+                
+                {/* 1. Quick Customer & Delivery Card */}
+                <div className="order-sheet-card order-sheet-customer-card">
+                  <div className="order-sheet-customer-header">
+                    <div className="order-sheet-avatar">
+                      {(selectedOrder.customer || 'C').charAt(0).toUpperCase()}
+                    </div>
+                    <div className="order-sheet-customer-text">
+                      <div className="order-sheet-customer-name">
+                        {selectedOrder.customer || 'Guest Customer'}
+                      </div>
+                      <div className="order-sheet-customer-sub">
+                        {modalCustomerPhone ? (
+                          <a href={`tel:${modalCustomerPhone}`} className="order-sheet-phone-link">
+                            <Phone size={13} />
+                            <span>{modalCustomerPhone}</span>
+                          </a>
+                        ) : (
+                          <span className="order-sheet-no-phone">No phone provided</span>
+                        )}
+                        {selectedOrder.email && (
+                          <span className="order-sheet-email-text">• {selectedOrder.email}</span>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Delivery Location & Map */}
+                  {modalDeliveryAddress && (
+                    <div className="order-sheet-info-row">
+                      <MapPin size={16} className="order-sheet-icon text-green" />
+                      <div className="order-sheet-info-content">
+                        <span className="order-sheet-info-label">Delivery Address</span>
+                        <span className="order-sheet-info-value">{modalDeliveryAddress}</span>
+                      </div>
+                      {selectedOrder.googleMapsLink && (
+                        <a
+                          href={selectedOrder.googleMapsLink}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="order-sheet-map-badge"
+                          title="Open Google Maps"
+                        >
+                          <ExternalLink size={13} />
+                          <span>Maps</span>
+                        </a>
+                      )}
+                    </div>
+                  )}
+
+                  {/* Delivery Slot */}
+                  {modalDeliverySlot && (
+                    <div className="order-sheet-info-row">
+                      <Clock size={16} className="order-sheet-icon text-teal" />
+                      <div className="order-sheet-info-content">
+                        <span className="order-sheet-info-label">Preferred Time Slot</span>
+                        <span className="order-sheet-info-value">{modalDeliverySlot}</span>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Customer Notes */}
+                  {modalNotes && (
+                    <div className="order-sheet-note-box">
+                      <div className="order-sheet-note-title">
+                        <MessageCircle size={13} />
+                        <span>Delivery Instructions</span>
+                      </div>
+                      <div className="order-sheet-note-text">"{modalNotes}"</div>
+                    </div>
+                  )}
                 </div>
 
-                <div className="admin-order-share-actions">
-                  {selectedOrder.phone && (
+                {/* 2. Fast Communication & Share Hub */}
+                <div className="order-sheet-actions-hub">
+                  {modalCustomerPhone && (
                     <a
                       href={getCustomerWhatsAppUrl(selectedOrder)}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="action-btn action-btn-whatsapp share-action-btn"
-                      title="Send organized order summary to customer on WhatsApp"
+                      className="order-sheet-hub-btn btn-wa-primary"
                     >
-                      <MessageCircle size={15} />
+                      <MessageCircle size={16} />
                       <span>WhatsApp Customer</span>
                     </a>
                   )}
 
-                  <a
-                    href={getGeneralWhatsAppUrl(selectedOrder)}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="action-btn action-btn-share share-action-btn"
-                    title="Forward organized order summary to driver, staff, or WhatsApp chat"
-                  >
-                    <Share2 size={15} />
-                    <span>Forward to Driver / Staff</span>
-                  </a>
+                  <div className="order-sheet-hub-subrow">
+                    <button
+                      type="button"
+                      className="order-sheet-hub-btn btn-share-driver"
+                      onClick={() => handleShareGeneric(selectedOrder)}
+                    >
+                      <Share2 size={15} />
+                      <span>Forward / Dispatch</span>
+                    </button>
 
-                  <button
-                    type="button"
-                    className={`action-btn action-btn-copy share-action-btn ${copiedId === selectedOrder.id ? 'copied' : ''}`}
-                    onClick={() => handleCopyOrder(selectedOrder)}
-                    title="Copy organized order summary text"
-                  >
-                    {copiedId === selectedOrder.id ? (
-                      <>
-                        <Check size={15} color="#16a34a" />
-                        <span>Copied!</span>
-                      </>
-                    ) : (
-                      <>
-                        <Copy size={15} />
-                        <span>Copy Details</span>
-                      </>
-                    )}
-                  </button>
-                </div>
-
-                {showWaPreview && (
-                  <div className="admin-order-wa-preview">
-                    <div className="admin-order-wa-preview-header">
-                      <span>Organized WhatsApp Summary</span>
-                      <button
-                        type="button"
-                        className="admin-order-wa-copy-link"
-                        onClick={() => handleCopyOrder(selectedOrder)}
-                      >
-                        {copiedId === selectedOrder.id ? 'Copied to Clipboard!' : 'Copy Text'}
-                      </button>
-                    </div>
-                    <pre className="admin-order-wa-preview-text">
-                      {formatWhatsAppOrderMessage(selectedOrder)}
-                    </pre>
+                    <button
+                      type="button"
+                      className={`order-sheet-hub-btn btn-copy-details ${copiedId === selectedOrder.id ? 'is-copied' : ''}`}
+                      onClick={() => handleCopyOrder(selectedOrder)}
+                    >
+                      {copiedId === selectedOrder.id ? <Check size={15} /> : <Copy size={15} />}
+                      <span>{copiedId === selectedOrder.id ? 'Copied!' : 'Copy Summary'}</span>
+                    </button>
                   </div>
-                )}
-              </div>
 
-              {/* Items List */}
-              <div>
-                <div style={{ fontSize: '0.88rem', fontWeight: 700, color: '#334155', marginBottom: '0.5rem' }}>
-                  Ordered Items
-                </div>
-                <div className="order-items-modal-list">
-                  {Array.isArray(selectedOrder.items) && selectedOrder.items.length > 0 ? (
-                    selectedOrder.items.map((item, idx) => (
-                      <div key={idx} className="order-modal-item-row">
-                        <img 
-                          src={item.image || '/assets/images/products/placeholder.jpg'} 
-                          alt={item.name}
-                          className="order-modal-item-img"
-                          onError={(e) => { e.currentTarget.src = '/assets/images/products/placeholder.jpg'; }}
-                        />
-                        <div className="order-modal-item-info">
-                          <div className="order-modal-item-name">{item.name}</div>
-                          <div className="order-modal-item-qty">
-                            ${Number(item.price || 0).toFixed(2)} × {item.quantity} ({normalizeUnit(item.unit)})
-                          </div>
-                          {item.instruction && (
-                            <div className="order-modal-item-instruction">
-                              <span className="order-instruction-label">Customer Note:</span>
-                              <span className="order-instruction-text">"{item.instruction}"</span>
-                            </div>
-                          )}
+                  {/* WhatsApp Text Preview toggle for quick review */}
+                  <div className="order-sheet-wa-preview-section">
+                    <button
+                      type="button"
+                      className="order-sheet-preview-toggle-btn"
+                      onClick={() => setShowWaPreview(prev => !prev)}
+                    >
+                      <Sparkles size={13} />
+                      <span>{showWaPreview ? 'Hide Message Preview' : 'Preview Formatted WhatsApp Message'}</span>
+                    </button>
+
+                    {showWaPreview && (
+                      <div className="admin-order-wa-preview">
+                        <div className="admin-order-wa-preview-header">
+                          <span>Formatted Dispatch Text</span>
+                          <button
+                            type="button"
+                            className="admin-order-wa-copy-link"
+                            onClick={() => handleCopyOrder(selectedOrder)}
+                          >
+                            {copiedId === selectedOrder.id ? 'Copied!' : 'Copy'}
+                          </button>
                         </div>
-                        <div className="order-modal-item-total">
-                          ${Number(item.total || (item.price * item.quantity) || 0).toFixed(2)}
-                        </div>
+                        <pre className="admin-order-wa-preview-text">
+                          {formatWhatsAppOrderMessage(selectedOrder)}
+                        </pre>
                       </div>
-                    ))
-                  ) : (
-                    <p style={{ color: '#94a3b8', fontSize: '0.85rem' }}>No items found for this order.</p>
-                  )}
+                    )}
+                  </div>
                 </div>
+
+                {/* 3. Ordered Items List */}
+                <div className="order-sheet-items-section">
+                  <div className="order-sheet-section-title">
+                    <div className="order-sheet-title-left">
+                      <ShoppingBag size={16} color="#0f172a" />
+                      <span>Order Items</span>
+                    </div>
+                    <span className="order-sheet-item-count-badge">
+                      {selectedOrder.items?.length || 0} item{selectedOrder.items?.length !== 1 ? 's' : ''} ({totalUnitsCount} qty)
+                    </span>
+                  </div>
+
+                  <div className="order-sheet-items-list">
+                    {Array.isArray(selectedOrder.items) && selectedOrder.items.length > 0 ? (
+                      selectedOrder.items.map((item, idx) => {
+                        const itemQty = item.quantity || 1;
+                        const itemUnit = normalizeUnit(item.unit);
+                        const itemPrice = Number(item.price || 0);
+                        const itemLineTotal = Number(item.total || (itemPrice * itemQty) || 0);
+
+                        return (
+                          <div key={idx} className="order-sheet-item-card">
+                            <img 
+                              src={item.image || '/assets/images/products/placeholder.jpg'} 
+                              alt={item.name}
+                              className="order-sheet-item-thumb"
+                              onError={(e) => { e.currentTarget.src = '/assets/images/products/placeholder.jpg'; }}
+                            />
+                            <div className="order-sheet-item-main">
+                              <div className="order-sheet-item-row-top">
+                                <span className="order-sheet-item-title">{item.name}</span>
+                                <span className="order-sheet-item-price-total">
+                                  ${itemLineTotal.toFixed(2)}
+                                </span>
+                              </div>
+                              <div className="order-sheet-item-qty-meta">
+                                <span className="order-sheet-qty-pill">
+                                  {itemQty} {itemUnit}
+                                </span>
+                                <span className="order-sheet-unit-price">
+                                  @ ${itemPrice.toFixed(2)}/{itemUnit}
+                                </span>
+                              </div>
+                              {item.instruction && (
+                                <div className="order-sheet-item-note">
+                                  <span className="order-item-note-badge">Note</span>
+                                  <span className="order-item-note-content">"{item.instruction}"</span>
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        );
+                      })
+                    ) : (
+                      <div className="order-sheet-empty-items">No items found for this order.</div>
+                    )}
+                  </div>
+                </div>
+
+                {/* 4. Financial & Payment Summary */}
+                <div className="order-sheet-card order-sheet-summary-card">
+                  <div className="order-sheet-summary-row">
+                    <span className="order-sheet-summary-label">Payment Method</span>
+                    <span className="order-sheet-summary-value-badge">
+                      <CreditCard size={13} />
+                      <span>{selectedOrder.paymentMethod || 'Cash on Delivery'}</span>
+                    </span>
+                  </div>
+                  <div className="order-sheet-summary-row order-sheet-grand-total-row">
+                    <span className="order-sheet-grand-label">Grand Total</span>
+                    <span className="order-sheet-grand-amount">
+                      ${Number(selectedOrder.total || 0).toFixed(2)}
+                    </span>
+                  </div>
+                </div>
+
+                {/* 5. Status Workflow Selector */}
+                <div className="order-sheet-status-control">
+                  <label className="order-sheet-status-label">
+                    <span>Change Order Status</span>
+                  </label>
+                  <div className="order-sheet-status-pills">
+                    {["Pending", "Preparing", "Delivered", "Cancelled"].map((st) => {
+                      const isActive = selectedOrder.status === st;
+                      return (
+                        <button
+                          key={st}
+                          type="button"
+                          className={`order-sheet-status-btn ${st.toLowerCase()} ${isActive ? 'is-active' : ''}`}
+                          onClick={() => {
+                            handleStatusChange(selectedOrder.id, st);
+                            setSelectedOrder(prev => ({ ...prev, status: st }));
+                          }}
+                        >
+                          {st === "Pending" && <Clock size={14} />}
+                          {st === "Preparing" && <Truck size={14} />}
+                          {st === "Delivered" && <CheckCircle size={14} />}
+                          {st === "Cancelled" && <XCircle size={14} />}
+                          <span>{st}</span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+
               </div>
 
-              {/* Total & Status Selector */}
-              <div style={{ 
-                display: 'flex', 
-                justifyContent: 'space-between', 
-                alignItems: 'center',
-                paddingTop: '0.75rem',
-                borderTop: '1px solid #e2e8f0'
-              }}>
-                <span style={{ fontWeight: 700, fontSize: '0.95rem', color: '#0f172a' }}>Total Amount:</span>
-                <span style={{ fontWeight: 800, fontSize: '1.4rem', color: '#16a34a' }}>
-                  ${Number(selectedOrder.total || 0).toFixed(2)}
-                </span>
-              </div>
-
-              <div className="admin-form-group">
-                <label className="admin-form-label">Update Order Status:</label>
-                <select
-                  className="admin-form-select"
-                  value={selectedOrder.status}
-                  onChange={(e) => {
-                    const newSt = e.target.value;
-                    handleStatusChange(selectedOrder.id, newSt);
-                    setSelectedOrder(prev => ({ ...prev, status: newSt }));
+              {/* Sheet Bottom Footer Actions */}
+              <div className="order-sheet-footer">
+                <button 
+                  className="order-sheet-btn-delete"
+                  onClick={() => {
+                    handleDeleteOrder(selectedOrder.id, selectedOrder.customer);
+                    setSelectedOrder(null);
+                    setShowWaPreview(false);
+                  }}
+                  title="Delete this order"
+                >
+                  <Trash2 size={16} />
+                  <span>Delete Order</span>
+                </button>
+                <button 
+                  className="order-sheet-btn-done" 
+                  onClick={() => {
+                    setSelectedOrder(null);
+                    setShowWaPreview(false);
                   }}
                 >
-                  <option value="Pending">Pending (Awaiting fulfillment)</option>
-                  <option value="Preparing">Preparing (Packing / In progress)</option>
-                  <option value="Delivered">Delivered (Completed)</option>
-                  <option value="Cancelled">Cancelled</option>
-                </select>
+                  Done
+                </button>
               </div>
             </div>
-
-            <div className="admin-modal-footer">
-              <button 
-                className="admin-modal-btn btn-cancel" 
-                onClick={() => {
-                  setSelectedOrder(null);
-                  setShowWaPreview(false);
-                }}
-              >
-                Close
-              </button>
-              <button 
-                className="action-btn action-btn-delete"
-                onClick={() => {
-                  handleDeleteOrder(selectedOrder.id, selectedOrder.customer);
-                  setSelectedOrder(null);
-                  setShowWaPreview(false);
-                }}
-                style={{ padding: '0.65rem 1rem' }}
-              >
-                <Trash2 size={16} />
-                <span>Delete</span>
-              </button>
-            </div>
           </div>
-        </div>
-      )}
+        );
+      })()}
 
       {/* Floating Copy Feedback Toast */}
       {toastMessage && (

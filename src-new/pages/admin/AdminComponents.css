@@ -1537,6 +1537,724 @@
 }
 
 /* =========================================================
+   ORDER DETAILS SLIDE-UP SHEET / MODAL REDESIGN (MOBILE-FIRST)
+   ========================================================= */
+
+.order-details-sheet {
+  max-width: 580px;
+  max-height: 90vh;
+  border-radius: 20px;
+  position: relative;
+  background: #ffffff;
+}
+
+.order-sheet-handle-bar {
+  display: none;
+  justify-content: center;
+  align-items: center;
+  padding: 0.6rem 0 0.2rem;
+  width: 100%;
+}
+
+.order-sheet-handle {
+  width: 44px;
+  height: 5px;
+  border-radius: 3px;
+  background: #cbd5e1;
+}
+
+.order-sheet-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1.1rem 1.25rem 0.9rem;
+  border-bottom: 1px solid #f1f5f9;
+  background: #ffffff;
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+
+.order-sheet-title-box {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.order-sheet-id-line {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  flex-wrap: wrap;
+}
+
+.order-sheet-id {
+  font-size: 1.15rem;
+  font-weight: 800;
+  color: #0f172a;
+  letter-spacing: -0.02em;
+}
+
+.order-sheet-time {
+  font-size: 0.76rem;
+  color: #64748b;
+  font-weight: 500;
+}
+
+.order-sheet-close-btn {
+  flex-shrink: 0;
+}
+
+.order-sheet-body {
+  padding: 1rem 1.25rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+/* Base Card Style in Sheet */
+.order-sheet-card {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 14px;
+  padding: 0.95rem;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
+}
+
+/* 1. Customer & Delivery Card */
+.order-sheet-customer-card {
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.order-sheet-customer-header {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.order-sheet-avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
+  background: linear-gradient(135deg, #16a34a, #15803d);
+  color: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 800;
+  font-size: 1.1rem;
+  flex-shrink: 0;
+  box-shadow: 0 2px 6px rgba(22, 163, 74, 0.25);
+}
+
+.order-sheet-customer-text {
+  flex: 1;
+  min-width: 0;
+}
+
+.order-sheet-customer-name {
+  font-weight: 800;
+  font-size: 0.98rem;
+  color: #0f172a;
+  line-height: 1.2;
+}
+
+.order-sheet-customer-sub {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  margin-top: 0.2rem;
+  font-size: 0.8rem;
+  flex-wrap: wrap;
+}
+
+.order-sheet-phone-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  color: #15803d;
+  font-weight: 700;
+  text-decoration: none;
+  background: #dcfce7;
+  padding: 0.15rem 0.45rem;
+  border-radius: 6px;
+  border: 1px solid #bbf7d0;
+  transition: background 0.15s;
+}
+
+.order-sheet-phone-link:hover {
+  background: #bbf7d0;
+}
+
+.order-sheet-no-phone {
+  color: #94a3b8;
+  font-style: italic;
+}
+
+.order-sheet-email-text {
+  color: #64748b;
+  font-size: 0.78rem;
+}
+
+.order-sheet-info-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.55rem;
+  padding-top: 0.65rem;
+  border-top: 1px dashed #e2e8f0;
+}
+
+.order-sheet-icon {
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+.order-sheet-icon.text-green {
+  color: #16a34a;
+}
+
+.order-sheet-icon.text-teal {
+  color: #0d9488;
+}
+
+.order-sheet-info-content {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+}
+
+.order-sheet-info-label {
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  color: #64748b;
+}
+
+.order-sheet-info-value {
+  font-size: 0.86rem;
+  font-weight: 600;
+  color: #1e293b;
+  line-height: 1.35;
+  word-break: break-word;
+}
+
+.order-sheet-map-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.35rem 0.65rem;
+  border-radius: 8px;
+  background: #eff6ff;
+  border: 1px solid #bfdbfe;
+  color: #2563eb;
+  font-size: 0.76rem;
+  font-weight: 700;
+  text-decoration: none;
+  flex-shrink: 0;
+  transition: all 0.15s;
+}
+
+.order-sheet-map-badge:hover {
+  background: #dbeafe;
+}
+
+.order-sheet-note-box {
+  background: #faf5ff;
+  border: 1px solid #e9d5ff;
+  border-radius: 10px;
+  padding: 0.6rem 0.75rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+}
+
+.order-sheet-note-title {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.7rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+  color: #7e22ce;
+}
+
+.order-sheet-note-text {
+  font-size: 0.84rem;
+  color: #581c87;
+  font-weight: 600;
+  font-style: italic;
+  line-height: 1.35;
+}
+
+/* 2. Fast Actions Hub */
+.order-sheet-actions-hub {
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
+}
+
+.order-sheet-hub-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.45rem;
+  padding: 0.65rem 1rem;
+  min-height: 42px;
+  border-radius: 12px;
+  font-size: 0.88rem;
+  font-weight: 700;
+  text-decoration: none;
+  cursor: pointer;
+  border: 1px solid transparent;
+  transition: all 0.18s cubic-bezier(0.16, 1, 0.3, 1);
+  font-family: inherit;
+  box-sizing: border-box;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.order-sheet-hub-btn:active {
+  transform: scale(0.97);
+}
+
+.btn-wa-primary {
+  background: #25D366;
+  color: #ffffff;
+  box-shadow: 0 3px 10px rgba(37, 211, 102, 0.3);
+}
+
+.btn-wa-primary:hover {
+  background: #20bd5a;
+}
+
+.order-sheet-hub-subrow {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.55rem;
+}
+
+.btn-share-driver {
+  background: #f0fdf4;
+  color: #15803d;
+  border-color: #bbf7d0;
+}
+
+.btn-share-driver:hover {
+  background: #dcfce7;
+  border-color: #86efac;
+}
+
+.btn-copy-details {
+  background: #f8fafc;
+  color: #334155;
+  border-color: #cbd5e1;
+}
+
+.btn-copy-details:hover {
+  background: #f1f5f9;
+}
+
+.btn-copy-details.is-copied {
+  background: #dcfce7;
+  border-color: #86efac;
+  color: #15803d;
+}
+
+.order-sheet-wa-preview-section {
+  margin-top: 0.2rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.order-sheet-preview-toggle-btn {
+  background: transparent;
+  border: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.35rem;
+  font-size: 0.76rem;
+  font-weight: 700;
+  color: #15803d;
+  cursor: pointer;
+  padding: 0.3rem 0;
+  font-family: inherit;
+}
+
+.order-sheet-preview-toggle-btn:hover {
+  color: #166534;
+  text-decoration: underline;
+}
+
+/* 3. Items Section */
+.order-sheet-items-section {
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
+}
+
+.order-sheet-section-title {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.order-sheet-title-left {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.92rem;
+  font-weight: 800;
+  color: #0f172a;
+}
+
+.order-sheet-item-count-badge {
+  font-size: 0.74rem;
+  font-weight: 700;
+  color: #64748b;
+  background: #f1f5f9;
+  padding: 0.15rem 0.5rem;
+  border-radius: 10px;
+}
+
+.order-sheet-items-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  max-height: 280px;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  padding-right: 2px;
+}
+
+.order-sheet-item-card {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 0.65rem 0.75rem;
+  transition: border-color 0.15s;
+}
+
+.order-sheet-item-card:hover {
+  border-color: #cbd5e1;
+}
+
+.order-sheet-item-thumb {
+  width: 44px;
+  height: 44px;
+  border-radius: 8px;
+  object-fit: cover;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  flex-shrink: 0;
+}
+
+.order-sheet-item-main {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+}
+
+.order-sheet-item-row-top {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.order-sheet-item-title {
+  font-weight: 700;
+  font-size: 0.88rem;
+  color: #0f172a;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.order-sheet-item-price-total {
+  font-weight: 800;
+  font-size: 0.92rem;
+  color: #16a34a;
+  flex-shrink: 0;
+}
+
+.order-sheet-item-qty-meta {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  font-size: 0.75rem;
+}
+
+.order-sheet-qty-pill {
+  font-weight: 700;
+  color: #0f172a;
+  background: #f1f5f9;
+  padding: 0.1rem 0.4rem;
+  border-radius: 6px;
+}
+
+.order-sheet-unit-price {
+  color: #64748b;
+  font-weight: 500;
+}
+
+.order-sheet-item-note {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.35rem;
+  background: #fef3c7;
+  border: 1px solid #fde68a;
+  border-radius: 6px;
+  padding: 0.2rem 0.45rem;
+  margin-top: 0.15rem;
+  font-size: 0.74rem;
+}
+
+.order-item-note-badge {
+  font-size: 0.65rem;
+  font-weight: 800;
+  color: #b45309;
+  text-transform: uppercase;
+  flex-shrink: 0;
+}
+
+.order-item-note-content {
+  color: #78350f;
+  font-style: italic;
+  font-weight: 600;
+  word-break: break-word;
+}
+
+.order-sheet-empty-items {
+  text-align: center;
+  padding: 1.5rem;
+  color: #94a3b8;
+  font-size: 0.85rem;
+}
+
+/* 4. Financial Summary Card */
+.order-sheet-summary-card {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+}
+
+.order-sheet-summary-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.84rem;
+}
+
+.order-sheet-summary-label {
+  color: #64748b;
+  font-weight: 600;
+}
+
+.order-sheet-summary-value-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-weight: 700;
+  font-size: 0.8rem;
+  color: #334155;
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  padding: 0.2rem 0.55rem;
+  border-radius: 8px;
+}
+
+.order-sheet-grand-total-row {
+  padding-top: 0.55rem;
+  border-top: 1px dashed #cbd5e1;
+}
+
+.order-sheet-grand-label {
+  font-size: 0.95rem;
+  font-weight: 800;
+  color: #0f172a;
+}
+
+.order-sheet-grand-amount {
+  font-size: 1.4rem;
+  font-weight: 900;
+  color: #16a34a;
+  letter-spacing: -0.02em;
+}
+
+/* 5. Status Workflow Selector */
+.order-sheet-status-control {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.order-sheet-status-label {
+  font-size: 0.8rem;
+  font-weight: 800;
+  color: #334155;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
+
+.order-sheet-status-pills {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 0.5rem;
+}
+
+.order-sheet-status-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  padding: 0.6rem 0.75rem;
+  border-radius: 10px;
+  border: 1px solid #cbd5e1;
+  background: #ffffff;
+  color: #475569;
+  font-size: 0.82rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.18s cubic-bezier(0.16, 1, 0.3, 1);
+  font-family: inherit;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.order-sheet-status-btn:active {
+  transform: scale(0.96);
+}
+
+.order-sheet-status-btn.pending.is-active {
+  background: #ea580c;
+  border-color: #ea580c;
+  color: #ffffff;
+  box-shadow: 0 2px 8px rgba(234, 88, 12, 0.3);
+}
+
+.order-sheet-status-btn.preparing.is-active {
+  background: #0284c7;
+  border-color: #0284c7;
+  color: #ffffff;
+  box-shadow: 0 2px 8px rgba(2, 132, 199, 0.3);
+}
+
+.order-sheet-status-btn.delivered.is-active {
+  background: #16a34a;
+  border-color: #16a34a;
+  color: #ffffff;
+  box-shadow: 0 2px 8px rgba(22, 163, 74, 0.3);
+}
+
+.order-sheet-status-btn.cancelled.is-active {
+  background: #dc2626;
+  border-color: #dc2626;
+  color: #ffffff;
+  box-shadow: 0 2px 8px rgba(220, 38, 38, 0.3);
+}
+
+/* Sheet Footer */
+.order-sheet-footer {
+  padding: 0.9rem 1.25rem;
+  border-top: 1px solid #f1f5f9;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.75rem;
+  background: #ffffff;
+  position: sticky;
+  bottom: 0;
+  z-index: 10;
+}
+
+.order-sheet-btn-delete {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.65rem 0.95rem;
+  border-radius: 10px;
+  background: #fff1f2;
+  color: #e11d48;
+  border: 1px solid #ffe4e6;
+  font-size: 0.82rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.15s;
+  font-family: inherit;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.order-sheet-btn-delete:hover {
+  background: #fee2e2;
+}
+
+.order-sheet-btn-done {
+  padding: 0.65rem 1.75rem;
+  border-radius: 10px;
+  background: #0f172a;
+  color: #ffffff;
+  border: none;
+  font-size: 0.88rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.15s;
+  font-family: inherit;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.order-sheet-btn-done:hover {
+  background: #1e293b;
+}
+
+.order-sheet-btn-done:active {
+  transform: scale(0.97);
+}
+
+/* Mobile specific overrides for bottom sheet */
+@media (max-width: 640px) {
+  .order-details-sheet {
+    max-height: 92vh;
+    border-radius: 22px 22px 0 0;
+  }
+
+  .order-sheet-handle-bar {
+    display: flex;
+  }
+
+  .order-sheet-header {
+    padding: 0.6rem 1rem 0.75rem;
+  }
+
+  .order-sheet-body {
+    padding: 0.85rem 1rem 1rem;
+    gap: 0.85rem;
+  }
+
+  .order-sheet-footer {
+    padding: 0.75rem 1rem calc(0.75rem + env(safe-area-inset-bottom, 0px));
+  }
+
+  .order-sheet-items-list {
+    max-height: 220px;
+  }
+}
+
+/* =========================================================
    ADMIN WHATSAPP ORDER SHARE & DISPATCH STYLING
    ========================================================= */
 .admin-order-share-card {
