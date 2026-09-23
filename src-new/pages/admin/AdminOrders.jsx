@@ -30,6 +30,7 @@ import {
   ShoppingBag,
   CreditCard,
   ChevronDown,
+  ChevronUp,
   Info
 } from "lucide-react";
 import { normalizeUnit, formatQuantityWithUnit } from "../../utils/unitHelper";
@@ -131,6 +132,8 @@ function AdminOrders() {
   const [isFilterModalOpen, setIsFilterModalOpen] = useState(false);
   const [toastMessage, setToastMessage] = useState(null);
   const [showWaPreview, setShowWaPreview] = useState(false);
+  const [showCustomerDetails, setShowCustomerDetails] = useState(false);
+  const [showDispatchTools, setShowDispatchTools] = useState(false);
   const [copiedId, setCopiedId] = useState(null);
   const ordersPerPage = 12;
 
@@ -919,8 +922,15 @@ function AdminOrders() {
           ? selectedOrder.items.reduce((sum, item) => sum + (Number(item.quantity) || 1), 0)
           : (selectedOrder.itemCount || 0);
 
+        const closeOrderDetails = () => {
+          setSelectedOrder(null);
+          setShowWaPreview(false);
+          setShowCustomerDetails(false);
+          setShowDispatchTools(false);
+        };
+
         return (
-          <div className="admin-modal-backdrop" onClick={() => { setSelectedOrder(null); setShowWaPreview(false); }}>
+          <div className="admin-modal-backdrop" onClick={closeOrderDetails}>
             <div className="admin-modal-dialog order-details-sheet" onClick={(e) => e.stopPropagation()}>
               
               {/* Top Handle for mobile gestures */}
@@ -950,7 +960,7 @@ function AdminOrders() {
                 </div>
                 <button 
                   className="modal-close-btn order-sheet-close-btn" 
-                  onClick={() => { setSelectedOrder(null); setShowWaPreview(false); }}
+                  onClick={closeOrderDetails}
                   aria-label="Close details"
                 >
                   <X size={18} />
@@ -959,144 +969,117 @@ function AdminOrders() {
 
               <div className="admin-modal-body order-sheet-body">
                 
-                {/* 1. Quick Customer & Delivery Card */}
-                <div className="order-sheet-card order-sheet-customer-card">
-                  <div className="order-sheet-customer-header">
-                    <div className="order-sheet-avatar">
+                {/* 1. Compact Customer & Contact Strip */}
+                <div className="order-sheet-customer-strip">
+                  <div className="order-customer-strip-left" onClick={() => setShowCustomerDetails(prev => !prev)}>
+                    <div className="order-sheet-mini-avatar">
                       {(selectedOrder.customer || 'C').charAt(0).toUpperCase()}
                     </div>
-                    <div className="order-sheet-customer-text">
-                      <div className="order-sheet-customer-name">
+                    <div className="order-customer-strip-info">
+                      <div className="order-customer-strip-name">
                         {selectedOrder.customer || 'Guest Customer'}
                       </div>
-                      <div className="order-sheet-customer-sub">
-                        {modalCustomerPhone ? (
-                          <a href={`tel:${modalCustomerPhone}`} className="order-sheet-phone-link">
-                            <Phone size={13} />
-                            <span>{modalCustomerPhone}</span>
-                          </a>
-                        ) : (
-                          <span className="order-sheet-no-phone">No phone provided</span>
-                        )}
-                        {selectedOrder.email && (
-                          <span className="order-sheet-email-text">• {selectedOrder.email}</span>
+                      <div className="order-customer-strip-meta">
+                        {modalCustomerPhone ? <span>{modalCustomerPhone}</span> : <span>No phone</span>}
+                        {modalDeliveryAddress && (
+                          <span className="order-customer-strip-dot">
+                            • {modalDeliveryAddress.slice(0, 20)}{modalDeliveryAddress.length > 20 ? '…' : ''}
+                          </span>
                         )}
                       </div>
                     </div>
+                    <button 
+                      type="button" 
+                      className="order-strip-expand-btn"
+                      aria-label="Toggle customer details"
+                    >
+                      {showCustomerDetails ? <ChevronUp size={15} /> : <ChevronDown size={15} />}
+                    </button>
                   </div>
 
-                  {/* Delivery Location & Map */}
-                  {modalDeliveryAddress && (
-                    <div className="order-sheet-info-row">
-                      <MapPin size={16} className="order-sheet-icon text-green" />
-                      <div className="order-sheet-info-content">
-                        <span className="order-sheet-info-label">Delivery Address</span>
+                  {/* Direct quick action icon buttons */}
+                  <div className="order-customer-strip-actions">
+                    {modalCustomerPhone && (
+                      <a 
+                        href={`tel:${modalCustomerPhone}`} 
+                        className="order-strip-icon-btn btn-call" 
+                        title="Call Customer"
+                      >
+                        <Phone size={14} />
+                      </a>
+                    )}
+                    {modalCustomerPhone && (
+                      <a 
+                        href={getCustomerWhatsAppUrl(selectedOrder)} 
+                        target="_blank" 
+                        rel="noopener noreferrer" 
+                        className="order-strip-icon-btn btn-wa" 
+                        title="WhatsApp Customer"
+                      >
+                        <MessageCircle size={14} />
+                      </a>
+                    )}
+                    {selectedOrder.googleMapsLink && (
+                      <a 
+                        href={selectedOrder.googleMapsLink} 
+                        target="_blank" 
+                        rel="noopener noreferrer" 
+                        className="order-strip-icon-btn btn-map" 
+                        title="Maps Location"
+                      >
+                        <MapPin size={14} />
+                      </a>
+                    )}
+                  </div>
+                </div>
+
+                {/* Collapsible Customer & Delivery Details */}
+                {showCustomerDetails && (
+                  <div className="order-sheet-customer-expanded-card">
+                    {selectedOrder.email && (
+                      <div className="order-sheet-info-row">
+                        <span className="order-sheet-info-label">Email:</span>
+                        <span className="order-sheet-info-value">{selectedOrder.email}</span>
+                      </div>
+                    )}
+                    {modalDeliveryAddress && (
+                      <div className="order-sheet-info-row">
+                        <span className="order-sheet-info-label">Address:</span>
                         <span className="order-sheet-info-value">{modalDeliveryAddress}</span>
                       </div>
-                      {selectedOrder.googleMapsLink && (
+                    )}
+                    {modalDeliverySlot && (
+                      <div className="order-sheet-info-row">
+                        <span className="order-sheet-info-label">Slot:</span>
+                        <span className="order-sheet-info-value text-teal-bold">{modalDeliverySlot}</span>
+                      </div>
+                    )}
+                    {modalNotes && (
+                      <div className="order-sheet-note-box">
+                        <div className="order-sheet-note-title">
+                          <MessageCircle size={13} />
+                          <span>Delivery Instructions:</span>
+                        </div>
+                        <div className="order-sheet-note-text">"{modalNotes}"</div>
+                      </div>
+                    )}
+                    {selectedOrder.googleMapsLink && (
+                      <div style={{ marginTop: '0.4rem' }}>
                         <a
                           href={selectedOrder.googleMapsLink}
                           target="_blank"
                           rel="noopener noreferrer"
                           className="order-sheet-map-badge"
-                          title="Open Google Maps"
                         >
-                          <ExternalLink size={13} />
-                          <span>Maps</span>
+                          <MapPin size={13} />
+                          <span>Open in Google Maps</span>
                         </a>
-                      )}
-                    </div>
-                  )}
-
-                  {/* Delivery Slot */}
-                  {modalDeliverySlot && (
-                    <div className="order-sheet-info-row">
-                      <Clock size={16} className="order-sheet-icon text-teal" />
-                      <div className="order-sheet-info-content">
-                        <span className="order-sheet-info-label">Preferred Time Slot</span>
-                        <span className="order-sheet-info-value">{modalDeliverySlot}</span>
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Customer Notes */}
-                  {modalNotes && (
-                    <div className="order-sheet-note-box">
-                      <div className="order-sheet-note-title">
-                        <MessageCircle size={13} />
-                        <span>Delivery Instructions</span>
-                      </div>
-                      <div className="order-sheet-note-text">"{modalNotes}"</div>
-                    </div>
-                  )}
-                </div>
-
-                {/* 2. Fast Communication & Share Hub */}
-                <div className="order-sheet-actions-hub">
-                  {modalCustomerPhone && (
-                    <a
-                      href={getCustomerWhatsAppUrl(selectedOrder)}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="order-sheet-hub-btn btn-wa-primary"
-                    >
-                      <MessageCircle size={16} />
-                      <span>WhatsApp Customer</span>
-                    </a>
-                  )}
-
-                  <div className="order-sheet-hub-subrow">
-                    <button
-                      type="button"
-                      className="order-sheet-hub-btn btn-share-driver"
-                      onClick={() => handleShareGeneric(selectedOrder)}
-                    >
-                      <Share2 size={15} />
-                      <span>Forward / Dispatch</span>
-                    </button>
-
-                    <button
-                      type="button"
-                      className={`order-sheet-hub-btn btn-copy-details ${copiedId === selectedOrder.id ? 'is-copied' : ''}`}
-                      onClick={() => handleCopyOrder(selectedOrder)}
-                    >
-                      {copiedId === selectedOrder.id ? <Check size={15} /> : <Copy size={15} />}
-                      <span>{copiedId === selectedOrder.id ? 'Copied!' : 'Copy Summary'}</span>
-                    </button>
-                  </div>
-
-                  {/* WhatsApp Text Preview toggle for quick review */}
-                  <div className="order-sheet-wa-preview-section">
-                    <button
-                      type="button"
-                      className="order-sheet-preview-toggle-btn"
-                      onClick={() => setShowWaPreview(prev => !prev)}
-                    >
-                      <Sparkles size={13} />
-                      <span>{showWaPreview ? 'Hide Message Preview' : 'Preview Formatted WhatsApp Message'}</span>
-                    </button>
-
-                    {showWaPreview && (
-                      <div className="admin-order-wa-preview">
-                        <div className="admin-order-wa-preview-header">
-                          <span>Formatted Dispatch Text</span>
-                          <button
-                            type="button"
-                            className="admin-order-wa-copy-link"
-                            onClick={() => handleCopyOrder(selectedOrder)}
-                          >
-                            {copiedId === selectedOrder.id ? 'Copied!' : 'Copy'}
-                          </button>
-                        </div>
-                        <pre className="admin-order-wa-preview-text">
-                          {formatWhatsAppOrderMessage(selectedOrder)}
-                        </pre>
                       </div>
                     )}
                   </div>
-                </div>
+                )}
 
-                {/* 3. Ordered Items List */}
+                {/* 2. PRIMARY FOCUS: ORDERED ITEMS LIST */}
                 <div className="order-sheet-items-section">
                   <div className="order-sheet-section-title">
                     <div className="order-sheet-title-left">
@@ -1104,7 +1087,7 @@ function AdminOrders() {
                       <span>Order Items</span>
                     </div>
                     <span className="order-sheet-item-count-badge">
-                      {selectedOrder.items?.length || 0} item{selectedOrder.items?.length !== 1 ? 's' : ''} ({totalUnitsCount} qty)
+                      {selectedOrder.items?.length || 0} items ({totalUnitsCount} units)
                     </span>
                   </div>
 
@@ -1155,7 +1138,7 @@ function AdminOrders() {
                   </div>
                 </div>
 
-                {/* 4. Financial & Payment Summary */}
+                {/* 3. Financial & Payment Summary */}
                 <div className="order-sheet-card order-sheet-summary-card">
                   <div className="order-sheet-summary-row">
                     <span className="order-sheet-summary-label">Payment Method</span>
@@ -1172,10 +1155,10 @@ function AdminOrders() {
                   </div>
                 </div>
 
-                {/* 5. Status Workflow Selector */}
+                {/* 4. Order Status Fast Selector */}
                 <div className="order-sheet-status-control">
                   <label className="order-sheet-status-label">
-                    <span>Change Order Status</span>
+                    <span>Order Status</span>
                   </label>
                   <div className="order-sheet-status-pills">
                     {["Pending", "Preparing", "Delivered", "Cancelled"].map((st) => {
@@ -1201,6 +1184,76 @@ function AdminOrders() {
                   </div>
                 </div>
 
+                {/* 5. Collapsible Dispatch & WhatsApp Tools */}
+                <div className="order-sheet-dispatch-accordion">
+                  <button
+                    type="button"
+                    className="order-sheet-dispatch-toggle"
+                    onClick={() => setShowDispatchTools(prev => !prev)}
+                  >
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.45rem' }}>
+                      <Share2 size={15} color="#15803d" />
+                      <span>Dispatch & WhatsApp Share Tools</span>
+                    </div>
+                    {showDispatchTools ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+                  </button>
+
+                  {showDispatchTools && (
+                    <div className="order-sheet-dispatch-content">
+                      <div className="order-sheet-hub-subrow">
+                        {modalCustomerPhone && (
+                          <a
+                            href={getCustomerWhatsAppUrl(selectedOrder)}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="order-sheet-hub-btn btn-wa-primary"
+                          >
+                            <MessageCircle size={15} />
+                            <span>WhatsApp Customer</span>
+                          </a>
+                        )}
+
+                        <button
+                          type="button"
+                          className="order-sheet-hub-btn btn-share-driver"
+                          onClick={() => handleShareGeneric(selectedOrder)}
+                        >
+                          <Share2 size={15} />
+                          <span>Forward to Driver</span>
+                        </button>
+                      </div>
+
+                      <div className="order-sheet-hub-subrow" style={{ marginTop: '0.45rem' }}>
+                        <button
+                          type="button"
+                          className={`order-sheet-hub-btn btn-copy-details ${copiedId === selectedOrder.id ? 'is-copied' : ''}`}
+                          onClick={() => handleCopyOrder(selectedOrder)}
+                        >
+                          {copiedId === selectedOrder.id ? <Check size={15} /> : <Copy size={15} />}
+                          <span>{copiedId === selectedOrder.id ? 'Copied' : 'Copy Summary'}</span>
+                        </button>
+
+                        <button
+                          type="button"
+                          className="order-sheet-hub-btn btn-preview-text"
+                          onClick={() => setShowWaPreview(prev => !prev)}
+                        >
+                          <Sparkles size={14} />
+                          <span>{showWaPreview ? 'Hide Text' : 'Preview Text'}</span>
+                        </button>
+                      </div>
+
+                      {showWaPreview && (
+                        <div className="admin-order-wa-preview" style={{ marginTop: '0.5rem' }}>
+                          <pre className="admin-order-wa-preview-text">
+                            {formatWhatsAppOrderMessage(selectedOrder)}
+                          </pre>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+
               </div>
 
               {/* Sheet Bottom Footer Actions */}
@@ -1209,8 +1262,7 @@ function AdminOrders() {
                   className="order-sheet-btn-delete"
                   onClick={() => {
                     handleDeleteOrder(selectedOrder.id, selectedOrder.customer);
-                    setSelectedOrder(null);
-                    setShowWaPreview(false);
+                    closeOrderDetails();
                   }}
                   title="Delete this order"
                 >
@@ -1219,10 +1271,7 @@ function AdminOrders() {
                 </button>
                 <button 
                   className="order-sheet-btn-done" 
-                  onClick={() => {
-                    setSelectedOrder(null);
-                    setShowWaPreview(false);
-                  }}
+                  onClick={closeOrderDetails}
                 >
                   Done
                 </button>
