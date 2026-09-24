@@ -19,8 +19,18 @@
 
 /* Hide global desktop site navbar on mobile when in Toters mode */
 @media (max-width: 768px) {
+  .product-details-page.toters-mode {
+    padding-bottom: calc(135px + env(safe-area-inset-bottom, 0px));
+  }
+
   .product-details-page.toters-mode .navbar {
     display: none !important;
+  }
+
+  .toters-sticky-bottom-bar {
+    bottom: calc(60px + env(safe-area-inset-bottom, 0px));
+    padding: 0.65rem 1rem;
+    z-index: 998;
   }
 }
 
@@ -645,7 +655,8 @@
   }
 
   .toters-sticky-bottom-bar {
-    padding: 0.65rem 0.85rem env(safe-area-inset-bottom, 0.65rem) 0.85rem;
+    bottom: calc(60px + env(safe-area-inset-bottom, 0px));
+    padding: 0.65rem 0.85rem;
     gap: 0.65rem;
   }
 

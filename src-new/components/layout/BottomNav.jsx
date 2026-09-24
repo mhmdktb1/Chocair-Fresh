@@ -11,8 +11,8 @@ const BottomNav = () => {
   const location = useLocation();
   const navigate = useNavigate();
 
-  // Hide bottom nav on admin routes, product details pages, and checkout (so checkout bottom dock has full focus)
-  if (location.pathname.startsWith('/admin') || location.pathname.startsWith('/product/') || location.pathname === '/product' || location.pathname === '/checkout') {
+  // Hide bottom nav on admin routes and checkout (so checkout bottom dock has full focus)
+  if (location.pathname.startsWith('/admin') || location.pathname === '/checkout') {
     return null;
   }
 
@@ -54,7 +54,7 @@ const BottomNav = () => {
         {/* 2. Shop */}
         <NavLink 
           to="/shop" 
-          className={({ isActive }) => `bottom-nav-item ${isActive ? 'active' : ''}`}
+          className={({ isActive }) => `bottom-nav-item ${isActive || location.pathname.startsWith('/product') ? 'active' : ''}`}
         >
           <div className="nav-icon-wrapper">
             <ShoppingBag size={20} />
