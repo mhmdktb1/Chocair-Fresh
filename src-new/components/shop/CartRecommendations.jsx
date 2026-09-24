@@ -79,6 +79,7 @@ const CartRecommendations = ({ limit = 8 }) => {
           <div key={product._id || product.id} className="cart-rec-card-item">
             <ProductCard 
               product={{
+                ...product,
                 _id: product._id || product.id,
                 name: product.name,
                 category: product.category,
@@ -87,8 +88,7 @@ const CartRecommendations = ({ limit = 8 }) => {
                 rating: product.rating || 4.9,
                 reviews: product.reviews || 16,
                 image: product.image,
-                isNew: product.isNew || false,
-                discount: product.discount || 0
+                isNew: product.isNew || false
               }} 
             />
           </div>

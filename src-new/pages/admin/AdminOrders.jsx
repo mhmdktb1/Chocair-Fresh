@@ -1097,6 +1097,9 @@ function AdminOrders() {
                         const itemQty = item.quantity || 1;
                         const itemUnit = normalizeUnit(item.unit);
                         const itemPrice = Number(item.price || 0);
+                        const itemOrigPrice = Number(item.originalPrice || item.price || 0);
+                        const isItemDiscounted = Boolean(item.discountPercent > 0 || (itemOrigPrice > itemPrice && itemPrice > 0));
+                        const itemDiscPercent = item.discountPercent || (isItemDiscounted && itemOrigPrice > 0 ? Math.round(((itemOrigPrice - itemPrice) / itemOrigPrice) * 100) : 0);
                         const itemLineTotal = Number(item.total || (itemPrice * itemQty) || 0);
 
                         return (
@@ -1110,9 +1113,16 @@ function AdminOrders() {
                             <div className="order-sheet-item-main">
                               <div className="order-sheet-item-row-top">
                                 <span className="order-sheet-item-title">{item.name}</span>
-                                <span className="order-sheet-item-price-total">
-                                  ${itemLineTotal.toFixed(2)}
-                                </span>
+                                <div style={{ textAlign: 'right' }}>
+                                  <span className="order-sheet-item-price-total">
+                                    ${itemLineTotal.toFixed(2)}
+                                  </span>
+                                  {isItemDiscounted && itemOrigPrice > itemPrice && (
+                                    <span style={{ textDecoration: 'line-through', color: '#94a3b8', fontSize: '0.75rem', display: 'block' }}>
+                                      ${(itemOrigPrice * itemQty).toFixed(2)}
+                                    </span>
+                                  )}
+                                </div>
                               </div>
                               <div className="order-sheet-item-qty-meta">
                                 <span className="order-sheet-qty-pill">
@@ -1120,7 +1130,25 @@ function AdminOrders() {
                                 </span>
                                 <span className="order-sheet-unit-price">
                                   @ ${itemPrice.toFixed(2)}/{itemUnit}
+                                  {isItemDiscounted && itemOrigPrice > itemPrice && (
+                                    <span style={{ textDecoration: 'line-through', color: '#94a3b8', marginLeft: 4, fontSize: '0.85em' }}>
+                                      ${itemOrigPrice.toFixed(2)}
+                                    </span>
+                                  )}
                                 </span>
+                                {isItemDiscounted && itemDiscPercent > 0 && (
+                                  <span style={{
+                                    background: '#fee2e2',
+                                    color: '#dc2626',
+                                    fontWeight: 700,
+                                    fontSize: '0.7rem',
+                                    padding: '1px 6px',
+                                    borderRadius: '4px',
+                                    marginLeft: 4
+                                  }}>
+                                    -{itemDiscPercent}% OFF
+                                  </span>
+                                )}
                               </div>
                               {item.instruction && (
                                 <div className="order-sheet-item-note">

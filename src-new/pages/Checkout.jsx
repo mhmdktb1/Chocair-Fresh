@@ -328,33 +328,65 @@ const Checkout = () => {
         {showOrderSummary && (
           <div className="mobile-summary-expanded-content">
             <div className="mobile-summary-items-rail">
-              {cartItems.map((item) => (
-                <div key={item._id || item.id} className="mobile-summary-item-row">
-                  <div className="mobile-item-thumb-box">
-                    <img src={item.image} alt={item.name} />
-                    <span className="mobile-item-qty-pill">{item.quantity}</span>
-                  </div>
-                  <div className="mobile-item-info">
-                    <h4 className="mobile-item-name">{item.name}</h4>
-                    <span className="mobile-item-unit-rate">
-                      {formatCurrency(item.price)} / {normalizeUnit(item.unit)} • {formatQuantityWithUnit(item.quantity, item.unit)}
-                    </span>
-                    {item.instruction && (
-                      <span className="mobile-item-instruction" style={{ display: 'block', fontSize: '0.75rem', color: '#16a34a', marginTop: '2px', fontStyle: 'italic' }}>
-                        Note: "{item.instruction}"
+              {cartItems.map((item) => {
+                const itemPrice = Number(item.price || 0);
+                const itemOrigPrice = Number(item.originalPrice || item.price || 0);
+                const isItemDiscounted = Boolean(item.isDiscounted || (itemOrigPrice > itemPrice && itemPrice > 0));
+                const itemDiscPercent = item.discountPercent || (isItemDiscounted && itemOrigPrice > 0 ? Math.round(((itemOrigPrice - itemPrice) / itemOrigPrice) * 100) : 0);
+
+                return (
+                  <div key={item._id || item.id} className="mobile-summary-item-row">
+                    <div className="mobile-item-thumb-box">
+                      <img src={item.image} alt={item.name} />
+                      <span className="mobile-item-qty-pill">{item.quantity}</span>
+                    </div>
+                    <div className="mobile-item-info">
+                      <h4 className="mobile-item-name">{item.name}</h4>
+                      <span className="mobile-item-unit-rate">
+                        <span style={{ fontWeight: 700, color: '#15803d' }}>{formatCurrency(itemPrice)}</span>
+                        {isItemDiscounted && itemOrigPrice > itemPrice && (
+                          <span style={{ textDecoration: 'line-through', color: '#94a3b8', marginLeft: 4, fontSize: '0.85em' }}>
+                            {formatCurrency(itemOrigPrice)}
+                          </span>
+                        )}
+                        <span style={{ color: '#64748b', marginLeft: 2 }}>/ {normalizeUnit(item.unit)}</span>
+                        {isItemDiscounted && itemDiscPercent > 0 && (
+                          <span style={{
+                            background: '#fee2e2',
+                            color: '#dc2626',
+                            fontWeight: 700,
+                            fontSize: '0.7rem',
+                            padding: '1px 5px',
+                            borderRadius: '4px',
+                            marginLeft: 4
+                          }}>
+                            -{itemDiscPercent}%
+                          </span>
+                        )}
+                        <span style={{ marginLeft: 4 }}>• {formatQuantityWithUnit(item.quantity, item.unit)}</span>
                       </span>
-                    )}
+                      {item.instruction && (
+                        <span className="mobile-item-instruction" style={{ display: 'block', fontSize: '0.75rem', color: '#16a34a', marginTop: '2px', fontStyle: 'italic' }}>
+                          Note: "{item.instruction}"
+                        </span>
+                      )}
+                    </div>
+                    <div className="mobile-item-price-stack">
+                      <span className="mobile-item-line-total">
+                        {formatCurrency(itemPrice * item.quantity)}
+                      </span>
+                      {isItemDiscounted && itemOrigPrice > itemPrice && (
+                        <span style={{ textDecoration: 'line-through', color: '#94a3b8', fontSize: '0.75rem' }}>
+                          {formatCurrency(itemOrigPrice * item.quantity)}
+                        </span>
+                      )}
+                      <span className="mobile-item-line-ll">
+                        {formatLL(itemPrice * item.quantity)}
+                      </span>
+                    </div>
                   </div>
-                  <div className="mobile-item-price-stack">
-                    <span className="mobile-item-line-total">
-                      {formatCurrency(item.price * item.quantity)}
-                    </span>
-                    <span className="mobile-item-line-ll">
-                      {formatLL(item.price * item.quantity)}
-                    </span>
-                  </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
 
             <div className="mobile-summary-calc-box">
@@ -850,33 +882,65 @@ const Checkout = () => {
 
               {/* Items List */}
               <div className="sidebar-items-list">
-                {cartItems.map(item => (
-                  <div key={item._id || item.id} className="sidebar-item-row">
-                    <div className="sidebar-item-thumb">
-                      <img src={item.image} alt={item.name} />
-                      <span className="thumb-qty-pill">{item.quantity}</span>
-                    </div>
-                    <div className="sidebar-item-info">
-                      <h4 className="sidebar-item-name">{item.name}</h4>
-                      <span className="sidebar-item-rate">
-                        {formatCurrency(item.price)} / {normalizeUnit(item.unit)} • {formatQuantityWithUnit(item.quantity, item.unit)}
-                      </span>
-                      {item.instruction && (
-                        <span className="sidebar-item-instruction" style={{ display: 'block', fontSize: '0.75rem', color: '#16a34a', marginTop: '2px', fontStyle: 'italic' }}>
-                          Note: "{item.instruction}"
+                {cartItems.map(item => {
+                  const itemPrice = Number(item.price || 0);
+                  const itemOrigPrice = Number(item.originalPrice || item.price || 0);
+                  const isItemDiscounted = Boolean(item.isDiscounted || (itemOrigPrice > itemPrice && itemPrice > 0));
+                  const itemDiscPercent = item.discountPercent || (isItemDiscounted && itemOrigPrice > 0 ? Math.round(((itemOrigPrice - itemPrice) / itemOrigPrice) * 100) : 0);
+
+                  return (
+                    <div key={item._id || item.id} className="sidebar-item-row">
+                      <div className="sidebar-item-thumb">
+                        <img src={item.image} alt={item.name} />
+                        <span className="thumb-qty-pill">{item.quantity}</span>
+                      </div>
+                      <div className="sidebar-item-info">
+                        <h4 className="sidebar-item-name">{item.name}</h4>
+                        <span className="sidebar-item-rate">
+                          <span style={{ fontWeight: 700, color: '#15803d' }}>{formatCurrency(itemPrice)}</span>
+                          {isItemDiscounted && itemOrigPrice > itemPrice && (
+                            <span style={{ textDecoration: 'line-through', color: '#94a3b8', marginLeft: 4, fontSize: '0.85em' }}>
+                              {formatCurrency(itemOrigPrice)}
+                            </span>
+                          )}
+                          <span style={{ color: '#64748b', marginLeft: 2 }}>/ {normalizeUnit(item.unit)}</span>
+                          {isItemDiscounted && itemDiscPercent > 0 && (
+                            <span style={{
+                              background: '#fee2e2',
+                              color: '#dc2626',
+                              fontWeight: 700,
+                              fontSize: '0.7rem',
+                              padding: '1px 5px',
+                              borderRadius: '4px',
+                              marginLeft: 4
+                            }}>
+                              -{itemDiscPercent}%
+                            </span>
+                          )}
+                          <span style={{ marginLeft: 4 }}>• {formatQuantityWithUnit(item.quantity, item.unit)}</span>
                         </span>
-                      )}
+                        {item.instruction && (
+                          <span className="sidebar-item-instruction" style={{ display: 'block', fontSize: '0.75rem', color: '#16a34a', marginTop: '2px', fontStyle: 'italic' }}>
+                            Note: "{item.instruction}"
+                          </span>
+                        )}
+                      </div>
+                      <div className="sidebar-item-price-stack">
+                        <span className="sidebar-item-price">
+                          {formatCurrency(itemPrice * item.quantity)}
+                        </span>
+                        {isItemDiscounted && itemOrigPrice > itemPrice && (
+                          <span style={{ textDecoration: 'line-through', color: '#94a3b8', fontSize: '0.75rem' }}>
+                            {formatCurrency(itemOrigPrice * item.quantity)}
+                          </span>
+                        )}
+                        <span className="sidebar-item-ll">
+                          {formatLL(itemPrice * item.quantity)}
+                        </span>
+                      </div>
                     </div>
-                    <div className="sidebar-item-price-stack">
-                      <span className="sidebar-item-price">
-                        {formatCurrency(item.price * item.quantity)}
-                      </span>
-                      <span className="sidebar-item-ll">
-                        {formatLL(item.price * item.quantity)}
-                      </span>
-                    </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
               
               {/* Calculations */}

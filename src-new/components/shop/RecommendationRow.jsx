@@ -196,6 +196,7 @@ const RecommendationRow = ({ title, subtitle = null, type, productId = null, lim
             <div key={product._id} className="scroll-item">
               <ProductCard 
                 product={{
+                  ...product,
                   _id: product._id,
                   name: product.name,
                   category: product.category,
@@ -205,8 +206,7 @@ const RecommendationRow = ({ title, subtitle = null, type, productId = null, lim
                   reviews: product.numReviews !== undefined ? product.numReviews : (product.reviews || 0),
                   image: product.image,
                   countInStock: product.countInStock !== undefined ? product.countInStock : 99,
-                  isNew: product.isNew || false,
-                  discount: product.discount || 0
+                  isNew: product.isNew || false
                 }} 
               />
             </div>

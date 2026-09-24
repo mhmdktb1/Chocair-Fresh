@@ -60,6 +60,13 @@ const Cart = () => {
     promoDiscount = (cartTotal * appliedPromo.discountPercent) / 100;
   }
   
+  // Total produce discount savings
+  const totalProduceSavings = cartItems.reduce((acc, item) => {
+    const orig = Number(item.originalPrice || item.price);
+    const cur = Number(item.price);
+    return acc + (orig > cur ? (orig - cur) * item.quantity : 0);
+  }, 0);
+
   const finalTotal = Math.max(0, cartTotal - promoDiscount + rawShippingCost);
   const freeShippingProgress = Math.min(100, Math.round((cartTotal / FREE_SHIPPING_THRESHOLD) * 100));
   const amountNeeded = Math.max(0, FREE_SHIPPING_THRESHOLD - cartTotal).toFixed(2);
@@ -459,119 +466,150 @@ const Cart = () => {
 
             {/* Streamlined Responsive Cart Items List */}
             <div className="cart-modern-list">
-              {cartItems.map((item) => (
-                <div key={item._id} className="cart-item-card">
-                  {/* Left: Product Thumbnail */}
-                  <Link to={`/product/${item._id}`} className="cart-item-thumb-link">
-                    <img 
-                      src={item.image || 'https://images.unsplash.com/photo-1610832958506-aa56368176cf?w=400&auto=format&fit=crop&q=80'} 
-                      alt={item.name} 
-                      className="cart-item-thumb-img" 
-                    />
-                  </Link>
+              {cartItems.map((item) => {
+                const itemPrice = Number(item.price || 0);
+                const itemOrigPrice = Number(item.originalPrice || item.price || 0);
+                const isItemDiscounted = Boolean(item.isDiscounted || (itemOrigPrice > itemPrice && itemPrice > 0));
+                const itemDiscPercent = item.discountPercent || (isItemDiscounted && itemOrigPrice > 0 ? Math.round(((itemOrigPrice - itemPrice) / itemOrigPrice) * 100) : 0);
 
-                  {/* Right: Content & Controls */}
-                  <div className="cart-item-body">
-                    {/* Top Row: Title, Category & Remove */}
-                    <div className="cart-item-header-row">
-                      <div className="cart-item-title-col">
-                        {item.category && (
-                          <span className="cart-item-cat">{item.category}</span>
-                        )}
-                        <Link to={`/product/${item._id}`} className="cart-item-name">
-                          {item.name}
-                        </Link>
-                        <span className="cart-item-unit-rate">
-                          {formatCurrency(item.price)} / {normalizeUnit(item.unit)}
-                          <span style={{ marginLeft: 6, color: '#16a34a', fontWeight: 600 }}>
-                            • Total: {formatQuantityWithUnit(item.quantity, item.unit)}
+                return (
+                  <div key={item._id} className="cart-item-card">
+                    {/* Left: Product Thumbnail */}
+                    <Link to={`/product/${item._id}`} className="cart-item-thumb-link">
+                      <img 
+                        src={item.image || 'https://images.unsplash.com/photo-1610832958506-aa56368176cf?w=400&auto=format&fit=crop&q=80'} 
+                        alt={item.name} 
+                        className="cart-item-thumb-img" 
+                      />
+                    </Link>
+
+                    {/* Right: Content & Controls */}
+                    <div className="cart-item-body">
+                      {/* Top Row: Title, Category & Remove */}
+                      <div className="cart-item-header-row">
+                        <div className="cart-item-title-col">
+                          {item.category && (
+                            <span className="cart-item-cat">{item.category}</span>
+                          )}
+                          <Link to={`/product/${item._id}`} className="cart-item-name">
+                            {item.name}
+                          </Link>
+                          <span className="cart-item-unit-rate">
+                            <span style={{ fontWeight: 700, color: '#15803d' }}>{formatCurrency(itemPrice)}</span>
+                            {isItemDiscounted && itemOrigPrice > itemPrice && (
+                              <span style={{ textDecoration: 'line-through', color: '#94a3b8', marginLeft: 5, fontSize: '0.85em' }}>
+                                {formatCurrency(itemOrigPrice)}
+                              </span>
+                            )}
+                            <span style={{ color: '#64748b', marginLeft: 3 }}>/ {normalizeUnit(item.unit)}</span>
+                            {isItemDiscounted && itemDiscPercent > 0 && (
+                              <span style={{
+                                background: '#fee2e2',
+                                color: '#dc2626',
+                                fontWeight: 700,
+                                fontSize: '0.72rem',
+                                padding: '1px 6px',
+                                borderRadius: '4px',
+                                marginLeft: 6
+                              }}>
+                                -{itemDiscPercent}%
+                              </span>
+                            )}
+                            <span style={{ marginLeft: 6, color: '#16a34a', fontWeight: 600 }}>
+                              • Total: {formatQuantityWithUnit(item.quantity, item.unit)}
+                            </span>
                           </span>
-                        </span>
-                        {item.instruction ? (
-                          <div className="cart-item-instruction-box">
-                            <MessageSquare size={12} className="cart-instruction-icon" />
-                            <span className="cart-instruction-text">"{item.instruction}"</span>
+                          {item.instruction ? (
+                            <div className="cart-item-instruction-box">
+                              <MessageSquare size={12} className="cart-instruction-icon" />
+                              <span className="cart-instruction-text">"{item.instruction}"</span>
+                              <button
+                                type="button"
+                                className="cart-instruction-edit-btn"
+                                onClick={() => {
+                                  const newNote = window.prompt(`Edit instructions for ${item.name}:`, item.instruction || '');
+                                  if (newNote !== null) {
+                                    updateItemInstruction(item._id, newNote.trim());
+                                  }
+                                }}
+                                title="Edit instruction"
+                              >
+                                Edit
+                              </button>
+                              <button
+                                type="button"
+                                className="cart-instruction-remove-btn"
+                                onClick={() => updateItemInstruction(item._id, '')}
+                                title="Remove instruction"
+                              >
+                                ×
+                              </button>
+                            </div>
+                          ) : (
                             <button
                               type="button"
-                              className="cart-instruction-edit-btn"
+                              className="cart-item-add-instruction-btn"
                               onClick={() => {
-                                const newNote = window.prompt(`Edit instructions for ${item.name}:`, item.instruction || '');
-                                if (newNote !== null) {
+                                const newNote = window.prompt(`Special instructions for ${item.name} (e.g. extra ripe, green, sliced):`);
+                                if (newNote !== null && newNote.trim()) {
                                   updateItemInstruction(item._id, newNote.trim());
                                 }
                               }}
-                              title="Edit instruction"
                             >
-                              Edit
+                              <MessageSquare size={11} />
+                              <span>Add note</span>
                             </button>
-                            <button
-                              type="button"
-                              className="cart-instruction-remove-btn"
-                              onClick={() => updateItemInstruction(item._id, '')}
-                              title="Remove instruction"
-                            >
-                              ×
-                            </button>
-                          </div>
-                        ) : (
-                          <button
+                          )}
+                        </div>
+
+                        <button 
+                          type="button"
+                          className="cart-item-remove-btn"
+                          onClick={() => removeFromCart(item._id)}
+                          aria-label={`Remove ${item.name}`}
+                          title="Remove Item"
+                        >
+                          <Trash2 size={16} />
+                        </button>
+                      </div>
+
+                      {/* Bottom Row: Stepper & Subtotal */}
+                      <div className="cart-item-footer-row">
+                        <div className="clean-qty-stepper">
+                          <button 
                             type="button"
-                            className="cart-item-add-instruction-btn"
-                            onClick={() => {
-                              const newNote = window.prompt(`Special instructions for ${item.name} (e.g. extra ripe, green, sliced):`);
-                              if (newNote !== null && newNote.trim()) {
-                                updateItemInstruction(item._id, newNote.trim());
-                              }
-                            }}
+                            className="stepper-action-btn minus"
+                            onClick={() => updateQuantity(item._id, item.quantity - 1)}
+                            aria-label="Decrease quantity"
                           >
-                            <MessageSquare size={11} />
-                            <span>Add note</span>
+                            <Minus size={14} />
                           </button>
-                        )}
-                      </div>
+                          <span className="stepper-number">{item.quantity}</span>
+                          <button 
+                            type="button"
+                            className="stepper-action-btn plus"
+                            onClick={() => updateQuantity(item._id, item.quantity + 1)}
+                            aria-label="Increase quantity"
+                          >
+                            <Plus size={14} />
+                          </button>
+                        </div>
 
-                      <button 
-                        type="button"
-                        className="cart-item-remove-btn"
-                        onClick={() => removeFromCart(item._id)}
-                        aria-label={`Remove ${item.name}`}
-                        title="Remove Item"
-                      >
-                        <Trash2 size={16} />
-                      </button>
-                    </div>
-
-                    {/* Bottom Row: Stepper & Subtotal */}
-                    <div className="cart-item-footer-row">
-                      <div className="clean-qty-stepper">
-                        <button 
-                          type="button"
-                          className="stepper-action-btn minus"
-                          onClick={() => updateQuantity(item._id, item.quantity - 1)}
-                          aria-label="Decrease quantity"
-                        >
-                          <Minus size={14} />
-                        </button>
-                        <span className="stepper-number">{item.quantity}</span>
-                        <button 
-                          type="button"
-                          className="stepper-action-btn plus"
-                          onClick={() => updateQuantity(item._id, item.quantity + 1)}
-                          aria-label="Increase quantity"
-                        >
-                          <Plus size={14} />
-                        </button>
-                      </div>
-
-                      <div className="cart-item-price-col">
-                        <span className="cart-item-total-price">
-                          {formatCurrency(item.price * item.quantity)}
-                        </span>
+                        <div className="cart-item-price-col">
+                          <span className="cart-item-total-price">
+                            {formatCurrency(itemPrice * item.quantity)}
+                          </span>
+                          {isItemDiscounted && itemOrigPrice > itemPrice && (
+                            <span style={{ textDecoration: 'line-through', color: '#94a3b8', fontSize: '0.78rem', display: 'block', textAlign: 'right' }}>
+                              {formatCurrency(itemOrigPrice * item.quantity)}
+                            </span>
+                          )}
+                        </div>
                       </div>
                     </div>
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
 
             {/* Quick Add / Cart Recommendations */}
@@ -641,9 +679,16 @@ const Cart = () => {
                   </div>
                 </div>
 
+                {totalProduceSavings > 0 && (
+                  <div className="summary-row promo-discount-row">
+                    <span style={{ color: '#16a34a', fontWeight: 600 }}>Produce Savings</span>
+                    <span className="row-amount discount-amount" style={{ color: '#16a34a' }}>-{formatCurrency(totalProduceSavings)}</span>
+                  </div>
+                )}
+
                 {appliedPromo && promoDiscount > 0 && (
                   <div className="summary-row promo-discount-row">
-                    <span>Discount ({appliedPromo.code})</span>
+                    <span>Coupon ({appliedPromo.code})</span>
                     <span className="row-amount discount-amount">-{formatCurrency(promoDiscount)}</span>
                   </div>
                 )}

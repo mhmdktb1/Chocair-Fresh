@@ -133,6 +133,23 @@ const TotersProductRow = ({ title, type, productId = null, category = null, limi
                     onError={(e) => { e.target.src = FALLBACK_IMAGE; }}
                   />
 
+                  {item.isDiscounted && item.discountPercent > 0 && (
+                    <div style={{
+                      position: 'absolute',
+                      top: '6px',
+                      left: '6px',
+                      background: '#e74c3c',
+                      color: '#fff',
+                      fontSize: '0.65rem',
+                      fontWeight: 800,
+                      padding: '2px 6px',
+                      borderRadius: '12px',
+                      zIndex: 2
+                    }}>
+                      -{item.discountPercent}%
+                    </div>
+                  )}
+
                   {inCartItem ? (
                     <div className="toters-in-cart-badge">
                       {formatQuantityWithUnit(inCartItem.quantity, normU)}
@@ -150,7 +167,14 @@ const TotersProductRow = ({ title, type, productId = null, category = null, limi
                 </div>
 
                 <div className="toters-item-info">
-                  <div className="toters-item-price">${Number(item.price).toFixed(2)}</div>
+                  <div className="toters-item-price">
+                    ${Number(item.finalPrice !== undefined ? item.finalPrice : item.price).toFixed(2)}
+                    {item.isDiscounted && Number(item.originalPrice) > Number(item.finalPrice || item.price) && (
+                      <span style={{ textDecoration: 'line-through', color: '#94a3b8', fontSize: '0.78rem', marginLeft: 4 }}>
+                        ${Number(item.originalPrice).toFixed(2)}
+                      </span>
+                    )}
+                  </div>
                   <div className="toters-item-name" title={item.name}>{item.name}</div>
                   <div className="toters-item-unit">{unitLabel}</div>
                 </div>

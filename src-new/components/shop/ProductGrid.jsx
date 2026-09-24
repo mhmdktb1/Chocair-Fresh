@@ -57,8 +57,7 @@ const ProductGrid = ({ products = [], loading, error }) => {
             _id: product._id || product.id,
             rating: product.rating || 5,
             reviews: product.reviews || 0,
-            isNew: product.isNew || false,
-            discount: product.discount || 0
+            isNew: product.isNew || false
           }} 
         />
       ))}

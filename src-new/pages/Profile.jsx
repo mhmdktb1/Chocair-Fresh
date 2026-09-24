@@ -902,31 +902,63 @@ const Profile = () => {
                     </div>
                     
                     <div className="order-line-items-list">
-                      {order.orderItems?.map((item, idx) => (
-                        <div key={idx} className="line-item-card">
-                          <div className="item-img-frame">
-                            {item.image ? (
-                              <img src={item.image} alt={item.name} />
-                            ) : (
-                              <Package size={18} color="#94a3b8" />
-                            )}
-                          </div>
-                          <div className="item-info-col">
-                            <span className="item-title">{item.name}</span>
-                            <span className="item-qty-rate">
-                              {item.qty} × {formatCurrency(item.price)}
-                            </span>
-                            {item.instruction && (
-                              <span className="item-instruction-note" style={{ display: 'block', fontSize: '0.74rem', color: '#16a34a', marginTop: '2px', fontStyle: 'italic' }}>
-                                Note: "{item.instruction}"
+                      {order.orderItems?.map((item, idx) => {
+                        const itemPrice = Number(item.price || 0);
+                        const itemOrigPrice = Number(item.originalPrice || item.price || 0);
+                        const isItemDiscounted = Boolean(item.discountPercent > 0 || (itemOrigPrice > itemPrice && itemPrice > 0));
+                        const itemDiscPercent = item.discountPercent || (isItemDiscounted && itemOrigPrice > 0 ? Math.round(((itemOrigPrice - itemPrice) / itemOrigPrice) * 100) : 0);
+
+                        return (
+                          <div key={idx} className="line-item-card">
+                            <div className="item-img-frame">
+                              {item.image ? (
+                                <img src={item.image} alt={item.name} />
+                              ) : (
+                                <Package size={18} color="#94a3b8" />
+                              )}
+                            </div>
+                            <div className="item-info-col">
+                              <span className="item-title">{item.name}</span>
+                              <span className="item-qty-rate">
+                                {item.qty} × {formatCurrency(itemPrice)}
+                                {isItemDiscounted && itemOrigPrice > itemPrice && (
+                                  <span style={{ textDecoration: 'line-through', color: '#94a3b8', marginLeft: 4, fontSize: '0.85em' }}>
+                                    {formatCurrency(itemOrigPrice)}
+                                  </span>
+                                )}
+                                {isItemDiscounted && itemDiscPercent > 0 && (
+                                  <span style={{
+                                    background: '#fee2e2',
+                                    color: '#dc2626',
+                                    fontWeight: 700,
+                                    fontSize: '0.68rem',
+                                    padding: '1px 5px',
+                                    borderRadius: '4px',
+                                    marginLeft: 5
+                                  }}>
+                                    -{itemDiscPercent}%
+                                  </span>
+                                )}
                               </span>
-                            )}
+                              {item.instruction && (
+                                <span className="item-instruction-note" style={{ display: 'block', fontSize: '0.74rem', color: '#16a34a', marginTop: '2px', fontStyle: 'italic' }}>
+                                  Note: "{item.instruction}"
+                                </span>
+                              )}
+                            </div>
+                            <div style={{ textAlign: 'right' }}>
+                              <span className="item-row-total">
+                                {formatCurrency(item.qty * itemPrice)}
+                              </span>
+                              {isItemDiscounted && itemOrigPrice > itemPrice && (
+                                <span style={{ textDecoration: 'line-through', color: '#94a3b8', fontSize: '0.75rem', display: 'block' }}>
+                                  {formatCurrency(item.qty * itemOrigPrice)}
+                                </span>
+                              )}
+                            </div>
                           </div>
-                          <span className="item-row-total">
-                            {formatCurrency(item.qty * item.price)}
-                          </span>
-                        </div>
-                      ))}
+                        );
+                      })}
                     </div>
 
                     {/* Meta Info Grid */}
