@@ -18,12 +18,19 @@ import Category from '../models/categoryModel.js';
 import Order from '../models/orderModel.js';
 import rawProducts from '../products.js';
 
-// 6 Real Categories
+// Real Categories
 const categories = [
   {
     name: 'Fruits',
-    description: 'Fresh seasonal, citrus and local farm fruits',
+    description: 'Fresh citrus, orchard and daily farm fruits',
     image: '/assets/images/products/fruits/apple-red.jpg',
+    isVisible: true,
+    featured: true
+  },
+  {
+    name: 'Seasonal Fruits',
+    description: 'Crisp summer melons, fresh picked cherries, figs, and seasonal harvest',
+    image: '/assets/images/products/fruits/cherry.jpg',
     isVisible: true,
     featured: true
   },

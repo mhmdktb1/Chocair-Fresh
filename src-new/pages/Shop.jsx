@@ -29,6 +29,7 @@ import './Shop.css';
 
 const getCategoryEmoji = (name = '') => {
   const n = name.toLowerCase();
+  if (n.includes('seasonal')) return '🍉';
   if (n.includes('fruit') || n.includes('apple') || n.includes('berry')) return '🍎';
   if (n.includes('veg') || n.includes('greens') || n.includes('salad')) return '🥦';
   if (n.includes('herb') || n.includes('mint') || n.includes('parsley')) return '🌿';

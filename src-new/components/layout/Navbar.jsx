@@ -24,7 +24,9 @@ import './Navbar.css';
 
 const CATEGORY_EMOJIS = {
   'All': '✨',
-  'Fruits': '🍓',
+  'Fruits': '�',
+  'Seasonal Fruits': '🍉',
+  'Seasonal Fruit': '🍉',
   'Vegetables': '🥦',
   'Herbs': '🌿',
   'Raw Nuts': '🥜',
@@ -241,7 +243,7 @@ const Navbar = () => {
     setCurtainOpen(!curtainOpen);
   };
 
-  const categories = ['All', 'Fruits', 'Vegetables', 'Herbs', 'Raw Nuts', 'Cooked Nuts', 'Dates'];
+  const categories = ['All', 'Fruits', 'Seasonal Fruits', 'Vegetables', 'Herbs', 'Raw Nuts', 'Cooked Nuts', 'Dates'];
 
   return (
     <>

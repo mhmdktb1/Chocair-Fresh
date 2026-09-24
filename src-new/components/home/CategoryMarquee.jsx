@@ -6,15 +6,19 @@ import './CategoryMarquee.css';
 
 const defaultCategories = [
   { id: '1', name: 'Fruits', icon: '🍎', color: '#ff7675', bg: 'linear-gradient(135deg, #ffeaa7 0%, #fab1a0 100%)', badge: 'Fresh' },
-  { id: '2', name: 'Vegetables', icon: '🥦', color: '#00b894', bg: 'linear-gradient(135deg, #55efc4 0%, #81ecec 100%)', badge: 'Organic' },
-  { id: '3', name: 'Herbs', icon: '🌿', color: '#00cec9', bg: 'linear-gradient(135deg, #81ecec 0%, #00b894 100%)', badge: 'Aromatic' },
-  { id: '4', name: 'Raw Nuts', icon: '🌰', color: '#e17055', bg: 'linear-gradient(135deg, #fdcb6e 0%, #e17055 100%)', badge: 'Natural' },
-  { id: '5', name: 'Cooked Nuts', icon: '🥜', color: '#d63031', bg: 'linear-gradient(135deg, #ff7675 0%, #d63031 100%)', badge: 'Roasted' },
-  { id: '6', name: 'Dates', icon: '🌴', color: '#6c5ce7', bg: 'linear-gradient(135deg, #ffeaa7 0%, #fdcb6e 100%)', badge: 'Premium' },
+  { id: '2', name: 'Seasonal Fruits', icon: '🍉', color: '#ff6b6b', bg: 'linear-gradient(135deg, #ff9ff3 0%, #feca57 100%)', badge: 'Seasonal' },
+  { id: '3', name: 'Vegetables', icon: '🥦', color: '#00b894', bg: 'linear-gradient(135deg, #55efc4 0%, #81ecec 100%)', badge: 'Organic' },
+  { id: '4', name: 'Herbs', icon: '🌿', color: '#00cec9', bg: 'linear-gradient(135deg, #81ecec 0%, #00b894 100%)', badge: 'Aromatic' },
+  { id: '5', name: 'Raw Nuts', icon: '🌰', color: '#e17055', bg: 'linear-gradient(135deg, #fdcb6e 0%, #e17055 100%)', badge: 'Natural' },
+  { id: '6', name: 'Cooked Nuts', icon: '🥜', color: '#d63031', bg: 'linear-gradient(135deg, #ff7675 0%, #d63031 100%)', badge: 'Roasted' },
+  { id: '7', name: 'Dates', icon: '🌴', color: '#6c5ce7', bg: 'linear-gradient(135deg, #ffeaa7 0%, #fdcb6e 100%)', badge: 'Premium' },
 ];
 
 const getCategoryVisuals = (name) => {
   const lower = (name || '').toLowerCase();
+  if (lower.includes('seasonal')) {
+    return { icon: '🍉', bg: 'linear-gradient(135deg, #ff9ff3 0%, #feca57 100%)', badge: 'Seasonal' };
+  }
   if (lower.includes('fruit') || lower.includes('apple') || lower.includes('berry')) {
     return { icon: '🍎', bg: 'linear-gradient(135deg, #ffeaa7 0%, #fab1a0 100%)', badge: 'Fresh' };
   }

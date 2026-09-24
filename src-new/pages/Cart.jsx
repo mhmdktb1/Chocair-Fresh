@@ -26,12 +26,13 @@ const PROMO_CODES = {
 };
 
 const POPULAR_CATEGORIES = [
-  { name: 'Fruits', icon: '🍎', slug: 'Fruits', countText: 'Apples, Berries, Citrus' },
+  { name: 'Fruits', icon: '🍎', slug: 'Fruits', countText: 'Apples, Citrus, Bananas' },
+  { name: 'Seasonal Fruits', icon: '🍉', slug: 'Seasonal Fruits', countText: 'Cherries, Melons, Figs' },
   { name: 'Vegetables', icon: '🥦', slug: 'Vegetables', countText: 'Crisp Greens, Roots' },
   { name: 'Herbs & Greens', icon: '🌿', slug: 'Herbs', countText: 'Mint, Basil, Rosemary' },
-  { name: 'Dairy & Eggs', icon: '🧀', slug: 'Dairy', countText: 'Farm Milk & Cheeses' },
-  { name: 'Bakery', icon: '🥐', slug: 'Bakery', countText: 'Artisan Breads' },
-  { name: 'Pantry', icon: '🍯', slug: 'Pantry', countText: 'Raw Honey & Olive Oils' },
+  { name: 'Raw Nuts', icon: '🌰', slug: 'Raw Nuts', countText: 'Almonds, Walnuts' },
+  { name: 'Cooked Nuts', icon: '🥜', slug: 'Cooked Nuts', countText: 'Roasted & Salted' },
+  { name: 'Dates', icon: '🌴', slug: 'Dates', countText: 'Medjool & Gourmet Dates' },
 ];
 
 const Cart = () => {
