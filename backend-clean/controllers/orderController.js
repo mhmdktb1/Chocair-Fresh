@@ -3,6 +3,7 @@ import Order from '../models/orderModel.js';
 import Product from '../models/productModel.js';
 import User from '../models/userModel.js';
 import { sendWhatsAppOrderNotification } from '../utils/whatsappService.js';
+import { calculateProductDiscount } from '../utils/discountHelper.js';
 
 // @desc    Create new order
 // @route   POST /api/orders
@@ -12,9 +13,8 @@ const addOrderItems = asyncHandler(async (req, res) => {
     orderItems,
     customerInfo,
     paymentMethod,
-    itemsPrice,
-    shippingPrice,
-    totalPrice,
+    deliveryPreference,
+    shippingPrice: clientShippingPrice,
   } = req.body;
 
   if (!orderItems || orderItems.length === 0) {
@@ -22,12 +22,15 @@ const addOrderItems = asyncHandler(async (req, res) => {
     throw new Error('No order items');
   }
 
-  // Atomically decrement stock for all ordered items
+  // Atomically decrement stock and securely calculate price per item
   const decrementedItems = [];
+  const normalizedOrderItems = [];
+  let calculatedItemsPrice = 0;
+
   try {
     for (const item of orderItems) {
-      const productId = item.product || item._id;
-      const qty = Number(item.qty) || 1;
+      const productId = item.product || item._id || item.id;
+      const qty = Math.max(1, Number(item.qty || item.quantity) || 1);
 
       if (!productId) {
         throw new Error(`Invalid product reference for item: ${item.name || 'Unknown'}`);
@@ -46,22 +49,40 @@ const addOrderItems = asyncHandler(async (req, res) => {
       }
 
       decrementedItems.push({ productId, qty });
+
+      // Calculate server-side product discount
+      const discountCalc = calculateProductDiscount(updatedProduct);
+      const chargedPrice = discountCalc.finalPrice;
+      const lineTotal = Number((chargedPrice * qty).toFixed(2));
+      calculatedItemsPrice += lineTotal;
+
+      normalizedOrderItems.push({
+        product: updatedProduct._id,
+        name: updatedProduct.name,
+        qty,
+        unit: updatedProduct.unit || item.unit || '1kg',
+        price: chargedPrice,
+        originalPrice: discountCalc.isDiscounted ? discountCalc.originalPrice : chargedPrice,
+        discountPercent: discountCalc.discountPercent,
+        discountAmount: discountCalc.discountAmount,
+        image: updatedProduct.image || item.image || '/assets/images/placeholder-product.jpg',
+        instruction: item.instruction || item.instructions || item.specialInstructions || item.note || item.notes || '',
+      });
     }
 
-    const normalizedOrderItems = orderItems.map((item) => ({
-      ...item,
-      image: item.image || '/assets/images/placeholder-product.jpg',
-      instruction: item.instruction || item.instructions || item.specialInstructions || item.note || item.notes || '',
-    }));
+    calculatedItemsPrice = Number(calculatedItemsPrice.toFixed(2));
+    const calculatedShippingPrice = calculatedItemsPrice >= 50 ? 0 : (clientShippingPrice !== undefined ? Number(clientShippingPrice) : 5.99);
+    const calculatedTotalPrice = Number((calculatedItemsPrice + calculatedShippingPrice).toFixed(2));
 
     const order = new Order({
       orderItems: normalizedOrderItems,
       user: req.user ? req.user._id : undefined,
       customerInfo,
-      paymentMethod,
-      itemsPrice,
-      shippingPrice,
-      totalPrice,
+      paymentMethod: paymentMethod || 'Cash on Delivery',
+      deliveryPreference: deliveryPreference || customerInfo?.deliveryPreference || 'ASAP',
+      itemsPrice: calculatedItemsPrice,
+      shippingPrice: calculatedShippingPrice,
+      totalPrice: calculatedTotalPrice,
     });
 
     const createdOrder = await order.save();

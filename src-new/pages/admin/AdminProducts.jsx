@@ -38,7 +38,12 @@ function AdminProducts() {
     image: "",
     featured: false,
     description: "",
-    customPrices: {}
+    customPrices: {},
+    discountActive: false,
+    discountType: "percentage",
+    discountValue: "",
+    discountStartDate: "",
+    discountEndDate: ""
   });
 
   // Filter products by search query and category
@@ -57,22 +62,64 @@ function AdminProducts() {
     });
   }, [products, categories, searchQuery, selectedCategoryFilter]);
 
+  // Live discount preview calculation
+  const previewDiscount = useMemo(() => {
+    const base = parseFloat(formData.price);
+    const val = parseFloat(formData.discountValue);
+    if (!formData.discountActive || isNaN(base) || base <= 0 || isNaN(val) || val <= 0) {
+      return null;
+    }
+    let savings = 0;
+    let final = base;
+    let pct = 0;
+    if (formData.discountType === 'fixed') {
+      savings = Math.min(base, Math.max(0, val));
+      final = Math.max(0, base - savings);
+      pct = base > 0 ? Math.round((savings / base) * 100) : 0;
+    } else {
+      pct = Math.min(100, Math.max(0, val));
+      savings = (base * pct) / 100;
+      final = Math.max(0, base - savings);
+      pct = Math.round(pct);
+    }
+    return {
+      original: base,
+      final,
+      savings,
+      pct
+    };
+  }, [formData.price, formData.discountActive, formData.discountType, formData.discountValue]);
+
   const handleOpenModal = (product = null) => {
     if (product) {
       setEditingProduct(product);
       const normalizedU = normalizeUnit(product.priceUnit || product.unit);
+      const basePriceVal = product.originalPrice !== undefined ? product.originalPrice : (product.price !== undefined ? product.price : "");
+      
+      const dStartDate = product.discount?.startDate 
+        ? new Date(product.discount.startDate).toISOString().split('T')[0] 
+        : "";
+      const dEndDate = product.discount?.endDate 
+        ? new Date(product.discount.endDate).toISOString().split('T')[0] 
+        : "";
+
       setFormData({
         name: product.name || "",
         category: product.category || "",
         categories: product.categories?.length ? product.categories : [product.category || ""].filter(Boolean),
-        price: product.price !== undefined ? String(product.price) : "",
+        price: basePriceVal !== "" ? String(basePriceVal) : "",
         priceUnit: normalizedU,
         unit: normalizedU,
         stock: product.stock !== undefined ? String(product.stock) : "50",
         image: product.image || "",
         featured: product.featured || false,
         description: product.description || "",
-        customPrices: product.customPrices || {}
+        customPrices: product.customPrices || {},
+        discountActive: Boolean(product.discount?.isActive),
+        discountType: product.discount?.type || "percentage",
+        discountValue: product.discount?.value !== undefined && product.discount?.value > 0 ? String(product.discount.value) : "",
+        discountStartDate: dStartDate,
+        discountEndDate: dEndDate
       });
     } else {
       setEditingProduct(null);
@@ -88,7 +135,12 @@ function AdminProducts() {
         image: "",
         featured: false,
         description: "",
-        customPrices: {}
+        customPrices: {},
+        discountActive: false,
+        discountType: "percentage",
+        discountValue: "",
+        discountStartDate: "",
+        discountEndDate: ""
       });
     }
     setShowModal(true);
@@ -132,7 +184,14 @@ function AdminProducts() {
       unit: chosenUnit,
       featured: formData.featured || false,
       description: formData.description || '',
-      image: formData.image.trim() || '/assets/images/products/placeholder.jpg'
+      image: formData.image.trim() || '/assets/images/products/placeholder.jpg',
+      discount: {
+        isActive: Boolean(formData.discountActive),
+        type: formData.discountType || 'percentage',
+        value: parseFloat(formData.discountValue) || 0,
+        startDate: formData.discountStartDate ? formData.discountStartDate : null,
+        endDate: formData.discountEndDate ? formData.discountEndDate : null
+      }
     };
 
     try {
@@ -283,9 +342,30 @@ function AdminProducts() {
 
                   <div className="product-card-metrics">
                     <span className="product-price-pill">
-                      ${Number(product.price || 0).toFixed(2)}
+                      ${Number(product.finalPrice !== undefined ? product.finalPrice : product.price || 0).toFixed(2)}
+                      {product.isDiscounted && Number(product.originalPrice) > Number(product.finalPrice || product.price) && (
+                        <span style={{ textDecoration: 'line-through', color: '#94a3b8', fontSize: '0.78rem', marginLeft: 4 }}>
+                          ${Number(product.originalPrice).toFixed(2)}
+                        </span>
+                      )}
                       <span style={{ fontSize: '0.75rem', fontWeight: 500, color: '#64748b' }}>/{normalizeUnit(product.priceUnit || product.unit)}</span>
                     </span>
+
+                    {product.isDiscounted && (
+                      <span style={{
+                        background: '#fee2e2',
+                        color: '#dc2626',
+                        fontWeight: 700,
+                        fontSize: '0.72rem',
+                        padding: '2px 7px',
+                        borderRadius: '6px',
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: 3
+                      }}>
+                        <Tag size={10} /> -{product.discountPercent}%
+                      </span>
+                    )}
 
                     <span className={`product-stock-pill ${isOutOfStock || isLowStock ? 'stock-low' : 'stock-in'}`}>
                       {isOutOfStock ? 'Out of stock' : isLowStock ? `Low: ${product.stock}` : `${product.stock} in stock`}
@@ -415,6 +495,126 @@ function AdminProducts() {
                   label="Product Image (Camera or Gallery)"
                   fallbackPlaceholder="/assets/images/products/placeholder.jpg"
                 />
+
+                {/* Product Discount & Promotion Section */}
+                <div style={{
+                  background: formData.discountActive ? '#f0fdf4' : '#f8fafc',
+                  border: formData.discountActive ? '1.5px solid #86efac' : '1px solid #e2e8f0',
+                  borderRadius: '12px',
+                  padding: '1rem',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: '0.85rem',
+                  transition: 'all 0.2s ease'
+                }}>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                    <label htmlFor="productDiscountActiveCheck" style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer', fontWeight: 700, fontSize: '0.9rem', color: formData.discountActive ? '#15803d' : '#334155' }}>
+                      <Tag size={16} color={formData.discountActive ? '#16a34a' : '#64748b'} />
+                      <span>Product Discount / Special Offer</span>
+                    </label>
+                    <input
+                      type="checkbox"
+                      id="productDiscountActiveCheck"
+                      checked={formData.discountActive}
+                      onChange={(e) => setFormData({ ...formData, discountActive: e.target.checked })}
+                      style={{ width: 20, height: 20, cursor: 'pointer', accentColor: '#16a34a' }}
+                    />
+                  </div>
+
+                  {formData.discountActive && (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.85rem' }}>
+                      {/* Discount Type and Value Grid */}
+                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
+                        <div>
+                          <label className="admin-form-label" style={{ fontSize: '0.8rem' }}>Discount Type *</label>
+                          <select
+                            className="admin-form-select"
+                            value={formData.discountType}
+                            onChange={(e) => setFormData({ ...formData, discountType: e.target.value })}
+                            style={{ fontSize: '0.85rem' }}
+                          >
+                            <option value="percentage">Percentage Off (%)</option>
+                            <option value="fixed">Fixed Amount Off ($)</option>
+                          </select>
+                        </div>
+
+                        <div>
+                          <label className="admin-form-label" style={{ fontSize: '0.8rem' }}>
+                            {formData.discountType === 'percentage' ? 'Discount Percentage (%) *' : 'Discount Amount ($) *'}
+                          </label>
+                          <input
+                            type="number"
+                            step={formData.discountType === 'percentage' ? '1' : '0.01'}
+                            min="0"
+                            max={formData.discountType === 'percentage' ? '100' : undefined}
+                            className="admin-form-input"
+                            placeholder={formData.discountType === 'percentage' ? 'e.g. 20 (for 20%)' : 'e.g. 1.00 (for $1.00 off)'}
+                            value={formData.discountValue}
+                            onChange={(e) => setFormData({ ...formData, discountValue: e.target.value })}
+                            style={{ fontSize: '0.85rem' }}
+                          />
+                        </div>
+                      </div>
+
+                      {/* Date Range Row */}
+                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
+                        <div>
+                          <label className="admin-form-label" style={{ fontSize: '0.8rem' }}>Start Date (Optional)</label>
+                          <input
+                            type="date"
+                            className="admin-form-input"
+                            value={formData.discountStartDate}
+                            onChange={(e) => setFormData({ ...formData, discountStartDate: e.target.value })}
+                            style={{ fontSize: '0.85rem' }}
+                          />
+                        </div>
+
+                        <div>
+                          <label className="admin-form-label" style={{ fontSize: '0.8rem' }}>End Date (Optional)</label>
+                          <input
+                            type="date"
+                            className="admin-form-input"
+                            value={formData.discountEndDate}
+                            onChange={(e) => setFormData({ ...formData, discountEndDate: e.target.value })}
+                            style={{ fontSize: '0.85rem' }}
+                          />
+                        </div>
+                      </div>
+
+                      {/* Real-time Calculation Summary Box */}
+                      {previewDiscount && (
+                        <div style={{
+                          background: '#ffffff',
+                          border: '1px dashed #86efac',
+                          borderRadius: '8px',
+                          padding: '0.65rem 0.85rem',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'space-between',
+                          fontSize: '0.82rem'
+                        }}>
+                          <div>
+                            <span style={{ color: '#64748b' }}>Original: </span>
+                            <span style={{ textDecoration: 'line-through', fontWeight: 600, color: '#94a3b8' }}>${previewDiscount.original.toFixed(2)}</span>
+                            <span style={{ margin: '0 6px', color: '#cbd5e1' }}>→</span>
+                            <span style={{ color: '#16a34a', fontWeight: 800, fontSize: '0.95rem' }}>${previewDiscount.final.toFixed(2)}</span>
+                            <span style={{ color: '#64748b', fontSize: '0.78rem' }}> /{formData.priceUnit}</span>
+                          </div>
+                          <span style={{
+                            background: '#dcfce7',
+                            color: '#15803d',
+                            fontWeight: 700,
+                            padding: '2px 8px',
+                            borderRadius: '6px',
+                            fontSize: '0.75rem'
+                          }}>
+                            Save ${previewDiscount.savings.toFixed(2)} ({previewDiscount.pct}%)
+                          </span>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
 
                 {/* Featured Toggle */}
                 <div style={{ 

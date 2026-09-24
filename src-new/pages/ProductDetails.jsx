@@ -162,8 +162,16 @@ const ProductDetails = () => {
   const handleAddToCartOrUpdate = () => {
     if (!product) return;
     const unitText = formatQuantityWithUnit(quantity, normUnit);
+    const itemData = {
+      ...product,
+      price: currentUnitPrice,
+      originalPrice: originalUnitPrice,
+      isDiscounted,
+      discountPercent,
+      unit: normUnit
+    };
     if (!existingCartItem) {
-      addToCart({ ...product, unit: normUnit }, quantity, specialInstructions);
+      addToCart(itemData, quantity, specialInstructions);
       toast.success(`Added ${unitText} to cart!`, { icon: '🛒' });
     } else {
       updateQuantity(product._id, quantity, specialInstructions);
@@ -187,10 +195,17 @@ const ProductDetails = () => {
     );
   }
 
+  // Discount and pricing calculations
+  const currentUnitPrice = product.finalPrice !== undefined ? Number(product.finalPrice) : Number(product.price || 0);
+  const originalUnitPrice = product.originalPrice !== undefined ? Number(product.originalPrice) : (product.oldPrice !== undefined ? Number(product.oldPrice) : currentUnitPrice);
+  const isDiscounted = Boolean(product.isDiscounted || (originalUnitPrice > currentUnitPrice && currentUnitPrice > 0));
+  const discountPercent = product.discountPercent || (isDiscounted && originalUnitPrice > 0 ? Math.round(((originalUnitPrice - currentUnitPrice) / originalUnitPrice) * 100) : 0);
+  const discountSavingsPerUnit = isDiscounted ? (originalUnitPrice - currentUnitPrice) : 0;
+
   // Formatting helpers for Toters display
-  const totalPrice = (product.price * quantity).toFixed(2);
-  const lbpPrice = Math.round(product.price * 89500).toLocaleString('en-US');
-  const points = Math.round(product.price * 105);
+  const totalPrice = (currentUnitPrice * quantity).toFixed(2);
+  const lbpPrice = Math.round(currentUnitPrice * 89500).toLocaleString('en-US');
+  const points = Math.round(currentUnitPrice * 105);
 
   const presets = getPresetOptions(normUnit);
   const rawImage = !imageError && product.image ? getAssetUrl(product.image) : FALLBACK_IMAGE;
@@ -246,6 +261,23 @@ const ProductDetails = () => {
             loading="eager"
             onError={() => setImageError(true)}
           />
+          {isDiscounted && discountPercent > 0 && (
+            <div style={{
+              position: 'absolute',
+              top: '1rem',
+              left: '1rem',
+              background: '#e74c3c',
+              color: '#fff',
+              padding: '0.4rem 0.85rem',
+              borderRadius: '50px',
+              fontWeight: 800,
+              fontSize: '0.8rem',
+              boxShadow: '0 4px 10px rgba(231,76,60,0.3)',
+              zIndex: 3
+            }}>
+              -{discountPercent}% OFF
+            </div>
+          )}
           <button 
             className="toters-zoom-btn"
             onClick={(e) => {
@@ -266,8 +298,25 @@ const ProductDetails = () => {
               Per {normUnit}
             </div>
 
-            <div className="toters-price-strip">
-              <span className="toters-primary-price">${Number(product.price).toFixed(2)}</span>
+            <div className="toters-price-strip" style={{ flexWrap: 'wrap', gap: '0.65rem', alignItems: 'center' }}>
+              <span className="toters-primary-price">${Number(currentUnitPrice).toFixed(2)}</span>
+              {isDiscounted && originalUnitPrice > currentUnitPrice && (
+                <span style={{ textDecoration: 'line-through', color: '#94a3b8', fontSize: '1.05rem', fontWeight: 600 }}>
+                  ${Number(originalUnitPrice).toFixed(2)}
+                </span>
+              )}
+              {isDiscounted && discountPercent > 0 && (
+                <span style={{
+                  background: '#fee2e2',
+                  color: '#dc2626',
+                  fontWeight: 800,
+                  fontSize: '0.78rem',
+                  padding: '3px 9px',
+                  borderRadius: '20px',
+                }}>
+                  Save ${(discountSavingsPerUnit * quantity).toFixed(2)} (-{discountPercent}%)
+                </span>
+              )}
               <span className="toters-lbp-price">LBP {lbpPrice}</span>
               <span className="toters-points-pill">
                 <span className="gold-tag">Gold</span> {points} Pts

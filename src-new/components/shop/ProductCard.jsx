@@ -19,13 +19,19 @@ const ProductCard = ({ product }) => {
   const cartItem = cartItems.find(item => item._id === product._id);
   const isFav = isFavorite(product._id);
 
+  // Discount calculations
+  const currentPrice = product.finalPrice !== undefined ? Number(product.finalPrice) : Number(product.price || 0);
+  const originalPrice = product.originalPrice !== undefined ? Number(product.originalPrice) : (product.oldPrice !== undefined ? Number(product.oldPrice) : currentPrice);
+  const isDiscounted = Boolean(product.isDiscounted || (originalPrice > currentPrice && currentPrice > 0));
+  const discountPercent = product.discountPercent || (isDiscounted && originalPrice > 0 ? Math.round(((originalPrice - currentPrice) / originalPrice) * 100) : (product.discount || 0));
+
   return (
     <div className="product-card group">
       {/* Image Container */}
       <div className="product-image-wrapper">
         <div className="product-badges">
           {product.isNew && <span className="badge badge-hot">New</span>}
-          {product.discount > 0 && <span className="badge badge-sale">-{product.discount}%</span>}
+          {isDiscounted && discountPercent > 0 && <span className="badge badge-sale">-{discountPercent}%</span>}
         </div>
 
         {/* Wishlist / Favorite Button */}
@@ -98,7 +104,14 @@ const ProductCard = ({ product }) => {
               onClick={(e) => {
                 e.preventDefault();
                 e.stopPropagation();
-                addToCart({ ...product, unit: normalizeUnit(product.unit) });
+                addToCart({ 
+                  ...product, 
+                  price: currentPrice,
+                  originalPrice: originalPrice,
+                  isDiscounted: isDiscounted,
+                  discountPercent: discountPercent,
+                  unit: normalizeUnit(product.unit) 
+                });
               }}
               title="Add to Cart"
               aria-label={`Add ${product.name} to cart`}
@@ -123,10 +136,10 @@ const ProductCard = ({ product }) => {
         
         <div className="product-footer">
           <div className="price-wrapper">
-            <span className="current-price">{formatCurrency(product.price)}</span>
-            {product.oldPrice && (
-              <span className="original-price">
-                {formatCurrency(product.oldPrice)}
+            <span className="current-price">{formatCurrency(currentPrice)}</span>
+            {isDiscounted && originalPrice > currentPrice && (
+              <span className="original-price" style={{ textDecoration: 'line-through', color: '#94a3b8', marginLeft: '6px', fontSize: '0.85em' }}>
+                {formatCurrency(originalPrice)}
               </span>
             )}
           </div>

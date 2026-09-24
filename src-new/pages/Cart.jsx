@@ -12,7 +12,7 @@ import Navbar from '../components/layout/Navbar';
 import Button from '../components/common/Button';
 import ProductCard from '../components/shop/ProductCard';
 import CartRecommendations from '../components/shop/CartRecommendations';
-import { formatCurrency } from '../utils/formatters';
+import { formatCurrency, formatLL } from '../utils/formatters';
 import { normalizeUnit, formatQuantityWithUnit, formatUnitRate } from '../utils/unitHelper';
 import { toast } from 'react-toastify';
 import './Cart.css';
@@ -635,7 +635,10 @@ const Cart = () => {
               <div className="summary-rows-group">
                 <div className="summary-row">
                   <span>Subtotal ({cartCount} {cartCount === 1 ? 'item' : 'items'})</span>
-                  <span className="row-amount">{formatCurrency(cartTotal)}</span>
+                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end' }}>
+                    <span className="row-amount">{formatCurrency(cartTotal)}</span>
+                    <span style={{ fontSize: '0.72rem', color: '#64748b' }}>({formatLL(cartTotal)})</span>
+                  </div>
                 </div>
 
                 {appliedPromo && promoDiscount > 0 && (
@@ -667,9 +670,12 @@ const Cart = () => {
               <div className="summary-row total-row">
                 <div className="total-label-wrap">
                   <span className="total-label">Total Amount</span>
-                  <span className="vat-hint">Includes all taxes</span>
+                  <span className="vat-hint">Rate: $1 = 89,500 L.L.</span>
                 </div>
-                <span className="total-amount-val">{formatCurrency(finalTotal)}</span>
+                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end' }}>
+                  <span className="total-amount-val">{formatCurrency(finalTotal)}</span>
+                  <span style={{ fontSize: '0.82rem', fontWeight: 700, color: '#475569' }}>{formatLL(finalTotal)}</span>
+                </div>
               </div>
 
               <Button 
@@ -678,7 +684,7 @@ const Cart = () => {
                 onClick={() => navigate('/checkout')}
               >
                 <Lock size={16} style={{ marginRight: 6 }} />
-                Proceed to Checkout
+                Proceed to Checkout • {formatCurrency(finalTotal)}
                 <ArrowRight size={18} style={{ marginLeft: 8 }} />
               </Button>
               
@@ -710,7 +716,10 @@ const Cart = () => {
       <div className="mobile-cart-checkout-bar">
         <div className="mobile-checkout-total-info">
           <span className="mobile-total-label">Total ({cartCount} {cartCount === 1 ? 'item' : 'items'})</span>
-          <span className="mobile-total-amount">{formatCurrency(finalTotal)}</span>
+          <div style={{ display: 'flex', alignItems: 'baseline', gap: '6px' }}>
+            <span className="mobile-total-amount">{formatCurrency(finalTotal)}</span>
+            <span style={{ fontSize: '0.74rem', fontWeight: 700, color: '#475569' }}>{formatLL(finalTotal)}</span>
+          </div>
           {isShippingFree && <span className="mobile-free-badge">Free Delivery</span>}
         </div>
         <Button 

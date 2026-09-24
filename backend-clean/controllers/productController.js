@@ -1,5 +1,6 @@
 import asyncHandler from '../middleware/asyncHandler.js';
 import Product from '../models/productModel.js';
+import { applyDiscountToProductDoc } from '../utils/discountHelper.js';
 
 // Helper to escape regex special characters
 const escapeRegex = (str) => String(str).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
@@ -15,6 +16,44 @@ const normalizeUnit = (rawUnit) => {
   if (u === 'piece' || u === 'peice' || u === 'pieces' || u === 'peices' || u === 'pcs' || u === 'pc' || u === 'unit') return 'piece';
   if (u === 'pack' || u === 'packs' || u === 'box' || u === 'boxes' || u === 'jar' || u === 'bottle') return 'pack';
   return '1kg';
+};
+
+// Helper to parse and clean discount payload
+const parseDiscountPayload = (discount) => {
+  if (!discount || typeof discount !== 'object') {
+    return {
+      isActive: false,
+      type: 'percentage',
+      value: 0,
+      startDate: null,
+      endDate: null,
+    };
+  }
+
+  const isActive = Boolean(discount.isActive);
+  const type = discount.type === 'fixed' ? 'fixed' : 'percentage';
+  const numVal = Number(discount.value);
+  const value = Number.isFinite(numVal) && numVal > 0 ? numVal : 0;
+
+  let startDate = null;
+  if (discount.startDate) {
+    const d = new Date(discount.startDate);
+    if (!isNaN(d.getTime())) startDate = d;
+  }
+
+  let endDate = null;
+  if (discount.endDate) {
+    const d = new Date(discount.endDate);
+    if (!isNaN(d.getTime())) endDate = d;
+  }
+
+  return {
+    isActive,
+    type,
+    value,
+    startDate,
+    endDate,
+  };
 };
 
 // @desc    Fetch all products (supports category, keyword, and limit query params)
@@ -46,7 +85,8 @@ const getProducts = asyncHandler(async (req, res) => {
     }
 
     const products = await productQuery;
-    res.json(products);
+    const transformed = products.map(p => applyDiscountToProductDoc(p));
+    res.json(transformed);
   } catch (error) {
     console.error('DB error in getProducts:', error.message);
     res.json([]);
@@ -61,7 +101,7 @@ const getProductById = asyncHandler(async (req, res) => {
     const product = await Product.findById(req.params.id);
 
     if (product) {
-      res.json(product);
+      res.json(applyDiscountToProductDoc(product));
     } else {
       res.status(404);
       throw new Error('Product not found');
@@ -77,7 +117,7 @@ const getProductById = asyncHandler(async (req, res) => {
 // @route   POST /api/products
 // @access  Private / Admin
 const createProduct = asyncHandler(async (req, res) => {
-  const { name, price, description, image, brand, category, countInStock, unit } = req.body;
+  const { name, price, description, image, brand, category, countInStock, unit, discount } = req.body;
 
   if (typeof name !== 'string' || !name.trim()) {
     res.status(400);
@@ -130,17 +170,18 @@ const createProduct = asyncHandler(async (req, res) => {
     category: category ? category.trim() : 'general',
     countInStock: numStock,
     unit: normalizeUnit(unit),
+    discount: parseDiscountPayload(discount),
   });
 
   const createdProduct = await product.save();
-  res.status(201).json(createdProduct);
+  res.status(201).json(applyDiscountToProductDoc(createdProduct));
 });
 
 // @desc    Update a product
 // @route   PUT /api/products/:id
 // @access  Private / Admin
 const updateProduct = asyncHandler(async (req, res) => {
-  const { name, price, description, image, brand, category, countInStock, unit } = req.body;
+  const { name, price, description, image, brand, category, countInStock, unit, discount } = req.body;
 
   const product = await Product.findById(req.params.id);
 
@@ -215,8 +256,12 @@ const updateProduct = asyncHandler(async (req, res) => {
     product.unit = normalizeUnit(unit);
   }
 
+  if (discount !== undefined) {
+    product.discount = parseDiscountPayload(discount);
+  }
+
   const updatedProduct = await product.save();
-  res.json(updatedProduct);
+  res.json(applyDiscountToProductDoc(updatedProduct));
 });
 
 // @desc    Delete a product

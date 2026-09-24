@@ -211,6 +211,40 @@ describe('Order API', () => {
     expect(res.body.orderItems[0].price).toBe(2.00);
   });
 
+  it('DISCOUNT PRICING IN ORDERS: applies active product discount to order item and total', async () => {
+    const discountedProduct = await Product.create({
+      name: 'Discounted Watermelon',
+      price: 10.00,
+      category: 'fruits',
+      countInStock: 20,
+      image: 'watermelon.jpg',
+      brand: 'Chocair',
+      description: 'Sweet watermelon',
+      unit: 'kg',
+      discount: {
+        isActive: true,
+        type: 'percentage',
+        value: 20
+      }
+    });
+
+    const payload = createOrderData();
+    payload.orderItems = [{
+      product: discountedProduct._id,
+      name: 'Discounted Watermelon',
+      qty: 3,
+      unit: 'kg'
+    }];
+    payload.shippingPrice = 0;
+
+    const res = await request(app).post('/api/orders').send(payload);
+    expect(res.status).toBe(201);
+    expect(res.body.orderItems[0].price).toBe(8.00);
+    expect(res.body.orderItems[0].originalPrice).toBe(10.00);
+    expect(res.body.orderItems[0].discountPercent).toBe(20);
+    expect(res.body.itemsPrice).toBe(24.00);
+  });
+
   it('INVALID QTY: rejects zero, negative, or non-numeric quantities', async () => {
     const zeroPayload = createOrderData();
     zeroPayload.orderItems[0].qty = 0;

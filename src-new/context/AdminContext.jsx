@@ -45,6 +45,18 @@ export const AdminProvider = ({ children }) => {
     category: p.category ? String(p.category).trim() : "Uncategorized",
     categories: [p.category ? String(p.category).trim() : "Uncategorized"], // Backend only has single category
     price: p.price,
+    originalPrice: p.originalPrice !== undefined ? p.originalPrice : (p.basePrice !== undefined ? p.basePrice : p.price),
+    finalPrice: p.finalPrice !== undefined ? p.finalPrice : p.price,
+    isDiscounted: Boolean(p.isDiscounted),
+    discountPercent: p.discountPercent || 0,
+    discountAmount: p.discountAmount || 0,
+    discount: {
+      isActive: Boolean(p.discount?.isActive),
+      type: p.discount?.type || 'percentage',
+      value: Number(p.discount?.value || 0),
+      startDate: p.discount?.startDate || null,
+      endDate: p.discount?.endDate || null,
+    },
     priceUnit: normalizeUnit(p.unit), 
     unit: normalizeUnit(p.unit),
     stock: p.countInStock !== undefined ? p.countInStock : p.stock,
@@ -66,6 +78,9 @@ export const AdminProvider = ({ children }) => {
       name: item.name || (item.product?.name) || "Product",
       quantity: item.qty || item.quantity || 1,
       price: item.price !== undefined ? item.price : (item.product?.price || 0),
+      originalPrice: item.originalPrice !== undefined ? item.originalPrice : (item.product?.originalPrice || item.price),
+      discountPercent: item.discountPercent || 0,
+      discountAmount: item.discountAmount || 0,
       total: (item.qty || item.quantity || 1) * (item.price !== undefined ? item.price : (item.product?.price || 0)),
       image: item.image || item.product?.image,
       unit: normalizeUnit(item.unit || item.product?.unit),
@@ -176,6 +191,11 @@ export const AdminProvider = ({ children }) => {
         category: productData.category,
         countInStock: parseInt(productData.stock),
         unit: selectedUnit,
+        discount: productData.discount || {
+          isActive: false,
+          type: 'percentage',
+          value: 0
+        }
       };
 
       const response = await api.post("/products", payload);
@@ -200,6 +220,11 @@ export const AdminProvider = ({ children }) => {
         category: productData.category,
         countInStock: parseInt(productData.stock),
         unit: selectedUnit,
+        discount: productData.discount || {
+          isActive: false,
+          type: 'percentage',
+          value: 0
+        }
       };
 
       const response = await api.put(`/products/${id}`, payload);

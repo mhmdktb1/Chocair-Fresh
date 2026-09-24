@@ -1,5 +1,33 @@
 import mongoose from 'mongoose';
 
+const discountSchema = mongoose.Schema(
+  {
+    isActive: {
+      type: Boolean,
+      default: false,
+    },
+    type: {
+      type: String,
+      enum: ['percentage', 'fixed'],
+      default: 'percentage',
+    },
+    value: {
+      type: Number,
+      default: 0,
+      min: 0,
+    },
+    startDate: {
+      type: Date,
+      default: null,
+    },
+    endDate: {
+      type: Date,
+      default: null,
+    },
+  },
+  { _id: false }
+);
+
 const productSchema = mongoose.Schema(
   {
     name: {
@@ -32,6 +60,10 @@ const productSchema = mongoose.Schema(
       type: Number,
       required: true,
       default: 0,
+    },
+    discount: {
+      type: discountSchema,
+      default: () => ({ isActive: false, type: 'percentage', value: 0 }),
     },
     countInStock: {
       type: Number,

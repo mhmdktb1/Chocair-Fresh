@@ -202,6 +202,70 @@ describe('Product API', () => {
     expect(badUpdateRes.status).toBe(400);
   });
 
+  it('DISCOUNT SYSTEM: handles active percentage, fixed discounts, and date windows securely', async () => {
+    // 1. Percentage discount: $10.00 base with 20% discount -> $8.00
+    const pctProductRes = await request(app)
+      .post('/api/products')
+      .set('Authorization', `Bearer ${adminToken}`)
+      .send({
+        ...productData,
+        name: 'Promo Apples',
+        price: 10.00,
+        discount: {
+          isActive: true,
+          type: 'percentage',
+          value: 20
+        }
+      });
+    expect(pctProductRes.status).toBe(201);
+    expect(pctProductRes.body.isDiscounted).toBe(true);
+    expect(pctProductRes.body.originalPrice).toBe(10);
+    expect(pctProductRes.body.finalPrice).toBe(8);
+    expect(pctProductRes.body.discountPercent).toBe(20);
+    expect(pctProductRes.body.discountAmount).toBe(2);
+
+    // 2. Fixed amount discount: $10.00 base with $3.00 off -> $7.00
+    const fixedProductRes = await request(app)
+      .post('/api/products')
+      .set('Authorization', `Bearer ${adminToken}`)
+      .send({
+        ...productData,
+        name: 'Fixed Promo Apples',
+        price: 10.00,
+        discount: {
+          isActive: true,
+          type: 'fixed',
+          value: 3
+        }
+      });
+    expect(fixedProductRes.status).toBe(201);
+    expect(fixedProductRes.body.isDiscounted).toBe(true);
+    expect(fixedProductRes.body.originalPrice).toBe(10);
+    expect(fixedProductRes.body.finalPrice).toBe(7);
+    expect(fixedProductRes.body.discountPercent).toBe(30);
+    expect(fixedProductRes.body.discountAmount).toBe(3);
+
+    // 3. Expired discount window: should not apply
+    const expiredProductRes = await request(app)
+      .post('/api/products')
+      .set('Authorization', `Bearer ${adminToken}`)
+      .send({
+        ...productData,
+        name: 'Expired Promo Apples',
+        price: 10.00,
+        discount: {
+          isActive: true,
+          type: 'percentage',
+          value: 50,
+          startDate: '2020-01-01',
+          endDate: '2020-01-10'
+        }
+      });
+    expect(expiredProductRes.status).toBe(201);
+    expect(expiredProductRes.body.isDiscounted).toBe(false);
+    expect(expiredProductRes.body.finalPrice).toBe(10);
+  });
+
   it('MALFORMED IDS: returns 404 for invalid product IDs', async () => {
     const res = await request(app).get('/api/products/non-existent-product-id');
     expect(res.status).toBe(404);

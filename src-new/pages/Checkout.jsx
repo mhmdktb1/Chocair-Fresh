@@ -9,7 +9,7 @@ import { toast } from 'react-toastify';
 import { useCart } from '../context/CartContext';
 import { useAuth } from '../context/AuthContext';
 import { normalizeLebanesePhoneNumber } from '../utils/phoneUtils';
-import { formatCurrency } from '../utils/formatters';
+import { formatCurrency, formatLL, USD_TO_LBP_RATE } from '../utils/formatters';
 import { normalizeUnit, formatQuantityWithUnit } from '../utils/unitHelper';
 import Navbar from '../components/layout/Navbar';
 import Button from '../components/common/Button';
@@ -319,7 +319,10 @@ const Checkout = () => {
             </span>
             {showOrderSummary ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
           </div>
-          <span className="toggle-price">{formatCurrency(finalTotal)}</span>
+          <div className="toggle-price-stack">
+            <span className="toggle-price">{formatCurrency(finalTotal)}</span>
+            <span className="toggle-price-ll">{formatLL(finalTotal)}</span>
+          </div>
         </button>
 
         {showOrderSummary && (
@@ -342,9 +345,14 @@ const Checkout = () => {
                       </span>
                     )}
                   </div>
-                  <span className="mobile-item-line-total">
-                    {formatCurrency(item.price * item.quantity)}
-                  </span>
+                  <div className="mobile-item-price-stack">
+                    <span className="mobile-item-line-total">
+                      {formatCurrency(item.price * item.quantity)}
+                    </span>
+                    <span className="mobile-item-line-ll">
+                      {formatLL(item.price * item.quantity)}
+                    </span>
+                  </div>
                 </div>
               ))}
             </div>
@@ -352,11 +360,23 @@ const Checkout = () => {
             <div className="mobile-summary-calc-box">
               <div className="calc-row">
                 <span>Subtotal</span>
-                <span>{formatCurrency(cartTotal)}</span>
+                <div className="calc-val-stack">
+                  <span>{formatCurrency(cartTotal)}</span>
+                  <span className="calc-ll-hint">({formatLL(cartTotal)})</span>
+                </div>
               </div>
               <div className="calc-row">
                 <span>Delivery</span>
-                <span>{shippingCost === 0 ? <strong style={{ color: '#16a34a' }}>FREE</strong> : formatCurrency(shippingCost)}</span>
+                <span>
+                  {shippingCost === 0 ? (
+                    <strong style={{ color: '#16a34a' }}>FREE</strong>
+                  ) : (
+                    <div className="calc-val-stack">
+                      <span>{formatCurrency(shippingCost)}</span>
+                      <span className="calc-ll-hint">({formatLL(shippingCost)})</span>
+                    </div>
+                  )}
+                </span>
               </div>
               <div className="calc-row">
                 <span>Timing</span>
@@ -368,8 +388,14 @@ const Checkout = () => {
               </div>
               <div className="calc-divider" />
               <div className="calc-row total">
-                <span>Total</span>
-                <span className="calc-total-val">{formatCurrency(finalTotal)}</span>
+                <div className="calc-total-labels">
+                  <span>Total</span>
+                  <span className="calc-rate-badge">Rate: $1 = 89,500 L.L.</span>
+                </div>
+                <div className="calc-total-stack">
+                  <span className="calc-total-val">{formatCurrency(finalTotal)}</span>
+                  <span className="calc-total-ll">{formatLL(finalTotal)}</span>
+                </div>
               </div>
             </div>
           </div>
@@ -763,8 +789,9 @@ const Checkout = () => {
                         <span className="whish-holder">Chocair Fresh</span>
                       </div>
                       <p className="whish-note">
-                        Transfer exact total: <strong>{formatCurrency(finalTotal)}</strong>
+                        Transfer exact total: <strong>{formatCurrency(finalTotal)}</strong> / <strong>{formatLL(finalTotal)}</strong>
                       </p>
+                      <span className="whish-rate-subtext">Calculated at exchange rate $1 = 89,500 L.L.</span>
                     </div>
                   )}
                 </div>
@@ -806,7 +833,7 @@ const Checkout = () => {
                   disabled={loading}
                 >
                   <Lock size={17} style={{ marginRight: 8 }} />
-                  {loading ? 'Processing Order...' : `Place Order • ${formatCurrency(finalTotal)}`}
+                  {loading ? 'Processing Order...' : `Place Order • ${formatCurrency(finalTotal)} (${formatLL(finalTotal)})`}
                   <ArrowRight size={18} style={{ marginLeft: 8 }} />
                 </Button>
               </div>
@@ -840,9 +867,14 @@ const Checkout = () => {
                         </span>
                       )}
                     </div>
-                    <span className="sidebar-item-price">
-                      {formatCurrency(item.price * item.quantity)}
-                    </span>
+                    <div className="sidebar-item-price-stack">
+                      <span className="sidebar-item-price">
+                        {formatCurrency(item.price * item.quantity)}
+                      </span>
+                      <span className="sidebar-item-ll">
+                        {formatLL(item.price * item.quantity)}
+                      </span>
+                    </div>
                   </div>
                 ))}
               </div>
@@ -851,7 +883,10 @@ const Checkout = () => {
               <div className="sidebar-calc-box">
                 <div className="sidebar-calc-row">
                   <span>Subtotal</span>
-                  <span className="calc-val">{formatCurrency(cartTotal)}</span>
+                  <div className="sidebar-val-stack">
+                    <span className="calc-val">{formatCurrency(cartTotal)}</span>
+                    <span className="sidebar-calc-ll">({formatLL(cartTotal)})</span>
+                  </div>
                 </div>
                 <div className="sidebar-calc-row">
                   <span>Delivery</span>
@@ -859,7 +894,10 @@ const Checkout = () => {
                     {shippingCost === 0 ? (
                       <span className="free-tag">FREE</span>
                     ) : (
-                      formatCurrency(shippingCost)
+                      <div className="sidebar-val-stack">
+                        <span>{formatCurrency(shippingCost)}</span>
+                        <span className="sidebar-calc-ll">({formatLL(shippingCost)})</span>
+                      </div>
                     )}
                   </span>
                 </div>
@@ -877,9 +915,12 @@ const Checkout = () => {
                 <div className="sidebar-calc-row total-row">
                   <div className="total-label-col">
                     <span className="total-main-label">Total Amount</span>
-                    <span className="tax-hint">VAT Included</span>
+                    <span className="tax-hint">Rate: $1 = 89,500 L.L. • VAT Included</span>
                   </div>
-                  <span className="total-final-val">{formatCurrency(finalTotal)}</span>
+                  <div className="total-final-stack">
+                    <span className="total-final-val">{formatCurrency(finalTotal)}</span>
+                    <span className="total-final-ll">{formatLL(finalTotal)}</span>
+                  </div>
                 </div>
               </div>
 
@@ -896,7 +937,10 @@ const Checkout = () => {
       <div className="mobile-checkout-dock">
         <div className="mobile-dock-total">
           <span className="dock-total-label">Total Amount</span>
-          <span className="dock-total-price">{formatCurrency(finalTotal)}</span>
+          <div className="dock-price-group">
+            <span className="dock-total-price">{formatCurrency(finalTotal)}</span>
+            <span className="dock-total-ll">{formatLL(finalTotal)}</span>
+          </div>
         </div>
         
         <Button 
