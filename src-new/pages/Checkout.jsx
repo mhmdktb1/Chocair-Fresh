@@ -3,7 +3,8 @@ import { useNavigate, Link } from 'react-router-dom';
 import { 
   CheckCircle, CreditCard, Truck, MapPin, X, ArrowLeft, ArrowRight,
   ShieldCheck, Lock, ChevronDown, ChevronUp, ShoppingBag, Phone, User,
-  MessageSquare, AlertCircle, Copy, Check, Sparkles, Clock, Zap, Calendar, Sun
+  MessageSquare, AlertCircle, Copy, Check, Sparkles, Clock, Zap, Calendar, Sun,
+  AlertTriangle, Store
 } from 'lucide-react';
 import { toast } from 'react-toastify';
 import { useCart } from '../context/CartContext';
@@ -11,6 +12,11 @@ import { useAuth } from '../context/AuthContext';
 import { normalizeLebanesePhoneNumber } from '../utils/phoneUtils';
 import { formatCurrency, formatLL, USD_TO_LBP_RATE } from '../utils/formatters';
 import { normalizeUnit, formatQuantityWithUnit } from '../utils/unitHelper';
+import { 
+  STORE_COORDS, 
+  MAX_DELIVERY_RADIUS_KM, 
+  calculateDistanceKm 
+} from '../utils/distanceHelper';
 import Navbar from '../components/layout/Navbar';
 import Button from '../components/common/Button';
 import LocationPicker from '../components/common/LocationPicker';
@@ -41,7 +47,11 @@ const Checkout = () => {
     phone: "",
     address: "",
     googleMapsLink: "",
-    additionalInfo: ""
+    additionalInfo: "",
+    lat: null,
+    lng: null,
+    distanceKm: null,
+    isOutOfRange: false,
   });
 
   const [paymentMethod, setPaymentMethod] = useState("Cash on Delivery");
@@ -100,17 +110,40 @@ const Checkout = () => {
     if (typeof locationData === 'string') {
       setFormData(prev => ({
         ...prev,
-        address: locationData
+        address: locationData,
+        lat: null,
+        lng: null,
+        distanceKm: null,
+        isOutOfRange: false,
       }));
     } else {
       const link = (locationData.lat != null && locationData.lng != null)
         ? `https://www.google.com/maps/search/?api=1&query=${locationData.lat},${locationData.lng}`
         : '';
+      const dist = locationData.distanceKm != null 
+        ? locationData.distanceKm 
+        : (locationData.lat != null && locationData.lng != null 
+            ? calculateDistanceKm(STORE_COORDS.lat, STORE_COORDS.lng, locationData.lat, locationData.lng) 
+            : null);
+      const outOfRange = locationData.isOutOfRange != null 
+        ? locationData.isOutOfRange 
+        : (dist != null && dist > MAX_DELIVERY_RADIUS_KM);
+
       setFormData(prev => ({
         ...prev,
         address: locationData.address || prev.address,
-        googleMapsLink: link || prev.googleMapsLink
+        googleMapsLink: link || prev.googleMapsLink,
+        lat: locationData.lat ?? prev.lat,
+        lng: locationData.lng ?? prev.lng,
+        distanceKm: dist,
+        isOutOfRange: outOfRange,
       }));
+
+      if (outOfRange) {
+        setError(`Selected location is ${dist} km away (outside our 5 km delivery zone). We cannot deliver to this address.`);
+      } else {
+        setError(prev => (prev && prev.includes('5 km') ? '' : prev));
+      }
     }
   }, []);
 
@@ -139,6 +172,9 @@ const Checkout = () => {
           phone: user?.phone || formData.phone,
           address: formData.address,
           googleMapsLink: formData.googleMapsLink,
+          lat: formData.lat != null ? Number(formData.lat) : undefined,
+          lng: formData.lng != null ? Number(formData.lng) : undefined,
+          distanceKm: formData.distanceKm != null ? Number(formData.distanceKm) : undefined,
           additionalInfo: formData.additionalInfo || '',
           deliveryPreference: formattedDeliveryPref,
           deliveryType: deliveryPreference,
@@ -163,7 +199,7 @@ const Checkout = () => {
       navigate('/profile', { state: { activeTab: 'orders' } });
     } catch (err) {
       console.error("Order failed", err);
-      setError(err.message || "Failed to place order. Please try again.");
+      setError(err.response?.data?.message || err.message || "Failed to place order. Please try again.");
       setLoading(false);
     }
   };
@@ -233,6 +269,14 @@ const Checkout = () => {
 
     if (!formData.address || formData.address.trim() === '') {
       setError('Please select or pin your delivery location');
+      return;
+    }
+
+    if (formData.isOutOfRange || (formData.distanceKm != null && formData.distanceKm > MAX_DELIVERY_RADIUS_KM)) {
+      const distText = formData.distanceKm ? ` (${formData.distanceKm} km away)` : '';
+      const msg = `Delivery location is out of our 5 km delivery range${distText}. We only deliver within 5 km of our store in Beirut.`;
+      setError(msg);
+      toast.error(msg, { autoClose: 5000 });
       return;
     }
 
@@ -586,6 +630,18 @@ const Checkout = () => {
                     onLocationSelect={handleLocationSelect} 
                     initialLocation={formData.address} 
                   />
+
+                  {formData.isOutOfRange && (
+                    <div className="checkout-out-of-range-alert">
+                      <AlertTriangle size={18} className="alert-icon-svg" />
+                      <div className="alert-text-col">
+                        <strong>Delivery Range Exceeded ({formData.distanceKm} km away)</strong>
+                        <span>
+                          We exclusively deliver within 5 km of our store in Beirut. Please select an address or pin within our 5 km delivery zone to place your order.
+                        </span>
+                      </div>
+                    </div>
+                  )}
                 </div>
               </div>
 

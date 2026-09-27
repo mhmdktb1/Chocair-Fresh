@@ -4,6 +4,12 @@ import Product from '../models/productModel.js';
 import User from '../models/userModel.js';
 import { sendWhatsAppOrderNotification } from '../utils/whatsappService.js';
 import { calculateProductDiscount } from '../utils/discountHelper.js';
+import {
+  calculateDistanceKm,
+  MAX_DELIVERY_RADIUS_KM,
+  STORE_COORDS,
+  extractCoordsFromUrl,
+} from '../utils/distanceHelper.js';
 
 // @desc    Create new order
 // @route   POST /api/orders
@@ -20,6 +26,35 @@ const addOrderItems = asyncHandler(async (req, res) => {
   if (!orderItems || orderItems.length === 0) {
     res.status(400);
     throw new Error('No order items');
+  }
+
+  // Validate delivery location range (Max 5 km from store in Beirut)
+  let orderLat = customerInfo?.lat;
+  let orderLng = customerInfo?.lng;
+
+  if ((orderLat == null || orderLng == null) && customerInfo?.googleMapsLink) {
+    const extracted = extractCoordsFromUrl(customerInfo.googleMapsLink);
+    if (extracted) {
+      orderLat = extracted.lat;
+      orderLng = extracted.lng;
+    }
+  }
+
+  let calculatedDistanceKm = null;
+  if (orderLat != null && orderLng != null) {
+    calculatedDistanceKm = calculateDistanceKm(
+      STORE_COORDS.lat,
+      STORE_COORDS.lng,
+      Number(orderLat),
+      Number(orderLng)
+    );
+
+    if (calculatedDistanceKm != null && calculatedDistanceKm > MAX_DELIVERY_RADIUS_KM) {
+      res.status(400);
+      throw new Error(
+        `Delivery location is out of our ${MAX_DELIVERY_RADIUS_KM} km delivery range (${calculatedDistanceKm} km away). We only deliver within ${MAX_DELIVERY_RADIUS_KM} km of our store in Beirut.`
+      );
+    }
   }
 
   // Atomically decrement stock and securely calculate price per item
@@ -81,10 +116,17 @@ const addOrderItems = asyncHandler(async (req, res) => {
     const calculatedShippingPrice = calculatedItemsPrice >= 50 ? 0 : (clientShippingPrice !== undefined ? Number(clientShippingPrice) : 5.99);
     const calculatedTotalPrice = Number((calculatedItemsPrice + calculatedShippingPrice).toFixed(2));
 
+    const enrichedCustomerInfo = {
+      ...customerInfo,
+      lat: orderLat != null ? Number(orderLat) : undefined,
+      lng: orderLng != null ? Number(orderLng) : undefined,
+      distanceKm: calculatedDistanceKm != null ? calculatedDistanceKm : undefined,
+    };
+
     const order = new Order({
       orderItems: normalizedOrderItems,
       user: req.user ? req.user._id : undefined,
-      customerInfo,
+      customerInfo: enrichedCustomerInfo,
       paymentMethod: paymentMethod || 'Cash on Delivery',
       deliveryPreference: deliveryPreference || customerInfo?.deliveryPreference || 'ASAP',
       itemsPrice: calculatedItemsPrice,

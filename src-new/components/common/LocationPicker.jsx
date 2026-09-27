@@ -1,11 +1,19 @@
 import React, { useEffect, useMemo, useRef, useState, useCallback } from "react";
 import { createPortal } from "react-dom";
-import { GoogleMap, useJsApiLoader, Autocomplete } from "@react-google-maps/api";
+import { GoogleMap, useJsApiLoader, Autocomplete, Circle, Marker } from "@react-google-maps/api";
 import { 
   MapPin, Navigation, ChevronRight, X, Check, Building, 
-  Layers, Compass, Plus, Search, Loader2, Sparkles, Crosshair
+  Layers, Compass, Plus, Search, Loader2, Sparkles, Crosshair,
+  AlertTriangle, ShieldCheck, Store
 } from "lucide-react";
 import { toast } from "react-toastify";
+import {
+  STORE_COORDS,
+  MAX_DELIVERY_RADIUS_KM,
+  calculateDistanceKm,
+  isWithinDeliveryRadius,
+  extractCoordsFromUrl
+} from "../../utils/distanceHelper";
 import "./LocationPicker.css";
 
 const GOOGLE_LIBRARIES = ["places"];
@@ -14,12 +22,12 @@ const GOOGLE_LIBRARIES = ["places"];
  * Google Maps Style Interactive Location & Building Details Selector
  * Props:
  * - onLocationSelect: (payload) => void
- *   payload = { address: string, lat: number|null, lng: number|null, source: "map"|"gps"|"manual" }
+ *   payload = { address: string, lat: number|null, lng: number|null, distanceKm: number|null, isOutOfRange: boolean, source: "map"|"gps"|"manual" }
  * - initialLocation: string | { address?: string, lat?: number, lng?: number }
  * - autoLocate: boolean (default true) - automatically detects GPS coordinates on mount
  */
 const LocationPicker = ({ onLocationSelect, initialLocation, autoLocate = true }) => {
-  const defaultCenter = useMemo(() => ({ lat: 33.8938, lng: 35.5018 }), []); // Beirut default
+  const defaultCenter = useMemo(() => ({ lat: STORE_COORDS.lat, lng: STORE_COORDS.lng }), []); // Beirut store location
   const [selectedCoords, setSelectedCoords] = useState(null); // { lat, lng }
   const [areaAddress, setAreaAddress] = useState(""); // Base location from map (e.g., "Hamra, Beirut")
   
@@ -67,6 +75,25 @@ const LocationPicker = ({ onLocationSelect, initialLocation, autoLocate = true }
     googleMapsApiKey,
     libraries: GOOGLE_LIBRARIES,
   });
+
+  // Distance calculations
+  const currentDistanceKm = useMemo(() => {
+    if (!selectedCoords || selectedCoords.lat == null || selectedCoords.lng == null) return null;
+    return calculateDistanceKm(STORE_COORDS.lat, STORE_COORDS.lng, selectedCoords.lat, selectedCoords.lng);
+  }, [selectedCoords]);
+
+  const isSelectedOutOfRange = useMemo(() => {
+    return currentDistanceKm != null && currentDistanceKm > MAX_DELIVERY_RADIUS_KM;
+  }, [currentDistanceKm]);
+
+  const tempDistanceKm = useMemo(() => {
+    if (!tempCoords || tempCoords.lat == null || tempCoords.lng == null) return null;
+    return calculateDistanceKm(STORE_COORDS.lat, STORE_COORDS.lng, tempCoords.lat, tempCoords.lng);
+  }, [tempCoords]);
+
+  const isTempOutOfRange = useMemo(() => {
+    return tempDistanceKm != null && tempDistanceKm > MAX_DELIVERY_RADIUS_KM;
+  }, [tempDistanceKm]);
 
   // Helper to compose the full formatted address
   const composeFullAddress = useCallback((baseArea, details) => {
@@ -157,6 +184,9 @@ const LocationPicker = ({ onLocationSelect, initialLocation, autoLocate = true }
             lat: pos.coords.latitude,
             lng: pos.coords.longitude,
           };
+          const dist = calculateDistanceKm(STORE_COORDS.lat, STORE_COORDS.lng, userLoc.lat, userLoc.lng);
+          const outOfRange = dist != null && dist > MAX_DELIVERY_RADIUS_KM;
+
           setSelectedCoords(userLoc);
           setTempCoords(userLoc);
 
@@ -165,10 +195,19 @@ const LocationPicker = ({ onLocationSelect, initialLocation, autoLocate = true }
             setAreaAddress(addr);
             setTempAddress(addr);
             const full = composeFullAddress(addr, buildingDetails);
+            
+            if (outOfRange) {
+              toast.warn(`GPS location detected is ${dist} km away (outside our 5 km delivery radius).`, {
+                autoClose: 5000
+              });
+            }
+
             onLocationSelect?.({
               address: full,
               lat: userLoc.lat,
               lng: userLoc.lng,
+              distanceKm: dist,
+              isOutOfRange: outOfRange,
               source: "gps",
             });
           });
@@ -189,7 +228,7 @@ const LocationPicker = ({ onLocationSelect, initialLocation, autoLocate = true }
     geocoderRef.current = new window.google.maps.Geocoder();
     const initialPos = selectedCoords || tempCoords || defaultCenter;
     map.panTo(initialPos);
-    map.setZoom(16);
+    map.setZoom(15);
     reverseGeocode(initialPos, (addr) => setTempAddress(addr));
   }, [selectedCoords, tempCoords, defaultCenter, reverseGeocode]);
 
@@ -241,9 +280,14 @@ const LocationPicker = ({ onLocationSelect, initialLocation, autoLocate = true }
         const loc = { lat, lng };
         setTempCoords(loc);
         mapRef.current?.panTo(loc);
-        mapRef.current?.setZoom(17);
+        mapRef.current?.setZoom(16);
         const resolved = place.formatted_address || place.name || `${lat.toFixed(4)}, ${lng.toFixed(4)}`;
         setTempAddress(resolved);
+
+        const dist = calculateDistanceKm(STORE_COORDS.lat, STORE_COORDS.lng, lat, lng);
+        if (dist != null && dist > MAX_DELIVERY_RADIUS_KM) {
+          toast.warning(`Selected area is ${dist} km away (outside our 5 km delivery zone).`);
+        }
       }
     }
   }, []);
@@ -263,8 +307,13 @@ const LocationPicker = ({ onLocationSelect, initialLocation, autoLocate = true }
         setTempCoords(loc);
         setIsDragging(true);
         mapRef.current?.panTo(loc);
-        mapRef.current?.setZoom(17);
+        mapRef.current?.setZoom(16);
         reverseGeocode(loc, (addr) => setTempAddress(addr));
+
+        const dist = calculateDistanceKm(STORE_COORDS.lat, STORE_COORDS.lng, loc.lat, loc.lng);
+        if (dist != null && dist > MAX_DELIVERY_RADIUS_KM) {
+          toast.warn(`Your GPS location is ${dist} km away (outside our 5 km delivery zone).`);
+        }
       },
       (err) => {
         setIsLocating(false);
@@ -289,8 +338,26 @@ const LocationPicker = ({ onLocationSelect, initialLocation, autoLocate = true }
     }
   };
 
-  // Confirm Location from Map Modal -> Opens building details modal
+  // Center on store location
+  const handleCenterOnStore = () => {
+    const storeLoc = { lat: STORE_COORDS.lat, lng: STORE_COORDS.lng };
+    setTempCoords(storeLoc);
+    setIsDragging(true);
+    mapRef.current?.panTo(storeLoc);
+    mapRef.current?.setZoom(15);
+    reverseGeocode(storeLoc, (addr) => setTempAddress(addr));
+  };
+
+  // Confirm Location from Map Modal -> Rejects if out of 5km range
   const handleConfirmLocation = () => {
+    if (isTempOutOfRange) {
+      toast.error(
+        `Delivery is only available within 5 km of our store. Selected location is ${tempDistanceKm} km away. Please choose a location within the highlighted 5 km zone.`,
+        { autoClose: 5000 }
+      );
+      return;
+    }
+
     setSelectedCoords(tempCoords);
     const chosenArea = tempAddress || "Pinned Location";
     setAreaAddress(chosenArea);
@@ -301,6 +368,8 @@ const LocationPicker = ({ onLocationSelect, initialLocation, autoLocate = true }
       address: full,
       lat: tempCoords.lat,
       lng: tempCoords.lng,
+      distanceKm: tempDistanceKm,
+      isOutOfRange: false,
       source: "map",
     });
 
@@ -328,6 +397,8 @@ const LocationPicker = ({ onLocationSelect, initialLocation, autoLocate = true }
       address: full,
       lat: selectedCoords?.lat ?? null,
       lng: selectedCoords?.lng ?? null,
+      distanceKm: currentDistanceKm,
+      isOutOfRange: isSelectedOutOfRange,
       source: "manual",
     });
   };
@@ -343,7 +414,7 @@ const LocationPicker = ({ onLocationSelect, initialLocation, autoLocate = true }
           onChange={(e) => {
             const v = e.target.value;
             setAreaAddress(v);
-            onLocationSelect?.({ address: v, lat: null, lng: null, source: "manual" });
+            onLocationSelect?.({ address: v, lat: null, lng: null, distanceKm: null, isOutOfRange: false, source: "manual" });
           }}
           onKeyDown={(e) => {
             if (e.key === "Enter") {
@@ -353,6 +424,9 @@ const LocationPicker = ({ onLocationSelect, initialLocation, autoLocate = true }
           }}
           className="details-input"
         />
+        <div className="delivery-range-note">
+          <Store size={13} /> We deliver within 5 km of our store in Beirut.
+        </div>
       </div>
     );
   }
@@ -361,30 +435,63 @@ const LocationPicker = ({ onLocationSelect, initialLocation, autoLocate = true }
     <div className="location-picker-card-container">
       {/* 1. Main Location Selector Card */}
       <div 
-        className={`toters-location-card ${areaAddress ? "has-selected" : ""} ${isAutoLocating ? "is-auto-locating" : ""}`}
+        className={`toters-location-card ${areaAddress ? "has-selected" : ""} ${isAutoLocating ? "is-auto-locating" : ""} ${isSelectedOutOfRange ? "is-out-of-range" : ""}`}
         onClick={handleOpenMapModal}
         role="button"
         tabIndex={0}
       >
         <div className="toters-card-left">
-          <div className={`toters-pin-icon-wrap ${isAutoLocating ? "pulse-locating" : ""}`}>
+          <div className={`toters-pin-icon-wrap ${isAutoLocating ? "pulse-locating" : ""} ${isSelectedOutOfRange ? "pin-out-range" : ""}`}>
             {isAutoLocating ? (
               <Loader2 size={18} className="animate-spin text-green-600" />
+            ) : isSelectedOutOfRange ? (
+              <AlertTriangle size={18} />
             ) : (
               <MapPin size={18} />
             )}
           </div>
           <div className="toters-card-text">
-            <span className="toters-card-label">
-              {isAutoLocating ? "Locating..." : "Location"}
-            </span>
-            <div className={`toters-card-address ${!areaAddress ? "placeholder" : ""}`}>
+            <div className="toters-card-label-row">
+              <span className={`toters-card-label ${isSelectedOutOfRange ? "label-out-range" : ""}`}>
+                {isAutoLocating ? "Locating..." : isSelectedOutOfRange ? "Out of 5 km Delivery Zone" : "Delivery Location"}
+              </span>
+              {currentDistanceKm != null && (
+                <span className={`toters-distance-chip ${isSelectedOutOfRange ? "chip-out-range" : "chip-in-range"}`}>
+                  {isSelectedOutOfRange ? (
+                    <>⚠️ {currentDistanceKm} km (Max 5 km)</>
+                  ) : (
+                    <>✓ {currentDistanceKm} km from store</>
+                  )}
+                </span>
+              )}
+            </div>
+
+            <div className={`toters-card-address ${!areaAddress ? "placeholder" : ""} ${isSelectedOutOfRange ? "address-out-range" : ""}`}>
               {isAutoLocating ? (
                 <span className="locating-text-shimmer">Detecting GPS location...</span>
               ) : (
-                areaAddress || "Select location on map..."
+                areaAddress || "Pin your location on map (Max 5 km)..."
               )}
             </div>
+
+            {/* Delivery zone micro hint */}
+            {!isAutoLocating && (
+              <div className="toters-card-range-hint">
+                {isSelectedOutOfRange ? (
+                  <span className="text-range-error">
+                    🚫 Address is {currentDistanceKm} km away. We only deliver within 5 km.
+                  </span>
+                ) : currentDistanceKm != null ? (
+                  <span className="text-range-success">
+                    <ShieldCheck size={12} className="inline-icon" /> Within 5 km delivery zone — Eligible for delivery
+                  </span>
+                ) : (
+                  <span className="text-range-neutral">
+                    <Store size={12} className="inline-icon" /> We deliver exclusively within 5 km of our store in Beirut
+                  </span>
+                )}
+              </div>
+            )}
           </div>
         </div>
 
@@ -393,6 +500,8 @@ const LocationPicker = ({ onLocationSelect, initialLocation, autoLocate = true }
             <span className="toters-locating-pill">
               <Loader2 size={12} className="animate-spin" /> Locating
             </span>
+          ) : isSelectedOutOfRange ? (
+            <span className="toters-change-pill out-range-pill">Change</span>
           ) : areaAddress ? (
             <span className="toters-change-pill">Change Pin</span>
           ) : (
@@ -416,9 +525,13 @@ const LocationPicker = ({ onLocationSelect, initialLocation, autoLocate = true }
             <span className="toters-card-label">
               Building details (Optional)
             </span>
-            {hasBuildingDetails && (
+            {hasBuildingDetails ? (
               <div className="toters-card-address">
                 {buildingSummaryText}
+              </div>
+            ) : (
+              <div className="toters-card-hint">
+                Add building name, floor number, or landmark
               </div>
             )}
           </div>
@@ -443,8 +556,13 @@ const LocationPicker = ({ onLocationSelect, initialLocation, autoLocate = true }
             {/* Modal Header */}
             <div className="toters-modal-header">
               <div className="modal-header-info">
-                <h3 className="modal-header-title">Pin Delivery Location</h3>
-                <span className="modal-header-sub">Position pin at your door</span>
+                <div className="modal-header-title-row">
+                  <h3 className="modal-header-title">Pin Delivery Location</h3>
+                  <span className="modal-5km-badge">5 km Delivery Zone</span>
+                </div>
+                <span className="modal-header-sub">
+                  We deliver within a 5 km radius of our store in Beirut
+                </span>
               </div>
               <button 
                 type="button" 
@@ -470,7 +588,7 @@ const LocationPicker = ({ onLocationSelect, initialLocation, autoLocate = true }
                     <Search size={16} className="gmaps-search-icon" />
                     <input
                       type="text"
-                      placeholder="Search street or area..."
+                      placeholder="Search street or area in Beirut..."
                       className="gmaps-search-input"
                       onKeyDown={(e) => {
                         if (e.key === "Enter") {
@@ -500,39 +618,68 @@ const LocationPicker = ({ onLocationSelect, initialLocation, autoLocate = true }
                   >
                     <path 
                       d="M21 0C9.402 0 0 9.402 0 21C0 34.125 18.375 48.825 20.097 50.169C20.6355 50.5895 21.3645 50.5895 21.903 50.169C23.625 48.825 42 34.125 42 21C42 9.402 32.598 0 21 0Z" 
-                      fill="#EA4335"
+                      fill={isTempOutOfRange ? "#DC2626" : "#16A34A"}
                     />
                     <circle cx="21" cy="20" r="8" fill="#FFFFFF"/>
-                    <circle cx="21" cy="20" r="4.5" fill="#C5221F"/>
+                    <circle cx="21" cy="20" r="4.5" fill={isTempOutOfRange ? "#991B1B" : "#15803D"}/>
                   </svg>
                 </div>
 
                 {/* Ground Target Dot / Crosshair */}
                 <div className="gmaps-ground-target">
-                  <div className="gmaps-target-dot" />
+                  <div className={`gmaps-target-dot ${isTempOutOfRange ? "target-dot-out" : ""}`} />
                   <div className={`gmaps-pin-shadow ${isDragging ? "is-lifting" : "is-dropped"}`} />
                 </div>
               </div>
 
-              {/* Floating Google Maps Locate Me GPS FAB */}
-              <button 
-                type="button" 
-                className={`gmaps-fab-locate-btn ${isLocating ? "locating" : ""}`}
-                onClick={handleGpsLocate}
-                disabled={isLocating}
-                title="Locate my position"
-                aria-label="Locate my current position"
-              >
-                {isLocating ? (
-                  <Loader2 size={18} className="animate-spin text-blue-600" />
+              {/* Map Floating Control Actions (Right Side) */}
+              <div className="gmaps-floating-controls">
+                {/* Store Center Button */}
+                <button
+                  type="button"
+                  className="gmaps-fab-store-btn"
+                  onClick={handleCenterOnStore}
+                  title="View Store Location (Hamra)"
+                  aria-label="Center on Store Location"
+                >
+                  <Store size={18} />
+                </button>
+
+                {/* Locate Me GPS FAB */}
+                <button 
+                  type="button" 
+                  className={`gmaps-fab-locate-btn ${isLocating ? "locating" : ""}`}
+                  onClick={handleGpsLocate}
+                  disabled={isLocating}
+                  title="Locate my position"
+                  aria-label="Locate my current position"
+                >
+                  {isLocating ? (
+                    <Loader2 size={18} className="animate-spin text-blue-600" />
+                  ) : (
+                    <Crosshair size={20} className="gps-crosshair-icon" />
+                  )}
+                </button>
+              </div>
+
+              {/* Real-time Floating Delivery Zone Indicator */}
+              <div className={`gmaps-delivery-zone-pill ${isTempOutOfRange ? "zone-pill-out" : "zone-pill-in"} ${isDragging ? "is-dragging" : ""}`}>
+                {isTempOutOfRange ? (
+                  <>
+                    <AlertTriangle size={14} />
+                    <span>Outside 5 km Delivery Zone ({tempDistanceKm} km away)</span>
+                  </>
                 ) : (
-                  <Crosshair size={20} className="gps-crosshair-icon" />
+                  <>
+                    <ShieldCheck size={14} />
+                    <span>Within 5 km Delivery Zone ({tempDistanceKm != null ? `${tempDistanceKm} km` : 'Valid'})</span>
+                  </>
                 )}
-              </button>
+              </div>
 
               {/* Top Hint Badge */}
               <div className={`gmaps-map-hint-pill ${isDragging ? "dragging" : ""}`}>
-                {isDragging ? "Release to set" : "Drag map under pin"}
+                {isDragging ? "Release pin to check location" : "Drag map under pin to choose your location"}
               </div>
 
               {/* Google Map */}
@@ -540,7 +687,7 @@ const LocationPicker = ({ onLocationSelect, initialLocation, autoLocate = true }
                 <GoogleMap
                   mapContainerStyle={{ width: "100%", height: "100%" }}
                   center={tempCoords}
-                  zoom={16}
+                  zoom={15}
                   onLoad={onMapLoad}
                   onDragStart={handleMapDragStart}
                   onDrag={handleMapDrag}
@@ -555,7 +702,28 @@ const LocationPicker = ({ onLocationSelect, initialLocation, autoLocate = true }
                     clickableIcons: false,
                     disableDefaultUI: false,
                   }}
-                />
+                >
+                  {/* 5 KM Delivery Radius Circle */}
+                  <Circle
+                    center={STORE_COORDS}
+                    radius={5000} // 5 km in meters
+                    options={{
+                      strokeColor: "#16a34a",
+                      strokeOpacity: 0.85,
+                      strokeWeight: 2.5,
+                      fillColor: "#22c55e",
+                      fillOpacity: 0.1,
+                      clickable: false,
+                      zIndex: 1,
+                    }}
+                  />
+
+                  {/* Store Position Marker */}
+                  <Marker
+                    position={STORE_COORDS}
+                    title="Chocair Fresh - Store Hub"
+                  />
+                </GoogleMap>
               ) : (
                 <div className="gmaps-loading-state">
                   <Loader2 size={28} className="animate-spin text-green-600" />
@@ -566,18 +734,35 @@ const LocationPicker = ({ onLocationSelect, initialLocation, autoLocate = true }
 
             {/* Modal Bottom Confirm Sheet */}
             <div className="toters-modal-footer">
+              {/* Out of Range Alert Card */}
+              {isTempOutOfRange && (
+                <div className="modal-out-of-range-banner">
+                  <AlertTriangle size={18} className="banner-alert-icon" />
+                  <div className="banner-alert-text">
+                    <strong>Outside 5 km Delivery Radius ({tempDistanceKm} km away)</strong>
+                    <span>
+                      We exclusively deliver within 5 km of our store in Beirut. Please move the pin inside the green zone on the map to place an order.
+                    </span>
+                  </div>
+                </div>
+              )}
+
               <div className="modal-address-preview-row">
-                <div className="preview-pin-icon-box">
-                  <MapPin size={18} />
+                <div className={`preview-pin-icon-box ${isTempOutOfRange ? "preview-pin-out" : ""}`}>
+                  {isTempOutOfRange ? <AlertTriangle size={18} /> : <MapPin size={18} />}
                 </div>
                 <div className="preview-address-col">
                   <div className="preview-address-header">
                     <span className="preview-address-label">Delivery Location</span>
-                    {isAddressResolving && (
+                    {isAddressResolving ? (
                       <span className="preview-resolving-indicator">
                         <Loader2 size={11} className="animate-spin" /> Updating...
                       </span>
-                    )}
+                    ) : tempDistanceKm != null ? (
+                      <span className={`preview-distance-pill ${isTempOutOfRange ? "dist-out" : "dist-in"}`}>
+                        {tempDistanceKm} km from store
+                      </span>
+                    ) : null}
                   </div>
                   <span className={`preview-address-text ${isAddressResolving ? "resolving" : ""}`}>
                     {tempAddress || "Detecting address..."}
@@ -587,11 +772,20 @@ const LocationPicker = ({ onLocationSelect, initialLocation, autoLocate = true }
 
               <button 
                 type="button"
-                className="toters-confirm-location-btn"
+                className={`toters-confirm-location-btn ${isTempOutOfRange ? "btn-out-of-range" : ""}`}
                 onClick={handleConfirmLocation}
               >
-                <Check size={18} />
-                <span>Confirm Pin</span>
+                {isTempOutOfRange ? (
+                  <>
+                    <AlertTriangle size={18} />
+                    <span>Out of 5 km Range ({tempDistanceKm} km)</span>
+                  </>
+                ) : (
+                  <>
+                    <Check size={18} />
+                    <span>Confirm Pin ({tempDistanceKm != null ? `${tempDistanceKm} km` : 'In Range'})</span>
+                  </>
+                )}
               </button>
             </div>
 
