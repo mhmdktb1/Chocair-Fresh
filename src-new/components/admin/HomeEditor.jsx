@@ -23,10 +23,21 @@ import {
   Mail,
   BookOpen,
   ChevronRight,
-  Eye
+  Eye,
+  MapPin,
+  Compass,
+  Store,
+  DollarSign,
+  Navigation
 } from 'lucide-react';
 import { normalizeUnit } from '../../utils/unitHelper';
+import { STORE_COORDS, DEFAULT_DELIVERY_CONFIG, calculateDeliveryFee } from '../../utils/distanceHelper';
 import './HomeEditor.css';
+
+const formatLL = (usd) => {
+  const ll = Math.round((Number(usd) || 0) * 89500);
+  return `${ll.toLocaleString()} L.L.`;
+};
 
 const HomeEditor = () => {
   const [loading, setLoading] = useState(true);
@@ -34,6 +45,10 @@ const HomeEditor = () => {
   const [activeTab, setActiveTab] = useState('hero');
   const [allProducts, setAllProducts] = useState([]);
   const [productSearch, setProductSearch] = useState('');
+
+  // Delivery simulation sandbox state
+  const [simDistance, setSimDistance] = useState('1.2');
+  const [simSubtotal, setSimSubtotal] = useState('35.00');
 
   const [formData, setFormData] = useState({
     hero: { 
@@ -54,6 +69,20 @@ const HomeEditor = () => {
         { label: 'Fresh Products', value: '500+' },
         { label: 'Fast Delivery', value: '24h' }
       ]
+    },
+    delivery: {
+      maxDeliveryRadiusKm: 4.0,
+      pricingType: 'distance',
+      fixedFee: 2.0,
+      freeDeliveryThreshold: 50.0,
+      freeDeliveryEnabled: true,
+      distanceTiers: {
+        tier1MaxKm: 1.5,
+        tier1Fee: 1.50,
+        tier2MaxKm: 2.5,
+        tier2Fee: 2.50,
+        tier3Fee: 3.50
+      }
     },
     promos: {
       enabled: true,
@@ -182,6 +211,14 @@ const HomeEditor = () => {
             ...prev.seasonal,
             ...(data.seasonal || {}),
             products: data.seasonal?.products || []
+          },
+          delivery: {
+            ...DEFAULT_DELIVERY_CONFIG,
+            ...(data.delivery || {}),
+            distanceTiers: {
+              ...DEFAULT_DELIVERY_CONFIG.distanceTiers,
+              ...(data.delivery?.distanceTiers || {})
+            }
           }
         }));
       }
@@ -276,6 +313,7 @@ const HomeEditor = () => {
 
   const tabs = [
     { id: 'hero', label: 'Hero & Banner', icon: Layout },
+    { id: 'delivery', label: 'Delivery & Pricing', icon: Truck },
     { id: 'promos', label: 'Promo Banners & Coupon', icon: Gift },
     { id: 'bundle', label: 'Flash Deal & Bundle', icon: Flame },
     { id: 'seasonal', label: 'Seasonal Curated Picks', icon: Sparkles },
@@ -500,6 +538,400 @@ const HomeEditor = () => {
                 ))}
               </div>
             </div>
+          </div>
+        )}
+
+        {/* ==================================================== */}
+        {/* TAB: DELIVERY PRICING & RADIUS */}
+        {/* ==================================================== */}
+        {activeTab === 'delivery' && (
+          <div className="editor-section animate-fade-in">
+            <div className="section-title-with-toggle">
+              <h3 className="section-title" style={{ margin: 0, border: 'none', padding: 0 }}>
+                <span className="section-icon-wrap" style={{ background: '#dcfce7', color: '#16a34a' }}>
+                  <Truck size={18} />
+                </span>
+                <span>Store Delivery Pricing & Range Settings</span>
+              </h3>
+            </div>
+
+            {/* Store Hub Location Info Card */}
+            <div className="store-location-card">
+              <div className="store-loc-icon">
+                <Store size={20} />
+              </div>
+              <div className="store-loc-content">
+                <div className="store-loc-title">
+                  <strong>{STORE_COORDS.name}</strong>
+                  <span className="store-loc-tag">Central Hub</span>
+                </div>
+                <div className="store-loc-sub">
+                  <span>📍 {STORE_COORDS.address}</span>
+                  <span className="store-loc-coords">({STORE_COORDS.lat}, {STORE_COORDS.lng})</span>
+                </div>
+              </div>
+            </div>
+
+            {/* 1. STORE MAXIMUM DELIVERY RADIUS */}
+            <div className="editor-sub-card">
+              <div className="sub-card-header">
+                <div className="sub-card-title-group">
+                  <Compass size={17} className="text-emerald-600" />
+                  <h4>Maximum Delivery Range (Radius)</h4>
+                </div>
+                <span className="radius-display-pill">
+                  {formData.delivery?.maxDeliveryRadiusKm || 4.0} km Radius
+                </span>
+              </div>
+              <p className="sub-card-desc">
+                Set how far from your store in Beirut your team delivers. Orders with GPS pinned locations or addresses beyond this limit will be restricted at checkout.
+              </p>
+
+              <div className="range-slider-row">
+                <input 
+                  type="range"
+                  min="1"
+                  max="20"
+                  step="0.5"
+                  className="delivery-slider"
+                  value={formData.delivery?.maxDeliveryRadiusKm ?? 4.0}
+                  onChange={(e) => handleDeepChange(['delivery', 'maxDeliveryRadiusKm'], Number(e.target.value))}
+                />
+                <div className="range-number-input-wrap">
+                  <input 
+                    type="number"
+                    min="1"
+                    max="50"
+                    step="0.5"
+                    className="form-input range-number-input"
+                    value={formData.delivery?.maxDeliveryRadiusKm ?? 4.0}
+                    onChange={(e) => handleDeepChange(['delivery', 'maxDeliveryRadiusKm'], Number(e.target.value))}
+                  />
+                  <span className="range-unit-tag">km</span>
+                </div>
+              </div>
+
+              <div className="range-quick-buttons">
+                {[2.5, 3.0, 4.0, 5.0, 6.0, 8.0, 10.0].map((km) => (
+                  <button
+                    key={km}
+                    type="button"
+                    className={`range-pill-btn ${(formData.delivery?.maxDeliveryRadiusKm ?? 4.0) === km ? 'active' : ''}`}
+                    onClick={() => handleDeepChange(['delivery', 'maxDeliveryRadiusKm'], km)}
+                  >
+                    {km} km
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* 2. DELIVERY PRICING MODEL SELECTION */}
+            <div className="editor-sub-card">
+              <div className="sub-card-header">
+                <div className="sub-card-title-group">
+                  <Sliders size={17} className="text-emerald-600" />
+                  <h4>Delivery Pricing Method</h4>
+                </div>
+              </div>
+              <p className="sub-card-desc">
+                Choose whether delivery price is calculated dynamically based on distance or charged as a flat rate.
+              </p>
+
+              <div className="pricing-mode-cards-grid">
+                <div 
+                  className={`pricing-mode-card ${formData.delivery?.pricingType !== 'fixed' ? 'is-active' : ''}`}
+                  onClick={() => handleDeepChange(['delivery', 'pricingType'], 'distance')}
+                >
+                  <div className="pricing-mode-radio">
+                    <span className={`custom-radio-dot ${formData.delivery?.pricingType !== 'fixed' ? 'checked' : ''}`} />
+                  </div>
+                  <div className="pricing-mode-text">
+                    <div className="pricing-mode-title">
+                      <span>Distance-Based Pricing</span>
+                      <span className="recommended-tag">Recommended</span>
+                    </div>
+                    <p className="pricing-mode-desc">
+                      Charges different delivery rates based on how far the customer is from the store (&lt;1.5 km, 1.5–2.5 km, +2.5 km).
+                    </p>
+                  </div>
+                </div>
+
+                <div 
+                  className={`pricing-mode-card ${formData.delivery?.pricingType === 'fixed' ? 'is-active' : ''}`}
+                  onClick={() => handleDeepChange(['delivery', 'pricingType'], 'fixed')}
+                >
+                  <div className="pricing-mode-radio">
+                    <span className={`custom-radio-dot ${formData.delivery?.pricingType === 'fixed' ? 'checked' : ''}`} />
+                  </div>
+                  <div className="pricing-mode-text">
+                    <div className="pricing-mode-title">
+                      <span>Fixed Flat Rate</span>
+                    </div>
+                    <p className="pricing-mode-desc">
+                      Charges one fixed delivery fee regardless of the customer's distance from the store.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* 3. DISTANCE TIERS PRICING (When distance-based is active) */}
+            {formData.delivery?.pricingType !== 'fixed' ? (
+              <div className="editor-sub-card">
+                <div className="sub-card-header">
+                  <div className="sub-card-title-group">
+                    <Navigation size={17} className="text-emerald-600" />
+                    <h4>Distance Pricing Tiers</h4>
+                  </div>
+                </div>
+                <p className="sub-card-desc">
+                  Set the delivery fee for each distance zone from the store.
+                </p>
+
+                <div className="distance-tiers-grid">
+                  {/* TIER 1: < 1.5 km */}
+                  <div className="distance-tier-box tier-close">
+                    <div className="tier-box-header">
+                      <span className="tier-tag-pill green">Tier 1</span>
+                      <span className="tier-dist-range">&lt; 1.5 km</span>
+                    </div>
+                    <span className="tier-label-name">Short Distance</span>
+                    <p className="tier-label-sub">Close proximity (e.g. Dbayeh, Antelias inner zone)</p>
+
+                    <div className="tier-input-group">
+                      <label className="tier-input-label">Delivery Fee ($)</label>
+                      <div className="tier-input-wrap">
+                        <span className="tier-cur-symbol">$</span>
+                        <input 
+                          type="number"
+                          step="0.25"
+                          min="0"
+                          className="form-input tier-price-input"
+                          value={formData.delivery?.distanceTiers?.tier1Fee ?? 1.50}
+                          onChange={(e) => handleDeepChange(['delivery', 'distanceTiers', 'tier1Fee'], Number(e.target.value))}
+                        />
+                      </div>
+                      <span className="tier-ll-preview">
+                        ≈ {formatLL(formData.delivery?.distanceTiers?.tier1Fee ?? 1.50)}
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* TIER 2: 1.5 km - 2.5 km */}
+                  <div className="distance-tier-box tier-mid">
+                    <div className="tier-box-header">
+                      <span className="tier-tag-pill blue">Tier 2</span>
+                      <span className="tier-dist-range">+1.5 km to 2.5 km</span>
+                    </div>
+                    <span className="tier-label-name">Medium Distance</span>
+                    <p className="tier-label-sub">Mid-range area (e.g. Jal El Dib, Naccache, Zouk El Kharab)</p>
+
+                    <div className="tier-input-group">
+                      <label className="tier-input-label">Delivery Fee ($)</label>
+                      <div className="tier-input-wrap">
+                        <span className="tier-cur-symbol">$</span>
+                        <input 
+                          type="number"
+                          step="0.25"
+                          min="0"
+                          className="form-input tier-price-input"
+                          value={formData.delivery?.distanceTiers?.tier2Fee ?? 2.50}
+                          onChange={(e) => handleDeepChange(['delivery', 'distanceTiers', 'tier2Fee'], Number(e.target.value))}
+                        />
+                      </div>
+                      <span className="tier-ll-preview">
+                        ≈ {formatLL(formData.delivery?.distanceTiers?.tier2Fee ?? 2.50)}
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* TIER 3: +2.5 km */}
+                  <div className="distance-tier-box tier-far">
+                    <div className="tier-box-header">
+                      <span className="tier-tag-pill purple">Tier 3</span>
+                      <span className="tier-dist-range">+2.5 km</span>
+                    </div>
+                    <span className="tier-label-name">Extended Distance</span>
+                    <p className="tier-label-sub">Outer perimeter (e.g. Zalka, Mezher, Dbayeh borders up to {formData.delivery?.maxDeliveryRadiusKm || 4.0} km)</p>
+
+                    <div className="tier-input-group">
+                      <label className="tier-input-label">Delivery Fee ($)</label>
+                      <div className="tier-input-wrap">
+                        <span className="tier-cur-symbol">$</span>
+                        <input 
+                          type="number"
+                          step="0.25"
+                          min="0"
+                          className="form-input tier-price-input"
+                          value={formData.delivery?.distanceTiers?.tier3Fee ?? 3.50}
+                          onChange={(e) => handleDeepChange(['delivery', 'distanceTiers', 'tier3Fee'], Number(e.target.value))}
+                        />
+                      </div>
+                      <span className="tier-ll-preview">
+                        ≈ {formatLL(formData.delivery?.distanceTiers?.tier3Fee ?? 3.50)}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            ) : (
+              /* FIXED FLAT RATE INPUT */
+              <div className="editor-sub-card">
+                <div className="sub-card-header">
+                  <div className="sub-card-title-group">
+                    <DollarSign size={17} className="text-emerald-600" />
+                    <h4>Fixed Delivery Fee</h4>
+                  </div>
+                </div>
+                <div className="grid-2-col" style={{ maxWidth: 400 }}>
+                  <div className="form-group">
+                    <label className="form-label">Flat Delivery Rate ($)</label>
+                    <input 
+                      type="number"
+                      step="0.25"
+                      min="0"
+                      className="form-input"
+                      value={formData.delivery?.fixedFee ?? 2.00}
+                      onChange={(e) => handleDeepChange(['delivery', 'fixedFee'], Number(e.target.value))}
+                    />
+                    <span className="tier-ll-preview" style={{ marginTop: '0.4rem', display: 'block' }}>
+                      ≈ {formatLL(formData.delivery?.fixedFee ?? 2.00)}
+                    </span>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* 4. FREE DELIVERY PROMOTION */}
+            <div className="editor-sub-card">
+              <div className="section-title-with-toggle" style={{ margin: 0, paddingBottom: '0.5rem' }}>
+                <div className="sub-card-title-group">
+                  <Gift size={17} className="text-emerald-600" />
+                  <h4>Free Delivery on High-Value Orders</h4>
+                </div>
+                <label className="toggle-switch">
+                  <input 
+                    type="checkbox" 
+                    checked={formData.delivery?.freeDeliveryEnabled !== false} 
+                    onChange={(e) => handleDeepChange(['delivery', 'freeDeliveryEnabled'], e.target.checked)} 
+                  />
+                  <span className="toggle-slider"></span>
+                </label>
+              </div>
+
+              {formData.delivery?.freeDeliveryEnabled !== false && (
+                <div className="grid-2-col" style={{ maxWidth: 400, marginTop: '0.85rem' }}>
+                  <div className="form-group">
+                    <label className="form-label">Minimum Order Amount for Free Delivery ($)</label>
+                    <input 
+                      type="number"
+                      step="1"
+                      min="0"
+                      className="form-input"
+                      placeholder="50.00"
+                      value={formData.delivery?.freeDeliveryThreshold ?? 50.00}
+                      onChange={(e) => handleDeepChange(['delivery', 'freeDeliveryThreshold'], Number(e.target.value))}
+                    />
+                    <span className="tier-ll-preview" style={{ marginTop: '0.4rem', display: 'block' }}>
+                      ≈ {formatLL(formData.delivery?.freeDeliveryThreshold ?? 50.00)}
+                    </span>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* 5. INTERACTIVE LIVE DELIVERY PRICE SIMULATOR */}
+            <div className="editor-sub-card delivery-simulator-card">
+              <div className="sub-card-header">
+                <div className="sub-card-title-group">
+                  <Sparkles size={17} className="text-amber-500" />
+                  <h4>Live Delivery Price Calculator & Simulator</h4>
+                </div>
+                <span className="sim-badge">Test Sandbox</span>
+              </div>
+              <p className="sub-card-desc">
+                Test your rates in real time. Enter sample customer distance and order amount to verify the calculated delivery price.
+              </p>
+
+              <div className="simulator-grid">
+                <div className="sim-inputs-col">
+                  <div className="form-group">
+                    <label className="form-label">Customer Distance (km)</label>
+                    <div className="tier-input-wrap">
+                      <input 
+                        type="number"
+                        step="0.1"
+                        min="0"
+                        max="30"
+                        className="form-input"
+                        placeholder="e.g. 1.8"
+                        value={simDistance}
+                        onChange={(e) => setSimDistance(e.target.value)}
+                      />
+                      <span className="tier-unit-tag">km</span>
+                    </div>
+                  </div>
+
+                  <div className="form-group">
+                    <label className="form-label">Order Items Subtotal ($)</label>
+                    <div className="tier-input-wrap">
+                      <span className="tier-cur-symbol">$</span>
+                      <input 
+                        type="number"
+                        step="1"
+                        min="0"
+                        className="form-input"
+                        placeholder="e.g. 35.00"
+                        value={simSubtotal}
+                        onChange={(e) => setSimSubtotal(e.target.value)}
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                <div className="sim-output-col">
+                  {(() => {
+                    const testDist = simDistance !== '' ? Number(simDistance) : 1.2;
+                    const testTotal = simSubtotal !== '' ? Number(simSubtotal) : 25;
+                    const maxRad = Number(formData.delivery?.maxDeliveryRadiusKm || 4.0);
+                    const isOutOfRange = testDist > maxRad;
+                    const feeResult = calculateDeliveryFee(testDist, testTotal, formData.delivery);
+
+                    return (
+                      <div className={`sim-result-card ${isOutOfRange ? 'is-out' : feeResult.isFree ? 'is-free' : 'is-ok'}`}>
+                        <div className="sim-result-header">
+                          <span className="sim-result-label">Calculated Delivery Fee:</span>
+                          <span className={`sim-status-pill ${isOutOfRange ? 'pill-red' : feeResult.isFree ? 'pill-gold' : 'pill-green'}`}>
+                            {isOutOfRange ? 'Out of Range' : feeResult.isFree ? 'Free Delivery' : 'In Range'}
+                          </span>
+                        </div>
+
+                        {isOutOfRange ? (
+                          <div className="sim-out-warning">
+                            <strong>❌ Out of delivery zone ({testDist} km &gt; {maxRad} km)</strong>
+                            <span>Customer will be prompted to choose a closer address within {maxRad} km.</span>
+                          </div>
+                        ) : (
+                          <div className="sim-price-display">
+                            <div className="sim-price-primary">
+                              {feeResult.isFree ? '$0.00 (FREE)' : `$${feeResult.fee.toFixed(2)}`}
+                            </div>
+                            <div className="sim-price-ll">
+                              {formatLL(feeResult.fee)}
+                            </div>
+                            <div className="sim-applied-reason">
+                              <span>Applied Rule: </span>
+                              <strong>{feeResult.reason}</strong>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })()}
+                </div>
+              </div>
+            </div>
+
           </div>
         )}
 

@@ -96,6 +96,9 @@ export const AdminProvider = ({ children }) => {
       instruction: item.instruction || item.instructions || item.specialInstructions || item.note || item.notes || ""
     })),
     total: o.totalPrice || o.total || 0,
+    itemsPrice: o.itemsPrice !== undefined ? o.itemsPrice : (o.totalPrice || o.total || 0),
+    shippingPrice: o.shippingPrice !== undefined ? o.shippingPrice : 0,
+    distanceKm: o.customerInfo?.distanceKm,
     status: o.status || "Pending",
     date: o.createdAt || o.date || new Date().toISOString(),
     deliveryPreference: o.deliveryPreference || o.customerInfo?.deliveryPreference,

@@ -1175,6 +1175,24 @@ function AdminOrders() {
                       <span>{selectedOrder.paymentMethod || 'Cash on Delivery'}</span>
                     </span>
                   </div>
+                  {selectedOrder.itemsPrice !== undefined && selectedOrder.shippingPrice !== undefined && (
+                    <>
+                      <div className="order-sheet-summary-row">
+                        <span className="order-sheet-summary-label">Items Subtotal</span>
+                        <span className="order-sheet-summary-value-text">
+                          ${Number(selectedOrder.itemsPrice).toFixed(2)}
+                        </span>
+                      </div>
+                      <div className="order-sheet-summary-row">
+                        <span className="order-sheet-summary-label">
+                          Delivery Fee {selectedOrder.distanceKm != null && <span style={{ color: '#16a34a', fontWeight: 600 }}>({selectedOrder.distanceKm} km)</span>}
+                        </span>
+                        <span className="order-sheet-summary-value-text">
+                          {Number(selectedOrder.shippingPrice) === 0 ? 'FREE' : `$${Number(selectedOrder.shippingPrice).toFixed(2)}`}
+                        </span>
+                      </div>
+                    </>
+                  )}
                   <div className="order-sheet-summary-row order-sheet-grand-total-row">
                     <span className="order-sheet-grand-label">Grand Total</span>
                     <span className="order-sheet-grand-amount">

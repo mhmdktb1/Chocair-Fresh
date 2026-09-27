@@ -15,7 +15,9 @@ import { normalizeUnit, formatQuantityWithUnit } from '../utils/unitHelper';
 import { 
   STORE_COORDS, 
   MAX_DELIVERY_RADIUS_KM, 
-  calculateDistanceKm 
+  DEFAULT_DELIVERY_CONFIG,
+  calculateDistanceKm,
+  calculateDeliveryFee
 } from '../utils/distanceHelper';
 import Navbar from '../components/layout/Navbar';
 import Button from '../components/common/Button';
@@ -126,7 +128,32 @@ const Checkout = () => {
     }
   }, [user]);
 
-  const shippingCost = cartTotal > 50 ? 0 : 5.99;
+  const [deliveryConfig, setDeliveryConfig] = useState(DEFAULT_DELIVERY_CONFIG);
+
+  useEffect(() => {
+    const fetchConfig = async () => {
+      try {
+        const { data } = await api.get('/home-config');
+        if (data?.delivery) {
+          setDeliveryConfig({
+            ...DEFAULT_DELIVERY_CONFIG,
+            ...data.delivery,
+            distanceTiers: {
+              ...DEFAULT_DELIVERY_CONFIG.distanceTiers,
+              ...(data.delivery?.distanceTiers || {})
+            }
+          });
+        }
+      } catch (e) {
+        console.warn('Could not load delivery config:', e.message);
+      }
+    };
+    fetchConfig();
+  }, []);
+
+  const activeMaxRadius = Number(deliveryConfig?.maxDeliveryRadiusKm || MAX_DELIVERY_RADIUS_KM);
+  const deliveryFeeInfo = calculateDeliveryFee(formData.distanceKm, cartTotal, deliveryConfig);
+  const shippingCost = deliveryFeeInfo.fee;
   const finalTotal = cartTotal + shippingCost;
 
   const handleInputChange = (e) => {
@@ -156,7 +183,7 @@ const Checkout = () => {
             : null);
       const outOfRange = locationData.isOutOfRange != null 
         ? locationData.isOutOfRange 
-        : (dist != null && dist > MAX_DELIVERY_RADIUS_KM);
+        : (dist != null && dist > activeMaxRadius);
 
       setFormData(prev => ({
         ...prev,
@@ -171,12 +198,12 @@ const Checkout = () => {
       }));
 
       if (outOfRange) {
-        setError(`Selected location is ${dist} km away (outside our 4 km delivery zone). We cannot deliver to this address.`);
+        setError(`Selected location is ${dist} km away (outside our ${activeMaxRadius} km delivery zone). We cannot deliver to this address.`);
       } else {
-        setError(prev => (prev && prev.includes('4 km') ? '' : prev));
+        setError(prev => (prev && (prev.includes('delivery range') || prev.includes('delivery zone') || prev.includes('km away')) ? '' : prev));
       }
     }
-  }, []);
+  }, [activeMaxRadius]);
 
   const handleCopyWhish = () => {
     navigator.clipboard.writeText('+961 70 123 456');
@@ -311,9 +338,9 @@ const Checkout = () => {
       }
     }
 
-    if (formData.isOutOfRange || (formData.distanceKm != null && formData.distanceKm > MAX_DELIVERY_RADIUS_KM)) {
+    if (formData.isOutOfRange || (formData.distanceKm != null && formData.distanceKm > activeMaxRadius)) {
       const distText = formData.distanceKm ? ` (${formData.distanceKm} km away)` : '';
-      const msg = `Delivery location is out of our 4 km delivery range${distText}. We only deliver within 4 km of our store.`;
+      const msg = `Delivery location is out of our ${activeMaxRadius} km delivery range${distText}. We only deliver within ${activeMaxRadius} km of our store.`;
       setError(msg);
       toast.error(msg, { autoClose: 5000 });
       return;
@@ -481,7 +508,14 @@ const Checkout = () => {
                 </div>
               </div>
               <div className="calc-row">
-                <span>Delivery</span>
+                <div style={{ display: 'flex', flexDirection: 'column' }}>
+                  <span>Delivery</span>
+                  {formData.distanceKm != null && (
+                    <span style={{ fontSize: '0.72rem', color: '#16a34a', fontWeight: 600 }}>
+                      📍 {formData.distanceKm} km ({deliveryFeeInfo.reason})
+                    </span>
+                  )}
+                </div>
                 <span>
                   {shippingCost === 0 ? (
                     <strong style={{ color: '#16a34a' }}>FREE</strong>
@@ -667,7 +701,8 @@ const Checkout = () => {
                 <div className="form-card-inner">
                   <LocationPicker 
                     onLocationSelect={handleLocationSelect} 
-                    initialLocation={formData.address} 
+                    initialLocation={formData.address}
+                    maxDeliveryRadiusKm={activeMaxRadius}
                   />
 
                   {formData.isOutOfRange && (
@@ -675,7 +710,7 @@ const Checkout = () => {
                       <AlertTriangle size={18} className="alert-icon-svg" />
                       <div className="alert-text-col">
                         <strong>Delivery Range Exceeded ({formData.distanceKm} km away)</strong>
-                        <span>We deliver within 4 km of our store. Please choose a closer location.</span>
+                        <span>We deliver within {activeMaxRadius} km of our store. Please choose a closer location.</span>
                       </div>
                     </div>
                   )}
@@ -1035,7 +1070,14 @@ const Checkout = () => {
                   </div>
                 </div>
                 <div className="sidebar-calc-row">
-                  <span>Delivery</span>
+                  <div style={{ display: 'flex', flexDirection: 'column' }}>
+                    <span>Delivery</span>
+                    {formData.distanceKm != null && (
+                      <span style={{ fontSize: '0.74rem', color: '#16a34a', fontWeight: 600 }}>
+                        📍 {formData.distanceKm} km ({deliveryFeeInfo.reason})
+                      </span>
+                    )}
+                  </div>
                   <span className="calc-val">
                     {shippingCost === 0 ? (
                       <span className="free-tag">FREE</span>
