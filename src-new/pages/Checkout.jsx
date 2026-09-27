@@ -46,6 +46,8 @@ const Checkout = () => {
     name: "",
     phone: "",
     address: "",
+    building: "",
+    floor: "",
     googleMapsLink: "",
     additionalInfo: "",
     lat: null,
@@ -132,6 +134,8 @@ const Checkout = () => {
       setFormData(prev => ({
         ...prev,
         address: locationData.address || prev.address,
+        building: locationData.building !== undefined ? locationData.building : prev.building,
+        floor: locationData.floor !== undefined ? locationData.floor : prev.floor,
         googleMapsLink: link || prev.googleMapsLink,
         lat: locationData.lat ?? prev.lat,
         lng: locationData.lng ?? prev.lng,
@@ -270,6 +274,14 @@ const Checkout = () => {
     if (!formData.address || formData.address.trim() === '') {
       setError('Please select or pin your delivery location');
       return;
+    }
+
+    if (!formData.building?.trim() || !formData.floor?.trim()) {
+      if (!formData.address?.includes('Bldg:') || !formData.address?.includes('Fl:')) {
+        setError('Please enter your Building and Floor');
+        toast.warn('Please enter your Building and Floor');
+        return;
+      }
     }
 
     if (formData.isOutOfRange || (formData.distanceKm != null && formData.distanceKm > MAX_DELIVERY_RADIUS_KM)) {

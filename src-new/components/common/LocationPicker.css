@@ -1,6 +1,6 @@
 /* =========================================================
    CLEAN & INTUITIVE DELIVERY LOCATION SELECTOR
-   Streamlined, Feature-Rich, Less Text, Mobile-First
+   Streamlined, Fast, Mandatory Building & Floor
    ========================================================= */
 
 .loc-delivery-selector {
@@ -46,45 +46,37 @@
   flex-wrap: wrap;
 }
 
-.loc-header-left {
+.loc-tags-list {
   display: flex;
   align-items: center;
-  gap: 0.45rem;
+  gap: 4px;
 }
 
-.loc-badge-tag {
+.loc-tag-pill {
   display: inline-flex;
   align-items: center;
   gap: 4px;
-  background: #f0fdf4;
-  color: #15803d;
-  font-size: 0.72rem;
-  font-weight: 700;
+  background: #f1f5f9;
+  color: #475569;
+  border: 1px solid transparent;
   padding: 3px 8px;
   border-radius: 6px;
-  border: 1px solid #dcfce7;
-  text-transform: capitalize;
-}
-
-.loc-distance-chip {
-  display: inline-flex;
-  align-items: center;
   font-size: 0.72rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.loc-tag-pill:hover {
+  background: #e2e8f0;
+  color: #0f172a;
+}
+
+.loc-tag-pill.active {
+  background: #dcfce7;
+  color: #15803d;
+  border-color: #86efac;
   font-weight: 700;
-  padding: 2px 7px;
-  border-radius: 6px;
-}
-
-.loc-distance-chip.dist-in {
-  background: #ecfdf5;
-  color: #059669;
-  border: 1px solid #a7f3d0;
-}
-
-.loc-distance-chip.dist-out {
-  background: #fef2f2;
-  color: #dc2626;
-  border: 1px solid #fecaca;
 }
 
 .loc-header-actions {
@@ -136,23 +128,25 @@
 /* Address Row */
 .loc-address-row {
   display: flex;
-  align-items: flex-start;
+  align-items: center;
   gap: 0.65rem;
   cursor: pointer;
-  padding: 0.2rem 0;
-  border-radius: 8px;
-  transition: opacity 0.15s ease;
+  padding: 0.35rem 0.5rem;
+  border-radius: 10px;
+  background: #f8fafc;
+  border: 1px solid #f1f5f9;
+  transition: all 0.15s ease;
 }
 
 .loc-address-row:hover {
-  opacity: 0.88;
+  background: #f1f5f9;
 }
 
 .loc-pin-box {
-  width: 36px;
-  height: 36px;
-  border-radius: 10px;
-  background: #f0fdf4;
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  background: #ffffff;
   color: #16a34a;
   border: 1px solid #bbf7d0;
   display: flex;
@@ -170,205 +164,80 @@
 .loc-address-content {
   display: flex;
   flex-direction: column;
-  gap: 2px;
   min-width: 0;
   flex: 1;
 }
 
 .loc-address-title {
-  font-size: 0.92rem;
+  font-size: 0.88rem;
   font-weight: 700;
   color: #0f172a;
-  line-height: 1.3;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
 
 .loc-address-title.placeholder {
-  color: #94a3b8;
+  color: #64748b;
   font-weight: 500;
 }
 
-.loc-address-subtitle {
-  font-size: 0.78rem;
-  font-weight: 600;
-  color: #2563eb;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.loc-address-hint {
-  font-size: 0.72rem;
-  color: #64748b;
-}
-
-/* 1-Tap Quick Area Preset Chips Bar */
-.loc-quick-areas-wrapper {
-  display: flex;
-  align-items: center;
-  gap: 0.45rem;
-  overflow: hidden;
-  background: #f8fafc;
-  padding: 6px 8px;
-  border-radius: 10px;
-  border: 1px solid #f1f5f9;
-}
-
-.loc-quick-label {
-  font-size: 0.7rem;
-  font-weight: 700;
-  color: #64748b;
-  white-space: nowrap;
-  flex-shrink: 0;
-}
-
-.loc-quick-chips-scroll {
-  display: flex;
-  align-items: center;
-  gap: 5px;
-  overflow-x: auto;
-  scrollbar-width: none;
-  -ms-overflow-style: none;
-  padding-bottom: 1px;
-}
-
-.loc-quick-chips-scroll::-webkit-scrollbar {
-  display: none;
-}
-
-.loc-chip-btn {
-  background: #ffffff;
-  color: #334155;
-  border: 1px solid #e2e8f0;
-  padding: 3px 9px;
-  border-radius: 6px;
-  font-size: 0.72rem;
-  font-weight: 600;
-  white-space: nowrap;
-  cursor: pointer;
-  transition: all 0.15s ease;
-  flex-shrink: 0;
-}
-
-.loc-chip-btn:hover {
-  background: #f0fdf4;
-  color: #16a34a;
-  border-color: #86efac;
-}
-
-.loc-chip-btn.chip-active {
-  background: #16a34a;
-  color: #ffffff;
-  border-color: #16a34a;
-  font-weight: 700;
-}
-
-/* Address Tag & Details Bar */
-.loc-tags-toggle-bar {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 0.5rem;
-  border-top: 1px dashed #e2e8f0;
-  padding-top: 0.6rem;
-  flex-wrap: wrap;
-}
-
-.loc-tags-list {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-}
-
-.loc-tag-pill {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  background: #f1f5f9;
-  color: #475569;
-  border: 1px solid transparent;
-  padding: 3px 8px;
-  border-radius: 6px;
-  font-size: 0.7rem;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.15s ease;
-}
-
-.loc-tag-pill:hover {
-  background: #e2e8f0;
-  color: #0f172a;
-}
-
-.loc-tag-pill.active {
-  background: #dcfce7;
-  color: #15803d;
-  border-color: #86efac;
-  font-weight: 700;
-}
-
-.loc-details-toggle-btn {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  background: transparent;
-  border: none;
-  color: #2563eb;
-  font-size: 0.72rem;
-  font-weight: 700;
-  cursor: pointer;
-  padding: 2px 4px;
-  transition: color 0.15s ease;
-}
-
-.loc-details-toggle-btn:hover {
-  color: #1d4ed8;
-  text-decoration: underline;
-}
-
-/* Inline Expandable Building Details */
+/* Mandatory Building & Floor Form */
 .loc-inline-details-drawer {
-  background: #f8fafc;
+  background: #ffffff;
   border: 1px solid #e2e8f0;
-  border-radius: 10px;
-  padding: 0.65rem;
-  animation: locSlideDown 0.15s ease;
-}
-
-@keyframes locSlideDown {
-  0% { opacity: 0; transform: translateY(-4px); }
-  100% { opacity: 1; transform: translateY(0); }
+  border-radius: 12px;
+  padding: 0.75rem;
 }
 
 .loc-inline-grid {
   display: flex;
   flex-direction: column;
-  gap: 0.45rem;
+  gap: 0.55rem;
 }
 
 .loc-inline-row-2 {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 0.45rem;
+  gap: 0.55rem;
+}
+
+.loc-field-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.loc-field-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: #334155;
+}
+
+.req-star {
+  color: #dc2626;
+  font-weight: 800;
 }
 
 .loc-input {
   width: 100%;
-  background: #ffffff;
-  border: 1px solid #cbd5e1;
+  background: #f8fafc;
+  border: 1.5px solid #cbd5e1;
   border-radius: 8px;
   padding: 0.45rem 0.65rem;
-  font-size: 0.78rem;
+  font-size: 0.82rem;
   color: #0f172a;
   box-sizing: border-box;
   outline: none;
-  transition: border-color 0.15s ease;
+  transition: all 0.15s ease;
 }
 
 .loc-input:focus {
   border-color: #16a34a;
+  background: #ffffff;
   box-shadow: 0 0 0 2px rgba(22, 163, 74, 0.12);
 }
 
@@ -429,9 +298,9 @@
   background: #ffffff;
   border-radius: 20px;
   width: 100%;
-  max-width: 620px;
-  height: 85vh;
-  max-height: 680px;
+  max-width: 580px;
+  height: 80vh;
+  max-height: 620px;
   display: flex;
   flex-direction: column;
   overflow: hidden;
@@ -455,26 +324,11 @@
   z-index: 20;
 }
 
-.loc-modal-title-group {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-}
-
 .loc-modal-title {
   font-size: 1rem;
   font-weight: 800;
   color: #0f172a;
   margin: 0;
-}
-
-.loc-radius-badge {
-  font-size: 0.68rem;
-  font-weight: 700;
-  background: #dcfce7;
-  color: #15803d;
-  padding: 2px 7px;
-  border-radius: 999px;
 }
 
 .loc-close-btn {
@@ -496,80 +350,7 @@
   color: #ef4444;
 }
 
-/* Search Bar Overlay */
-.loc-search-overlay {
-  position: absolute;
-  top: 56px;
-  left: 12px;
-  right: 12px;
-  z-index: 30;
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-}
-
-.loc-search-input-box {
-  display: flex;
-  align-items: center;
-  background: #ffffff;
-  border-radius: 12px;
-  padding: 0 10px;
-  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.12);
-  border: 1px solid rgba(0, 0, 0, 0.08);
-  height: 40px;
-}
-
-.loc-search-ico {
-  color: #64748b;
-  margin-right: 6px;
-  flex-shrink: 0;
-}
-
-.loc-search-field {
-  flex: 1;
-  border: none;
-  outline: none;
-  font-size: 0.85rem;
-  font-weight: 600;
-  color: #0f172a;
-  background: transparent;
-}
-
-.loc-modal-quick-chips {
-  display: flex;
-  align-items: center;
-  gap: 5px;
-  overflow-x: auto;
-  scrollbar-width: none;
-  padding: 2px 2px;
-}
-
-.loc-modal-quick-chips::-webkit-scrollbar {
-  display: none;
-}
-
-.loc-modal-chip {
-  background: rgba(255, 255, 255, 0.95);
-  backdrop-filter: blur(4px);
-  color: #1e293b;
-  border: 1px solid rgba(0, 0, 0, 0.08);
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
-  padding: 3px 8px;
-  border-radius: 6px;
-  font-size: 0.7rem;
-  font-weight: 700;
-  white-space: nowrap;
-  cursor: pointer;
-  transition: all 0.15s ease;
-}
-
-.loc-modal-chip:hover {
-  background: #16a34a;
-  color: #ffffff;
-  border-color: #16a34a;
-}
-
-/* Map Frame & Pin Center Physics */
+/* Map Frame & Center Pin */
 .loc-map-frame {
   position: relative;
   flex: 1;
@@ -669,33 +450,6 @@
   border-color: #93c5fd;
 }
 
-.loc-map-dist-pill {
-  position: absolute;
-  bottom: 16px;
-  left: 14px;
-  background: rgba(15, 23, 42, 0.85);
-  color: #ffffff;
-  backdrop-filter: blur(6px);
-  -webkit-backdrop-filter: blur(6px);
-  padding: 4px 10px;
-  border-radius: 20px;
-  font-size: 0.72rem;
-  font-weight: 700;
-  z-index: 50;
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
-}
-
-.loc-map-dist-pill.dist-in {
-  background: rgba(22, 163, 74, 0.9);
-}
-
-.loc-map-dist-pill.dist-out {
-  background: rgba(220, 38, 38, 0.9);
-}
-
 /* Modal Bottom Confirm Sheet */
 .loc-modal-footer {
   padding: 0.85rem 1.15rem;
@@ -729,19 +483,6 @@
   text-overflow: ellipsis;
 }
 
-.loc-footer-dist-sub {
-  font-size: 0.72rem;
-  font-weight: 600;
-}
-
-.loc-footer-dist-sub.sub-in {
-  color: #16a34a;
-}
-
-.loc-footer-dist-sub.sub-out {
-  color: #dc2626;
-}
-
 .loc-modal-tags-row {
   display: flex;
   align-items: center;
@@ -757,10 +498,10 @@
 .loc-input-sm {
   width: 100%;
   background: #f8fafc;
-  border: 1px solid #e2e8f0;
+  border: 1.5px solid #cbd5e1;
   border-radius: 8px;
-  padding: 0.4rem 0.6rem;
-  font-size: 0.78rem;
+  padding: 0.45rem 0.6rem;
+  font-size: 0.8rem;
   color: #0f172a;
   box-sizing: border-box;
   outline: none;
@@ -806,9 +547,9 @@
 /* Responsive Tweaks */
 @media (max-width: 640px) {
   .loc-modal-dialog {
-    height: 90vh;
+    height: 85vh;
     border-radius: 16px 16px 0 0;
-    max-height: 90vh;
+    max-height: 85vh;
   }
   
   .loc-modal-overlay {

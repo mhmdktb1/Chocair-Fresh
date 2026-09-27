@@ -1,35 +1,20 @@
 import React, { useEffect, useMemo, useRef, useState, useCallback } from "react";
 import { createPortal } from "react-dom";
-import { GoogleMap, useJsApiLoader, Autocomplete, Circle, Marker } from "@react-google-maps/api";
+import { GoogleMap, useJsApiLoader, Circle, Marker } from "@react-google-maps/api";
 import { 
-  MapPin, Navigation, Crosshair, Search, Building, 
-  Layers, Home, Briefcase, Compass, Check, X, 
-  AlertTriangle, Store, Loader2, ChevronDown, ChevronUp, 
-  Edit3, Sparkles
+  MapPin, Crosshair, Building, Layers, Home, 
+  Briefcase, Compass, Check, X, AlertTriangle, 
+  Store, Loader2
 } from "lucide-react";
 import { toast } from "react-toastify";
 import {
   STORE_COORDS,
   MAX_DELIVERY_RADIUS_KM,
   calculateDistanceKm,
-  isWithinDeliveryRadius,
-  extractCoordsFromUrl
 } from "../../utils/distanceHelper";
 import "./LocationPicker.css";
 
 const GOOGLE_LIBRARIES = ["places"];
-
-// Preset popular delivery neighborhoods near Chocair Market store
-const QUICK_NEIGHBORHOODS = [
-  { name: "Dbayeh", lat: 33.9525, lng: 35.6020 },
-  { name: "Antelias", lat: 33.9167, lng: 35.5900 },
-  { name: "Naccache", lat: 33.9285, lng: 35.5955 },
-  { name: "Rabieh", lat: 33.9350, lng: 35.6100 },
-  { name: "Awkar", lat: 33.9380, lng: 35.6050 },
-  { name: "Jal El Dib", lat: 33.9120, lng: 35.5800 },
-  { name: "Zalka", lat: 33.9000, lng: 35.5700 },
-  { name: "Store Hub", lat: STORE_COORDS.lat, lng: STORE_COORDS.lng },
-];
 
 const ADDRESS_TAGS = [
   { id: "home", label: "Home", icon: Home },
@@ -39,22 +24,19 @@ const ADDRESS_TAGS = [
 ];
 
 /**
- * Modern, Streamlined Location & Delivery Address Selector
- * Features:
- * - 1-Tap Quick Area / Neighborhood chips (Dbayeh, Antelias, Naccache, etc.)
- * - 1-Tap Instant GPS "Locate Me" button right on the card
- * - Address Tag pills (Home, Work, Apt, Other)
- * - Compact Inline & Modal Building / Floor / Apt / Note fields
- * - Interactive Google Map with live 4km radius & store pin
- * - Zero text clutter & clear visual status badges
+ * Clean & Fast Delivery Location Picker
+ * - Building & Floor are mandatory fields
+ * - Fast GPS location only when user presses "Locate Me"
+ * - No text clutter (no "detecting area", no distance from store)
+ * - Map modal without search bar or quick areas
  */
-const LocationPicker = ({ onLocationSelect, initialLocation, autoLocate = true }) => {
+const LocationPicker = ({ onLocationSelect, initialLocation, autoLocate = false }) => {
   const defaultCenter = useMemo(() => ({ lat: STORE_COORDS.lat, lng: STORE_COORDS.lng }), []);
   const [selectedCoords, setSelectedCoords] = useState(null);
   const [areaAddress, setAreaAddress] = useState("");
   const [selectedTag, setSelectedTag] = useState("home");
   
-  // Building & floor details
+  // Building & floor details (Building and Floor are mandatory)
   const [buildingDetails, setBuildingDetails] = useState({
     building: "",
     floor: "",
@@ -62,21 +44,14 @@ const LocationPicker = ({ onLocationSelect, initialLocation, autoLocate = true }
     landmark: "",
   });
 
-  // UI state
-  const [showDetailsInline, setShowDetailsInline] = useState(false);
-  const [isAutoLocating, setIsAutoLocating] = useState(false);
-  const [hasAutoLocated, setHasAutoLocated] = useState(false);
   const [isLocatingCard, setIsLocatingCard] = useState(false);
-
-  // Modals state
+  const [isLocatingModal, setIsLocatingModal] = useState(false);
   const [showMapModal, setShowMapModal] = useState(false);
   
   // Temp states for map modal
   const [tempCoords, setTempCoords] = useState(defaultCenter);
   const [tempAddress, setTempAddress] = useState("");
-  const [isAddressResolving, setIsAddressResolving] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
-  const [isLocatingModal, setIsLocatingModal] = useState(false);
   const [tempTag, setTempTag] = useState("home");
   const [tempDetails, setTempDetails] = useState({
     building: "",
@@ -87,7 +62,6 @@ const LocationPicker = ({ onLocationSelect, initialLocation, autoLocate = true }
 
   const mapRef = useRef(null);
   const geocoderRef = useRef(null);
-  const autocompleteRef = useRef(null);
   const lastGeocodeIdRef = useRef(0);
   const dragTimeoutRef = useRef(null);
 
@@ -126,25 +100,12 @@ const LocationPicker = ({ onLocationSelect, initialLocation, autoLocate = true }
       if (tagObj) parts.push(`[${tagObj.label}]`);
     }
     if (baseArea) parts.push(baseArea);
-    if (details.building) parts.push(`Bldg: ${details.building}`);
-    if (details.floor) parts.push(`Fl: ${details.floor}`);
-    if (details.apartment) parts.push(`Apt: ${details.apartment}`);
-    if (details.landmark) parts.push(`Note: ${details.landmark}`);
+    if (details.building?.trim()) parts.push(`Bldg: ${details.building.trim()}`);
+    if (details.floor?.trim()) parts.push(`Fl: ${details.floor.trim()}`);
+    if (details.apartment?.trim()) parts.push(`Apt: ${details.apartment.trim()}`);
+    if (details.landmark?.trim()) parts.push(`Note: ${details.landmark.trim()}`);
     return parts.join(", ");
   }, []);
-
-  const hasBuildingDetails = Boolean(
-    buildingDetails.building || buildingDetails.floor || buildingDetails.apartment || buildingDetails.landmark
-  );
-
-  const buildingSummary = useMemo(() => {
-    const parts = [];
-    if (buildingDetails.building) parts.push(buildingDetails.building);
-    if (buildingDetails.floor) parts.push(`Fl ${buildingDetails.floor}`);
-    if (buildingDetails.apartment) parts.push(`Apt ${buildingDetails.apartment}`);
-    if (buildingDetails.landmark) parts.push(buildingDetails.landmark);
-    return parts.join(" • ");
-  }, [buildingDetails]);
 
   // Reverse geocoding helper
   const reverseGeocode = useCallback((loc, callback) => {
@@ -157,13 +118,9 @@ const LocationPicker = ({ onLocationSelect, initialLocation, autoLocate = true }
       return;
     }
 
-    setIsAddressResolving(true);
     const geocodeId = ++lastGeocodeIdRef.current;
-    
     geocoderRef.current.geocode({ location: loc }, (results, status) => {
       if (geocodeId !== lastGeocodeIdRef.current) return;
-      setIsAddressResolving(false);
-
       if (status === "OK" && results?.[0]?.formatted_address) {
         let formatted = results[0].formatted_address;
         formatted = formatted.replace(/^[A-Z0-9\+]{4,}\+?[A-Z0-9]*,?\s*/i, '');
@@ -177,6 +134,7 @@ const LocationPicker = ({ onLocationSelect, initialLocation, autoLocate = true }
   // Sync back to parent when details or address changes
   const notifyParent = useCallback((addr, coords, details, tag, dist, outOfRange, src = "map") => {
     const full = composeFullAddress(addr, details, tag);
+    const hasRequired = Boolean(details.building?.trim() && details.floor?.trim());
     onLocationSelect?.({
       address: full,
       lat: coords?.lat ?? null,
@@ -186,10 +144,15 @@ const LocationPicker = ({ onLocationSelect, initialLocation, autoLocate = true }
       source: src,
       tag,
       details,
+      building: details.building?.trim() || "",
+      floor: details.floor?.trim() || "",
+      apartment: details.apartment?.trim() || "",
+      landmark: details.landmark?.trim() || "",
+      isComplete: Boolean(addr && hasRequired && !outOfRange),
     });
   }, [composeFullAddress, onLocationSelect]);
 
-  // Auto-detect GPS on initial mount if enabled
+  // Initialize with initialLocation if given
   useEffect(() => {
     if (initialLocation) {
       if (typeof initialLocation === "string" && initialLocation.trim() !== "") {
@@ -207,37 +170,9 @@ const LocationPicker = ({ onLocationSelect, initialLocation, autoLocate = true }
           setSelectedCoords(loc);
           setTempCoords(loc);
         }
-        return;
       }
     }
-
-    if (autoLocate && !hasAutoLocated && navigator.geolocation) {
-      setIsAutoLocating(true);
-      navigator.geolocation.getCurrentPosition(
-        (pos) => {
-          setIsAutoLocating(false);
-          setHasAutoLocated(true);
-          const userLoc = { lat: pos.coords.latitude, lng: pos.coords.longitude };
-          const dist = calculateDistanceKm(STORE_COORDS.lat, STORE_COORDS.lng, userLoc.lat, userLoc.lng);
-          const outOfRange = dist != null && dist > MAX_DELIVERY_RADIUS_KM;
-
-          setSelectedCoords(userLoc);
-          setTempCoords(userLoc);
-
-          reverseGeocode(userLoc, (addr) => {
-            setAreaAddress(addr);
-            setTempAddress(addr);
-            notifyParent(addr, userLoc, buildingDetails, selectedTag, dist, outOfRange, "gps");
-          });
-        },
-        () => {
-          setIsAutoLocating(false);
-          setHasAutoLocated(true);
-        },
-        { enableHighAccuracy: true, timeout: 8000, maximumAge: 60000 }
-      );
-    }
-  }, [initialLocation, autoLocate, hasAutoLocated, reverseGeocode, notifyParent, buildingDetails, selectedTag]);
+  }, [initialLocation]);
 
   // Map load callback
   const onMapLoad = useCallback((map) => {
@@ -269,7 +204,7 @@ const LocationPicker = ({ onLocationSelect, initialLocation, autoLocate = true }
       const newLoc = { lat: center.lat(), lng: center.lng() };
       setTempCoords(newLoc);
       reverseGeocode(newLoc, (addr) => setTempAddress(addr));
-    }, 120);
+    }, 100);
   }, [reverseGeocode]);
 
   const handleMapClick = useCallback((e) => {
@@ -279,47 +214,7 @@ const LocationPicker = ({ onLocationSelect, initialLocation, autoLocate = true }
     }
   }, []);
 
-  const onAutocompleteLoad = useCallback((autocomplete) => {
-    autocompleteRef.current = autocomplete;
-  }, []);
-
-  const onPlaceChanged = useCallback(() => {
-    if (autocompleteRef.current) {
-      const place = autocompleteRef.current.getPlace();
-      if (place?.geometry?.location) {
-        const lat = place.geometry.location.lat();
-        const lng = place.geometry.location.lng();
-        const loc = { lat, lng };
-        setTempCoords(loc);
-        mapRef.current?.panTo(loc);
-        mapRef.current?.setZoom(16);
-        const resolved = place.formatted_address || place.name || `${lat.toFixed(4)}, ${lng.toFixed(4)}`;
-        setTempAddress(resolved);
-      }
-    }
-  }, []);
-
-  // Quick preset area selection (Instant 1-Tap)
-  const handleSelectQuickArea = (area) => {
-    const loc = { lat: area.lat, lng: area.lng };
-    const dist = calculateDistanceKm(STORE_COORDS.lat, STORE_COORDS.lng, loc.lat, loc.lng);
-    const outOfRange = dist != null && dist > MAX_DELIVERY_RADIUS_KM;
-
-    setSelectedCoords(loc);
-    setTempCoords(loc);
-    setAreaAddress(`${area.name}, Lebanon`);
-    setTempAddress(`${area.name}, Lebanon`);
-
-    if (mapRef.current) {
-      mapRef.current.panTo(loc);
-      mapRef.current.setZoom(15);
-    }
-
-    notifyParent(`${area.name}, Lebanon`, loc, buildingDetails, selectedTag, dist, outOfRange, "preset");
-    toast.success(`📍 ${area.name} selected (${dist ?? 0} km)`, { autoClose: 2000 });
-  };
-
-  // Instant 1-tap GPS locate from main card or modal
+  // Fast GPS locate ONLY when user presses button
   const handleGpsLocate = useCallback((isModal = false) => {
     if (!navigator.geolocation) {
       toast.warn("Geolocation is not supported on this device.");
@@ -329,40 +224,53 @@ const LocationPicker = ({ onLocationSelect, initialLocation, autoLocate = true }
     if (isModal) setIsLocatingModal(true);
     else setIsLocatingCard(true);
 
+    const onPosSuccess = (pos) => {
+      if (isModal) setIsLocatingModal(false);
+      else setIsLocatingCard(false);
+
+      const loc = { lat: pos.coords.latitude, lng: pos.coords.longitude };
+      const dist = calculateDistanceKm(STORE_COORDS.lat, STORE_COORDS.lng, loc.lat, loc.lng);
+      const outOfRange = dist != null && dist > MAX_DELIVERY_RADIUS_KM;
+
+      setSelectedCoords(loc);
+      setTempCoords(loc);
+
+      if (mapRef.current) {
+        mapRef.current.panTo(loc);
+        mapRef.current.setZoom(16);
+      }
+
+      reverseGeocode(loc, (addr) => {
+        setAreaAddress(addr);
+        setTempAddress(addr);
+        notifyParent(addr, loc, buildingDetails, selectedTag, dist, outOfRange, "gps");
+      });
+    };
+
+    const onPosError = (err) => {
+      if (err.code === 3) {
+        navigator.geolocation.getCurrentPosition(
+          onPosSuccess,
+          () => {
+            if (isModal) setIsLocatingModal(false);
+            else setIsLocatingCard(false);
+            toast.error("Could not get GPS location. Please pin on map.");
+          },
+          { enableHighAccuracy: false, timeout: 3500, maximumAge: 300000 }
+        );
+        return;
+      }
+
+      if (isModal) setIsLocatingModal(false);
+      else setIsLocatingCard(false);
+      if (err.code === 1) toast.error("Please allow location access in browser settings.");
+      else toast.error("Could not retrieve GPS location.");
+    };
+
     navigator.geolocation.getCurrentPosition(
-      (pos) => {
-        if (isModal) setIsLocatingModal(false);
-        else setIsLocatingCard(false);
-
-        const loc = { lat: pos.coords.latitude, lng: pos.coords.longitude };
-        const dist = calculateDistanceKm(STORE_COORDS.lat, STORE_COORDS.lng, loc.lat, loc.lng);
-        const outOfRange = dist != null && dist > MAX_DELIVERY_RADIUS_KM;
-
-        setSelectedCoords(loc);
-        setTempCoords(loc);
-
-        if (mapRef.current) {
-          mapRef.current.panTo(loc);
-          mapRef.current.setZoom(16);
-        }
-
-        reverseGeocode(loc, (addr) => {
-          setAreaAddress(addr);
-          setTempAddress(addr);
-          notifyParent(addr, loc, buildingDetails, selectedTag, dist, outOfRange, "gps");
-          if (!isModal) {
-            toast.success(`📍 Current location detected (${dist ?? 0} km)`, { autoClose: 2500 });
-          }
-        });
-      },
-      (err) => {
-        if (isModal) setIsLocatingModal(false);
-        else setIsLocatingCard(false);
-        let msg = "Could not retrieve GPS location.";
-        if (err.code === 1) msg = "Please enable location access in browser settings.";
-        toast.error(msg);
-      },
-      { enableHighAccuracy: true, timeout: 12000, maximumAge: 0 }
+      onPosSuccess,
+      onPosError,
+      { enableHighAccuracy: true, timeout: 5000, maximumAge: 60000 }
     );
   }, [reverseGeocode, notifyParent, buildingDetails, selectedTag]);
 
@@ -379,7 +287,7 @@ const LocationPicker = ({ onLocationSelect, initialLocation, autoLocate = true }
   const handleOpenMap = () => {
     const startPos = selectedCoords || defaultCenter;
     setTempCoords(startPos);
-    setTempAddress(areaAddress || "Locating...");
+    setTempAddress(areaAddress || "Pinned Location");
     setTempTag(selectedTag);
     setTempDetails({ ...buildingDetails });
     setShowMapModal(true);
@@ -388,11 +296,12 @@ const LocationPicker = ({ onLocationSelect, initialLocation, autoLocate = true }
   // Confirm location from modal
   const handleConfirmModal = () => {
     if (isTempOutOfRange) {
-      toast.error(
-        `Delivery is only within 4 km of our store (${tempDistanceKm} km away). Please choose a closer spot.`,
-        { autoClose: 4000 }
-      );
+      toast.error("Delivery is only available within 4 km of our store. Please choose a closer location.");
       return;
+    }
+
+    if (!tempDetails.building?.trim() || !tempDetails.floor?.trim()) {
+      toast.warn("Building and Floor are required.");
     }
 
     const chosenArea = tempAddress || "Pinned Location";
@@ -403,7 +312,6 @@ const LocationPicker = ({ onLocationSelect, initialLocation, autoLocate = true }
     setShowMapModal(false);
 
     notifyParent(chosenArea, tempCoords, tempDetails, tempTag, tempDistanceKm, false, "map");
-    toast.success("Delivery location saved!", { autoClose: 2000 });
   };
 
   // Update inline building details
@@ -423,23 +331,11 @@ const LocationPicker = ({ onLocationSelect, initialLocation, autoLocate = true }
   if (loadError) {
     return (
       <div className="loc-clean-card">
-        <div className="loc-quick-chips">
-          {QUICK_NEIGHBORHOODS.slice(0, 5).map((q) => (
-            <button
-              key={q.name}
-              type="button"
-              className="loc-chip-btn"
-              onClick={() => handleSelectQuickArea(q)}
-            >
-              {q.name}
-            </button>
-          ))}
-        </div>
         <div className="loc-fallback-input-wrap">
           <MapPin size={16} className="loc-fallback-icon" />
           <input
             type="text"
-            placeholder="Type your area or street name..."
+            placeholder="Enter delivery area / street..."
             value={areaAddress}
             onChange={(e) => {
               const v = e.target.value;
@@ -447,6 +343,24 @@ const LocationPicker = ({ onLocationSelect, initialLocation, autoLocate = true }
               notifyParent(v, null, buildingDetails, selectedTag, null, false, "manual");
             }}
             className="loc-fallback-input"
+          />
+        </div>
+        <div className="loc-inline-row-2">
+          <input
+            type="text"
+            placeholder="Building *"
+            required
+            value={buildingDetails.building}
+            onChange={(e) => handleDetailChange("building", e.target.value)}
+            className="loc-input"
+          />
+          <input
+            type="text"
+            placeholder="Floor *"
+            required
+            value={buildingDetails.floor}
+            onChange={(e) => handleDetailChange("floor", e.target.value)}
+            className="loc-input"
           />
         </div>
       </div>
@@ -460,89 +374,8 @@ const LocationPicker = ({ onLocationSelect, initialLocation, autoLocate = true }
       {/* 1. Main Clean Card */}
       <div className={`loc-clean-card ${isSelectedOutOfRange ? "is-out" : areaAddress ? "is-ready" : ""}`}>
         
-        {/* Card Header & Fast Action Buttons */}
+        {/* Card Header: Address Tag Pills & Fast Action Buttons */}
         <div className="loc-card-header">
-          <div className="loc-header-left">
-            <span className="loc-badge-tag">
-              <TagIcon size={12} />
-              {ADDRESS_TAGS.find(t => t.id === selectedTag)?.label || "Delivery"}
-            </span>
-            {currentDistanceKm != null && (
-              <span className={`loc-distance-chip ${isSelectedOutOfRange ? "dist-out" : "dist-in"}`}>
-                {isSelectedOutOfRange ? `⚠️ ${currentDistanceKm} km (Max 4km)` : `✓ ${currentDistanceKm} km away`}
-              </span>
-            )}
-          </div>
-
-          <div className="loc-header-actions">
-            {/* 1-Tap GPS locate button */}
-            <button
-              type="button"
-              className={`loc-action-btn loc-gps-btn ${isLocatingCard ? "is-spinning" : ""}`}
-              onClick={() => handleGpsLocate(false)}
-              disabled={isLocatingCard || isAutoLocating}
-              title="Locate my position automatically"
-            >
-              {isLocatingCard || isAutoLocating ? (
-                <Loader2 size={13} className="animate-spin" />
-              ) : (
-                <Crosshair size={13} />
-              )}
-              <span>Locate Me</span>
-            </button>
-
-            {/* Open Map Modal button */}
-            <button
-              type="button"
-              className="loc-action-btn loc-map-btn"
-              onClick={handleOpenMap}
-              title="Choose on map"
-            >
-              <MapPin size={13} />
-              <span>Map</span>
-            </button>
-          </div>
-        </div>
-
-        {/* Selected Address Display */}
-        <div className="loc-address-row" onClick={handleOpenMap} role="button" tabIndex={0}>
-          <div className={`loc-pin-box ${isSelectedOutOfRange ? "pin-box-out" : ""}`}>
-            <MapPin size={18} />
-          </div>
-          <div className="loc-address-content">
-            <div className={`loc-address-title ${!areaAddress ? "placeholder" : ""}`}>
-              {isAutoLocating ? "Detecting GPS location..." : areaAddress || "Select delivery location..."}
-            </div>
-            {hasBuildingDetails ? (
-              <div className="loc-address-subtitle">{buildingSummary}</div>
-            ) : (
-              <div className="loc-address-hint">Tap to adjust or add building/floor details</div>
-            )}
-          </div>
-        </div>
-
-        {/* 1-Tap Quick Area Preset Chips (Dbayeh, Antelias, etc.) */}
-        <div className="loc-quick-areas-wrapper">
-          <span className="loc-quick-label">Quick Areas:</span>
-          <div className="loc-quick-chips-scroll">
-            {QUICK_NEIGHBORHOODS.map((q) => {
-              const isCurrent = areaAddress.toLowerCase().includes(q.name.toLowerCase());
-              return (
-                <button
-                  key={q.name}
-                  type="button"
-                  className={`loc-chip-btn ${isCurrent ? "chip-active" : ""}`}
-                  onClick={() => handleSelectQuickArea(q)}
-                >
-                  {q.name}
-                </button>
-              );
-            })}
-          </div>
-        </div>
-
-        {/* Quick Address Tag & Building Toggle Bar */}
-        <div className="loc-tags-toggle-bar">
           <div className="loc-tags-list">
             {ADDRESS_TAGS.map((t) => {
               const Icon = t.icon;
@@ -561,35 +394,84 @@ const LocationPicker = ({ onLocationSelect, initialLocation, autoLocate = true }
             })}
           </div>
 
-          <button
-            type="button"
-            className="loc-details-toggle-btn"
-            onClick={() => setShowDetailsInline(!showDetailsInline)}
-          >
-            <span>{hasBuildingDetails ? "Edit Details" : "+ Building/Floor"}</span>
-            {showDetailsInline ? <ChevronUp size={13} /> : <ChevronDown size={13} />}
-          </button>
+          <div className="loc-header-actions">
+            {/* Fast 1-Tap Locate Me Button */}
+            <button
+              type="button"
+              className={`loc-action-btn loc-gps-btn ${isLocatingCard ? "is-spinning" : ""}`}
+              onClick={() => handleGpsLocate(false)}
+              disabled={isLocatingCard}
+              title="Locate my position"
+            >
+              {isLocatingCard ? (
+                <Loader2 size={13} className="animate-spin" />
+              ) : (
+                <Crosshair size={13} />
+              )}
+              <span>Locate Me</span>
+            </button>
+
+            {/* Map Pin Button */}
+            <button
+              type="button"
+              className="loc-action-btn loc-map-btn"
+              onClick={handleOpenMap}
+              title="Choose location on map"
+            >
+              <MapPin size={13} />
+              <span>Map</span>
+            </button>
+          </div>
         </div>
 
-        {/* Expandable Fast Building Details (Inline) */}
-        {showDetailsInline && (
-          <div className="loc-inline-details-drawer">
-            <div className="loc-inline-grid">
-              <input
-                type="text"
-                placeholder="Building / Street name"
-                value={buildingDetails.building}
-                onChange={(e) => handleDetailChange("building", e.target.value)}
-                className="loc-input"
-              />
-              <div className="loc-inline-row-2">
+        {/* Selected Area / Pin Row */}
+        <div className="loc-address-row" onClick={handleOpenMap} role="button" tabIndex={0}>
+          <div className={`loc-pin-box ${isSelectedOutOfRange ? "pin-box-out" : ""}`}>
+            <MapPin size={18} />
+          </div>
+          <div className="loc-address-content">
+            <div className={`loc-address-title ${!areaAddress ? "placeholder" : ""}`}>
+              {areaAddress || "Select delivery location on map..."}
+            </div>
+          </div>
+        </div>
+
+        {/* Mandatory Building & Floor Fields (Clean & Direct) */}
+        <div className="loc-inline-details-drawer">
+          <div className="loc-inline-grid">
+            <div className="loc-inline-row-2">
+              <div className="loc-field-wrap">
+                <label className="loc-field-label">
+                  <Building size={12} /> Building <span className="req-star">*</span>
+                </label>
                 <input
                   type="text"
+                  required
+                  placeholder="Building name"
+                  value={buildingDetails.building}
+                  onChange={(e) => handleDetailChange("building", e.target.value)}
+                  className={`loc-input ${!buildingDetails.building ? "input-missing" : ""}`}
+                />
+              </div>
+
+              <div className="loc-field-wrap">
+                <label className="loc-field-label">
+                  <Layers size={12} /> Floor <span className="req-star">*</span>
+                </label>
+                <input
+                  type="text"
+                  required
                   placeholder="Floor (e.g. 2nd)"
                   value={buildingDetails.floor}
                   onChange={(e) => handleDetailChange("floor", e.target.value)}
-                  className="loc-input"
+                  className={`loc-input ${!buildingDetails.floor ? "input-missing" : ""}`}
                 />
+              </div>
+            </div>
+
+            <div className="loc-inline-row-2">
+              <div className="loc-field-wrap">
+                <label className="loc-field-label">Apartment</label>
                 <input
                   type="text"
                   placeholder="Apt (e.g. 4B)"
@@ -598,29 +480,32 @@ const LocationPicker = ({ onLocationSelect, initialLocation, autoLocate = true }
                   className="loc-input"
                 />
               </div>
-              <input
-                type="text"
-                placeholder="Delivery note / Landmark (Optional)"
-                value={buildingDetails.landmark}
-                onChange={(e) => handleDetailChange("landmark", e.target.value)}
-                className="loc-input"
-              />
+
+              <div className="loc-field-wrap">
+                <label className="loc-field-label">
+                  <Compass size={12} /> Landmark / Note
+                </label>
+                <input
+                  type="text"
+                  placeholder="e.g. Near pharmacy"
+                  value={buildingDetails.landmark}
+                  onChange={(e) => handleDetailChange("landmark", e.target.value)}
+                  className="loc-input"
+                />
+              </div>
             </div>
           </div>
-        )}
+        </div>
       </div>
 
-      {/* 2. Interactive Map Modal */}
+      {/* 2. Map Modal (Clean, No Search, No Quick Areas) */}
       {showMapModal && typeof document !== "undefined" && createPortal(
         <div className="loc-modal-overlay" onClick={() => setShowMapModal(false)}>
           <div className="loc-modal-dialog" onClick={(e) => e.stopPropagation()}>
             
             {/* Modal Header */}
             <div className="loc-modal-head">
-              <div className="loc-modal-title-group">
-                <h3 className="loc-modal-title">Pin Delivery Location</h3>
-                <span className="loc-radius-badge">4 km Radius</span>
-              </div>
+              <h3 className="loc-modal-title">Pin Delivery Location</h3>
               <button 
                 type="button" 
                 className="loc-close-btn"
@@ -631,55 +516,9 @@ const LocationPicker = ({ onLocationSelect, initialLocation, autoLocate = true }
               </button>
             </div>
 
-            {/* Places Autocomplete Search Bar */}
-            {isLoaded && (
-              <div className="loc-search-overlay">
-                <Autocomplete
-                  onLoad={onAutocompleteLoad}
-                  onPlaceChanged={onPlaceChanged}
-                  options={{ componentRestrictions: { country: "lb" } }}
-                >
-                  <div className="loc-search-input-box">
-                    <Search size={15} className="loc-search-ico" />
-                    <input
-                      type="text"
-                      placeholder="Search street, area or landmark..."
-                      className="loc-search-field"
-                      onKeyDown={(e) => {
-                        if (e.key === "Enter") {
-                          e.preventDefault();
-                          e.stopPropagation();
-                        }
-                      }}
-                    />
-                  </div>
-                </Autocomplete>
-
-                {/* Quick Area Chips in Search Bar */}
-                <div className="loc-modal-quick-chips">
-                  {QUICK_NEIGHBORHOODS.slice(0, 6).map((q) => (
-                    <button
-                      key={q.name}
-                      type="button"
-                      className="loc-modal-chip"
-                      onClick={() => {
-                        const loc = { lat: q.lat, lng: q.lng };
-                        setTempCoords(loc);
-                        setTempAddress(`${q.name}, Lebanon`);
-                        mapRef.current?.panTo(loc);
-                        mapRef.current?.setZoom(15);
-                      }}
-                    >
-                      {q.name}
-                    </button>
-                  ))}
-                </div>
-              </div>
-            )}
-
             {/* Map Canvas Viewport */}
             <div className="loc-map-frame">
-              {/* Center Pin & Animated Drop */}
+              {/* Center Pin */}
               <div className="loc-center-pin-hub">
                 <div className={`loc-pin-svg-wrap ${isDragging ? "lifting" : "dropped"}`}>
                   <svg 
@@ -700,13 +539,13 @@ const LocationPicker = ({ onLocationSelect, initialLocation, autoLocate = true }
                 <div className="loc-pin-shadow" />
               </div>
 
-              {/* Floating Map Action Buttons */}
+              {/* Floating Map Actions */}
               <div className="loc-map-floating-actions">
                 <button
                   type="button"
                   className="loc-fab-btn"
                   onClick={handleCenterOnStore}
-                  title="Center on Store Hub"
+                  title="Store Location"
                 >
                   <Store size={17} />
                 </button>
@@ -715,7 +554,7 @@ const LocationPicker = ({ onLocationSelect, initialLocation, autoLocate = true }
                   className={`loc-fab-btn ${isLocatingModal ? "is-locating" : ""}`}
                   onClick={() => handleGpsLocate(true)}
                   disabled={isLocatingModal}
-                  title="My GPS Position"
+                  title="Locate Me"
                 >
                   {isLocatingModal ? (
                     <Loader2 size={17} className="animate-spin text-blue-600" />
@@ -723,15 +562,6 @@ const LocationPicker = ({ onLocationSelect, initialLocation, autoLocate = true }
                     <Crosshair size={17} />
                   )}
                 </button>
-              </div>
-
-              {/* Real-time Distance Pill on Map */}
-              <div className={`loc-map-dist-pill ${isTempOutOfRange ? "dist-out" : "dist-in"}`}>
-                {isTempOutOfRange ? (
-                  <>⚠️ {tempDistanceKm} km from store (Outside 4 km)</>
-                ) : (
-                  <>✓ {tempDistanceKm != null ? `${tempDistanceKm} km from store` : "Within 4 km zone"}</>
-                )}
               </div>
 
               {/* Google Map */}
@@ -754,7 +584,7 @@ const LocationPicker = ({ onLocationSelect, initialLocation, autoLocate = true }
                     clickableIcons: false,
                   }}
                 >
-                  {/* Store Radius Ring */}
+                  {/* Delivery Radius Ring */}
                   <Circle
                     center={STORE_COORDS}
                     radius={4000}
@@ -776,16 +606,13 @@ const LocationPicker = ({ onLocationSelect, initialLocation, autoLocate = true }
               )}
             </div>
 
-            {/* Modal Bottom Confirm Sheet */}
+            {/* Modal Bottom Sheet */}
             <div className="loc-modal-footer">
               <div className="loc-footer-addr-row">
                 <MapPin size={17} className={isTempOutOfRange ? "text-red-500" : "text-green-600"} />
                 <div className="loc-footer-addr-info">
                   <span className="loc-footer-addr-text">
-                    {isAddressResolving ? "Detecting area..." : tempAddress || "Pinned Location"}
-                  </span>
-                  <span className={`loc-footer-dist-sub ${isTempOutOfRange ? "sub-out" : "sub-in"}`}>
-                    {isTempOutOfRange ? `Outside 4 km delivery range` : `${tempDistanceKm ?? 0} km from store`}
+                    {tempAddress || "Pinned Location"}
                   </span>
                 </div>
               </div>
@@ -809,22 +636,22 @@ const LocationPicker = ({ onLocationSelect, initialLocation, autoLocate = true }
                 })}
               </div>
 
-              {/* Building & Apt Optional Fields in Modal */}
+              {/* Mandatory Building & Floor inputs in modal */}
               <div className="loc-modal-details-grid">
                 <input
                   type="text"
-                  placeholder="Bldg / Street"
+                  required
+                  placeholder="Building *"
                   value={tempDetails.building}
                   onChange={(e) => setTempDetails({ ...tempDetails, building: e.target.value })}
                   className="loc-input-sm"
                 />
                 <input
                   type="text"
-                  placeholder="Floor / Apt"
-                  value={tempDetails.floor ? `${tempDetails.floor}${tempDetails.apartment ? ` - Apt ${tempDetails.apartment}` : ""}` : tempDetails.apartment}
-                  onChange={(e) => {
-                    setTempDetails({ ...tempDetails, floor: e.target.value });
-                  }}
+                  required
+                  placeholder="Floor *"
+                  value={tempDetails.floor}
+                  onChange={(e) => setTempDetails({ ...tempDetails, floor: e.target.value })}
                   className="loc-input-sm"
                 />
               </div>
@@ -837,7 +664,7 @@ const LocationPicker = ({ onLocationSelect, initialLocation, autoLocate = true }
                 {isTempOutOfRange ? (
                   <>
                     <AlertTriangle size={16} />
-                    <span>Outside 4 km Delivery Zone</span>
+                    <span>Outside Delivery Zone</span>
                   </>
                 ) : (
                   <>
