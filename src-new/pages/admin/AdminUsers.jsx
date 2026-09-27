@@ -1,6 +1,7 @@
 import { useState, useMemo } from "react";
 import { useAdmin } from "../../context/AdminContext";
 import { getUserAvatarUrl } from "../../utils/mascotAvatars";
+import { formatLocationDisplay } from "../../utils/distanceHelper";
 import { 
   Search, 
   Trash2, 
@@ -148,7 +149,7 @@ function AdminUsers() {
                   {user.location && user.location !== "Unknown" && (
                     <div className="user-contact-item">
                       <MapPin size={14} color="#64748b" />
-                      <span>{user.location.startsWith('Lat:') ? 'GPS Pinned Location' : user.location}</span>
+                      <span>{formatLocationDisplay(user.location)}</span>
                     </div>
                   )}
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '0.2rem', paddingTop: '0.35rem', borderTop: '1px solid #e2e8f0' }}>

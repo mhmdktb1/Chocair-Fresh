@@ -28,6 +28,7 @@ import Loading from '../components/common/Loading';
 import { normalizeLebanesePhoneNumber, formatPhoneNumber } from '../utils/phoneUtils';
 import { formatCurrency, formatDate } from '../utils/formatters';
 import { normalizeUnit } from '../utils/unitHelper';
+import { formatLocationDisplay } from '../utils/distanceHelper';
 import { toast } from 'react-toastify';
 import './Profile.css';
 
@@ -747,7 +748,7 @@ const Profile = () => {
               </div>
               <div className="location-preview-content">
                 <span className="location-main-text">
-                  {formData.location ? (formData.location.startsWith('Lat:') ? 'Pinned GPS Location' : formData.location) : 'No primary delivery address set'}
+                  {formData.location ? formatLocationDisplay(formData.location) : 'No primary delivery address set'}
                 </span>
               </div>
               <button 
@@ -1358,7 +1359,7 @@ const Profile = () => {
 
               <div className="hero-tier-tag-wrap">
                 <span className="hero-loc-tag">
-                  <MapPin size={11} /> {user.location ? (user.location.startsWith('Lat:') ? 'Pinned Location' : user.location.slice(0, 24) + (user.location.length > 24 ? '...' : '')) : 'Lebanon'}
+                  <MapPin size={11} /> {user.location ? (formatLocationDisplay(user.location).slice(0, 24) + (formatLocationDisplay(user.location).length > 24 ? '...' : '')) : 'Lebanon'}
                 </span>
               </div>
             </div>

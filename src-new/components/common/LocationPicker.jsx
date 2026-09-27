@@ -11,6 +11,8 @@ import {
   STORE_COORDS,
   MAX_DELIVERY_RADIUS_KM,
   calculateDistanceKm,
+  getNearestAreaName,
+  extractAreaName,
 } from "../../utils/distanceHelper";
 import "./LocationPicker.css";
 
@@ -94,26 +96,32 @@ const LocationPicker = ({ onLocationSelect, initialLocation, autoLocate = false 
     return parts.join(", ");
   }, []);
 
-  // Reverse geocoding helper
+  // Reverse geocoding helper (extracts Area Name)
   const reverseGeocode = useCallback((loc, callback) => {
+    if (!loc || loc.lat == null || loc.lng == null) {
+      callback?.("Dbayeh Area");
+      return;
+    }
+
+    const fallbackArea = getNearestAreaName(loc.lat, loc.lng) || "Dbayeh Area";
+
     if (!geocoderRef.current && window.google?.maps) {
       geocoderRef.current = new window.google.maps.Geocoder();
     }
 
     if (!geocoderRef.current) {
-      callback?.("Pinned Location");
+      callback?.(fallbackArea);
       return;
     }
 
     const geocodeId = ++lastGeocodeIdRef.current;
     geocoderRef.current.geocode({ location: loc }, (results, status) => {
       if (geocodeId !== lastGeocodeIdRef.current) return;
-      if (status === "OK" && results?.[0]?.formatted_address) {
-        let formatted = results[0].formatted_address;
-        formatted = formatted.replace(/^[A-Z0-9\+]{4,}\+?[A-Z0-9]*,?\s*/i, '');
-        callback?.(formatted || "Pinned Location");
+      if (status === "OK" && Array.isArray(results) && results.length > 0) {
+        const areaName = extractAreaName(results, loc);
+        callback?.(areaName || fallbackArea);
       } else {
-        callback?.("Pinned Location");
+        callback?.(fallbackArea);
       }
     });
   }, []);
@@ -272,8 +280,9 @@ const LocationPicker = ({ onLocationSelect, initialLocation, autoLocate = false 
   // Open map modal
   const handleOpenMap = () => {
     const startPos = selectedCoords || defaultCenter;
+    const defaultArea = getNearestAreaName(startPos?.lat, startPos?.lng) || "Dbayeh Area";
     setTempCoords(startPos);
-    setTempAddress(areaAddress || "Pinned Location");
+    setTempAddress(areaAddress || defaultArea);
     setTempDetails({ ...buildingDetails });
     setShowMapModal(true);
   };
@@ -289,7 +298,8 @@ const LocationPicker = ({ onLocationSelect, initialLocation, autoLocate = false 
       toast.warn("Building and Floor are required.");
     }
 
-    const chosenArea = tempAddress || "Pinned Location";
+    const fallbackArea = getNearestAreaName(tempCoords?.lat, tempCoords?.lng) || "Dbayeh Area";
+    const chosenArea = tempAddress || fallbackArea;
     setSelectedCoords(tempCoords);
     setAreaAddress(chosenArea);
     setBuildingDetails(tempDetails);
@@ -574,7 +584,7 @@ const LocationPicker = ({ onLocationSelect, initialLocation, autoLocate = false 
                 <MapPin size={17} className={isTempOutOfRange ? "text-red-500" : "text-green-600"} />
                 <div className="loc-footer-addr-info">
                   <span className="loc-footer-addr-text">
-                    {tempAddress || "Pinned Location"}
+                    {tempAddress || getNearestAreaName(tempCoords?.lat, tempCoords?.lng) || "Select Area"}
                   </span>
                 </div>
               </div>
