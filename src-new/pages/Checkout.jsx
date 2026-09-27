@@ -636,9 +636,7 @@ const Checkout = () => {
                       <AlertTriangle size={18} className="alert-icon-svg" />
                       <div className="alert-text-col">
                         <strong>Delivery Range Exceeded ({formData.distanceKm} km away)</strong>
-                        <span>
-                          We exclusively deliver within 4 km of our store. Please select an address or pin within our 4 km delivery zone to place your order.
-                        </span>
+                        <span>We deliver within 4 km of our store. Please choose a closer location.</span>
                       </div>
                     </div>
                   )}
