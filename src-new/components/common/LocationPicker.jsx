@@ -639,7 +639,7 @@ const LocationPicker = ({ onLocationSelect, initialLocation, autoLocate = true }
                   type="button"
                   className="gmaps-fab-store-btn"
                   onClick={handleCenterOnStore}
-                  title="View Store Location (Hamra)"
+                  title={`Center on Store (${STORE_COORDS.name})`}
                   aria-label="Center on Store Location"
                 >
                   <Store size={18} />

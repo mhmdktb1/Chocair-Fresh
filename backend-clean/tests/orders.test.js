@@ -345,9 +345,9 @@ describe('Order API', () => {
 
   it('DELIVERY RANGE: accepts order within 5km delivery radius', async () => {
     const payload = createOrderData();
-    // Hamra coordinates close to store (~0.5 km)
-    payload.customerInfo.lat = 33.8960;
-    payload.customerInfo.lng = 35.4980;
+    // Antelias / Dbayeh coordinates close to store (~1.0 km)
+    payload.customerInfo.lat = 33.9350;
+    payload.customerInfo.lng = 35.5880;
 
     const res = await request(app).post('/api/orders').send(payload);
     expect(res.status).toBe(201);
@@ -357,9 +357,9 @@ describe('Order API', () => {
 
   it('DELIVERY RANGE: rejects order outside 5km delivery radius with 400 error', async () => {
     const payload = createOrderData();
-    // Jounieh coordinates (~14 km away)
-    payload.customerInfo.lat = 33.9800;
-    payload.customerInfo.lng = 35.6100;
+    // Beirut Hamra coordinates (~11 km away from Dbayeh store)
+    payload.customerInfo.lat = 33.8960;
+    payload.customerInfo.lng = 35.4800;
 
     const res = await request(app).post('/api/orders').send(payload);
     expect(res.status).toBe(400);
@@ -372,7 +372,7 @@ describe('Order API', () => {
 
   it('DELIVERY RANGE: rejects order with googleMapsLink outside 5km radius', async () => {
     const payload = createOrderData();
-    // Tripoli coordinates (~68 km away)
+    // Tripoli coordinates (~60 km away)
     payload.customerInfo.googleMapsLink = 'https://www.google.com/maps/search/?api=1&query=34.4367,35.8497';
 
     const res = await request(app).post('/api/orders').send(payload);

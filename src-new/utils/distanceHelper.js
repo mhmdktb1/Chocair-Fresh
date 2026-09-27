@@ -1,8 +1,9 @@
 export const STORE_COORDS = {
-  lat: 33.8938,
-  lng: 35.5018,
+  lat: 33.94376,
+  lng: 35.59213,
   name: 'Chocair Market "Anas Fruits"',
-  address: 'Beirut, Lebanon'
+  address: 'Chocair Market "Anas Fruits", Beirut, Lebanon',
+  plusCode: 'WHVR+GVR, Beirut, Lebanon'
 };
 
 export const MAX_DELIVERY_RADIUS_KM = 5.0;
