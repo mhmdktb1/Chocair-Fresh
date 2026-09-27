@@ -43,7 +43,7 @@ describe('Product API', () => {
     description: 'Fresh apple',
     image: 'apple.jpg',
     brand: 'Chocair',
-    unit: 'kg'
+    unit: '1kg'
   };
 
   it('GET /api/products - should return empty array initially', async () => {
@@ -264,6 +264,14 @@ describe('Product API', () => {
     expect(expiredProductRes.status).toBe(201);
     expect(expiredProductRes.body.isDiscounted).toBe(false);
     expect(expiredProductRes.body.finalPrice).toBe(10);
+
+    // 4. Automatic inclusion in "Offers" category query
+    const offersRes = await request(app).get('/api/products?category=Offers');
+    expect(offersRes.status).toBe(200);
+    const offerNames = offersRes.body.map(p => p.name);
+    expect(offerNames).toContain('Promo Apples');
+    expect(offerNames).toContain('Fixed Promo Apples');
+    expect(offerNames).not.toContain('Expired Promo Apples');
   });
 
   it('MALFORMED IDS: returns 404 for invalid product IDs', async () => {

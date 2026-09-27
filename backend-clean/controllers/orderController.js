@@ -30,9 +30,16 @@ const addOrderItems = asyncHandler(async (req, res) => {
   try {
     for (const item of orderItems) {
       const productId = item.product || item._id || item.id;
-      const qty = Math.max(1, Number(item.qty || item.quantity) || 1);
+      const rawQty = item.qty !== undefined ? item.qty : item.quantity;
+      const qty = Number(rawQty);
+
+      if (rawQty === undefined || rawQty === null || isNaN(qty) || qty <= 0 || !Number.isInteger(qty)) {
+        res.status(400);
+        throw new Error(`Invalid item quantity for "${item.name || 'Product'}". Quantity must be a positive integer.`);
+      }
 
       if (!productId) {
+        res.status(400);
         throw new Error(`Invalid product reference for item: ${item.name || 'Unknown'}`);
       }
 
@@ -122,19 +129,48 @@ const addOrderItems = asyncHandler(async (req, res) => {
 
 // @desc    Get order by ID
 // @route   GET /api/orders/:id
-// @access  Public
+// @access  Public / Private (Admin or Owner)
 const getOrderById = asyncHandler(async (req, res) => {
   const order = await Order.findById(req.params.id).populate(
     'orderItems.product',
     'name image email'
   );
 
-  if (order) {
-    res.json(order);
-  } else {
+  if (!order) {
     res.status(404);
     throw new Error('Order not found');
   }
+
+  // Check authorization if user context is provided
+  if (req.user && req.user.role !== 'admin' && !req.user.isAdmin) {
+    let isOwner = false;
+    if (order.user && order.user.toString() === req.user._id.toString()) {
+      isOwner = true;
+    }
+    if (!isOwner && req.user.phone) {
+      const orderPhone = order.customerInfo?.phone;
+      const userPhone = req.user.phone;
+      if (orderPhone === userPhone) {
+        isOwner = true;
+      } else if (userPhone.startsWith('+961')) {
+        const localPhone = userPhone.replace('+961', '');
+        if (orderPhone === localPhone || orderPhone === `0${localPhone}`) {
+          isOwner = true;
+        }
+      }
+    }
+    if (!isOwner && req.user.email && order.customerInfo?.email) {
+      if (order.customerInfo.email.toLowerCase() === req.user.email.toLowerCase()) {
+        isOwner = true;
+      }
+    }
+    if (!isOwner) {
+      res.status(401);
+      throw new Error('Not authorized to view this order');
+    }
+  }
+
+  res.json(order);
 });
 
 // @desc    Get all orders (supports filtering by email/phone)

@@ -5,6 +5,7 @@ import { useCategories } from '../../hooks/useCategories';
 import './CategoryMarquee.css';
 
 const defaultCategories = [
+  { id: 'offers', name: 'Offers', icon: '🔥', color: '#ff6b6b', bg: 'linear-gradient(135deg, #ff7675 0%, #d63031 100%)', badge: 'Sale' },
   { id: '1', name: 'Fruits', icon: '🍎', color: '#ff7675', bg: 'linear-gradient(135deg, #ffeaa7 0%, #fab1a0 100%)', badge: 'Fresh' },
   { id: '2', name: 'Seasonal Fruits', icon: '🍉', color: '#ff6b6b', bg: 'linear-gradient(135deg, #ff9ff3 0%, #feca57 100%)', badge: 'Seasonal' },
   { id: '3', name: 'Vegetables', icon: '🥦', color: '#00b894', bg: 'linear-gradient(135deg, #55efc4 0%, #81ecec 100%)', badge: 'Organic' },
@@ -16,6 +17,9 @@ const defaultCategories = [
 
 const getCategoryVisuals = (name) => {
   const lower = (name || '').toLowerCase();
+  if (lower.includes('offer') || lower.includes('deal') || lower.includes('discount') || lower.includes('sale')) {
+    return { icon: '🔥', bg: 'linear-gradient(135deg, #ff7675 0%, #d63031 100%)', badge: 'Sale' };
+  }
   if (lower.includes('seasonal')) {
     return { icon: '🍉', bg: 'linear-gradient(135deg, #ff9ff3 0%, #feca57 100%)', badge: 'Seasonal' };
   }

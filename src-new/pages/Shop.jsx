@@ -29,6 +29,7 @@ import './Shop.css';
 
 const getCategoryEmoji = (name = '') => {
   const n = name.toLowerCase();
+  if (n.includes('deal') || n.includes('offer') || n.includes('discount') || n.includes('sale')) return '🔥';
   if (n.includes('seasonal')) return '🍉';
   if (n.includes('fruit') || n.includes('apple') || n.includes('berry')) return '🍎';
   if (n.includes('veg') || n.includes('greens') || n.includes('salad')) return '🥦';
@@ -38,7 +39,6 @@ const getCategoryEmoji = (name = '') => {
   if (n.includes('date') || n.includes('medjool')) return '🌴';
   if (n.includes('nut')) return '🌰';
   if (n.includes('dairy') || n.includes('milk') || n.includes('cheese') || n.includes('egg')) return '🥛';
-  if (n.includes('deal') || n.includes('offer')) return '🔥';
   return '✨';
 };
 
@@ -90,18 +90,32 @@ const Shop = () => {
     const allCount = products.length;
     const allCat = { id: 'all', name: 'All Products', count: allCount, emoji: '✨' };
 
-    // 1. Collect all category names from products
+    // Count products with active discount
+    const discountedProducts = products.filter(p => 
+      p.isDiscounted || (p.discountPercent > 0) || (p.originalPrice && p.originalPrice > p.price) || (p.discount?.isActive && Number(p.discount?.value) > 0)
+    );
+    const offersCount = discountedProducts.length;
+
+    const offersCat = offersCount > 0 ? {
+      id: 'offers',
+      name: 'Offers',
+      emoji: '🔥',
+      count: offersCount,
+      isOffers: true
+    } : null;
+
+    // 1. Collect all category names from products (excluding offers/all to avoid duplicates)
     const productCatNames = Array.from(
       new Set(
         products
           .map(p => p.category ? String(p.category).trim() : null)
-          .filter(Boolean)
+          .filter(c => c && c.toLowerCase() !== 'offers' && c.toLowerCase() !== 'all')
       )
     );
 
     // 2. Collect category names from adminCategories
     const adminCatNames = (adminCategories || [])
-      .filter(c => c.isVisible !== false)
+      .filter(c => c.isVisible !== false && c.name?.toLowerCase() !== 'offers' && c.name?.toLowerCase() !== 'all')
       .map(c => String(c.name).trim())
       .filter(Boolean);
 
@@ -125,14 +139,23 @@ const Shop = () => {
       };
     }).filter(c => c.count > 0);
 
-    return [allCat, ...mapped];
+    return offersCat ? [allCat, offersCat, ...mapped] : [allCat, ...mapped];
   }, [adminCategories, products]);
 
+  const isOffersSelected = useMemo(() => {
+    const sel = String(selectedCategory || '').trim().toLowerCase();
+    return sel === 'offers' || sel === 'offer' || sel === 'deals' || sel === 'deal' || sel === 'discounts' || sel === 'discount' || sel === 'special offers' || searchParams.get('discount') === 'true' || searchParams.get('discounted') === 'true';
+  }, [selectedCategory, searchParams]);
+
   const selectedCategoryObj = useMemo(() => {
+    if (isOffersSelected) {
+      const found = categoriesList.find(c => c.id === 'offers' || c.name?.toLowerCase() === 'offers');
+      return found || { id: 'offers', name: 'Offers', emoji: '🔥', count: 0 };
+    }
     return categoriesList.find(
       c => c.id === selectedCategory || c.name?.toLowerCase() === String(selectedCategory)?.toLowerCase()
     );
-  }, [categoriesList, selectedCategory]);
+  }, [categoriesList, selectedCategory, isOffersSelected]);
 
   // Center active category tab in rail whenever selected category changes
   useEffect(() => {
@@ -192,24 +215,48 @@ const Shop = () => {
 
   // Group products by category for the Toters horizontal rows
   const categorizedSections = useMemo(() => {
-    const realCategories = categoriesList.filter(c => c.id !== 'all');
+    const realCategories = categoriesList.filter(c => c.id !== 'all' && c.id !== 'offers' && c.name?.toLowerCase() !== 'offers');
     
-    const sections = realCategories.map(cat => {
+    const sections = [];
+
+    // 1. If there are active discounted products, put the Offers row at the top!
+    const offersItems = filteredProducts.filter(p => 
+      p.isDiscounted || (p.discountPercent > 0) || (p.originalPrice && p.originalPrice > p.price) || (p.discount?.isActive && Number(p.discount?.value) > 0)
+    );
+
+    if (offersItems.length > 0) {
+      sections.push({
+        id: 'offers',
+        name: 'Offers & Discounts',
+        emoji: '🔥',
+        items: offersItems,
+        count: offersItems.length
+      });
+    }
+
+    // 2. Standard categories
+    realCategories.forEach(cat => {
       const items = filteredProducts.filter(p => 
         String(p.category || '').trim().toLowerCase() === String(cat.name).trim().toLowerCase()
       );
-      return {
-        ...cat,
-        items
-      };
-    }).filter(sec => sec.items.length > 0);
+      if (items.length > 0) {
+        sections.push({
+          ...cat,
+          items
+        });
+      }
+    });
 
-    // If there are leftover products not matching any listed category, include them
+    // 3. Uncategorized fallback
     const categorizedProductIds = new Set(
-      sections.flatMap(s => s.items.map(p => p._id || p.id))
+      realCategories.flatMap(cat => 
+        filteredProducts
+          .filter(p => String(p.category || '').trim().toLowerCase() === String(cat.name).trim().toLowerCase())
+          .map(p => p._id || p.id)
+      )
     );
     const uncatItems = filteredProducts.filter(
-      p => !categorizedProductIds.has(p._id || p.id)
+      p => !categorizedProductIds.has(p._id || p.id) && !offersItems.some(op => (op._id || op.id) === (p._id || p.id))
     );
 
     if (uncatItems.length > 0) {
@@ -322,6 +369,17 @@ const Shop = () => {
       setSearchParams(prev => {
         const next = new URLSearchParams(prev);
         next.delete('category');
+        next.delete('discount');
+        next.delete('discounted');
+        return next;
+      });
+    } else if (catId === 'offers' || catId === 'Offers') {
+      setSelectedCategory('offers');
+      setSearchParams(prev => {
+        const next = new URLSearchParams(prev);
+        next.set('category', 'Offers');
+        next.delete('discount');
+        next.delete('discounted');
         return next;
       });
     } else {
@@ -331,6 +389,8 @@ const Shop = () => {
       setSearchParams(prev => {
         const next = new URLSearchParams(prev);
         next.set('category', catName);
+        next.delete('discount');
+        next.delete('discounted');
         return next;
       });
     }
@@ -343,7 +403,7 @@ const Shop = () => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
-  const activeFiltersCount = (onlyInStock ? 1 : 0) + (onlyDiscounted ? 1 : 0) + (selectedCategory !== 'all' ? 1 : 0) + (searchQuery ? 1 : 0);
+  const activeFiltersCount = (onlyInStock ? 1 : 0) + (onlyDiscounted ? 1 : 0) + ((selectedCategory !== 'all' || isOffersSelected) ? 1 : 0) + (searchQuery ? 1 : 0);
 
   const resetAllFilters = () => {
     setSelectedCategory('all');
@@ -354,16 +414,21 @@ const Shop = () => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
-  const isSpecificView = selectedCategory !== 'all' || Boolean(searchQuery);
+  const isSpecificView = (selectedCategory !== 'all' || isOffersSelected) || Boolean(searchQuery);
 
   const specificProducts = useMemo(() => {
-    if (!isSpecificView) return [];
-    if (selectedCategory === 'all') return filteredProducts;
+    if (!isSpecificView && !isOffersSelected) return [];
+    if (selectedCategory === 'all' && !isOffersSelected) return filteredProducts;
+    if (isOffersSelected) {
+      return filteredProducts.filter(p => 
+        p.isDiscounted || (p.discountPercent > 0) || (p.originalPrice && p.originalPrice > p.price) || (p.discount?.isActive && Number(p.discount?.value) > 0) || String(p.category || '').toLowerCase() === 'offers'
+      );
+    }
     const target = selectedCategoryObj?.name || selectedCategory;
     return filteredProducts.filter(p => 
       String(p.category || '').trim().toLowerCase() === String(target).trim().toLowerCase()
     );
-  }, [isSpecificView, selectedCategory, selectedCategoryObj, filteredProducts]);
+  }, [isSpecificView, isOffersSelected, selectedCategory, selectedCategoryObj, filteredProducts]);
 
   return (
     <div className="modern-shop-page toters-layout">

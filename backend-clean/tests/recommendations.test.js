@@ -39,7 +39,7 @@ beforeEach(async () => {
     numReviews: 12,
     brand: 'Chocair',
     description: 'Crisp apples',
-    unit: 'kg'
+    unit: '1kg'
   });
 
   p2 = await Product.create({
@@ -51,7 +51,7 @@ beforeEach(async () => {
     numReviews: 20,
     brand: 'Chocair',
     description: 'Sweet bananas',
-    unit: 'kg'
+    unit: '1kg'
   });
 
   p3 = await Product.create({
@@ -63,7 +63,7 @@ beforeEach(async () => {
     numReviews: 8,
     brand: 'Chocair',
     description: 'Juicy berries',
-    unit: 'box'
+    unit: 'pack'
   });
 
   user = await User.create({

@@ -50,13 +50,14 @@ function AdminProducts() {
   const filteredProducts = useMemo(() => {
     return products.filter(p => {
       const catName = categories.find(c => c._id === p.category)?.name || p.category || "";
+      const isDisc = Boolean(p.isDiscounted || (p.discount?.isActive && Number(p.discount?.value) > 0) || (p.discountPercent > 0));
       const matchesSearch = !searchQuery.trim() || 
         p.name?.toLowerCase().includes(searchQuery.toLowerCase().trim()) ||
         catName.toLowerCase().includes(searchQuery.toLowerCase().trim());
 
+      const isOffersFilter = selectedCategoryFilter.toLowerCase() === 'offers' || selectedCategoryFilter.toLowerCase() === 'discounts';
       const matchesCat = selectedCategoryFilter === "all" || 
-        p.category === selectedCategoryFilter || 
-        catName.toLowerCase() === selectedCategoryFilter.toLowerCase();
+        (isOffersFilter ? isDisc : (p.category === selectedCategoryFilter || catName.toLowerCase() === selectedCategoryFilter.toLowerCase() || (p.categories && p.categories.some(c => c.toLowerCase() === selectedCategoryFilter.toLowerCase()))));
 
       return matchesSearch && matchesCat;
     });
@@ -271,7 +272,20 @@ function AdminProducts() {
             <span>All Categories</span>
             <span className="filter-pill-count">{products.length}</span>
           </button>
-          {categories.map((cat) => {
+          {(() => {
+            const offersCount = products.filter(p => p.isDiscounted || (p.discount?.isActive && Number(p.discount?.value) > 0) || (p.discountPercent > 0)).length;
+            return offersCount > 0 ? (
+              <button
+                className={`filter-pill ${selectedCategoryFilter.toLowerCase() === "offers" ? "active" : ""}`}
+                onClick={() => setSelectedCategoryFilter("offers")}
+                style={selectedCategoryFilter.toLowerCase() === "offers" ? { background: '#dc2626', borderColor: '#b91c1c' } : {}}
+              >
+                <span>🔥 Offers</span>
+                <span className="filter-pill-count">{offersCount}</span>
+              </button>
+            ) : null;
+          })()}
+          {categories.filter(c => c.name?.toLowerCase() !== 'offers').map((cat) => {
             const count = products.filter(p => p.category === cat.name || p.category === cat._id).length;
             return (
               <button
@@ -338,7 +352,14 @@ function AdminProducts() {
                 {/* Details */}
                 <div className="product-card-details">
                   <h3 className="product-card-title">{product.name}</h3>
-                  <span className="product-card-category-tag">{catDisplay}</span>
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px', margin: '3px 0' }}>
+                    <span className="product-card-category-tag">{catDisplay}</span>
+                    {(product.isDiscounted || (product.discount?.isActive && Number(product.discount?.value) > 0) || (product.discountPercent > 0)) && (
+                      <span className="product-card-category-tag" style={{ background: '#fef2f2', color: '#dc2626', border: '1px solid #fecaca', fontWeight: 700 }}>
+                        🔥 Offers
+                      </span>
+                    )}
+                  </div>
 
                   <div className="product-card-metrics">
                     <span className="product-price-pill">
@@ -612,6 +633,21 @@ function AdminProducts() {
                           </span>
                         </div>
                       )}
+
+                      <div style={{
+                        background: '#fef2f2',
+                        border: '1px solid #fee2e2',
+                        borderRadius: '8px',
+                        padding: '0.5rem 0.75rem',
+                        fontSize: '0.78rem',
+                        color: '#991b1b',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '6px'
+                      }}>
+                        <span>✨</span>
+                        <span><strong>Automatic Category:</strong> When this discount is active, this product is automatically listed in the <strong>Offers</strong> category.</span>
+                      </div>
                     </div>
                   )}
                 </div>

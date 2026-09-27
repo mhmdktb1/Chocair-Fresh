@@ -47,7 +47,7 @@ describe('Order API', () => {
       image: 'orange.jpg',
       brand: 'Chocair',
       description: 'Fresh orange',
-      unit: 'kg'
+      unit: '1kg'
     });
     productId = product._id;
   });
@@ -107,7 +107,7 @@ describe('Order API', () => {
       image: '',
       brand: 'Chocair',
       description: 'Fresh berry without image',
-      unit: 'box'
+      unit: 'pack'
     });
 
     const payload = createOrderData();
@@ -220,7 +220,7 @@ describe('Order API', () => {
       image: 'watermelon.jpg',
       brand: 'Chocair',
       description: 'Sweet watermelon',
-      unit: 'kg',
+      unit: '1kg',
       discount: {
         isActive: true,
         type: 'percentage',
@@ -233,7 +233,7 @@ describe('Order API', () => {
       product: discountedProduct._id,
       name: 'Discounted Watermelon',
       qty: 3,
-      unit: 'kg'
+      unit: '1kg'
     }];
     payload.shippingPrice = 0;
 
@@ -270,7 +270,7 @@ describe('Order API', () => {
       image: 'mango.jpg',
       brand: 'Chocair',
       description: 'Ripe mango',
-      unit: 'kg'
+      unit: '1kg'
     });
 
     const batchPayload = createOrderData();

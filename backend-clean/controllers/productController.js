@@ -61,10 +61,14 @@ const parseDiscountPayload = (discount) => {
 // @access  Public
 const getProducts = asyncHandler(async (req, res) => {
   try {
-    const { category, keyword, limit } = req.query;
+    const { category, keyword, limit, discount, discounted } = req.query;
     const query = {};
 
-    if (category && category !== 'all') {
+    const rawCategory = category ? category.trim().toLowerCase() : '';
+    const isOffersCategory = ['offers', 'offer', 'deals', 'deal', 'discounts', 'discount', 'special offers', 'sales', 'sale'].includes(rawCategory);
+    const filterOnlyDiscounted = isOffersCategory || discount === 'true' || discounted === 'true';
+
+    if (category && category !== 'all' && !isOffersCategory) {
       const safeCat = escapeRegex(category.trim());
       query.category = { $regex: `^${safeCat}$`, $options: 'i' };
     }
@@ -85,7 +89,13 @@ const getProducts = asyncHandler(async (req, res) => {
     }
 
     const products = await productQuery;
-    const transformed = products.map(p => applyDiscountToProductDoc(p));
+    let transformed = products.map(p => applyDiscountToProductDoc(p));
+
+    // If offers/discount category was requested, filter for currently active discounted products or products explicitly named under Offers
+    if (filterOnlyDiscounted) {
+      transformed = transformed.filter(p => p.isDiscounted || (p.category && p.category.toLowerCase() === 'offers'));
+    }
+
     res.json(transformed);
   } catch (error) {
     console.error('DB error in getProducts:', error.message);

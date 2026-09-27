@@ -24,7 +24,9 @@ import './Navbar.css';
 
 const CATEGORY_EMOJIS = {
   'All': '✨',
-  'Fruits': '�',
+  'Offers': '🔥',
+  'Deals': '🏷️',
+  'Fruits': '🍎',
   'Seasonal Fruits': '🍉',
   'Seasonal Fruit': '🍉',
   'Vegetables': '🥦',
@@ -166,8 +168,11 @@ const Navbar = () => {
     let filtered = allProducts;
 
     if (activeCategory !== 'All') {
+      const isOffers = ['offers', 'deals', 'discounts'].includes(activeCategory.toLowerCase());
       filtered = filtered.filter(p => 
-        p.category && p.category.toLowerCase() === activeCategory.toLowerCase()
+        isOffers 
+          ? (p.isDiscounted || (p.discountPercent > 0) || (p.discount?.isActive && Number(p.discount?.value) > 0) || (p.category && p.category.toLowerCase() === 'offers'))
+          : (p.category && p.category.toLowerCase() === activeCategory.toLowerCase())
       );
     }
 

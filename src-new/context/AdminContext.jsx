@@ -38,34 +38,43 @@ export const AdminProvider = ({ children }) => {
   const [error, setError] = useState("");
 
   // Helper to normalize backend product to UI shape
-  const mapProduct = (p) => ({
-    id: p._id || p.id,
-    _id: p._id || p.id,
-    name: p.name,
-    category: p.category ? String(p.category).trim() : "Uncategorized",
-    categories: [p.category ? String(p.category).trim() : "Uncategorized"], // Backend only has single category
-    price: p.price,
-    originalPrice: p.originalPrice !== undefined ? p.originalPrice : (p.basePrice !== undefined ? p.basePrice : p.price),
-    finalPrice: p.finalPrice !== undefined ? p.finalPrice : p.price,
-    isDiscounted: Boolean(p.isDiscounted),
-    discountPercent: p.discountPercent || 0,
-    discountAmount: p.discountAmount || 0,
-    discount: {
-      isActive: Boolean(p.discount?.isActive),
-      type: p.discount?.type || 'percentage',
-      value: Number(p.discount?.value || 0),
-      startDate: p.discount?.startDate || null,
-      endDate: p.discount?.endDate || null,
-    },
-    priceUnit: normalizeUnit(p.unit), 
-    unit: normalizeUnit(p.unit),
-    stock: p.countInStock !== undefined ? p.countInStock : p.stock,
-    image: p.image,
-    description: p.description,
-    brand: p.brand,
-    featured: false, // Not in backend
-    customPrices: {} // Not in backend
-  });
+  const mapProduct = (p) => {
+    const isDiscounted = Boolean(p.isDiscounted || (p.discount?.isActive && Number(p.discount?.value) > 0));
+    const mainCategory = p.category ? String(p.category).trim() : "Uncategorized";
+    const assignedCategories = [mainCategory];
+    if (isDiscounted && !assignedCategories.some(c => c.toLowerCase() === 'offers')) {
+      assignedCategories.push('Offers');
+    }
+
+    return {
+      id: p._id || p.id,
+      _id: p._id || p.id,
+      name: p.name,
+      category: mainCategory,
+      categories: assignedCategories,
+      price: p.price,
+      originalPrice: p.originalPrice !== undefined ? p.originalPrice : (p.basePrice !== undefined ? p.basePrice : p.price),
+      finalPrice: p.finalPrice !== undefined ? p.finalPrice : p.price,
+      isDiscounted,
+      discountPercent: p.discountPercent || 0,
+      discountAmount: p.discountAmount || 0,
+      discount: {
+        isActive: Boolean(p.discount?.isActive),
+        type: p.discount?.type || 'percentage',
+        value: Number(p.discount?.value || 0),
+        startDate: p.discount?.startDate || null,
+        endDate: p.discount?.endDate || null,
+      },
+      priceUnit: normalizeUnit(p.unit), 
+      unit: normalizeUnit(p.unit),
+      stock: p.countInStock !== undefined ? p.countInStock : p.stock,
+      image: p.image,
+      description: p.description,
+      brand: p.brand,
+      featured: false, // Not in backend
+      customPrices: {} // Not in backend
+    };
+  };
 
   // Helper to normalize backend order to UI shape
   const mapOrder = (o) => ({
