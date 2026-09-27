@@ -1,0 +1,953 @@
+/* =========================================================
+   FLOATING MODERN CONTACT US BUTTON & POPOVER
+   ========================================================= */
+
+.floating-contact-wrapper {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  z-index: 1050;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+}
+
+/* =========================================================
+   1. TRIGGER FAB CONTAINER & BUTTON
+   ========================================================= */
+
+.floating-contact-fab-container {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+}
+
+/* Floating Action Button */
+.floating-contact-fab {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  height: 56px;
+  padding: 0 16px 0 14px;
+  background: linear-gradient(135deg, #25D366 0%, #128C7E 100%);
+  color: #ffffff;
+  border: none;
+  border-radius: 9999px;
+  box-shadow: 0 8px 24px rgba(37, 211, 102, 0.4), 0 4px 12px rgba(0, 0, 0, 0.12);
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+  outline: none;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.floating-contact-fab:hover {
+  transform: translateY(-3px) scale(1.03);
+  box-shadow: 0 12px 28px rgba(37, 211, 102, 0.5), 0 6px 16px rgba(0, 0, 0, 0.16);
+}
+
+.floating-contact-fab:active {
+  transform: translateY(1px) scale(0.97);
+}
+
+.floating-contact-fab.active {
+  background: #1f2937;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.25);
+  padding: 0 16px;
+}
+
+[data-theme="dark"] .floating-contact-fab.active,
+.dark-theme .floating-contact-fab.active {
+  background: #374151;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
+}
+
+/* Pulse Ring Animation */
+.fab-pulse-ring {
+  position: absolute;
+  top: -4px;
+  left: -4px;
+  right: -4px;
+  bottom: -4px;
+  border-radius: 9999px;
+  border: 2px solid rgba(37, 211, 102, 0.6);
+  opacity: 0;
+  pointer-events: none;
+  animation: fabPulse 2.4s cubic-bezier(0.24, 0, 0.38, 1) infinite;
+}
+
+.floating-contact-fab.active .fab-pulse-ring {
+  display: none;
+}
+
+@keyframes fabPulse {
+  0% {
+    transform: scale(0.95);
+    opacity: 0.8;
+  }
+  50% {
+    transform: scale(1.18);
+    opacity: 0;
+  }
+  100% {
+    transform: scale(1.24);
+    opacity: 0;
+  }
+}
+
+/* Icon & Dot Container */
+.fab-icon-container {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+}
+
+.fab-icon-open-group {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.fab-wa-icon {
+  width: 28px;
+  height: 28px;
+  object-fit: contain;
+  filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.15));
+}
+
+.fab-fallback-icon {
+  display: none;
+}
+
+.fab-wa-icon[style*="display: none"] + .fab-fallback-icon {
+  display: block;
+}
+
+.fab-icon-close {
+  color: #ffffff;
+  animation: rotateIn 0.25s ease forwards;
+}
+
+@keyframes rotateIn {
+  from {
+    transform: rotate(-90deg) scale(0.7);
+    opacity: 0;
+  }
+  to {
+    transform: rotate(0) scale(1);
+    opacity: 1;
+  }
+}
+
+/* Online Status Dot on FAB */
+.fab-online-dot {
+  position: absolute;
+  top: -2px;
+  right: -2px;
+  width: 10px;
+  height: 10px;
+  background-color: #4ade80;
+  border: 2px solid #ffffff;
+  border-radius: 50%;
+}
+
+.floating-contact-fab.active .fab-online-dot {
+  display: none;
+}
+
+/* FAB Label Text */
+.fab-label-text {
+  font-size: 0.95rem;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  color: #ffffff;
+  white-space: nowrap;
+}
+
+/* =========================================================
+   2. GREETING TOOLTIP
+   ========================================================= */
+
+.floating-contact-tooltip {
+  position: absolute;
+  bottom: calc(100% + 14px);
+  right: 0;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: #ffffff;
+  padding: 10px 14px;
+  border-radius: 16px;
+  box-shadow: 0 10px 25px -3px rgba(0, 0, 0, 0.12), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+  border: 1px solid rgba(0, 0, 0, 0.06);
+  cursor: pointer;
+  white-space: nowrap;
+  user-select: none;
+  z-index: 1051;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.floating-contact-tooltip:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 14px 28px -4px rgba(0, 0, 0, 0.16);
+}
+
+.floating-contact-tooltip::after {
+  content: "";
+  position: absolute;
+  bottom: -6px;
+  right: 22px;
+  width: 12px;
+  height: 12px;
+  background: #ffffff;
+  border-right: 1px solid rgba(0, 0, 0, 0.06);
+  border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+  transform: rotate(45deg);
+}
+
+[data-theme="dark"] .floating-contact-tooltip,
+.dark-theme .floating-contact-tooltip {
+  background: #1e293b;
+  border-color: #334155;
+  box-shadow: 0 10px 25px -3px rgba(0, 0, 0, 0.4);
+}
+
+[data-theme="dark"] .floating-contact-tooltip::after,
+.dark-theme .floating-contact-tooltip::after {
+  background: #1e293b;
+  border-right-color: #334155;
+  border-bottom-color: #334155;
+}
+
+.tooltip-avatar-badge {
+  position: relative;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: #ecfdf5;
+  color: #059669;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+[data-theme="dark"] .tooltip-avatar-badge,
+.dark-theme .tooltip-avatar-badge {
+  background: #064e3b;
+  color: #34d399;
+}
+
+.tooltip-pulse-dot {
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 7px;
+  height: 7px;
+  background-color: #10b981;
+  border-radius: 50%;
+  box-shadow: 0 0 0 1.5px #ffffff;
+}
+
+.tooltip-content {
+  display: flex;
+  flex-direction: column;
+}
+
+.tooltip-title {
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: #1e293b;
+  line-height: 1.2;
+}
+
+[data-theme="dark"] .tooltip-title,
+.dark-theme .tooltip-title {
+  color: #f1f5f9;
+}
+
+.tooltip-subtitle {
+  font-size: 0.73rem;
+  font-weight: 500;
+  color: #64748b;
+  line-height: 1.2;
+}
+
+[data-theme="dark"] .tooltip-subtitle,
+.dark-theme .tooltip-subtitle {
+  color: #94a3b8;
+}
+
+.tooltip-close {
+  background: transparent;
+  border: none;
+  color: #94a3b8;
+  padding: 4px;
+  border-radius: 6px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-left: 2px;
+  transition: all 0.15s ease;
+}
+
+.tooltip-close:hover {
+  background: #f1f5f9;
+  color: #475569;
+}
+
+[data-theme="dark"] .tooltip-close:hover,
+.dark-theme .tooltip-close:hover {
+  background: #334155;
+  color: #e2e8f0;
+}
+
+/* =========================================================
+   3. EXPANDABLE POPOVER MODAL
+   ========================================================= */
+
+.floating-contact-popover {
+  position: absolute;
+  bottom: calc(100% + 14px);
+  right: 0;
+  width: 360px;
+  max-width: calc(100vw - 32px);
+  background: #ffffff;
+  border-radius: 20px;
+  box-shadow: 0 20px 40px -15px rgba(0, 0, 0, 0.18), 0 0 0 1px rgba(0, 0, 0, 0.06);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  transform-origin: bottom right;
+  z-index: 1052;
+}
+
+[data-theme="dark"] .floating-contact-popover,
+.dark-theme .floating-contact-popover {
+  background: #162032;
+  box-shadow: 0 20px 45px -10px rgba(0, 0, 0, 0.6), 0 0 0 1px #273549;
+}
+
+/* Popover Header */
+.popover-header {
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+  padding: 16px 18px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  color: #ffffff;
+}
+
+.popover-brand {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.popover-avatar-wrap {
+  position: relative;
+}
+
+.popover-avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.2);
+  backdrop-filter: blur(8px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #ffffff;
+}
+
+.popover-status-badge {
+  position: absolute;
+  bottom: -2px;
+  right: -2px;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  border: 2px solid #059669;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.popover-status-badge.online {
+  background-color: #34d399;
+}
+
+.popover-status-badge.away {
+  background-color: #fbbf24;
+}
+
+.popover-titles {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.popover-heading-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.popover-title {
+  margin: 0;
+  font-size: 0.98rem;
+  font-weight: 700;
+  color: #ffffff;
+  letter-spacing: -0.01em;
+}
+
+.popover-verified-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  font-size: 0.65rem;
+  font-weight: 600;
+  background: rgba(255, 255, 255, 0.25);
+  padding: 2px 6px;
+  border-radius: 9999px;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.popover-status-text {
+  margin: 0;
+  font-size: 0.74rem;
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.9);
+}
+
+.popover-close-btn {
+  background: rgba(255, 255, 255, 0.15);
+  border: none;
+  border-radius: 8px;
+  color: #ffffff;
+  width: 30px;
+  height: 30px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.popover-close-btn:hover {
+  background: rgba(255, 255, 255, 0.3);
+  transform: scale(1.05);
+}
+
+/* Popover Body */
+.popover-body {
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  max-height: 480px;
+  overflow-y: auto;
+}
+
+/* Primary WhatsApp Card */
+.popover-primary-card {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: #ecfdf5;
+  border: 1px solid #a7f3d0;
+  border-radius: 14px;
+  padding: 12px 14px;
+  text-decoration: none;
+  transition: all 0.2s ease;
+}
+
+.popover-primary-card:hover {
+  background: #d1fae5;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(16, 185, 129, 0.15);
+}
+
+[data-theme="dark"] .popover-primary-card,
+.dark-theme .popover-primary-card {
+  background: rgba(16, 185, 129, 0.12);
+  border-color: rgba(16, 185, 129, 0.3);
+}
+
+[data-theme="dark"] .popover-primary-card:hover,
+.dark-theme .popover-primary-card:hover {
+  background: rgba(16, 185, 129, 0.2);
+}
+
+.wa-brand-icon-box {
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  background: #25D366;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  box-shadow: 0 3px 8px rgba(37, 211, 102, 0.3);
+}
+
+.popover-wa-img {
+  width: 22px;
+  height: 22px;
+  object-fit: contain;
+}
+
+.popover-primary-info {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+.primary-card-title {
+  font-size: 0.88rem;
+  font-weight: 700;
+  color: #065f46;
+}
+
+[data-theme="dark"] .primary-card-title,
+.dark-theme .primary-card-title {
+  color: #6ee7b7;
+}
+
+.primary-card-subtitle {
+  font-size: 0.74rem;
+  font-weight: 500;
+  color: #047857;
+}
+
+[data-theme="dark"] .primary-card-subtitle,
+.dark-theme .primary-card-subtitle {
+  color: #a7f3d0;
+}
+
+.primary-arrow {
+  color: #059669;
+  transition: transform 0.2s ease;
+}
+
+.popover-primary-card:hover .primary-arrow {
+  transform: translateX(3px);
+}
+
+/* Secondary Action (Direct Call) */
+.popover-secondary-action {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 10px 14px;
+  text-decoration: none;
+  transition: all 0.2s ease;
+}
+
+.popover-secondary-action:hover {
+  background: #f1f5f9;
+  border-color: #cbd5e1;
+}
+
+[data-theme="dark"] .popover-secondary-action,
+.dark-theme .popover-secondary-action {
+  background: #1e293b;
+  border-color: #334155;
+}
+
+[data-theme="dark"] .popover-secondary-action:hover,
+.dark-theme .popover-secondary-action:hover {
+  background: #273549;
+}
+
+.secondary-icon-box {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.secondary-icon-box.phone-box {
+  background: #eff6ff;
+  color: #2563eb;
+}
+
+[data-theme="dark"] .secondary-icon-box.phone-box,
+.dark-theme .secondary-icon-box.phone-box {
+  background: #1e3a8a;
+  color: #60a5fa;
+}
+
+.secondary-info {
+  display: flex;
+  flex-direction: column;
+}
+
+.secondary-label {
+  font-size: 0.74rem;
+  font-weight: 600;
+  color: #64748b;
+}
+
+[data-theme="dark"] .secondary-label,
+.dark-theme .secondary-label {
+  color: #94a3b8;
+}
+
+.secondary-val {
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: #1e293b;
+}
+
+[data-theme="dark"] .secondary-val,
+.dark-theme .secondary-val {
+  color: #f1f5f9;
+}
+
+/* Quick Inquiries Section */
+.popover-quick-section {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.quick-section-title {
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #94a3b8;
+}
+
+.quick-chips-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px;
+}
+
+.quick-chip-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  padding: 8px 10px;
+  text-decoration: none;
+  transition: all 0.15s ease;
+}
+
+.quick-chip-btn:hover {
+  background: #ecfdf5;
+  border-color: #a7f3d0;
+  transform: translateY(-1px);
+}
+
+[data-theme="dark"] .quick-chip-btn,
+.dark-theme .quick-chip-btn {
+  background: #1e293b;
+  border-color: #334155;
+}
+
+[data-theme="dark"] .quick-chip-btn:hover,
+.dark-theme .quick-chip-btn:hover {
+  background: rgba(16, 185, 129, 0.15);
+  border-color: rgba(16, 185, 129, 0.4);
+}
+
+.chip-emoji {
+  font-size: 0.95rem;
+}
+
+.chip-label {
+  font-size: 0.76rem;
+  font-weight: 600;
+  color: #334155;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+[data-theme="dark"] .chip-label,
+.dark-theme .chip-label {
+  color: #e2e8f0;
+}
+
+/* Quick Custom Message Input Form */
+.popover-custom-form {
+  margin-top: 2px;
+}
+
+.custom-input-wrap {
+  display: flex;
+  align-items: center;
+  position: relative;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 3px 4px 3px 12px;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.custom-input-wrap:focus-within {
+  border-color: #10b981;
+  box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.12);
+}
+
+[data-theme="dark"] .custom-input-wrap,
+.dark-theme .custom-input-wrap {
+  background: #1e293b;
+  border-color: #334155;
+}
+
+[data-theme="dark"] .custom-input-wrap:focus-within,
+.dark-theme .custom-input-wrap:focus-within {
+  border-color: #34d399;
+}
+
+.custom-msg-input {
+  flex: 1;
+  background: transparent;
+  border: none;
+  outline: none;
+  font-size: 0.8rem;
+  color: #1e293b;
+  padding: 6px 0;
+}
+
+.custom-msg-input::placeholder {
+  color: #94a3b8;
+}
+
+[data-theme="dark"] .custom-msg-input,
+.dark-theme .custom-msg-input {
+  color: #f1f5f9;
+}
+
+.custom-send-btn {
+  background: #10b981;
+  border: none;
+  border-radius: 8px;
+  color: #ffffff;
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.custom-send-btn:hover {
+  background: #059669;
+  transform: scale(1.05);
+}
+
+/* Store Meta Details */
+.popover-meta-details {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding-top: 4px;
+  border-top: 1px solid #f1f5f9;
+}
+
+[data-theme="dark"] .popover-meta-details,
+.dark-theme .popover-meta-details {
+  border-top-color: #273549;
+}
+
+.popover-meta-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.74rem;
+  color: #64748b;
+  text-decoration: none;
+}
+
+[data-theme="dark"] .popover-meta-row,
+.dark-theme .popover-meta-row {
+  color: #94a3b8;
+}
+
+.popover-meta-row.clickable {
+  cursor: pointer;
+  transition: color 0.15s ease;
+}
+
+.popover-meta-row.clickable:hover {
+  color: #10b981;
+}
+
+.meta-row-icon {
+  color: #94a3b8;
+  flex-shrink: 0;
+}
+
+.meta-link-icon {
+  margin-left: auto;
+  opacity: 0.6;
+}
+
+/* Social Media Icons */
+.popover-socials-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-top: 6px;
+  border-top: 1px solid #f1f5f9;
+}
+
+[data-theme="dark"] .popover-socials-row,
+.dark-theme .popover-socials-row {
+  border-top-color: #273549;
+}
+
+.socials-label {
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: #94a3b8;
+}
+
+.socials-icons {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.social-circle-btn {
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  background: #f1f5f9;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+}
+
+.social-circle-btn:hover {
+  transform: translateY(-2px) scale(1.1);
+  background: #e2e8f0;
+}
+
+[data-theme="dark"] .social-circle-btn,
+.dark-theme .social-circle-btn {
+  background: #1e293b;
+}
+
+[data-theme="dark"] .social-circle-btn:hover,
+.dark-theme .social-circle-btn:hover {
+  background: #334155;
+}
+
+.social-circle-btn img {
+  width: 14px;
+  height: 14px;
+  object-fit: contain;
+}
+
+/* =========================================================
+   4. ANIMATIONS & RESPONSIVE BEHAVIOR
+   ========================================================= */
+
+.animate-fade-in {
+  animation: fadeIn 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-scale-up {
+  animation: scaleUp 0.28s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+}
+
+@keyframes scaleUp {
+  from {
+    opacity: 0;
+    transform: scale(0.85) translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+/* =========================================================
+   5. MOBILE & TABLET MEDIA QUERIES
+   ========================================================= */
+
+@media (max-width: 768px) {
+  .floating-contact-wrapper {
+    /* Sit comfortably above the 60px bottom navigation dock */
+    bottom: 76px;
+    right: 14px;
+    z-index: 1010;
+  }
+
+  .floating-contact-fab {
+    height: 48px;
+    padding: 0 12px;
+    gap: 8px;
+  }
+
+  /* Hide the text on smaller screens so the FAB stays a sleek compact pill/circle */
+  .fab-label-text {
+    display: none;
+  }
+
+  .floating-contact-fab {
+    width: 48px;
+    height: 48px;
+    padding: 0;
+    justify-content: center;
+  }
+
+  .floating-contact-popover {
+    width: 320px;
+    bottom: calc(100% + 10px);
+    right: 0;
+  }
+
+  .floating-contact-tooltip {
+    bottom: calc(100% + 10px);
+    right: 0;
+    max-width: 260px;
+    white-space: normal;
+  }
+}
+
+@media (max-width: 480px) {
+  .floating-contact-wrapper {
+    bottom: 74px;
+    right: 12px;
+  }
+
+  .floating-contact-popover {
+    width: calc(100vw - 24px);
+    right: -4px;
+    border-radius: 18px;
+  }
+}

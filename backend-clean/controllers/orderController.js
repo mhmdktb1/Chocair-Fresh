@@ -2,10 +2,13 @@ import asyncHandler from '../middleware/asyncHandler.js';
 import Order from '../models/orderModel.js';
 import Product from '../models/productModel.js';
 import User from '../models/userModel.js';
+import HomeConfig from '../models/homeModel.js';
 import { sendWhatsAppOrderNotification } from '../utils/whatsappService.js';
 import { calculateProductDiscount } from '../utils/discountHelper.js';
 import {
   calculateDistanceKm,
+  calculateDeliveryFee,
+  DEFAULT_DELIVERY_CONFIG,
   MAX_DELIVERY_RADIUS_KM,
   STORE_COORDS,
   extractCoordsFromUrl,
@@ -28,7 +31,17 @@ const addOrderItems = asyncHandler(async (req, res) => {
     throw new Error('No order items');
   }
 
-  // Validate delivery location range (Max 4 km from store in Beirut)
+  // Fetch active store delivery settings
+  let storeConfig = null;
+  try {
+    storeConfig = await HomeConfig.findOne();
+  } catch (err) {
+    console.warn('Failed to fetch storeConfig in addOrderItems:', err.message);
+  }
+  const deliverySettings = storeConfig?.delivery || DEFAULT_DELIVERY_CONFIG;
+  const maxDeliveryRadius = Number(deliverySettings?.maxDeliveryRadiusKm || MAX_DELIVERY_RADIUS_KM);
+
+  // Validate delivery location range
   let orderLat = customerInfo?.lat;
   let orderLng = customerInfo?.lng;
 
@@ -49,10 +62,10 @@ const addOrderItems = asyncHandler(async (req, res) => {
       Number(orderLng)
     );
 
-    if (calculatedDistanceKm != null && calculatedDistanceKm > MAX_DELIVERY_RADIUS_KM) {
+    if (calculatedDistanceKm != null && calculatedDistanceKm > maxDeliveryRadius) {
       res.status(400);
       throw new Error(
-        `Delivery location is out of our ${MAX_DELIVERY_RADIUS_KM} km delivery range (${calculatedDistanceKm} km away). We only deliver within ${MAX_DELIVERY_RADIUS_KM} km of our store.`
+        `Delivery location is out of our ${maxDeliveryRadius} km delivery range (${calculatedDistanceKm} km away). We only deliver within ${maxDeliveryRadius} km of our store.`
       );
     }
   }
@@ -113,7 +126,20 @@ const addOrderItems = asyncHandler(async (req, res) => {
     }
 
     calculatedItemsPrice = Number(calculatedItemsPrice.toFixed(2));
-    const calculatedShippingPrice = calculatedItemsPrice >= 50 ? 0 : (clientShippingPrice !== undefined ? Number(clientShippingPrice) : 5.99);
+    
+    let calculatedShippingPrice;
+    if (calculatedDistanceKm != null) {
+      const feeInfo = calculateDeliveryFee(calculatedDistanceKm, calculatedItemsPrice, deliverySettings);
+      calculatedShippingPrice = feeInfo.fee;
+    } else if (clientShippingPrice !== undefined && !isNaN(Number(clientShippingPrice))) {
+      calculatedShippingPrice = (deliverySettings.freeDeliveryEnabled && calculatedItemsPrice >= (deliverySettings.freeDeliveryThreshold ?? 50))
+        ? 0
+        : Number(clientShippingPrice);
+    } else {
+      const feeInfo = calculateDeliveryFee(null, calculatedItemsPrice, deliverySettings);
+      calculatedShippingPrice = feeInfo.fee;
+    }
+    calculatedShippingPrice = Number(calculatedShippingPrice.toFixed(2));
     const calculatedTotalPrice = Number((calculatedItemsPrice + calculatedShippingPrice).toFixed(2));
 
     const enrichedCustomerInfo = {

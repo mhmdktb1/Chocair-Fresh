@@ -1,5 +1,6 @@
 import { createContext, useContext, useState, useEffect } from "react";
 import { ALLOWED_UNITS, normalizeUnit } from "../utils/unitHelper";
+import { DEFAULT_DELIVERY_CONFIG } from "../utils/distanceHelper";
 
 const CMSContext = createContext();
 
@@ -197,6 +198,26 @@ export const CMSProvider = ({ children }) => {
     return defaultRules;
   });
 
+  // Delivery & Distance Tier Configuration
+  const [deliverySettings, setDeliverySettings] = useState(() => {
+    try {
+      const saved = localStorage.getItem("cms_delivery_settings");
+      if (saved) {
+        return {
+          ...DEFAULT_DELIVERY_CONFIG,
+          ...JSON.parse(saved),
+          distanceTiers: {
+            ...DEFAULT_DELIVERY_CONFIG.distanceTiers,
+            ...(JSON.parse(saved).distanceTiers || {})
+          }
+        };
+      }
+    } catch (e) {
+      console.error("Failed to parse delivery settings", e);
+    }
+    return DEFAULT_DELIVERY_CONFIG;
+  });
+
   // Enhanced Products with CMS features (pricing, categories, featured)
   const [cmsProducts, setCmsProducts] = useState(() => {
     const saved = localStorage.getItem("cms_products");
@@ -219,6 +240,10 @@ export const CMSProvider = ({ children }) => {
   useEffect(() => {
     localStorage.setItem("cms_pricing_rules", JSON.stringify(pricingRules));
   }, [pricingRules]);
+
+  useEffect(() => {
+    localStorage.setItem("cms_delivery_settings", JSON.stringify(deliverySettings));
+  }, [deliverySettings]);
 
   useEffect(() => {
     localStorage.setItem("cms_products", JSON.stringify(cmsProducts));
@@ -426,6 +451,18 @@ export const CMSProvider = ({ children }) => {
     pricingRules,
     updatePricingRules,
     calculatePrice,
+
+    // Delivery & Radius Settings
+    deliverySettings,
+    setDeliverySettings,
+    updateDeliverySettings: (newSettings) => setDeliverySettings(prev => ({
+      ...prev,
+      ...newSettings,
+      distanceTiers: {
+        ...(prev.distanceTiers || {}),
+        ...(newSettings.distanceTiers || {})
+      }
+    })),
     
     // CMS Products
     cmsProducts,

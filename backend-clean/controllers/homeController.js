@@ -98,6 +98,20 @@ const getHomeConfig = async (req, res) => {
         title: "Seasonal Fruits",
         subtitle: "Fresh seasonal harvest straight from the farm",
         products: []
+      },
+      delivery: {
+        maxDeliveryRadiusKm: 4.0,
+        pricingType: 'distance',
+        fixedFee: 2.0,
+        freeDeliveryThreshold: 50.0,
+        freeDeliveryEnabled: true,
+        distanceTiers: {
+          tier1MaxKm: 1.5,
+          tier1Fee: 1.50,
+          tier2MaxKm: 2.5,
+          tier2Fee: 2.50,
+          tier3Fee: 3.50,
+        }
       }
     };
     res.json(defaultConfig);
@@ -140,6 +154,16 @@ const updateHomeConfig = async (req, res) => {
       if (req.body.features) config.features = { ...config.features, ...req.body.features };
       if (req.body.newsletter) config.newsletter = { ...config.newsletter, ...req.body.newsletter };
       if (seasonalPayload !== undefined) config.seasonal = seasonalPayload;
+      if (req.body.delivery) {
+        config.delivery = {
+          ...config.delivery?.toObject?.() || config.delivery || {},
+          ...req.body.delivery,
+          distanceTiers: {
+            ...((config.delivery?.distanceTiers?.toObject?.() || config.delivery?.distanceTiers) || {}),
+            ...(req.body.delivery?.distanceTiers || {})
+          }
+        };
+      }
     }
     
     const updatedConfig = await config.save();

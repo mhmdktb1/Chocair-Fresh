@@ -109,10 +109,23 @@ describe('Home Config & Hero CMS API', () => {
           title: 'Farm Fresh to Beirut',
           subtitle: 'Pure goodness daily',
         },
+        delivery: {
+          maxDeliveryRadiusKm: 5.0,
+          pricingType: 'distance',
+          distanceTiers: {
+            tier1MaxKm: 1.5,
+            tier1Fee: 1.00,
+            tier2MaxKm: 2.5,
+            tier2Fee: 2.00,
+            tier3Fee: 3.00,
+          }
+        }
       });
 
     expect(putRes.status).toBe(200);
     expect(putRes.body.hero.title).toBe('Farm Fresh to Beirut');
+    expect(putRes.body.delivery.maxDeliveryRadiusKm).toBe(5.0);
+    expect(putRes.body.delivery.distanceTiers.tier1Fee).toBe(1.00);
   });
 
   it('POST /api/hero & GET /api/hero - manages hero carousel slides', async () => {

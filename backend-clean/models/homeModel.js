@@ -121,6 +121,20 @@ const homeSchema = mongoose.Schema({
       type: mongoose.Schema.Types.ObjectId,
       ref: 'Product'
     }]
+  },
+  delivery: {
+    maxDeliveryRadiusKm: { type: Number, default: 4.0 },
+    pricingType: { type: String, enum: ['distance', 'fixed'], default: 'distance' },
+    fixedFee: { type: Number, default: 2.0 },
+    freeDeliveryThreshold: { type: Number, default: 50.0 },
+    freeDeliveryEnabled: { type: Boolean, default: true },
+    distanceTiers: {
+      tier1MaxKm: { type: Number, default: 1.5 },
+      tier1Fee: { type: Number, default: 1.50 }, // Less than 1.5km
+      tier2MaxKm: { type: Number, default: 2.5 },
+      tier2Fee: { type: Number, default: 2.50 }, // +1.5km to 2.5km
+      tier3Fee: { type: Number, default: 3.50 }   // +2.5km
+    }
   }
 }, { timestamps: true });
 

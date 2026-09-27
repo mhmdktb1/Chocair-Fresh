@@ -18,6 +18,7 @@ import Profile from './pages/Profile';
 import AdminDashboard from './pages/admin/AdminDashboard';
 import Loading from './components/common/Loading';
 import BottomNav from './components/layout/BottomNav';
+import FloatingContact from './components/common/FloatingContact';
 
 function App() {
   return (
@@ -43,6 +44,9 @@ function App() {
                     <Route path="/admin/*" element={<AdminDashboard />} />
                   </Routes>
                   
+                  {/* Floating Modern Contact Us Widget */}
+                  <FloatingContact />
+
                   {/* Global Mobile Bottom Navigation Dock */}
                   <BottomNav />
                 </Router>

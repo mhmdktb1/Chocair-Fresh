@@ -25,7 +25,13 @@ const GOOGLE_LIBRARIES = ["places"];
  * - No text clutter (no "detecting area", no distance from store)
  * - Map modal without search bar or quick areas
  */
-const LocationPicker = ({ onLocationSelect, initialLocation, autoLocate = false }) => {
+const LocationPicker = ({ 
+  onLocationSelect, 
+  initialLocation, 
+  autoLocate = false,
+  maxDeliveryRadiusKm = MAX_DELIVERY_RADIUS_KM 
+}) => {
+  const activeRadiusKm = Number(maxDeliveryRadiusKm || MAX_DELIVERY_RADIUS_KM);
   const defaultCenter = useMemo(() => ({ lat: STORE_COORDS.lat, lng: STORE_COORDS.lng }), []);
   const [selectedCoords, setSelectedCoords] = useState(null);
   const [areaAddress, setAreaAddress] = useState("");
@@ -73,8 +79,8 @@ const LocationPicker = ({ onLocationSelect, initialLocation, autoLocate = false 
   }, [selectedCoords]);
 
   const isSelectedOutOfRange = useMemo(() => {
-    return currentDistanceKm != null && currentDistanceKm > MAX_DELIVERY_RADIUS_KM;
-  }, [currentDistanceKm]);
+    return currentDistanceKm != null && currentDistanceKm > activeRadiusKm;
+  }, [currentDistanceKm, activeRadiusKm]);
 
   const tempDistanceKm = useMemo(() => {
     if (!tempCoords || tempCoords.lat == null || tempCoords.lng == null) return null;
@@ -82,8 +88,8 @@ const LocationPicker = ({ onLocationSelect, initialLocation, autoLocate = false 
   }, [tempCoords]);
 
   const isTempOutOfRange = useMemo(() => {
-    return tempDistanceKm != null && tempDistanceKm > MAX_DELIVERY_RADIUS_KM;
-  }, [tempDistanceKm]);
+    return tempDistanceKm != null && tempDistanceKm > activeRadiusKm;
+  }, [tempDistanceKm, activeRadiusKm]);
 
   // Helper to compose full formatted address
   const composeFullAddress = useCallback((baseArea, details) => {
@@ -224,7 +230,7 @@ const LocationPicker = ({ onLocationSelect, initialLocation, autoLocate = false 
 
       const loc = { lat: pos.coords.latitude, lng: pos.coords.longitude };
       const dist = calculateDistanceKm(STORE_COORDS.lat, STORE_COORDS.lng, loc.lat, loc.lng);
-      const outOfRange = dist != null && dist > MAX_DELIVERY_RADIUS_KM;
+      const outOfRange = dist != null && dist > activeRadiusKm;
 
       setSelectedCoords(loc);
       setTempCoords(loc);
@@ -559,7 +565,7 @@ const LocationPicker = ({ onLocationSelect, initialLocation, autoLocate = false 
                   {/* Delivery Radius Ring */}
                   <Circle
                     center={STORE_COORDS}
-                    radius={4000}
+                    radius={activeRadiusKm * 1000}
                     options={{
                       strokeColor: "#16a34a",
                       strokeOpacity: 0.85,

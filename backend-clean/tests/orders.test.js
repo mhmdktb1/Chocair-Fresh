@@ -355,6 +355,36 @@ describe('Order API', () => {
     expect(res.body.customerInfo.distanceKm).toBeLessThanOrEqual(4.0);
   });
 
+  it('DELIVERY TIERS: calculates distance-based pricing (<1.5km, 1.5-2.5km, >2.5km)', async () => {
+    // 1. Tier 1: Under 1.5km (Antelias ~1.03km)
+    const tier1Payload = createOrderData();
+    tier1Payload.customerInfo.lat = 33.9350;
+    tier1Payload.customerInfo.lng = 35.5880;
+    const res1 = await request(app).post('/api/orders').send(tier1Payload);
+    expect(res1.status).toBe(201);
+    expect(res1.body.customerInfo.distanceKm).toBeLessThan(1.5);
+    expect(res1.body.shippingPrice).toBe(1.50);
+
+    // 2. Tier 2: 1.5km to 2.5km (Jal El Dib ~2.1km)
+    const tier2Payload = createOrderData();
+    tier2Payload.customerInfo.lat = 33.9250;
+    tier2Payload.customerInfo.lng = 35.5850;
+    const res2 = await request(app).post('/api/orders').send(tier2Payload);
+    expect(res2.status).toBe(201);
+    expect(res2.body.customerInfo.distanceKm).toBeGreaterThanOrEqual(1.5);
+    expect(res2.body.customerInfo.distanceKm).toBeLessThanOrEqual(2.5);
+    expect(res2.body.shippingPrice).toBe(2.50);
+
+    // 3. Tier 3: Over 2.5km (Zalka ~3.5km)
+    const tier3Payload = createOrderData();
+    tier3Payload.customerInfo.lat = 33.9130;
+    tier3Payload.customerInfo.lng = 35.5750;
+    const res3 = await request(app).post('/api/orders').send(tier3Payload);
+    expect(res3.status).toBe(201);
+    expect(res3.body.customerInfo.distanceKm).toBeGreaterThan(2.5);
+    expect(res3.body.shippingPrice).toBe(3.50);
+  });
+
   it('DELIVERY RANGE: rejects order outside 4km delivery radius with 400 error', async () => {
     const payload = createOrderData();
     // Beirut Hamra coordinates (~11 km away from store)
