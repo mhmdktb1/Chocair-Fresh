@@ -113,8 +113,8 @@ const HomeEditor = () => {
       description: 'Subscribe to our newsletter and get 10% off your first order. Plus, receive weekly healthy recipes and exclusive deals.'
     },
     seasonal: { 
-      title: 'Seasonal Favorites', 
-      subtitle: 'Picked at the peak of flavor this season',
+      title: 'Seasonal Fruits', 
+      subtitle: 'Fresh seasonal harvest straight from the farm',
       products: [] 
     },
     featuredCategories: []

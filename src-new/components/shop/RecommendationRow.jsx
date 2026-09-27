@@ -6,7 +6,7 @@ import api from '../../utils/api';
 import { normalizeUnit } from '../../utils/unitHelper';
 import './RecommendationRow.css';
 
-const RecommendationRow = ({ title, subtitle = null, type, productId = null, limit = 8, cartItems = [], items = [] }) => {
+const RecommendationRow = ({ title, subtitle = null, type, category = null, viewAllLink = null, productId = null, limit = 8, cartItems = [], items = [] }) => {
   const navigate = useNavigate();
   const [products, setProducts] = useState(items || []);
   const [loading, setLoading] = useState(true);
@@ -20,8 +20,8 @@ const RecommendationRow = ({ title, subtitle = null, type, productId = null, lim
       try {
         setLoading(true);
         
-        // 1. Manual curation (e.g. Admin Seasonal Picks)
-        if (type === 'manual') {
+        // 1. Manual curation (e.g. Admin Seasonal Picks or explicit items array)
+        if (type === 'manual' || (type === 'category' && items && items.length > 0)) {
           if (items && items.length > 0) {
             if (isMounted) {
               setProducts(items.map(p => ({ ...p, _id: p._id || p.id })));
@@ -29,11 +29,15 @@ const RecommendationRow = ({ title, subtitle = null, type, productId = null, lim
             }
             return;
           }
-          // Fallback if manual list is not populated yet
-          const fallbackRes = await api.get(`/products?limit=${limit}`);
-          const fallbackData = Array.isArray(fallbackRes.data) ? fallbackRes.data : fallbackRes.data?.products || [];
+        }
+
+        // 2. Specific Category Row (e.g. Seasonal Fruits category)
+        if (type === 'category' || category) {
+          const targetCategory = category || title;
+          const catRes = await api.get(`/products?category=${encodeURIComponent(targetCategory)}&limit=${limit}`);
+          const catData = Array.isArray(catRes.data) ? catRes.data : catRes.data?.products || [];
           if (isMounted) {
-            setProducts(fallbackData.map(p => ({ ...p, _id: p._id || p.id })).slice(0, limit));
+            setProducts(catData.map(p => ({ ...p, _id: p._id || p.id })).slice(0, limit));
             setLoading(false);
           }
           return;
@@ -173,7 +177,10 @@ const RecommendationRow = ({ title, subtitle = null, type, productId = null, lim
           </div>
           
           <div className="header-controls">
-            <button className="view-all-link" onClick={() => navigate('/shop')}>
+            <button 
+              className="view-all-link" 
+              onClick={() => navigate(viewAllLink || (category ? `/shop?category=${encodeURIComponent(category)}` : '/shop'))}
+            >
               View All
             </button>
             <div className="nav-buttons">

@@ -51,13 +51,13 @@ const Profile = () => {
 
   const cachedUser = getStoredUser() || authUser || null;
   const [user, setUser] = useState(cachedUser);
-  const [openSections, setOpenSections] = useState({
-    profile: false,
-    orders: true,
-    favorites: false,
-    addresses: false,
-    settings: false,
-  });
+  const [openSections, setOpenSections] = useState(() => ({
+    profile: location.state?.activeTab === 'profile' || location.state?.activeTab === 'overview',
+    orders: location.state?.activeTab === 'orders',
+    favorites: location.state?.activeTab === 'favorites',
+    addresses: location.state?.activeTab === 'addresses',
+    settings: location.state?.activeTab === 'settings' || location.state?.activeTab === 'preferences',
+  }));
   const [orders, setOrders] = useState([]);
   const [allProducts, setAllProducts] = useState([]);
   const [loading, setLoading] = useState(false);

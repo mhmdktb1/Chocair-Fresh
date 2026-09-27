@@ -95,8 +95,8 @@ const getHomeConfig = async (req, res) => {
         description: "Subscribe to our newsletter and get 10% off your first order. Plus, receive weekly healthy recipes and exclusive deals."
       },
       seasonal: {
-        title: "Seasonal Favorites",
-        subtitle: "Picked at the peak of flavor this season",
+        title: "Seasonal Fruits",
+        subtitle: "Fresh seasonal harvest straight from the farm",
         products: []
       }
     };
@@ -113,8 +113,8 @@ const updateHomeConfig = async (req, res) => {
     
     // Clean up IDs for seasonal products and featured categories
     const seasonalPayload = req.body.seasonal ? {
-      title: req.body.seasonal.title || config?.seasonal?.title || 'Seasonal Favorites',
-      subtitle: req.body.seasonal.subtitle || config?.seasonal?.subtitle || 'Picked at the peak of flavor this season',
+      title: req.body.seasonal.title || config?.seasonal?.title || 'Seasonal Fruits',
+      subtitle: req.body.seasonal.subtitle || config?.seasonal?.subtitle || 'Fresh seasonal harvest straight from the farm',
       products: Array.isArray(req.body.seasonal.products)
         ? req.body.seasonal.products.map(p => (p && p._id ? p._id : p))
         : []

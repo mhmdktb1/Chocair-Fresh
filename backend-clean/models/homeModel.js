@@ -115,8 +115,8 @@ const homeSchema = mongoose.Schema({
     description: { type: String, default: "Subscribe to our newsletter and get 10% off your first order. Plus, receive weekly healthy recipes and exclusive deals." }
   },
   seasonal: {
-    title: { type: String, default: "Seasonal Favorites" },
-    subtitle: { type: String, default: "Picked at the peak of flavor this season" },
+    title: { type: String, default: "Seasonal Fruits" },
+    subtitle: { type: String, default: "Fresh seasonal harvest straight from the farm" },
     products: [{
       type: mongoose.Schema.Types.ObjectId,
       ref: 'Product'

@@ -87,8 +87,8 @@ const defaultHomeConfig = {
     description: 'Subscribe to our newsletter and get 10% off your first order. Plus, receive weekly healthy recipes and exclusive deals.'
   },
   seasonal: {
-    title: 'Seasonal Favorites',
-    subtitle: 'Picked at the peak of flavor this season',
+    title: 'Seasonal Fruits',
+    subtitle: 'Fresh seasonal harvest straight from the farm',
     products: [],
   },
 };
@@ -173,11 +173,12 @@ const Home = () => {
           limit={8}
         />
 
-        {/* 2. Seasonal Fruits / Harvest Curated by Admin */}
+        {/* 2. Seasonal Fruits Category Showcase */}
         <RecommendationRow 
-          title={activeHomeConfig.seasonal?.title || "Seasonal Harvest Picks"} 
-          type="manual" 
-          items={activeHomeConfig.seasonal?.products || []} 
+          title={activeHomeConfig.seasonal?.title || "Seasonal Fruits"} 
+          category="Seasonal Fruits"
+          type="category" 
+          items={activeHomeConfig.seasonal?.products} 
           limit={8}
         />
 
