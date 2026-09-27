@@ -264,17 +264,27 @@ const Navbar = () => {
           <button 
             className={`brand-logo-btn ${curtainOpen ? 'open' : ''}`}
             onClick={toggleCurtain}
-            aria-label="Toggle Navigation Curtain"
+            aria-expanded={curtainOpen}
+            aria-controls="curtain-drawer"
+            aria-label={curtainOpen ? "Close Quick Menu" : "Explore navigation menu - Tap E"}
           >
             <span className="brand-chocair">Chocair</span>
             <span className="brand-fresh">
               FR
-              <span className="e-dash-group" title="Menu">
+              <span className="e-dash-group" title="Quick Navigation Menu">
                 <span className="dash-line line-1"></span>
                 <span className="dash-line line-2"></span>
                 <span className="dash-line line-3"></span>
+                <span className="e-pulse-ring" aria-hidden="true"></span>
               </span>
               SH
+            </span>
+            <span className="e-nav-badge" aria-hidden="true">
+              <span className="e-nav-badge-dot"></span>
+              <span className="e-nav-badge-text">{curtainOpen ? 'Close' : 'Menu'}</span>
+            </span>
+            <span className="e-nav-tooltip" role="tooltip">
+              {curtainOpen ? 'Click to close menu' : "Tap 'E' to explore menu"}
             </span>
           </button>
 
@@ -325,7 +335,7 @@ const Navbar = () => {
       </nav>
 
       {/* Full Screen Top Curtain Menu */}
-      <div className={`curtain-drawer ${curtainOpen ? 'open' : ''}`}>
+      <div id="curtain-drawer" className={`curtain-drawer ${curtainOpen ? 'open' : ''}`}>
         <div className="curtain-header">
           <span className="curtain-title">Explore Chocair Fresh</span>
           <button className="curtain-close-btn" onClick={() => setCurtainOpen(false)} aria-label="Close">
