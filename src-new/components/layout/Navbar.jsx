@@ -13,7 +13,8 @@ import {
   ChevronRight, 
   Flame,
   CheckCircle,
-  CornerDownLeft
+  CornerDownLeft,
+  Leaf
 } from 'lucide-react';
 import { useCart } from '../../context/CartContext';
 import { useAuth } from '../../context/AuthContext';
@@ -271,25 +272,29 @@ const Navbar = () => {
             onClick={toggleCurtain}
             aria-expanded={curtainOpen}
             aria-controls="curtain-drawer"
-            aria-label={curtainOpen ? "Close Quick Menu" : "Explore navigation menu - Tap E"}
+            aria-label={curtainOpen ? "Close navigation menu" : "Open navigation menu"}
           >
+            {/* Opening Animated Organic Elements (Sprout leaf + fruit orbit particles) */}
+            <span className="logo-organic-intro" aria-hidden="true">
+              <span className="logo-intro-sprout">
+                <Leaf size={14} className="sprout-leaf-svg" />
+              </span>
+              <span className="intro-particle fruit-p1">🍓</span>
+              <span className="intro-particle fruit-p2">🍋</span>
+              <span className="intro-particle fruit-p3">🥑</span>
+              <span className="intro-particle leaf-p1">🍃</span>
+            </span>
+
             <span className="brand-chocair">Chocair</span>
             <span className="brand-fresh">
               FR
-              <span className="e-dash-group" title="Quick Navigation Menu">
+              <span className="e-dash-group" title="Quick Navigation">
                 <span className="dash-line line-1"></span>
                 <span className="dash-line line-2"></span>
                 <span className="dash-line line-3"></span>
                 <span className="e-pulse-ring" aria-hidden="true"></span>
               </span>
               SH
-            </span>
-            <span className="e-nav-badge" aria-hidden="true">
-              <span className="e-nav-badge-dot"></span>
-              <span className="e-nav-badge-text">{curtainOpen ? 'Close' : 'Menu'}</span>
-            </span>
-            <span className="e-nav-tooltip" role="tooltip">
-              {curtainOpen ? 'Click to close menu' : "Tap 'E' to explore menu"}
             </span>
           </button>
 
