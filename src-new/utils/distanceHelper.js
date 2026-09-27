@@ -6,7 +6,7 @@ export const STORE_COORDS = {
   plusCode: 'WHVR+GVR, Beirut, Lebanon'
 };
 
-export const MAX_DELIVERY_RADIUS_KM = 5.0;
+export const MAX_DELIVERY_RADIUS_KM = 4.0;
 
 /**
  * Calculate Great-Circle distance between two coordinates in kilometers using Haversine formula
@@ -35,7 +35,7 @@ export const calculateDistanceKm = (lat1, lon1, lat2, lon2) => {
 };
 
 /**
- * Check if given coordinates are within the 5 km delivery radius
+ * Check if given coordinates are within the 4 km delivery radius
  */
 export const isWithinDeliveryRadius = (lat, lng, maxRadiusKm = MAX_DELIVERY_RADIUS_KM) => {
   if (lat == null || lng == null) return { isWithin: true, distanceKm: null };

@@ -341,9 +341,9 @@ describe('Order API', () => {
     expect(res.status).toBe(404);
   });
 
-  // ================= 5KM DELIVERY RADIUS TESTS =================
+  // ================= 4KM DELIVERY RADIUS TESTS =================
 
-  it('DELIVERY RANGE: accepts order within 5km delivery radius', async () => {
+  it('DELIVERY RANGE: accepts order within 4km delivery radius', async () => {
     const payload = createOrderData();
     // Antelias / Dbayeh coordinates close to store (~1.0 km)
     payload.customerInfo.lat = 33.9350;
@@ -352,31 +352,31 @@ describe('Order API', () => {
     const res = await request(app).post('/api/orders').send(payload);
     expect(res.status).toBe(201);
     expect(res.body.customerInfo.distanceKm).toBeDefined();
-    expect(res.body.customerInfo.distanceKm).toBeLessThanOrEqual(5.0);
+    expect(res.body.customerInfo.distanceKm).toBeLessThanOrEqual(4.0);
   });
 
-  it('DELIVERY RANGE: rejects order outside 5km delivery radius with 400 error', async () => {
+  it('DELIVERY RANGE: rejects order outside 4km delivery radius with 400 error', async () => {
     const payload = createOrderData();
-    // Beirut Hamra coordinates (~11 km away from Dbayeh store)
+    // Beirut Hamra coordinates (~11 km away from store)
     payload.customerInfo.lat = 33.8960;
     payload.customerInfo.lng = 35.4800;
 
     const res = await request(app).post('/api/orders').send(payload);
     expect(res.status).toBe(400);
-    expect(res.body.message).toMatch(/out of our 5 km delivery range/i);
+    expect(res.body.message).toMatch(/out of our 4 km delivery range/i);
 
     // Stock should not be decremented
     const prod = await Product.findById(productId);
     expect(prod.countInStock).toBe(100);
   });
 
-  it('DELIVERY RANGE: rejects order with googleMapsLink outside 5km radius', async () => {
+  it('DELIVERY RANGE: rejects order with googleMapsLink outside 4km radius', async () => {
     const payload = createOrderData();
     // Tripoli coordinates (~60 km away)
     payload.customerInfo.googleMapsLink = 'https://www.google.com/maps/search/?api=1&query=34.4367,35.8497';
 
     const res = await request(app).post('/api/orders').send(payload);
     expect(res.status).toBe(400);
-    expect(res.body.message).toMatch(/out of our 5 km delivery range/i);
+    expect(res.body.message).toMatch(/out of our 4 km delivery range/i);
   });
 });

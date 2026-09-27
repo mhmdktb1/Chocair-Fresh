@@ -140,9 +140,9 @@ const Checkout = () => {
       }));
 
       if (outOfRange) {
-        setError(`Selected location is ${dist} km away (outside our 5 km delivery zone). We cannot deliver to this address.`);
+        setError(`Selected location is ${dist} km away (outside our 4 km delivery zone). We cannot deliver to this address.`);
       } else {
-        setError(prev => (prev && prev.includes('5 km') ? '' : prev));
+        setError(prev => (prev && prev.includes('4 km') ? '' : prev));
       }
     }
   }, []);
@@ -274,7 +274,7 @@ const Checkout = () => {
 
     if (formData.isOutOfRange || (formData.distanceKm != null && formData.distanceKm > MAX_DELIVERY_RADIUS_KM)) {
       const distText = formData.distanceKm ? ` (${formData.distanceKm} km away)` : '';
-      const msg = `Delivery location is out of our 5 km delivery range${distText}. We only deliver within 5 km of our store in Beirut.`;
+      const msg = `Delivery location is out of our 4 km delivery range${distText}. We only deliver within 4 km of our store.`;
       setError(msg);
       toast.error(msg, { autoClose: 5000 });
       return;
@@ -637,7 +637,7 @@ const Checkout = () => {
                       <div className="alert-text-col">
                         <strong>Delivery Range Exceeded ({formData.distanceKm} km away)</strong>
                         <span>
-                          We exclusively deliver within 5 km of our store in Beirut. Please select an address or pin within our 5 km delivery zone to place your order.
+                          We exclusively deliver within 4 km of our store. Please select an address or pin within our 4 km delivery zone to place your order.
                         </span>
                       </div>
                     </div>

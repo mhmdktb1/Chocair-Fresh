@@ -28,7 +28,7 @@ const addOrderItems = asyncHandler(async (req, res) => {
     throw new Error('No order items');
   }
 
-  // Validate delivery location range (Max 5 km from store in Beirut)
+  // Validate delivery location range (Max 4 km from store in Beirut)
   let orderLat = customerInfo?.lat;
   let orderLng = customerInfo?.lng;
 
@@ -52,7 +52,7 @@ const addOrderItems = asyncHandler(async (req, res) => {
     if (calculatedDistanceKm != null && calculatedDistanceKm > MAX_DELIVERY_RADIUS_KM) {
       res.status(400);
       throw new Error(
-        `Delivery location is out of our ${MAX_DELIVERY_RADIUS_KM} km delivery range (${calculatedDistanceKm} km away). We only deliver within ${MAX_DELIVERY_RADIUS_KM} km of our store in Beirut.`
+        `Delivery location is out of our ${MAX_DELIVERY_RADIUS_KM} km delivery range (${calculatedDistanceKm} km away). We only deliver within ${MAX_DELIVERY_RADIUS_KM} km of our store.`
       );
     }
   }

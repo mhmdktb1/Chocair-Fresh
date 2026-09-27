@@ -197,7 +197,7 @@ const LocationPicker = ({ onLocationSelect, initialLocation, autoLocate = true }
             const full = composeFullAddress(addr, buildingDetails);
             
             if (outOfRange) {
-              toast.warn(`GPS location detected is ${dist} km away (outside our 5 km delivery radius).`, {
+              toast.warn(`GPS location detected is ${dist} km away (outside our 4 km delivery radius).`, {
                 autoClose: 5000
               });
             }
@@ -286,7 +286,7 @@ const LocationPicker = ({ onLocationSelect, initialLocation, autoLocate = true }
 
         const dist = calculateDistanceKm(STORE_COORDS.lat, STORE_COORDS.lng, lat, lng);
         if (dist != null && dist > MAX_DELIVERY_RADIUS_KM) {
-          toast.warning(`Selected area is ${dist} km away (outside our 5 km delivery zone).`);
+          toast.warning(`Selected area is ${dist} km away (outside our 4 km delivery zone).`);
         }
       }
     }
@@ -312,7 +312,7 @@ const LocationPicker = ({ onLocationSelect, initialLocation, autoLocate = true }
 
         const dist = calculateDistanceKm(STORE_COORDS.lat, STORE_COORDS.lng, loc.lat, loc.lng);
         if (dist != null && dist > MAX_DELIVERY_RADIUS_KM) {
-          toast.warn(`Your GPS location is ${dist} km away (outside our 5 km delivery zone).`);
+          toast.warn(`Your GPS location is ${dist} km away (outside our 4 km delivery zone).`);
         }
       },
       (err) => {
@@ -348,11 +348,11 @@ const LocationPicker = ({ onLocationSelect, initialLocation, autoLocate = true }
     reverseGeocode(storeLoc, (addr) => setTempAddress(addr));
   };
 
-  // Confirm Location from Map Modal -> Rejects if out of 5km range
+  // Confirm Location from Map Modal -> Rejects if out of 4km range
   const handleConfirmLocation = () => {
     if (isTempOutOfRange) {
       toast.error(
-        `Delivery is only available within 5 km of our store. Selected location is ${tempDistanceKm} km away. Please choose a location within the highlighted 5 km zone.`,
+        `Delivery is only available within 4 km of our store. Selected location is ${tempDistanceKm} km away. Please choose a location within the highlighted 4 km zone.`,
         { autoClose: 5000 }
       );
       return;
@@ -425,7 +425,7 @@ const LocationPicker = ({ onLocationSelect, initialLocation, autoLocate = true }
           className="details-input"
         />
         <div className="delivery-range-note">
-          <Store size={13} /> We deliver within 5 km of our store in Beirut.
+          <Store size={13} /> We deliver within 4 km of our store in Beirut.
         </div>
       </div>
     );
@@ -453,12 +453,12 @@ const LocationPicker = ({ onLocationSelect, initialLocation, autoLocate = true }
           <div className="toters-card-text">
             <div className="toters-card-label-row">
               <span className={`toters-card-label ${isSelectedOutOfRange ? "label-out-range" : ""}`}>
-                {isAutoLocating ? "Locating..." : isSelectedOutOfRange ? "Out of 5 km Delivery Zone" : "Delivery Location"}
+                {isAutoLocating ? "Locating..." : isSelectedOutOfRange ? "Out of 4 km Delivery Zone" : "Delivery Location"}
               </span>
               {currentDistanceKm != null && (
                 <span className={`toters-distance-chip ${isSelectedOutOfRange ? "chip-out-range" : "chip-in-range"}`}>
                   {isSelectedOutOfRange ? (
-                    <>⚠️ {currentDistanceKm} km (Max 5 km)</>
+                    <>⚠️ {currentDistanceKm} km (Max 4 km)</>
                   ) : (
                     <>✓ {currentDistanceKm} km from store</>
                   )}
@@ -470,7 +470,7 @@ const LocationPicker = ({ onLocationSelect, initialLocation, autoLocate = true }
               {isAutoLocating ? (
                 <span className="locating-text-shimmer">Detecting GPS location...</span>
               ) : (
-                areaAddress || "Pin your location on map (Max 5 km)..."
+                areaAddress || "Pin your location on map (Max 4 km)..."
               )}
             </div>
 
@@ -479,15 +479,15 @@ const LocationPicker = ({ onLocationSelect, initialLocation, autoLocate = true }
               <div className="toters-card-range-hint">
                 {isSelectedOutOfRange ? (
                   <span className="text-range-error">
-                    🚫 Address is {currentDistanceKm} km away. We only deliver within 5 km.
+                    🚫 Address is {currentDistanceKm} km away. We only deliver within 4 km.
                   </span>
                 ) : currentDistanceKm != null ? (
                   <span className="text-range-success">
-                    <ShieldCheck size={12} className="inline-icon" /> Within 5 km delivery zone — Eligible for delivery
+                    <ShieldCheck size={12} className="inline-icon" /> Within 4 km delivery zone — Eligible for delivery
                   </span>
                 ) : (
                   <span className="text-range-neutral">
-                    <Store size={12} className="inline-icon" /> We deliver exclusively within 5 km of our store in Beirut
+                    <Store size={12} className="inline-icon" /> We deliver exclusively within 4 km of our store in Beirut
                   </span>
                 )}
               </div>
@@ -558,10 +558,10 @@ const LocationPicker = ({ onLocationSelect, initialLocation, autoLocate = true }
               <div className="modal-header-info">
                 <div className="modal-header-title-row">
                   <h3 className="modal-header-title">Pin Delivery Location</h3>
-                  <span className="modal-5km-badge">5 km Delivery Zone</span>
+                  <span className="modal-5km-badge">4 km Delivery Zone</span>
                 </div>
                 <span className="modal-header-sub">
-                  We deliver within a 5 km radius of our store in Beirut
+                  We deliver within a 4 km radius of our store in Beirut
                 </span>
               </div>
               <button 
@@ -667,12 +667,12 @@ const LocationPicker = ({ onLocationSelect, initialLocation, autoLocate = true }
                 {isTempOutOfRange ? (
                   <>
                     <AlertTriangle size={14} />
-                    <span>Outside 5 km Delivery Zone ({tempDistanceKm} km away)</span>
+                    <span>Outside 4 km Delivery Zone ({tempDistanceKm} km away)</span>
                   </>
                 ) : (
                   <>
                     <ShieldCheck size={14} />
-                    <span>Within 5 km Delivery Zone ({tempDistanceKm != null ? `${tempDistanceKm} km` : 'Valid'})</span>
+                    <span>Within 4 km Delivery Zone ({tempDistanceKm != null ? `${tempDistanceKm} km` : 'Valid'})</span>
                   </>
                 )}
               </div>
@@ -703,10 +703,10 @@ const LocationPicker = ({ onLocationSelect, initialLocation, autoLocate = true }
                     disableDefaultUI: false,
                   }}
                 >
-                  {/* 5 KM Delivery Radius Circle */}
+                  {/* 4 KM Delivery Radius Circle */}
                   <Circle
                     center={STORE_COORDS}
-                    radius={5000} // 5 km in meters
+                    radius={4000} // 4 km in meters
                     options={{
                       strokeColor: "#16a34a",
                       strokeOpacity: 0.85,
@@ -739,9 +739,9 @@ const LocationPicker = ({ onLocationSelect, initialLocation, autoLocate = true }
                 <div className="modal-out-of-range-banner">
                   <AlertTriangle size={18} className="banner-alert-icon" />
                   <div className="banner-alert-text">
-                    <strong>Outside 5 km Delivery Radius ({tempDistanceKm} km away)</strong>
+                    <strong>Outside 4 km Delivery Radius ({tempDistanceKm} km away)</strong>
                     <span>
-                      We exclusively deliver within 5 km of our store in Beirut. Please move the pin inside the green zone on the map to place an order.
+                      We exclusively deliver within 4 km of our store in Beirut. Please move the pin inside the green zone on the map to place an order.
                     </span>
                   </div>
                 </div>
@@ -778,7 +778,7 @@ const LocationPicker = ({ onLocationSelect, initialLocation, autoLocate = true }
                 {isTempOutOfRange ? (
                   <>
                     <AlertTriangle size={18} />
-                    <span>Out of 5 km Range ({tempDistanceKm} km)</span>
+                    <span>Out of 4 km Range ({tempDistanceKm} km)</span>
                   </>
                 ) : (
                   <>
