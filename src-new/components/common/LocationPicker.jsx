@@ -2,8 +2,8 @@ import React, { useEffect, useMemo, useRef, useState, useCallback } from "react"
 import { createPortal } from "react-dom";
 import { GoogleMap, useJsApiLoader, Circle, Marker } from "@react-google-maps/api";
 import { 
-  MapPin, Crosshair, Building, Layers, Home, 
-  Briefcase, Compass, Check, X, AlertTriangle, 
+  MapPin, Crosshair, Building, Layers, 
+  Compass, Check, X, AlertTriangle, 
   Store, Loader2
 } from "lucide-react";
 import { toast } from "react-toastify";
@@ -16,13 +16,6 @@ import "./LocationPicker.css";
 
 const GOOGLE_LIBRARIES = ["places"];
 
-const ADDRESS_TAGS = [
-  { id: "home", label: "Home", icon: Home },
-  { id: "work", label: "Work", icon: Briefcase },
-  { id: "apt", label: "Apartment", icon: Building },
-  { id: "other", label: "Other", icon: MapPin },
-];
-
 /**
  * Clean & Fast Delivery Location Picker
  * - Building & Floor are mandatory fields
@@ -34,7 +27,6 @@ const LocationPicker = ({ onLocationSelect, initialLocation, autoLocate = false 
   const defaultCenter = useMemo(() => ({ lat: STORE_COORDS.lat, lng: STORE_COORDS.lng }), []);
   const [selectedCoords, setSelectedCoords] = useState(null);
   const [areaAddress, setAreaAddress] = useState("");
-  const [selectedTag, setSelectedTag] = useState("home");
   
   // Building & floor details (Building and Floor are mandatory)
   const [buildingDetails, setBuildingDetails] = useState({
@@ -52,7 +44,6 @@ const LocationPicker = ({ onLocationSelect, initialLocation, autoLocate = false 
   const [tempCoords, setTempCoords] = useState(defaultCenter);
   const [tempAddress, setTempAddress] = useState("");
   const [isDragging, setIsDragging] = useState(false);
-  const [tempTag, setTempTag] = useState("home");
   const [tempDetails, setTempDetails] = useState({
     building: "",
     floor: "",
@@ -93,12 +84,8 @@ const LocationPicker = ({ onLocationSelect, initialLocation, autoLocate = false 
   }, [tempDistanceKm]);
 
   // Helper to compose full formatted address
-  const composeFullAddress = useCallback((baseArea, details, tag) => {
+  const composeFullAddress = useCallback((baseArea, details) => {
     const parts = [];
-    if (tag && tag !== "other") {
-      const tagObj = ADDRESS_TAGS.find(t => t.id === tag);
-      if (tagObj) parts.push(`[${tagObj.label}]`);
-    }
     if (baseArea) parts.push(baseArea);
     if (details.building?.trim()) parts.push(`Bldg: ${details.building.trim()}`);
     if (details.floor?.trim()) parts.push(`Fl: ${details.floor.trim()}`);
@@ -132,8 +119,8 @@ const LocationPicker = ({ onLocationSelect, initialLocation, autoLocate = false 
   }, []);
 
   // Sync back to parent when details or address changes
-  const notifyParent = useCallback((addr, coords, details, tag, dist, outOfRange, src = "map") => {
-    const full = composeFullAddress(addr, details, tag);
+  const notifyParent = useCallback((addr, coords, details, dist, outOfRange, src = "map") => {
+    const full = composeFullAddress(addr, details);
     const hasRequired = Boolean(details.building?.trim() && details.floor?.trim());
     onLocationSelect?.({
       address: full,
@@ -142,7 +129,6 @@ const LocationPicker = ({ onLocationSelect, initialLocation, autoLocate = false 
       distanceKm: dist,
       isOutOfRange: outOfRange,
       source: src,
-      tag,
       details,
       building: details.building?.trim() || "",
       floor: details.floor?.trim() || "",
@@ -243,7 +229,7 @@ const LocationPicker = ({ onLocationSelect, initialLocation, autoLocate = false 
       reverseGeocode(loc, (addr) => {
         setAreaAddress(addr);
         setTempAddress(addr);
-        notifyParent(addr, loc, buildingDetails, selectedTag, dist, outOfRange, "gps");
+        notifyParent(addr, loc, buildingDetails, dist, outOfRange, "gps");
       });
     };
 
@@ -272,7 +258,7 @@ const LocationPicker = ({ onLocationSelect, initialLocation, autoLocate = false 
       onPosError,
       { enableHighAccuracy: true, timeout: 5000, maximumAge: 60000 }
     );
-  }, [reverseGeocode, notifyParent, buildingDetails, selectedTag]);
+  }, [reverseGeocode, notifyParent, buildingDetails]);
 
   // Center on store
   const handleCenterOnStore = () => {
@@ -288,7 +274,6 @@ const LocationPicker = ({ onLocationSelect, initialLocation, autoLocate = false 
     const startPos = selectedCoords || defaultCenter;
     setTempCoords(startPos);
     setTempAddress(areaAddress || "Pinned Location");
-    setTempTag(selectedTag);
     setTempDetails({ ...buildingDetails });
     setShowMapModal(true);
   };
@@ -307,24 +292,17 @@ const LocationPicker = ({ onLocationSelect, initialLocation, autoLocate = false 
     const chosenArea = tempAddress || "Pinned Location";
     setSelectedCoords(tempCoords);
     setAreaAddress(chosenArea);
-    setSelectedTag(tempTag);
     setBuildingDetails(tempDetails);
     setShowMapModal(false);
 
-    notifyParent(chosenArea, tempCoords, tempDetails, tempTag, tempDistanceKm, false, "map");
+    notifyParent(chosenArea, tempCoords, tempDetails, tempDistanceKm, false, "map");
   };
 
   // Update inline building details
   const handleDetailChange = (field, value) => {
     const updated = { ...buildingDetails, [field]: value };
     setBuildingDetails(updated);
-    notifyParent(areaAddress, selectedCoords, updated, selectedTag, currentDistanceKm, isSelectedOutOfRange, "manual");
-  };
-
-  // Update tag
-  const handleTagChange = (tagId) => {
-    setSelectedTag(tagId);
-    notifyParent(areaAddress, selectedCoords, buildingDetails, tagId, currentDistanceKm, isSelectedOutOfRange, "manual");
+    notifyParent(areaAddress, selectedCoords, updated, currentDistanceKm, isSelectedOutOfRange, "manual");
   };
 
   // Fallback for manual typing if Google Map fails to load
@@ -340,7 +318,7 @@ const LocationPicker = ({ onLocationSelect, initialLocation, autoLocate = false 
             onChange={(e) => {
               const v = e.target.value;
               setAreaAddress(v);
-              notifyParent(v, null, buildingDetails, selectedTag, null, false, "manual");
+              notifyParent(v, null, buildingDetails, null, false, "manual");
             }}
             className="loc-fallback-input"
           />
@@ -367,32 +345,16 @@ const LocationPicker = ({ onLocationSelect, initialLocation, autoLocate = false 
     );
   }
 
-  const TagIcon = ADDRESS_TAGS.find(t => t.id === selectedTag)?.icon || MapPin;
-
   return (
     <div className="loc-delivery-selector">
       {/* 1. Main Clean Card */}
       <div className={`loc-clean-card ${isSelectedOutOfRange ? "is-out" : areaAddress ? "is-ready" : ""}`}>
         
-        {/* Card Header: Address Tag Pills & Fast Action Buttons */}
+        {/* Card Header: Fast Action Buttons */}
         <div className="loc-card-header">
-          <div className="loc-tags-list">
-            {ADDRESS_TAGS.map((t) => {
-              const Icon = t.icon;
-              const active = selectedTag === t.id;
-              return (
-                <button
-                  key={t.id}
-                  type="button"
-                  className={`loc-tag-pill ${active ? "active" : ""}`}
-                  onClick={() => handleTagChange(t.id)}
-                >
-                  <Icon size={12} />
-                  <span>{t.label}</span>
-                </button>
-              );
-            })}
-          </div>
+          <span className="loc-header-title">
+            <MapPin size={13} /> Delivery Location
+          </span>
 
           <div className="loc-header-actions">
             {/* Fast 1-Tap Locate Me Button */}
@@ -615,25 +577,6 @@ const LocationPicker = ({ onLocationSelect, initialLocation, autoLocate = false 
                     {tempAddress || "Pinned Location"}
                   </span>
                 </div>
-              </div>
-
-              {/* Address Tag Selector */}
-              <div className="loc-modal-tags-row">
-                {ADDRESS_TAGS.map((t) => {
-                  const Icon = t.icon;
-                  const active = tempTag === t.id;
-                  return (
-                    <button
-                      key={t.id}
-                      type="button"
-                      className={`loc-tag-pill ${active ? "active" : ""}`}
-                      onClick={() => setTempTag(t.id)}
-                    >
-                      <Icon size={12} />
-                      <span>{t.label}</span>
-                    </button>
-                  );
-                })}
               </div>
 
               {/* Mandatory Building & Floor inputs in modal */}

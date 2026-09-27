@@ -84,7 +84,7 @@ const Profile = () => {
   const [showAddressModal, setShowAddressModal] = useState(false);
   const [addressForm, setAddressForm] = useState({
     id: null,
-    label: 'Home',
+    label: '',
     address: '',
     city: 'Beirut',
     notes: '',
@@ -447,7 +447,7 @@ const Profile = () => {
   const handleOpenAddAddress = () => {
     setAddressForm({
       id: null,
-      label: 'Home',
+      label: '',
       address: '',
       city: 'Beirut',
       notes: '',
@@ -459,7 +459,7 @@ const Profile = () => {
   const handleEditAddress = (addr) => {
     setAddressForm({
       id: addr._id || addr.id,
-      label: addr.label || 'Home',
+      label: addr.label || '',
       address: addr.address || '',
       city: addr.city || 'Beirut',
       notes: addr.notes || '',
@@ -485,7 +485,7 @@ const Profile = () => {
           const match = (a._id && a._id === addressForm.id) || (a.id && a.id === addressForm.id);
           if (match) {
             const item = {
-              label: addressForm.label || 'Home',
+              label: addressForm.label?.trim() || 'Delivery Address',
               address: addressForm.address.trim(),
               city: addressForm.city || 'Beirut',
               notes: addressForm.notes || '',
@@ -503,7 +503,7 @@ const Profile = () => {
           currentAddresses.forEach((a) => { a.isDefault = false; });
         }
         const newAddr = {
-          label: addressForm.label || 'Home',
+          label: addressForm.label?.trim() || 'Delivery Address',
           address: addressForm.address.trim(),
           city: addressForm.city || 'Beirut',
           notes: addressForm.notes || '',
@@ -1164,7 +1164,7 @@ const Profile = () => {
               <MapPin size={34} />
             </div>
             <h3>{t.noSavedAddresses}</h3>
-            <p>Save your home or work address for 1-tap fast checkout.</p>
+            <p>Save your delivery addresses for 1-tap fast checkout.</p>
             <Button variant="primary" onClick={handleOpenAddAddress} className="add-first-address-btn">
               <Plus size={15} style={{ marginRight: 6 }} /> {t.addNewAddress}
             </Button>
@@ -1173,20 +1173,13 @@ const Profile = () => {
           <div className="saved-addresses-grid">
             {savedAddresses.map((addr, index) => {
               const isDefault = addr.isDefault || (!savedAddresses.some(a => a.isDefault) && index === 0);
-              const labelLower = (addr.label || 'home').toLowerCase();
 
               return (
                 <div key={addr._id || index} className={`address-card ${isDefault ? 'is-default' : ''}`}>
                   <div className="address-card-header">
                     <div className="address-label-badge">
-                      {labelLower === 'work' ? (
-                        <Briefcase size={14} />
-                      ) : labelLower === 'home' ? (
-                        <Home size={14} />
-                      ) : (
-                        <MapPin size={14} />
-                      )}
-                      <span>{addr.label || 'Saved Location'}</span>
+                      <MapPin size={14} />
+                      <span>{addr.label || 'Delivery Address'}</span>
                     </div>
 
                     {isDefault ? (
@@ -1767,25 +1760,16 @@ const Profile = () => {
             </div>
 
             <form onSubmit={handleSaveAddress} className="modal-form-stack">
-              {/* Label Choice */}
+              {/* Optional Label */}
               <div className="form-group-wrap">
-                <label className="modal-input-label">Address Label</label>
-                <div className="address-label-options">
-                  {['Home', 'Work', 'Farm', 'Other'].map(lbl => (
-                    <button
-                      key={lbl}
-                      type="button"
-                      className={`label-choice-pill ${addressForm.label === lbl ? 'selected' : ''}`}
-                      onClick={() => setAddressForm({...addressForm, label: lbl})}
-                    >
-                      {lbl === 'Home' && <Home size={13} />}
-                      {lbl === 'Work' && <Briefcase size={13} />}
-                      {lbl === 'Farm' && <Sparkles size={13} />}
-                      {lbl === 'Other' && <MapPin size={13} />}
-                      <span>{lbl}</span>
-                    </button>
-                  ))}
-                </div>
+                <label className="modal-input-label">Address Title / Label (Optional)</label>
+                <input 
+                  type="text" 
+                  className="modal-field-input"
+                  placeholder="e.g. My Apartment, Chalet, Office"
+                  value={addressForm.label}
+                  onChange={(e) => setAddressForm(prev => ({ ...prev, label: e.target.value }))}
+                />
               </div>
 
               {/* Direct Address Input */}

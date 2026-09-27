@@ -67,8 +67,35 @@ const Checkout = () => {
   tomorrowDateObj.setDate(tomorrowDateObj.getDate() + 1);
   const tomorrowIso = tomorrowDateObj.toISOString().split('T')[0];
 
+  const HOURLY_TIME_SLOTS = [
+    "12 AM - 1 AM",
+    "1 AM - 2 AM",
+    "2 AM - 3 AM",
+    "3 AM - 4 AM",
+    "4 AM - 5 AM",
+    "5 AM - 6 AM",
+    "6 AM - 7 AM",
+    "7 AM - 8 AM",
+    "8 AM - 9 AM",
+    "9 AM - 10 AM",
+    "10 AM - 11 AM",
+    "11 AM - 12 PM",
+    "12 PM - 1 PM",
+    "1 PM - 2 PM",
+    "2 PM - 3 PM",
+    "3 PM - 4 PM",
+    "4 PM - 5 PM",
+    "5 PM - 6 PM",
+    "6 PM - 7 PM",
+    "7 PM - 8 PM",
+    "8 PM - 9 PM",
+    "9 PM - 10 PM",
+    "10 PM - 11 PM",
+    "11 PM - 12 AM",
+  ];
+
   const [scheduledDate, setScheduledDate] = useState(todayIso);
-  const [scheduledTimeSlot, setScheduledTimeSlot] = useState("Morning (09:00 AM - 12:00 PM)");
+  const [scheduledTimeSlot, setScheduledTimeSlot] = useState("9 AM - 10 AM");
 
   const getFormattedDeliveryPreference = () => {
     if (deliveryPreference === 'asap') {
@@ -781,30 +808,19 @@ const Checkout = () => {
                       {/* Time Slot Selection */}
                       <div className="schedule-section">
                         <label className="schedule-label">
-                          <Clock size={13} /> Preferred Time Window
+                          <Clock size={13} /> Preferred Hour
                         </label>
-                        <div className="schedule-pills-row time-slots">
-                          <button
-                            type="button"
-                            className={`schedule-pill-btn ${scheduledTimeSlot === 'Morning (09:00 AM - 12:00 PM)' ? 'active' : ''}`}
-                            onClick={() => setScheduledTimeSlot('Morning (09:00 AM - 12:00 PM)')}
-                          >
-                            🌅 Morning (9 AM - 12 PM)
-                          </button>
-                          <button
-                            type="button"
-                            className={`schedule-pill-btn ${scheduledTimeSlot === 'Afternoon (12:00 PM - 04:00 PM)' ? 'active' : ''}`}
-                            onClick={() => setScheduledTimeSlot('Afternoon (12:00 PM - 4 PM)')}
-                          >
-                            ☀️ Afternoon (12 PM - 4 PM)
-                          </button>
-                          <button
-                            type="button"
-                            className={`schedule-pill-btn ${scheduledTimeSlot === 'Evening (04:00 PM - 08:00 PM)' ? 'active' : ''}`}
-                            onClick={() => setScheduledTimeSlot('Evening (4 PM - 8 PM)')}
-                          >
-                            🌙 Evening (4 PM - 8 PM)
-                          </button>
+                        <div className="schedule-time-grid">
+                          {HOURLY_TIME_SLOTS.map((slot) => (
+                            <button
+                              key={slot}
+                              type="button"
+                              className={`schedule-pill-btn ${scheduledTimeSlot === slot ? 'active' : ''}`}
+                              onClick={() => setScheduledTimeSlot(slot)}
+                            >
+                              {slot}
+                            </button>
+                          ))}
                         </div>
                       </div>
                     </div>

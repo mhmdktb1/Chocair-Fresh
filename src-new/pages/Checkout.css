@@ -556,6 +556,40 @@
   box-shadow: 0 2px 6px rgba(22, 163, 74, 0.25);
 }
 
+.schedule-time-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(118px, 1fr));
+  gap: 0.45rem;
+  max-height: 200px;
+  overflow-y: auto;
+  padding: 2px 4px 2px 0;
+}
+
+.schedule-time-grid::-webkit-scrollbar {
+  width: 5px;
+}
+
+.schedule-time-grid::-webkit-scrollbar-track {
+  background: #f1f5f9;
+  border-radius: 4px;
+}
+
+.schedule-time-grid::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 4px;
+}
+
+.schedule-time-grid::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}
+
+.schedule-time-grid .schedule-pill-btn {
+  text-align: center;
+  padding: 0.45rem 0.4rem;
+  font-size: 0.74rem;
+  white-space: nowrap;
+}
+
 .schedule-custom-date {
   margin-top: 0.3rem;
   padding: 0.45rem 0.75rem;
@@ -1651,6 +1685,11 @@
 
   .schedule-picker-box {
     padding: 0.75rem;
+  }
+
+  .schedule-time-grid {
+    grid-template-columns: repeat(2, 1fr);
+    max-height: 180px;
   }
 
   .schedule-pills-row.time-slots {
