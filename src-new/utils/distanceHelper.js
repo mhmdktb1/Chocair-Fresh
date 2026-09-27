@@ -77,15 +77,15 @@ export const calculateDistanceKm = (lat1, lon1, lat2, lon2) => {
  * Get nearest area name for a coordinate pair
  */
 export const getNearestAreaName = (lat, lng) => {
-  if (lat == null || lng == null) return "Dbayeh Area";
+  if (lat == null || lng == null) return "Dbayeh";
   let minDistance = Infinity;
-  let closestName = "Dbayeh Area";
+  let closestName = "Dbayeh";
 
   for (const area of KNOWN_AREAS) {
     const dist = calculateDistanceKm(lat, lng, area.lat, area.lng);
     if (dist != null && dist < minDistance) {
       minDistance = dist;
-      closestName = `${area.name}`;
+      closestName = area.name;
     }
   }
 
@@ -93,61 +93,51 @@ export const getNearestAreaName = (lat, lng) => {
 };
 
 /**
- * Extract clean, human-readable area name from Google Geocoder results
+ * Extract exact, high-precision area/street name from Google Geocoder results
  */
 export const extractAreaName = (results, coords) => {
-  if (!Array.isArray(results) || results.length === 0) {
-    return coords ? getNearestAreaName(coords.lat, coords.lng) : "Dbayeh Area";
-  }
+  if (Array.isArray(results) && results.length > 0) {
+    // 1. Pick the most specific formatted_address (usually results[0] or first without just a plus code)
+    for (const res of results) {
+      if (res.formatted_address) {
+        let clean = res.formatted_address;
+        // Strip plus codes e.g. WHVR+GVR, or 8FHJ2345+...
+        clean = clean.replace(/^[A-Z0-9\+]{4,}\+?[A-Z0-9]*,?\s*/i, '').trim();
+        // Remove trailing country and governorates if appended
+        clean = clean.replace(/,?\s*(Mount\s+)?Lebanon(\s+Governorate)?$/i, '').trim();
+        clean = clean.replace(/,?\s*Lebanon$/i, '').trim();
+        // Remove trailing postal codes
+        clean = clean.replace(/,\s*[0-9\-]+$/i, '').trim();
 
-  // 1. Try to find neighborhood, sublocality, route, locality in address components
-  for (const res of results) {
-    if (res.address_components && Array.isArray(res.address_components)) {
-      const parts = [];
-      let neighborhood = '';
-      let sublocality = '';
-      let route = '';
-      let locality = '';
-      let admin2 = '';
-
-      for (const comp of res.address_components) {
-        const types = comp.types || [];
-        if (types.includes('neighborhood') || types.includes('sublocality_level_1')) {
-          neighborhood = comp.long_name || comp.short_name;
-        } else if (types.includes('sublocality') || types.includes('sublocality_level_2')) {
-          sublocality = comp.long_name || comp.short_name;
-        } else if (types.includes('route')) {
-          route = comp.long_name || comp.short_name;
-        } else if (types.includes('locality')) {
-          locality = comp.long_name || comp.short_name;
-        } else if (types.includes('administrative_area_level_2')) {
-          admin2 = comp.long_name || comp.short_name;
+        // If it's valid text (not just digits/plus code), return the exact address string
+        if (clean && clean.length > 2 && !/^[0-9\-\+\s]+$/.test(clean)) {
+          return clean;
         }
-      }
-
-      const primary = neighborhood || sublocality || route || locality;
-      const secondary = (locality && locality !== primary) ? locality : ((admin2 && admin2 !== primary) ? admin2 : '');
-
-      if (primary) {
-        if (secondary && !primary.toLowerCase().includes(secondary.toLowerCase())) {
-          return `${primary}, ${secondary}`;
-        }
-        return primary;
       }
     }
-  }
 
-  // 2. Try cleaning formatted address
-  if (results[0]?.formatted_address) {
-    let formatted = results[0].formatted_address;
-    // Remove plus codes e.g. WHVR+GVR,
-    formatted = formatted.replace(/^[A-Z0-9\+]{4,}\+?[A-Z0-9]*,?\s*/i, '').trim();
-    // Remove trailing country "Lebanon" or postal codes if it leaves a nice area name
-    const pieces = formatted.split(',').map(s => s.trim()).filter(Boolean);
-    if (pieces.length > 0) {
-      const cleanPieces = pieces.filter(p => !/^[0-9\-]+$/.test(p) && p.toLowerCase() !== 'lebanon');
-      if (cleanPieces.length > 0) {
-        return cleanPieces.slice(0, 2).join(', ');
+    // 2. Secondary fallback: Assemble from specific address_components
+    for (const res of results) {
+      if (res.address_components && Array.isArray(res.address_components)) {
+        let streetNumber = '';
+        let route = '';
+        let neighborhood = '';
+        let sublocality = '';
+        let locality = '';
+
+        for (const comp of res.address_components) {
+          const types = comp.types || [];
+          if (types.includes('street_number')) streetNumber = comp.long_name;
+          else if (types.includes('route')) route = comp.long_name;
+          else if (types.includes('neighborhood')) neighborhood = comp.long_name;
+          else if (types.includes('sublocality') || types.includes('sublocality_level_1')) sublocality = comp.long_name;
+          else if (types.includes('locality')) locality = comp.long_name;
+        }
+
+        const street = [streetNumber, route].filter(Boolean).join(' ');
+        const area = neighborhood || sublocality || locality;
+        const exact = [street, area].filter(Boolean).join(', ');
+        if (exact) return exact;
       }
     }
   }
@@ -157,12 +147,12 @@ export const extractAreaName = (results, coords) => {
     return getNearestAreaName(coords.lat, coords.lng);
   }
 
-  return "Dbayeh Area";
+  return "Dbayeh";
 };
 
 /**
  * Format any saved location string to replace raw 'Lat:...', 'GPS Pinned Location', or 'Pinned Location'
- * with a friendly area name.
+ * with the exact location/area name.
  */
 export const formatLocationDisplay = (locationStr) => {
   if (!locationStr || typeof locationStr !== 'string') return '';
@@ -177,16 +167,20 @@ export const formatLocationDisplay = (locationStr) => {
       const lng = parseFloat(lngMatch[1]);
       return getNearestAreaName(lat, lng);
     }
-    return "Selected Area";
+    return "Selected Location";
   }
 
-  if (trimmed.toLowerCase().includes('pinned location') || trimmed.toLowerCase().includes('pinned gps location')) {
-    return trimmed
-      .replace(/pinned\s+gps\s+location/gi, 'Selected Area')
-      .replace(/pinned\s+location/gi, 'Selected Area');
+  let cleaned = trimmed.replace(/^[A-Z0-9\+]{4,}\+?[A-Z0-9]*,?\s*/i, '').trim();
+  cleaned = cleaned.replace(/,?\s*(Mount\s+)?Lebanon(\s+Governorate)?$/i, '').trim();
+  cleaned = cleaned.replace(/,?\s*Lebanon$/i, '').trim();
+
+  if (cleaned.toLowerCase().includes('pinned location') || cleaned.toLowerCase().includes('pinned gps location')) {
+    return cleaned
+      .replace(/pinned\s+gps\s+location/gi, 'Selected Location')
+      .replace(/pinned\s+location/gi, 'Selected Location');
   }
 
-  return trimmed;
+  return cleaned || trimmed;
 };
 
 /**

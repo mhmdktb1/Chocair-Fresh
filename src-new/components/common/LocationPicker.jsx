@@ -96,14 +96,14 @@ const LocationPicker = ({ onLocationSelect, initialLocation, autoLocate = false 
     return parts.join(", ");
   }, []);
 
-  // Reverse geocoding helper (extracts Area Name)
+  // Reverse geocoding helper (extracts exact street/area name)
   const reverseGeocode = useCallback((loc, callback) => {
     if (!loc || loc.lat == null || loc.lng == null) {
-      callback?.("Dbayeh Area");
+      callback?.("Dbayeh");
       return;
     }
 
-    const fallbackArea = getNearestAreaName(loc.lat, loc.lng) || "Dbayeh Area";
+    const fallbackArea = getNearestAreaName(loc.lat, loc.lng) || "Dbayeh";
 
     if (!geocoderRef.current && window.google?.maps) {
       geocoderRef.current = new window.google.maps.Geocoder();
@@ -280,7 +280,7 @@ const LocationPicker = ({ onLocationSelect, initialLocation, autoLocate = false 
   // Open map modal
   const handleOpenMap = () => {
     const startPos = selectedCoords || defaultCenter;
-    const defaultArea = getNearestAreaName(startPos?.lat, startPos?.lng) || "Dbayeh Area";
+    const defaultArea = getNearestAreaName(startPos?.lat, startPos?.lng) || "Dbayeh";
     setTempCoords(startPos);
     setTempAddress(areaAddress || defaultArea);
     setTempDetails({ ...buildingDetails });
@@ -298,7 +298,7 @@ const LocationPicker = ({ onLocationSelect, initialLocation, autoLocate = false 
       toast.warn("Building and Floor are required.");
     }
 
-    const fallbackArea = getNearestAreaName(tempCoords?.lat, tempCoords?.lng) || "Dbayeh Area";
+    const fallbackArea = getNearestAreaName(tempCoords?.lat, tempCoords?.lng) || "Dbayeh";
     const chosenArea = tempAddress || fallbackArea;
     setSelectedCoords(tempCoords);
     setAreaAddress(chosenArea);
