@@ -16,7 +16,7 @@ if (!fs.existsSync(uploadDir)) {
 // Supabase Storage Client Initialization
 const supabaseUrl = process.env.SUPABASE_URL;
 const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_SECRET_KEY || process.env.SUPABASE_KEY;
-const supabaseBucket = process.env.SUPABASE_BUCKET || 'uploads';
+const supabaseBucket = process.env.SUPABASE_BUCKET || 'Fresh.img';
 
 let supabase = null;
 if (supabaseUrl && supabaseKey) {
