@@ -1,16 +1,18 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useLocation } from 'react-router-dom';
 import { 
-  MessageCircle, 
+  MessageSquareText, 
+  MessageCircle,
   X, 
-  Phone, 
+  PhoneCall, 
   MapPin, 
   Clock, 
   Send, 
   Sparkles, 
   ChevronRight, 
   Headphones,
-  ExternalLink
+  ExternalLink,
+  HelpCircle
 } from 'lucide-react';
 import './FloatingContact.css';
 
@@ -143,7 +145,7 @@ const FloatingContact = () => {
   const openStatus = isStoreOpen();
 
   return (
-    <div className="floating-contact-wrapper" aria-label="Customer Support">
+    <div className={`floating-contact-wrapper ${isOpen ? 'menu-open' : ''}`} aria-label="Customer Support">
       {/* Floating Action Button (FAB) */}
       <div className="floating-contact-fab-container">
         {/* Animated Greeting Bubble / Tooltip */}
@@ -156,11 +158,11 @@ const FloatingContact = () => {
           >
             <div className="tooltip-avatar-badge">
               <span className="tooltip-pulse-dot" />
-              <Headphones size={14} className="tooltip-icon" />
+              <Headphones size={15} className="tooltip-icon" />
             </div>
             <div className="tooltip-content">
-              <span className="tooltip-title">Need fresh help? 👋</span>
-              <span className="tooltip-subtitle">Chat with us on WhatsApp!</span>
+              <span className="tooltip-title">Have questions? 👋</span>
+              <span className="tooltip-subtitle">We're here to help anytime</span>
             </div>
             <button 
               type="button" 
@@ -181,31 +183,39 @@ const FloatingContact = () => {
           ref={fabRef}
           type="button"
           onClick={toggleOpen}
-          className={`floating-contact-fab ${isOpen ? 'active' : ''}`}
+          className={`floating-contact-fab ${isOpen ? 'active' : 'floating-idle-anim'}`}
           aria-expanded={isOpen}
           aria-haspopup="dialog"
-          aria-label={isOpen ? 'Close contact menu' : 'Contact Chocair Fresh'}
+          aria-label={isOpen ? 'Close contact menu' : 'Contact Us'}
         >
-          <div className="fab-pulse-ring" />
-          <div className="fab-icon-container">
+          {/* Subtle animated aura pulse rings */}
+          {!isOpen && (
+            <>
+              <div className="fab-aura-ring ring-1" />
+              <div className="fab-aura-ring ring-2" />
+            </>
+          )}
+
+          {/* Shimmer light sweep bar */}
+          <div className="fab-shimmer" />
+
+          {/* Icon Section */}
+          <div className="fab-icon-bubble">
             {isOpen ? (
-              <X size={24} className="fab-icon-close" />
+              <X size={20} className="fab-icon-close" />
             ) : (
-              <div className="fab-icon-open-group">
-                <img 
-                  src="/assets/icons/whatsapp.png" 
-                  alt="WhatsApp Contact" 
-                  className="fab-wa-icon"
-                  onError={(e) => {
-                    e.target.style.display = 'none';
-                  }}
-                />
-                <MessageCircle size={26} className="fab-fallback-icon" />
-                <span className="fab-online-dot" title="Support Online" />
+              <div className="fab-icon-active-wrap">
+                <MessageSquareText size={18} className="fab-main-icon" />
+                <span className="fab-live-dot" title="Support Online" />
               </div>
             )}
           </div>
-          <span className="fab-label-text">Contact Us</span>
+
+          {/* Text Section */}
+          <div className="fab-text-wrap">
+            <span className="fab-label-title">{isOpen ? 'Close' : 'Contact Us'}</span>
+            {!isOpen && <span className="fab-label-sub">Support</span>}
+          </div>
         </button>
       </div>
 
@@ -233,12 +243,12 @@ const FloatingContact = () => {
                 <div className="popover-heading-row">
                   <h3 id="contact-popover-heading" className="popover-title">Chocair Fresh Support</h3>
                   <span className="popover-verified-tag">
-                    <Sparkles size={11} /> Verified
+                    <Sparkles size={11} /> Fresh Help
                   </span>
                 </div>
                 <p className="popover-status-text">
                   {openStatus ? (
-                    <span className="text-emerald">● Online • Replies in ~5 mins</span>
+                    <span className="text-emerald">● Online • Fast assistance</span>
                   ) : (
                     <span className="text-amber">● Away • Opens 7:30 AM</span>
                   )}
@@ -257,23 +267,18 @@ const FloatingContact = () => {
 
           {/* Body */}
           <div className="popover-body">
-            {/* Primary Direct WhatsApp Action Card */}
+            {/* Primary Action Card: Chat with us */}
             <a
               href={getWhatsAppLink('Hello Chocair Fresh! I would like to ask a question.')}
               target="_blank"
               rel="noopener noreferrer"
               className="popover-primary-card"
             >
-              <div className="wa-brand-icon-box">
-                <img 
-                  src="/assets/icons/whatsapp.png" 
-                  alt="WhatsApp" 
-                  className="popover-wa-img"
-                  onError={(e) => { e.target.style.display = 'none'; }}
-                />
+              <div className="primary-icon-box">
+                <MessageCircle size={20} />
               </div>
               <div className="popover-primary-info">
-                <span className="primary-card-title">Chat on WhatsApp</span>
+                <span className="primary-card-title">Live WhatsApp Chat</span>
                 <span className="primary-card-subtitle">{PHONE_NUMBER}</span>
               </div>
               <ChevronRight size={18} className="primary-arrow" />
@@ -285,7 +290,7 @@ const FloatingContact = () => {
               className="popover-secondary-action"
             >
               <div className="secondary-icon-box phone-box">
-                <Phone size={16} />
+                <PhoneCall size={16} />
               </div>
               <div className="secondary-info">
                 <span className="secondary-label">Call Store Directly</span>
@@ -295,7 +300,10 @@ const FloatingContact = () => {
 
             {/* Quick Inquiry Chips */}
             <div className="popover-quick-section">
-              <span className="quick-section-title">Quick Inquiries</span>
+              <div className="quick-header-row">
+                <HelpCircle size={13} className="quick-info-icon" />
+                <span className="quick-section-title">Quick Inquiries</span>
+              </div>
               <div className="quick-chips-grid">
                 {QUICK_INQUIRIES.map((item) => (
                   <a
@@ -317,7 +325,7 @@ const FloatingContact = () => {
               <div className="custom-input-wrap">
                 <input
                   type="text"
-                  placeholder="Type a quick message..."
+                  placeholder="Type a message or inquiry..."
                   value={customMsg}
                   onChange={(e) => setCustomMsg(e.target.value)}
                   className="custom-msg-input"
@@ -326,9 +334,9 @@ const FloatingContact = () => {
                 <button 
                   type="submit" 
                   className="custom-send-btn"
-                  aria-label="Send WhatsApp message"
+                  aria-label="Send inquiry"
                 >
-                  <Send size={15} />
+                  <Send size={14} />
                 </button>
               </div>
             </form>
