@@ -6,18 +6,35 @@ import axios from 'axios';
  */
 
 const LBP_RATE = 89500;
+const DEFAULT_BOT_TOKEN = '8943676195:AAGSac7PomfLgvImeqDGiJwTBbHQ3fP1dUE';
 
 export const sendTelegramOrderAlert = async (order) => {
   if (process.env.NODE_ENV === 'test') {
     return { success: true, mode: 'test' };
   }
 
-  const botToken = process.env.TELEGRAM_BOT_TOKEN;
-  const chatId = process.env.TELEGRAM_CHAT_ID || process.env.TELEGRAM_ADMIN_CHAT_ID;
+  const botToken = process.env.TELEGRAM_BOT_TOKEN || DEFAULT_BOT_TOKEN;
+  let chatId = process.env.TELEGRAM_CHAT_ID || process.env.TELEGRAM_ADMIN_CHAT_ID;
 
-  if (!botToken || !chatId) {
-    console.log(`ℹ️ [Telegram Alert] Bot token or Chat ID not set. Set TELEGRAM_BOT_TOKEN and TELEGRAM_CHAT_ID to receive phone notifications.`);
-    return { success: false, reason: 'unconfigured' };
+  // If chat ID is not hardcoded, try to auto-discover it from the bot's latest active chats
+  if (!chatId) {
+    try {
+      const updatesRes = await axios.get(`https://api.telegram.org/bot${botToken}/getUpdates`, { timeout: 5000 });
+      const updates = updatesRes.data?.result || [];
+      if (updates.length > 0) {
+        const lastMsg = updates[updates.length - 1]?.message || updates[updates.length - 1]?.channel_post;
+        if (lastMsg?.chat?.id) {
+          chatId = lastMsg.chat.id;
+        }
+      }
+    } catch (discErr) {
+      console.warn('Could not auto-discover Telegram chat ID:', discErr.message);
+    }
+  }
+
+  if (!chatId) {
+    console.log(`ℹ️ [Telegram Alert] Bot active (@chocair_fresh_bot), but Chat ID not yet received. Please open https://t.me/chocair_fresh_bot on your phone and press Start.`);
+    return { success: false, reason: 'unconfigured_chat_id' };
   }
 
   try {
