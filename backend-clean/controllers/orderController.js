@@ -4,6 +4,7 @@ import Product from '../models/productModel.js';
 import User from '../models/userModel.js';
 import HomeConfig from '../models/homeModel.js';
 import { sendWhatsAppOrderNotification } from '../utils/whatsappService.js';
+import { sendTelegramOrderAlert } from '../utils/telegramService.js';
 import { calculateProductDiscount } from '../utils/discountHelper.js';
 import {
   calculateDistanceKm,
@@ -199,6 +200,11 @@ const addOrderItems = asyncHandler(async (req, res) => {
         console.error('WhatsApp notification dispatch failed:', err.message)
       );
     }
+
+    // Dispatch Instant Telegram Alert to Store Admin Phone
+    sendTelegramOrderAlert(createdOrder).catch((telegramErr) =>
+      console.error('Telegram notification dispatch failed:', telegramErr.message)
+    );
 
     res.status(201).json(createdOrder);
   } catch (error) {
