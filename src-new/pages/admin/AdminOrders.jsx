@@ -122,7 +122,7 @@ export const formatWhatsAppOrderMessage = (order) => {
 };
 
 function AdminOrders() {
-  const { orders, updateOrderStatus, deleteOrder } = useAdmin();
+  const { orders, updateOrderStatus, deleteOrder, newOrderAlert } = useAdmin();
   const [filterStatus, setFilterStatus] = useState("Pending");
   const [dateFilter, setDateFilter] = useState("today");
   const [searchQuery, setSearchQuery] = useState("");
@@ -518,11 +518,12 @@ function AdminOrders() {
               : (order.itemCount || 1);
             const customerWaUrl = order.phone ? getCustomerWhatsAppUrl(order) : null;
             const genericWaUrl = getGeneralWhatsAppUrl(order);
+            const isHighlightedNew = Boolean(newOrderAlert && String(newOrderAlert.id) === String(order.id));
 
             return (
               <div 
                 key={order.id} 
-                className="admin-order-card"
+                className={`admin-order-card ${isHighlightedNew ? 'new-order-highlight' : ''}`}
                 onClick={() => setSelectedOrder(order)}
                 style={{ cursor: 'pointer' }}
               >
@@ -530,6 +531,9 @@ function AdminOrders() {
                 <div className="order-card-header">
                   <div className="order-id-group">
                     <span className="order-id-tag">{shortId}</span>
+                    {isHighlightedNew && (
+                      <span className="order-new-beacon">NEW ORDER</span>
+                    )}
                     <span className="order-date-tag">{formatOrderDate(order.date)}</span>
                   </div>
                   <span className={`order-status-badge ${getStatusBadgeClass(order.status)}`}>

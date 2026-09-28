@@ -162,6 +162,8 @@ const addOrderItems = asyncHandler(async (req, res) => {
 
     const createdOrder = await order.save();
 
+    console.log(`🔔 [Admin Notification] New order #${createdOrder._id} ($${createdOrder.totalPrice}) placed by ${customerInfo?.name || 'Guest'}`);
+
     // Trigger WhatsApp notifications asynchronously (non-blocking)
     const notificationTargets = [];
 
@@ -169,9 +171,27 @@ const addOrderItems = asyncHandler(async (req, res) => {
       notificationTargets.push({ phone: customerInfo.phone, isAdmin: false });
     }
 
-    const adminUser = await User.findOne({ isAdmin: true }).lean();
-    if (adminUser && adminUser.phone) {
-      notificationTargets.push({ phone: adminUser.phone, isAdmin: true });
+    const adminPhones = new Set();
+    if (process.env.ADMIN_PHONE) {
+      adminPhones.add(process.env.ADMIN_PHONE);
+    }
+    if (process.env.ADMIN_NOTIFICATION_PHONE) {
+      adminPhones.add(process.env.ADMIN_NOTIFICATION_PHONE);
+    }
+
+    try {
+      const adminUsers = await User.find({ isAdmin: true }).lean();
+      for (const admin of adminUsers) {
+        if (admin.phone) {
+          adminPhones.add(admin.phone);
+        }
+      }
+    } catch (adminFetchErr) {
+      console.warn('Could not retrieve admin users for order notification:', adminFetchErr.message);
+    }
+
+    for (const phone of adminPhones) {
+      notificationTargets.push({ phone, isAdmin: true });
     }
 
     for (const target of notificationTargets) {

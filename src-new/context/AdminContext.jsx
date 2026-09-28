@@ -1,7 +1,9 @@
-import { createContext, useContext, useState, useEffect } from "react";
+import { createContext, useContext, useState, useEffect, useRef, useCallback } from "react";
 import api from "../utils/api";
 import { useAuth } from "./AuthContext";
 import { normalizeUnit } from "../utils/unitHelper";
+import { adminNotification } from "../utils/adminNotificationSound";
+import { toast } from "react-toastify";
 
 const AdminContext = createContext();
 
@@ -36,6 +38,18 @@ export const AdminProvider = ({ children }) => {
   const [users, setUsers] = useState([]); 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  
+  // Real-time Admin Notification State
+  const [soundEnabled, setSoundEnabledState] = useState(() => adminNotification.isSoundEnabled());
+  const [desktopNotifEnabled, setDesktopNotifEnabledState] = useState(() => adminNotification.isDesktopNotificationsEnabled());
+  const [notificationPermission, setNotificationPermission] = useState(() => {
+    return typeof window !== 'undefined' && 'Notification' in window ? Notification.permission : 'unsupported';
+  });
+  const [newOrderAlert, setNewOrderAlert] = useState(null);
+
+  // References for tracking known orders across polling cycles
+  const knownOrderIdsRef = useRef(new Set());
+  const isInitialOrderLoadRef = useRef(true);
 
   // Helper to normalize backend product to UI shape
   const mapProduct = (p) => {
@@ -125,14 +139,53 @@ export const AdminProvider = ({ children }) => {
     }
   };
 
-  const fetchOrders = async () => {
+  const fetchOrders = useCallback(async (isBackground = false) => {
     try {
       const response = await api.get("/orders");
-      setOrders(response.data.map(mapOrder));
+      const mapped = response.data.map(mapOrder);
+
+      if (isInitialOrderLoadRef.current) {
+        // First load: seed the known IDs set without firing sound alerts
+        knownOrderIdsRef.current = new Set(mapped.map(o => String(o.id)));
+        isInitialOrderLoadRef.current = false;
+        setOrders(mapped);
+      } else {
+        // Find newly placed orders that were not known previously
+        const newOrders = mapped.filter(o => !knownOrderIdsRef.current.has(String(o.id)));
+        
+        if (newOrders.length > 0) {
+          // Play chime + trigger desktop notification
+          newOrders.forEach((newOrder) => {
+            adminNotification.notify(newOrder);
+            
+            const shortId = (newOrder.id || '').toString().slice(-6).toUpperCase();
+            toast.success(
+              `🔔 New Order Received! #${shortId} from ${newOrder.customer} ($${Number(newOrder.total || 0).toFixed(2)})`,
+              {
+                position: "top-right",
+                autoClose: 9000,
+                hideProgressBar: false,
+                closeOnClick: true,
+                pauseOnHover: true,
+                draggable: true,
+              }
+            );
+          });
+
+          // Register all new IDs into set
+          newOrders.forEach(o => knownOrderIdsRef.current.add(String(o.id)));
+          setNewOrderAlert(newOrders[0]);
+        }
+
+        // Keep orders in state synchronized
+        setOrders(mapped);
+      }
     } catch (e) {
-      console.error("Failed to load orders", e);
+      if (!isBackground) {
+        console.error("Failed to load orders", e);
+      }
     }
-  };
+  }, []);
 
   const fetchCategories = async () => {
     try {
@@ -185,10 +238,60 @@ export const AdminProvider = ({ children }) => {
     fetchHeroes();
     
     if (isAdmin) {
-      fetchOrders();
+      fetchOrders(false);
       fetchUsers();
+
+      // Real-time polling every 8s for immediate new order notifications
+      const pollInterval = setInterval(() => {
+        fetchOrders(true);
+      }, 8000);
+
+      const handleVisibilityChange = () => {
+        if (document.visibilityState === 'visible') {
+          fetchOrders(true);
+        }
+      };
+
+      document.addEventListener('visibilitychange', handleVisibilityChange);
+
+      return () => {
+        clearInterval(pollInterval);
+        document.removeEventListener('visibilitychange', handleVisibilityChange);
+      };
     }
-  }, [isAdmin]);
+  }, [isAdmin, fetchOrders]);
+
+  const toggleSound = (enabled) => {
+    const nextVal = typeof enabled === 'boolean' ? enabled : !soundEnabled;
+    adminNotification.setSoundEnabled(nextVal);
+    setSoundEnabledState(nextVal);
+  };
+
+  const toggleDesktopNotif = (enabled) => {
+    const nextVal = typeof enabled === 'boolean' ? enabled : !desktopNotifEnabled;
+    adminNotification.setDesktopNotificationsEnabled(nextVal);
+    setDesktopNotifEnabledState(nextVal);
+  };
+
+  const requestDesktopNotification = async () => {
+    const perm = await adminNotification.requestPermission();
+    setNotificationPermission(perm);
+    if (perm === 'granted') {
+      toast.success("Desktop notifications enabled! 🔔");
+    } else if (perm === 'denied') {
+      toast.warn("Desktop notifications were blocked in browser settings.");
+    }
+    return perm;
+  };
+
+  const testNotificationSound = () => {
+    adminNotification.playOrderChime();
+    toast.info("🔔 Order chime test sound played!");
+  };
+
+  const clearNewOrderAlert = () => {
+    setNewOrderAlert(null);
+  };
 
   const addProduct = async (productData) => {
     try {
@@ -385,6 +488,7 @@ export const AdminProvider = ({ children }) => {
     error,
     refreshProducts: fetchProducts,
     orders,
+    refreshOrders: () => fetchOrders(true),
     users,
     addProduct,
     updateProduct,
@@ -399,6 +503,16 @@ export const AdminProvider = ({ children }) => {
     addHeroSlide,
     updateHeroSlide,
     deleteHeroSlide,
+    // Notification & Sound System
+    soundEnabled,
+    toggleSound,
+    desktopNotifEnabled,
+    toggleDesktopNotif,
+    notificationPermission,
+    requestDesktopNotification,
+    testNotificationSound,
+    newOrderAlert,
+    clearNewOrderAlert,
   };
 
   return <AdminContext.Provider value={value}>{children}</AdminContext.Provider>;

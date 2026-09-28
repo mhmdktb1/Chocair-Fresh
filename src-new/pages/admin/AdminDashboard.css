@@ -433,6 +433,425 @@
   flex-shrink: 0;
 }
 
+/* Notification & Sound Hub Control */
+.admin-notif-hub-wrapper {
+  position: relative;
+}
+
+.admin-notif-toggle-btn {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 38px;
+  height: 38px;
+  border-radius: 10px;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  color: #334155;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  padding: 0;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.admin-notif-toggle-btn:hover {
+  background: #f1f5f9;
+  border-color: #cbd5e1;
+  color: #0f172a;
+}
+
+.admin-notif-toggle-btn.has-pending {
+  border-color: #fdba74;
+  background: #fff7ed;
+  color: #ea580c;
+}
+
+.notif-sound-indicator {
+  position: absolute;
+  bottom: 3px;
+  right: 3px;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: #16a34a;
+  color: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 0 4px rgba(22, 163, 74, 0.4);
+}
+
+.notif-sound-indicator.muted {
+  background: #94a3b8;
+  box-shadow: none;
+}
+
+.notif-badge-pill {
+  position: absolute;
+  top: -4px;
+  right: -4px;
+  background: #ef4444;
+  color: #ffffff;
+  font-size: 0.62rem;
+  font-weight: 800;
+  min-width: 17px;
+  height: 17px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 3px;
+  border: 2px solid #ffffff;
+  box-shadow: 0 2px 6px rgba(239, 68, 68, 0.4);
+  animation: notifBadgePulse 2s infinite ease-in-out;
+}
+
+@keyframes notifBadgePulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.15); }
+}
+
+/* Notification Settings Dropdown */
+.admin-notif-dropdown {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  width: 320px;
+  background: #ffffff;
+  border-radius: 14px;
+  box-shadow: 0 10px 30px rgba(15, 23, 42, 0.15), 0 0 0 1px rgba(15, 23, 42, 0.06);
+  z-index: 1000;
+  overflow: hidden;
+  animation: adminDropdownFade 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes adminDropdownFade {
+  from { opacity: 0; transform: translateY(-6px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.notif-dropdown-header {
+  padding: 0.85rem 1rem;
+  border-bottom: 1px solid #f1f5f9;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: #fafafa;
+}
+
+.notif-header-title {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: #0f172a;
+}
+
+.notif-header-title h4 {
+  margin: 0;
+  font-size: 0.88rem;
+  font-weight: 700;
+}
+
+.live-status-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.68rem;
+  font-weight: 700;
+  color: #16a34a;
+  background: #f0fdf4;
+  padding: 0.2rem 0.5rem;
+  border-radius: 20px;
+  border: 1px solid #dcfce7;
+}
+
+.live-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #16a34a;
+  box-shadow: 0 0 6px rgba(22, 163, 74, 0.8);
+  animation: liveDotBlink 1.4s infinite;
+}
+
+@keyframes liveDotBlink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.3; }
+}
+
+.notif-dropdown-body {
+  padding: 0.85rem 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.notif-setting-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.setting-info {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+}
+
+.setting-label-group {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.setting-icon {
+  color: #94a3b8;
+}
+
+.setting-icon.active {
+  color: #16a34a;
+}
+
+.setting-title {
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: #1e293b;
+}
+
+.setting-sub {
+  font-size: 0.7rem;
+  color: #64748b;
+  line-height: 1.25;
+}
+
+/* Toggle Switch */
+.switch-toggle {
+  position: relative;
+  width: 42px;
+  height: 24px;
+  background: #cbd5e1;
+  border-radius: 12px;
+  border: none;
+  cursor: pointer;
+  padding: 2px;
+  transition: background-color 0.2s;
+  flex-shrink: 0;
+}
+
+.switch-toggle.checked {
+  background: #16a34a;
+}
+
+.switch-slider {
+  display: block;
+  width: 20px;
+  height: 20px;
+  background: #ffffff;
+  border-radius: 50%;
+  transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.15);
+}
+
+.switch-toggle.checked .switch-slider {
+  transform: translateX(18px);
+}
+
+.notif-action-row {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.test-sound-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.74rem;
+  font-weight: 700;
+  color: #0369a1;
+  background: #f0f9ff;
+  border: 1px solid #e0f2fe;
+  padding: 0.35rem 0.65rem;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.test-sound-btn:hover {
+  background: #e0f2fe;
+}
+
+.notif-divider {
+  height: 1px;
+  background: #f1f5f9;
+  margin: 0.15rem 0;
+}
+
+.enable-perm-btn {
+  font-size: 0.74rem;
+  font-weight: 700;
+  color: #ffffff;
+  background: #16a34a;
+  border: none;
+  padding: 0.3rem 0.65rem;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: opacity 0.2s;
+  flex-shrink: 0;
+}
+
+.enable-perm-btn:hover {
+  opacity: 0.9;
+}
+
+.perm-status-granted,
+.perm-status-denied {
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+}
+
+.view-pending-shortcut {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  background: #fff7ed;
+  border: 1px solid #fed7aa;
+  color: #c2410c;
+  font-size: 0.78rem;
+  font-weight: 700;
+  padding: 0.55rem 0.75rem;
+  border-radius: 8px;
+  cursor: pointer;
+  margin-top: 0.35rem;
+  transition: background 0.15s;
+}
+
+.view-pending-shortcut:hover {
+  background: #ffedd5;
+}
+
+/* Real-time Order Alert Banner */
+.admin-live-order-banner {
+  background: linear-gradient(135deg, #15803d, #16a34a);
+  color: #ffffff;
+  padding: 0.75rem 1.25rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  box-shadow: 0 4px 14px rgba(22, 163, 74, 0.25);
+  animation: adminBannerSlide 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  position: relative;
+  z-index: 85;
+}
+
+@keyframes adminBannerSlide {
+  from { opacity: 0; transform: translateY(-10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.live-banner-left {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  min-width: 0;
+}
+
+.live-beacon-pulse {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: #facc15;
+  box-shadow: 0 0 0 rgba(250, 204, 21, 0.8);
+  animation: beaconPulse 1.5s infinite;
+  flex-shrink: 0;
+}
+
+@keyframes beaconPulse {
+  0% {
+    box-shadow: 0 0 0 0 rgba(250, 204, 21, 0.8);
+  }
+  70% {
+    box-shadow: 0 0 0 10px rgba(250, 204, 21, 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(250, 204, 21, 0);
+  }
+}
+
+.live-banner-info {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.live-banner-tag {
+  font-size: 0.62rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  color: #bbf7d0;
+  text-transform: uppercase;
+}
+
+.live-banner-title {
+  margin: 0;
+  font-size: 0.88rem;
+  font-weight: 500;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  color: #ffffff;
+}
+
+.live-banner-title strong {
+  font-weight: 800;
+}
+
+.live-banner-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-shrink: 0;
+}
+
+.live-banner-view-btn {
+  background: #ffffff;
+  color: #15803d;
+  font-size: 0.78rem;
+  font-weight: 800;
+  border: none;
+  padding: 0.4rem 0.85rem;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.15s;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.live-banner-view-btn:hover {
+  background: #f0fdf4;
+}
+
+.live-banner-close-btn {
+  background: transparent;
+  border: none;
+  color: rgba(255, 255, 255, 0.8);
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.15s;
+}
+
+.live-banner-close-btn:hover {
+  background: rgba(255, 255, 255, 0.2);
+  color: #ffffff;
+}
+
 .header-view-store-btn {
   display: inline-flex;
   align-items: center;

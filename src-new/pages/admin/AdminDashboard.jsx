@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { 
   Package, 
@@ -13,7 +13,13 @@ import {
   TrendingUp, 
   ExternalLink,
   Store,
-  ChevronRight
+  ChevronRight,
+  Bell,
+  Volume2,
+  VolumeX,
+  Play,
+  CheckCircle2,
+  AlertCircle
 } from 'lucide-react';
 import './AdminDashboard.css';
 import AdminOverview from './AdminOverview';
@@ -31,10 +37,26 @@ const AdminDashboard = () => {
   // Focus on productivity: Default tab is "orders"
   const [activeTab, setActiveTab] = useState("orders");
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [notifMenuOpen, setNotifMenuOpen] = useState(false);
+  const notifMenuRef = useRef(null);
   const navigate = useNavigate();
   const location = useLocation();
   const { user, isAdmin, loading, logout } = useAuth();
-  const { orders, products, categories, users } = useAdmin();
+  const { 
+    orders, 
+    products, 
+    categories, 
+    users,
+    soundEnabled,
+    toggleSound,
+    desktopNotifEnabled,
+    toggleDesktopNotif,
+    notificationPermission,
+    requestDesktopNotification,
+    testNotificationSound,
+    newOrderAlert,
+    clearNewOrderAlert
+  } = useAdmin();
 
   // Allow URL hash or search param to set initial tab if provided
   useEffect(() => {
@@ -44,6 +66,21 @@ const AdminDashboard = () => {
       setActiveTab(tabParam);
     }
   }, [location.search]);
+
+  // Close notification popover when clicked outside
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (notifMenuRef.current && !notifMenuRef.current.contains(e.target)) {
+        setNotifMenuOpen(false);
+      }
+    };
+    if (notifMenuOpen) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [notifMenuOpen]);
 
   useEffect(() => {
     if (!loading) {
@@ -255,6 +292,131 @@ const AdminDashboard = () => {
             </div>
 
             <div className="header-right">
+              {/* Sound & Notifications Hub Menu */}
+              <div className="admin-notif-hub-wrapper" ref={notifMenuRef}>
+                <button
+                  type="button"
+                  className={`admin-notif-toggle-btn ${soundEnabled ? 'sound-on' : 'sound-off'} ${pendingOrdersCount > 0 ? 'has-pending' : ''}`}
+                  onClick={() => setNotifMenuOpen(prev => !prev)}
+                  title="Order Notification & Sound Alerts"
+                  aria-label="Order Notification Settings"
+                >
+                  <Bell size={18} />
+                  {soundEnabled ? (
+                    <span className="notif-sound-indicator" title="Audio alerts active">
+                      <Volume2 size={11} />
+                    </span>
+                  ) : (
+                    <span className="notif-sound-indicator muted" title="Audio alerts muted">
+                      <VolumeX size={11} />
+                    </span>
+                  )}
+                  {pendingOrdersCount > 0 && (
+                    <span className="notif-badge-pill">{pendingOrdersCount}</span>
+                  )}
+                </button>
+
+                {/* Notifications Dropdown Panel */}
+                {notifMenuOpen && (
+                  <div className="admin-notif-dropdown">
+                    <div className="notif-dropdown-header">
+                      <div className="notif-header-title">
+                        <Bell size={16} />
+                        <h4>Live Order Alerts</h4>
+                      </div>
+                      <span className="live-status-pill">
+                        <span className="live-dot"></span>
+                        Live Sync
+                      </span>
+                    </div>
+
+                    <div className="notif-dropdown-body">
+                      {/* Sound Toggle Row */}
+                      <div className="notif-setting-row">
+                        <div className="setting-info">
+                          <div className="setting-label-group">
+                            {soundEnabled ? <Volume2 size={16} className="setting-icon active" /> : <VolumeX size={16} className="setting-icon" />}
+                            <span className="setting-title">Order Sound Chime</span>
+                          </div>
+                          <span className="setting-sub">Play audio chime when new orders arrive</span>
+                        </div>
+                        <button 
+                          type="button" 
+                          className={`switch-toggle ${soundEnabled ? 'checked' : ''}`}
+                          onClick={() => toggleSound()}
+                          aria-label="Toggle sound alerts"
+                        >
+                          <span className="switch-slider" />
+                        </button>
+                      </div>
+
+                      {/* Test Sound Button */}
+                      <div className="notif-action-row">
+                        <button
+                          type="button"
+                          className="test-sound-btn"
+                          onClick={() => testNotificationSound()}
+                        >
+                          <Play size={14} />
+                          <span>Test Chime Sound</span>
+                        </button>
+                      </div>
+
+                      <div className="notif-divider" />
+
+                      {/* Desktop Notifications Row */}
+                      <div className="notif-setting-row">
+                        <div className="setting-info">
+                          <div className="setting-label-group">
+                            <Bell size={16} className="setting-icon" />
+                            <span className="setting-title">Desktop Notifications</span>
+                          </div>
+                          <span className="setting-sub">
+                            {notificationPermission === 'granted' 
+                              ? 'Browser notifications enabled' 
+                              : notificationPermission === 'denied'
+                              ? 'Notifications blocked by browser'
+                              : 'Alert when window is in background'}
+                          </span>
+                        </div>
+                        {notificationPermission === 'granted' ? (
+                          <span className="perm-status-granted">
+                            <CheckCircle2 size={16} color="#16a34a" />
+                          </span>
+                        ) : notificationPermission === 'denied' ? (
+                          <span className="perm-status-denied" title="Blocked in browser permissions">
+                            <AlertCircle size={16} color="#ef4444" />
+                          </span>
+                        ) : (
+                          <button
+                            type="button"
+                            className="enable-perm-btn"
+                            onClick={() => requestDesktopNotification()}
+                          >
+                            Enable
+                          </button>
+                        )}
+                      </div>
+
+                      {/* Pending Orders summary button */}
+                      {pendingOrdersCount > 0 && (
+                        <button
+                          type="button"
+                          className="view-pending-shortcut"
+                          onClick={() => {
+                            setActiveTab('orders');
+                            setNotifMenuOpen(false);
+                          }}
+                        >
+                          <span>{pendingOrdersCount} Pending Order{pendingOrdersCount > 1 ? 's' : ''} awaiting review</span>
+                          <ChevronRight size={15} />
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                )}
+              </div>
+
               <button 
                 className="header-view-store-btn"
                 onClick={() => navigate('/')}
@@ -297,6 +459,41 @@ const AdminDashboard = () => {
             </div>
           </nav>
         </div>
+
+        {/* Live New Order Alert Toast Banner */}
+        {newOrderAlert && (
+          <div className="admin-live-order-banner">
+            <div className="live-banner-left">
+              <span className="live-beacon-pulse"></span>
+              <div className="live-banner-info">
+                <span className="live-banner-tag">JUST ARRIVED</span>
+                <p className="live-banner-title">
+                  New Order <strong>#{String(newOrderAlert.id).slice(-6).toUpperCase()}</strong> from <strong>{newOrderAlert.customer}</strong> (${Number(newOrderAlert.total || 0).toFixed(2)})
+                </p>
+              </div>
+            </div>
+            <div className="live-banner-actions">
+              <button 
+                type="button" 
+                className="live-banner-view-btn"
+                onClick={() => {
+                  setActiveTab('orders');
+                  clearNewOrderAlert();
+                }}
+              >
+                Open Orders
+              </button>
+              <button 
+                type="button" 
+                className="live-banner-close-btn"
+                onClick={clearNewOrderAlert}
+                aria-label="Dismiss banner"
+              >
+                <X size={16} />
+              </button>
+            </div>
+          </div>
+        )}
 
         {/* Dynamic Admin Body Content */}
         <div className="admin-content-wrapper">

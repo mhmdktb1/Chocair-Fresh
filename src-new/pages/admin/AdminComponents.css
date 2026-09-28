@@ -411,6 +411,28 @@
   border-radius: 8px;
 }
 
+.order-new-beacon {
+  font-size: 0.65rem;
+  font-weight: 800;
+  color: #ffffff;
+  background: #16a34a;
+  padding: 0.2rem 0.5rem;
+  border-radius: 6px;
+  letter-spacing: 0.04em;
+  animation: notifBadgePulse 2s infinite ease-in-out;
+}
+
+.admin-order-card.new-order-highlight {
+  border-color: #22c55e !important;
+  box-shadow: 0 0 0 2px rgba(34, 197, 94, 0.3), 0 8px 24px rgba(34, 197, 94, 0.12) !important;
+  animation: newOrderHighlightPulse 2s infinite ease-in-out;
+}
+
+@keyframes newOrderHighlightPulse {
+  0%, 100% { box-shadow: 0 0 0 2px rgba(34, 197, 94, 0.3), 0 8px 24px rgba(34, 197, 94, 0.12); }
+  50% { box-shadow: 0 0 0 4px rgba(34, 197, 94, 0.5), 0 12px 28px rgba(34, 197, 94, 0.2); }
+}
+
 .order-date-tag {
   font-size: 0.76rem;
   color: #64748b;
