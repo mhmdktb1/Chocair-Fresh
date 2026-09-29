@@ -14,9 +14,14 @@ if (!fs.existsSync(uploadDir)) {
 }
 
 // Supabase Storage Client Initialization
-const supabaseUrl = process.env.SUPABASE_URL;
-const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_SECRET_KEY || process.env.SUPABASE_KEY;
-const supabaseBucket = process.env.SUPABASE_BUCKET || 'Fresh.img';
+let rawSupabaseUrl = (process.env.SUPABASE_URL || '').trim();
+// Automatically sanitize URL if user passed /rest/v1 or trailing slashes
+if (rawSupabaseUrl) {
+  rawSupabaseUrl = rawSupabaseUrl.replace(/\/rest\/v1\/?$/, '').replace(/\/+$/, '');
+}
+const supabaseUrl = rawSupabaseUrl;
+const supabaseKey = (process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_SECRET_KEY || process.env.SUPABASE_KEY || '').trim();
+const supabaseBucket = (process.env.SUPABASE_BUCKET || 'Fresh.img').trim();
 
 let supabase = null;
 if (supabaseUrl && supabaseKey) {
@@ -24,7 +29,7 @@ if (supabaseUrl && supabaseKey) {
     supabase = createClient(supabaseUrl, supabaseKey, {
       auth: { persistSession: false }
     });
-    console.log('✅ Supabase Storage initialized successfully for permanent image hosting.');
+    console.log(`✅ Supabase Storage initialized (${supabaseBucket}) at ${supabaseUrl}`);
   } catch (err) {
     console.warn('⚠️ Failed to initialize Supabase client:', err.message);
   }
