@@ -293,6 +293,45 @@ const ProductDetails = () => {
         {/* Toters Product Details Sheet */}
         <div className="toters-info-sheet">
           <div className="toters-info-header">
+            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '4px', flexWrap: 'wrap' }}>
+              {product.category && (
+                <button
+                  type="button"
+                  onClick={() => navigate(`/shop?category=${encodeURIComponent(product.category)}`)}
+                  style={{
+                    background: '#f1f5f9',
+                    border: '1px solid #e2e8f0',
+                    color: '#475569',
+                    fontSize: '0.72rem',
+                    fontWeight: 700,
+                    padding: '2px 8px',
+                    borderRadius: '6px',
+                    cursor: 'pointer'
+                  }}
+                >
+                  {product.category}
+                </button>
+              )}
+              {product.subCategory && (
+                <button
+                  type="button"
+                  onClick={() => navigate(`/shop?category=${encodeURIComponent(product.category)}&subCategory=${encodeURIComponent(product.subCategory)}`)}
+                  style={{
+                    background: '#e0f2fe',
+                    border: '1px solid #bae6fd',
+                    color: '#0284c7',
+                    fontSize: '0.72rem',
+                    fontWeight: 700,
+                    padding: '2px 8px',
+                    borderRadius: '6px',
+                    cursor: 'pointer'
+                  }}
+                >
+                  🏷️ {product.subCategory}
+                </button>
+              )}
+            </div>
+
             <h1 className="toters-product-name">{product.name}</h1>
             <div className="toters-unit-subtitle">
               Per {normUnit}

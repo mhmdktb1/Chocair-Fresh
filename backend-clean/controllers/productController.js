@@ -56,12 +56,12 @@ const parseDiscountPayload = (discount) => {
   };
 };
 
-// @desc    Fetch all products (supports category, keyword, and limit query params)
+// @desc    Fetch all products (supports category, subCategory, keyword, and limit query params)
 // @route   GET /api/products
 // @access  Public
 const getProducts = asyncHandler(async (req, res) => {
   try {
-    const { category, keyword, limit, discount, discounted } = req.query;
+    const { category, subCategory, keyword, limit, discount, discounted } = req.query;
     const query = {};
 
     const rawCategory = category ? category.trim().toLowerCase() : '';
@@ -73,12 +73,18 @@ const getProducts = asyncHandler(async (req, res) => {
       query.category = { $regex: `^${safeCat}$`, $options: 'i' };
     }
 
+    if (subCategory && subCategory !== 'all') {
+      const safeSubCat = escapeRegex(subCategory.trim());
+      query.subCategory = { $regex: `^${safeSubCat}$`, $options: 'i' };
+    }
+
     if (keyword && typeof keyword === 'string' && keyword.trim()) {
       const safeKeyword = escapeRegex(keyword.trim());
       query.$or = [
         { name: { $regex: safeKeyword, $options: 'i' } },
         { description: { $regex: safeKeyword, $options: 'i' } },
         { brand: { $regex: safeKeyword, $options: 'i' } },
+        { subCategory: { $regex: safeKeyword, $options: 'i' } },
       ];
     }
 
@@ -127,7 +133,7 @@ const getProductById = asyncHandler(async (req, res) => {
 // @route   POST /api/products
 // @access  Private / Admin
 const createProduct = asyncHandler(async (req, res) => {
-  const { name, price, description, image, brand, category, countInStock, unit, discount } = req.body;
+  const { name, price, description, image, brand, category, subCategory, countInStock, unit, discount } = req.body;
 
   if (typeof name !== 'string' || !name.trim()) {
     res.status(400);
@@ -166,6 +172,11 @@ const createProduct = asyncHandler(async (req, res) => {
     throw new Error('Category must be a string');
   }
 
+  if (subCategory !== undefined && typeof subCategory !== 'string') {
+    res.status(400);
+    throw new Error('SubCategory must be a string');
+  }
+
   if (unit !== undefined && typeof unit !== 'string') {
     res.status(400);
     throw new Error('Unit must be a string');
@@ -178,6 +189,7 @@ const createProduct = asyncHandler(async (req, res) => {
     image: image ? image.trim() : '/assets/images/placeholder-product.jpg',
     brand: brand ? brand.trim() : 'Chocair Fresh',
     category: category ? category.trim() : 'general',
+    subCategory: subCategory ? subCategory.trim() : '',
     countInStock: numStock,
     unit: normalizeUnit(unit),
     discount: parseDiscountPayload(discount),
@@ -191,7 +203,7 @@ const createProduct = asyncHandler(async (req, res) => {
 // @route   PUT /api/products/:id
 // @access  Private / Admin
 const updateProduct = asyncHandler(async (req, res) => {
-  const { name, price, description, image, brand, category, countInStock, unit, discount } = req.body;
+  const { name, price, description, image, brand, category, subCategory, countInStock, unit, discount } = req.body;
 
   const product = await Product.findById(req.params.id);
 
@@ -256,6 +268,14 @@ const updateProduct = asyncHandler(async (req, res) => {
       throw new Error('Category must be a string');
     }
     product.category = category.trim();
+  }
+
+  if (subCategory !== undefined) {
+    if (typeof subCategory !== 'string') {
+      res.status(400);
+      throw new Error('SubCategory must be a string');
+    }
+    product.subCategory = subCategory.trim();
   }
 
   if (unit !== undefined) {

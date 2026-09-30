@@ -22,6 +22,10 @@ const categorySchema = mongoose.Schema(
       type: Boolean,
       default: false,
     },
+    subCategories: {
+      type: [String],
+      default: [],
+    },
   },
   {
     timestamps: true,

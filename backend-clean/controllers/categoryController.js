@@ -13,12 +13,23 @@ const getCategories = async (req, res) => {
   }
 };
 
+// Helper to parse subCategories list
+const parseSubCategories = (input) => {
+  if (Array.isArray(input)) {
+    return Array.from(new Set(input.map(s => String(s).trim()).filter(Boolean)));
+  }
+  if (typeof input === 'string') {
+    return Array.from(new Set(input.split(',').map(s => s.trim()).filter(Boolean)));
+  }
+  return [];
+};
+
 // @desc    Create a category
 // @route   POST /api/categories
 // @access  Private / Admin
 const createCategory = async (req, res) => {
   try {
-    const { name, image, description, isVisible, featured } = req.body;
+    const { name, image, description, isVisible, featured, subCategories } = req.body;
 
     const categoryExists = await Category.findOne({ name });
 
@@ -27,12 +38,15 @@ const createCategory = async (req, res) => {
       return;
     }
 
+    const parsedSubCats = subCategories !== undefined ? parseSubCategories(subCategories) : [];
+
     const category = await Category.create({
       name,
       image,
       description,
       isVisible: isVisible !== undefined ? isVisible : true,
       featured: featured !== undefined ? featured : false,
+      subCategories: parsedSubCats,
     });
 
     if (category) {
@@ -68,7 +82,7 @@ const deleteCategory = async (req, res) => {
 // @access  Public (for now)
 const updateCategory = async (req, res) => {
   try {
-    const { name, image, description, isVisible, featured } = req.body;
+    const { name, image, description, isVisible, featured, subCategories } = req.body;
     const category = await Category.findById(req.params.id);
 
     if (category) {
@@ -77,6 +91,17 @@ const updateCategory = async (req, res) => {
       category.description = description || category.description;
       if (isVisible !== undefined) category.isVisible = isVisible;
       if (featured !== undefined) category.featured = featured;
+      if (subCategories !== undefined) category.subCategories = parseSubCategories(subCategories);
+
+      const updatedCategory = await category.save();
+      res.json(updatedCategory);
+    } else {
+      res.status(404).json({ message: 'Category not found' });
+    }
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
 
       const updatedCategory = await category.save();
       res.json(updatedCategory);

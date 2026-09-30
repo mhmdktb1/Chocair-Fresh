@@ -23,61 +23,71 @@ const categories = [
     name: "Fruits",
     description: "Fresh and organic fruits",
     isVisible: true,
-    featured: false
+    featured: false,
+    subCategories: ['Apples', 'Grapes', 'Citrus', 'Bananas & Tropical', 'Stone Fruits', 'Berries', 'Melons']
   },
   {
     name: "Seasonal Fruits",
     description: "Peak harvest seasonal fruits and fresh berries",
     isVisible: true,
-    featured: true
+    featured: true,
+    subCategories: ['Berries', 'Stone Fruits', 'Melons', 'Figs & Pomegranates']
   },
   {
     name: "Vegetables",
     description: "Farm fresh vegetables",
     isVisible: true,
-    featured: false
+    featured: false,
+    subCategories: ['Tomatoes & Cucumbers', 'Leafy Greens', 'Root Vegetables', 'Peppers & Squash']
   },
   {
     name: "Herbs",
     description: "Fresh aromatic herbs",
     isVisible: true,
-    featured: false
+    featured: false,
+    subCategories: ['Fresh Herbs', 'Cooking Herbs', 'Tea & Wild Herbs']
   },
   {
     name: "Nuts",
     description: "Raw and roasted nuts",
     isVisible: true,
-    featured: false
+    featured: false,
+    subCategories: ['Raw Nuts', 'Roasted Nuts', 'Seeds & Mixes']
   },
   {
     name: "Fresh Juices",
     description: "Freshly squeezed natural juices",
     isVisible: true,
-    featured: true
+    featured: true,
+    subCategories: ['Citrus Juices', 'Fruit Blends', 'Detox & Greens']
   },
   {
     name: "Dates",
     description: "Premium quality dates",
     isVisible: true,
-    featured: false
+    featured: false,
+    subCategories: ['Medjool Dates', 'Traditional Dates', 'Stuffed & Specialty']
   },
   {
     name: "Imported Fruits",
     description: "High quality imported fruits",
     isVisible: true,
-    featured: true
+    featured: true,
+    subCategories: ['Exotics', 'Imported Berries', 'Stone Fruits']
   },
   {
     name: "Mouneh Baladiye",
     description: "Traditional homemade Lebanese mouneh",
     isVisible: true,
-    featured: false
+    featured: false,
+    subCategories: ['Jams & Molasses', 'Pickles & Olives', 'Dairy & Ghee']
   },
   {
     name: "Ready to Eat",
     description: "Fresh ready-to-eat items and prepared snacks",
     isVisible: true,
-    featured: true
+    featured: true,
+    subCategories: ['Fruit Cups', 'Salad Bowls', 'Platters']
   }
 ];
 

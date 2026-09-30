@@ -16,16 +16,21 @@ function AdminCategories() {
     description: "",
     image: "",
     isVisible: true,
-    featured: false
+    featured: false,
+    subCategories: []
   });
+  const [subCatInput, setSubCatInput] = useState("");
 
   const filteredCategories = useMemo(() => {
     return categories.filter(c =>
-      !searchQuery.trim() || c.name?.toLowerCase().includes(searchQuery.toLowerCase().trim())
+      !searchQuery.trim() || 
+      c.name?.toLowerCase().includes(searchQuery.toLowerCase().trim()) ||
+      (c.subCategories && c.subCategories.some(s => s.toLowerCase().includes(searchQuery.toLowerCase().trim())))
     );
   }, [categories, searchQuery]);
 
   const handleOpenModal = (category = null) => {
+    setSubCatInput("");
     if (category) {
       setEditingCategory(category);
       setFormData({
@@ -33,7 +38,8 @@ function AdminCategories() {
         description: category.description || "",
         image: category.image || "",
         isVisible: category.isVisible !== false,
-        featured: category.featured || false
+        featured: category.featured || false,
+        subCategories: Array.isArray(category.subCategories) ? [...category.subCategories] : []
       });
     } else {
       setEditingCategory(null);
@@ -42,10 +48,33 @@ function AdminCategories() {
         description: "",
         image: "",
         isVisible: true,
-        featured: false
+        featured: false,
+        subCategories: []
       });
     }
     setShowModal(true);
+  };
+
+  const handleAddSubCategory = (e) => {
+    if (e) e.preventDefault();
+    const clean = subCatInput.trim();
+    if (!clean) return;
+    if (formData.subCategories.some(s => s.toLowerCase() === clean.toLowerCase())) {
+      setSubCatInput("");
+      return;
+    }
+    setFormData(prev => ({
+      ...prev,
+      subCategories: [...prev.subCategories, clean]
+    }));
+    setSubCatInput("");
+  };
+
+  const handleRemoveSubCategory = (subCatToRemove) => {
+    setFormData(prev => ({
+      ...prev,
+      subCategories: prev.subCategories.filter(s => s !== subCatToRemove)
+    }));
   };
 
   const handleCloseModal = () => {
@@ -182,6 +211,26 @@ function AdminCategories() {
                 <span className={`category-visibility-badge ${category.isVisible !== false ? 'visibility-active' : 'visibility-hidden'}`}>
                   {category.isVisible !== false ? '● Visible in Store' : '○ Hidden'}
                 </span>
+                {Array.isArray(category.subCategories) && category.subCategories.length > 0 && (
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px', marginTop: '6px' }}>
+                    {category.subCategories.map((sub, i) => (
+                      <span 
+                        key={i} 
+                        style={{
+                          background: '#f1f5f9',
+                          color: '#475569',
+                          fontSize: '0.72rem',
+                          fontWeight: 600,
+                          padding: '2px 7px',
+                          borderRadius: '6px',
+                          border: '1px solid #e2e8f0'
+                        }}
+                      >
+                        {sub}
+                      </span>
+                    ))}
+                  </div>
+                )}
               </div>
 
               <div className="product-card-actions">
@@ -239,6 +288,76 @@ function AdminCategories() {
                     value={formData.description}
                     onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                   />
+                </div>
+
+                {/* Subcategories Management */}
+                <div className="admin-form-group">
+                  <label className="admin-form-label" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <span>Subcategories / Types</span>
+                    <span style={{ fontSize: '0.75rem', fontWeight: 500, color: '#64748b' }}>
+                      {formData.subCategories.length} added
+                    </span>
+                  </label>
+                  <div style={{ display: 'flex', gap: '8px', marginBottom: '8px' }}>
+                    <input
+                      type="text"
+                      className="admin-form-input"
+                      placeholder="e.g. Apples, Grapes, Citrus..."
+                      value={subCatInput}
+                      onChange={(e) => setSubCatInput(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') {
+                          e.preventDefault();
+                          handleAddSubCategory();
+                        }
+                      }}
+                      style={{ flex: 1 }}
+                    />
+                    <button
+                      type="button"
+                      onClick={handleAddSubCategory}
+                      className="admin-secondary-btn"
+                      style={{ padding: '0.45rem 0.9rem', fontSize: '0.85rem' }}
+                    >
+                      <Plus size={15} /> Add
+                    </button>
+                  </div>
+
+                  {formData.subCategories.length > 0 ? (
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', background: '#f8fafc', padding: '8px', borderRadius: '8px', border: '1px solid #e2e8f0' }}>
+                      {formData.subCategories.map((sub, idx) => (
+                        <span 
+                          key={idx}
+                          style={{
+                            background: '#e0f2fe',
+                            color: '#0369a1',
+                            fontSize: '0.78rem',
+                            fontWeight: 600,
+                            padding: '3px 8px',
+                            borderRadius: '20px',
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: '4px',
+                            border: '1px solid #bae6fd'
+                          }}
+                        >
+                          {sub}
+                          <button
+                            type="button"
+                            onClick={() => handleRemoveSubCategory(sub)}
+                            style={{ background: 'none', border: 'none', color: '#0369a1', cursor: 'pointer', padding: 0, display: 'flex' }}
+                            title={`Remove ${sub}`}
+                          >
+                            <X size={13} />
+                          </button>
+                        </span>
+                      ))}
+                    </div>
+                  ) : (
+                    <p style={{ fontSize: '0.78rem', color: '#94a3b8', margin: '4px 0 0 2px' }}>
+                      💡 Tip: Add subcategories like "Apples", "Grapes", "Citrus" to organize large produce selections.
+                    </p>
+                  )}
                 </div>
 
                 <ImageUploadPicker

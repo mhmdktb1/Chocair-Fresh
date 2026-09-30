@@ -18,56 +18,63 @@ import Category from '../models/categoryModel.js';
 import Order from '../models/orderModel.js';
 import rawProducts from '../products.js';
 
-// Real Categories
+// Real Categories with Subcategories
 const categories = [
   {
     name: 'Fruits',
     description: 'Fresh citrus, orchard and daily farm fruits',
     image: '/assets/images/products/fruits/apple-red.jpg',
     isVisible: true,
-    featured: true
+    featured: true,
+    subCategories: ['Apples', 'Grapes', 'Citrus', 'Bananas & Tropical', 'Stone Fruits', 'Berries', 'Melons']
   },
   {
     name: 'Seasonal Fruits',
     description: 'Crisp summer melons, fresh picked cherries, figs, and seasonal harvest',
     image: '/assets/images/products/fruits/cherry.jpg',
     isVisible: true,
-    featured: true
+    featured: true,
+    subCategories: ['Berries', 'Stone Fruits', 'Melons', 'Figs & Pomegranates']
   },
   {
     name: 'Vegetables',
     description: 'Farm-fresh organic vegetables and crisp greens',
     image: '/assets/images/products/vegetables/tomato.jpg',
     isVisible: true,
-    featured: true
+    featured: true,
+    subCategories: ['Tomatoes & Cucumbers', 'Leafy Greens', 'Root Vegetables', 'Peppers & Squash']
   },
   {
     name: 'Herbs',
     description: 'Fresh aromatic culinary herbs and seasoning greens',
     image: '/assets/images/products/herbs/parsley.jpg',
     isVisible: true,
-    featured: false
+    featured: false,
+    subCategories: ['Fresh Herbs', 'Cooking Herbs', 'Tea & Wild Herbs']
   },
   {
     name: 'Raw Nuts',
     description: 'Natural unroasted raw whole nuts and nutritious seeds',
     image: '/assets/images/products/nuts/almond-raw.jpg',
     isVisible: true,
-    featured: true
+    featured: true,
+    subCategories: ['Raw Nuts', 'Seeds & Kernels']
   },
   {
     name: 'Cooked Nuts',
     description: 'Crunchy oven-roasted, salted and gourmet flavored nuts',
     image: '/assets/images/products/nuts/cashew-roasted.jpg',
     isVisible: true,
-    featured: false
+    featured: false,
+    subCategories: ['Roasted Nuts', 'Mixed Nuts & Snacks']
   },
   {
     name: 'Dates',
     description: 'Premium Medjool, Ajwa, Sukkari and stuffed gourmet dates',
     image: '/assets/images/products/dates/medjool-dates.jpg',
     isVisible: true,
-    featured: true
+    featured: true,
+    subCategories: ['Medjool Dates', 'Traditional Dates', 'Stuffed & Specialty']
   }
 ];
 

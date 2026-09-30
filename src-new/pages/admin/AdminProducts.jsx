@@ -23,6 +23,7 @@ function AdminProducts() {
   const { pricingRules, calculatePrice } = useCMS();
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategoryFilter, setSelectedCategoryFilter] = useState("all");
+  const [selectedSubCategoryFilter, setSelectedSubCategoryFilter] = useState("all");
   const [showModal, setShowModal] = useState(false);
   const [editingProduct, setEditingProduct] = useState(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -30,6 +31,7 @@ function AdminProducts() {
   const [formData, setFormData] = useState({
     name: "",
     category: "",
+    subCategory: "",
     categories: [],
     price: "",
     priceUnit: "1kg",
@@ -46,22 +48,53 @@ function AdminProducts() {
     discountEndDate: ""
   });
 
-  // Filter products by search query and category
+  // Calculate available subcategories for the selected category in the form
+  const availableSubCategoriesForForm = useMemo(() => {
+    const selectedCatName = formData.category || (categories[0]?.name || "");
+    const catObj = categories.find(c => c.name?.toLowerCase() === selectedCatName.toLowerCase() || c._id === selectedCatName);
+    const fromCategoryModel = Array.isArray(catObj?.subCategories) ? catObj.subCategories : [];
+    
+    // Also gather from existing products in this category
+    const fromProducts = products
+      .filter(p => (p.category?.toLowerCase() === selectedCatName.toLowerCase()) && p.subCategory)
+      .map(p => p.subCategory.trim())
+      .filter(Boolean);
+
+    return Array.from(new Set([...fromCategoryModel, ...fromProducts]));
+  }, [categories, products, formData.category]);
+
+  // Subcategories available for active filter bar
+  const availableSubCategoriesForFilter = useMemo(() => {
+    if (selectedCategoryFilter === 'all' || selectedCategoryFilter.toLowerCase() === 'offers') return [];
+    const catObj = categories.find(c => c.name?.toLowerCase() === selectedCategoryFilter.toLowerCase() || c._id === selectedCategoryFilter);
+    const fromCategoryModel = Array.isArray(catObj?.subCategories) ? catObj.subCategories : [];
+    const fromProducts = products
+      .filter(p => (p.category?.toLowerCase() === selectedCategoryFilter.toLowerCase() || p.category === selectedCategoryFilter) && p.subCategory)
+      .map(p => p.subCategory.trim())
+      .filter(Boolean);
+    return Array.from(new Set([...fromCategoryModel, ...fromProducts]));
+  }, [categories, products, selectedCategoryFilter]);
+
+  // Filter products by search query, category, and subcategory
   const filteredProducts = useMemo(() => {
     return products.filter(p => {
       const catName = categories.find(c => c._id === p.category)?.name || p.category || "";
       const isDisc = Boolean(p.isDiscounted || (p.discount?.isActive && Number(p.discount?.value) > 0) || (p.discountPercent > 0));
       const matchesSearch = !searchQuery.trim() || 
         p.name?.toLowerCase().includes(searchQuery.toLowerCase().trim()) ||
-        catName.toLowerCase().includes(searchQuery.toLowerCase().trim());
+        catName.toLowerCase().includes(searchQuery.toLowerCase().trim()) ||
+        (p.subCategory && p.subCategory.toLowerCase().includes(searchQuery.toLowerCase().trim()));
 
       const isOffersFilter = selectedCategoryFilter.toLowerCase() === 'offers' || selectedCategoryFilter.toLowerCase() === 'discounts';
       const matchesCat = selectedCategoryFilter === "all" || 
         (isOffersFilter ? isDisc : (p.category === selectedCategoryFilter || catName.toLowerCase() === selectedCategoryFilter.toLowerCase() || (p.categories && p.categories.some(c => c.toLowerCase() === selectedCategoryFilter.toLowerCase()))));
 
-      return matchesSearch && matchesCat;
+      const matchesSubCat = selectedSubCategoryFilter === "all" || 
+        (p.subCategory && p.subCategory.toLowerCase() === selectedSubCategoryFilter.toLowerCase());
+
+      return matchesSearch && matchesCat && matchesSubCat;
     });
-  }, [products, categories, searchQuery, selectedCategoryFilter]);
+  }, [products, categories, searchQuery, selectedCategoryFilter, selectedSubCategoryFilter]);
 
   // Live discount preview calculation
   const previewDiscount = useMemo(() => {
@@ -107,6 +140,7 @@ function AdminProducts() {
       setFormData({
         name: product.name || "",
         category: product.category || "",
+        subCategory: product.subCategory || "",
         categories: product.categories?.length ? product.categories : [product.category || ""].filter(Boolean),
         price: basePriceVal !== "" ? String(basePriceVal) : "",
         priceUnit: normalizedU,
@@ -128,6 +162,7 @@ function AdminProducts() {
       setFormData({
         name: "",
         category: defaultCat,
+        subCategory: "",
         categories: defaultCat ? [defaultCat] : [],
         price: "",
         priceUnit: "1kg",
@@ -178,6 +213,7 @@ function AdminProducts() {
     const productData = {
       name: formData.name.trim(),
       category: selectedCat,
+      subCategory: (formData.subCategory || '').trim(),
       categories: formData.categories.length > 0 ? formData.categories : [selectedCat],
       price: parseFloat(formData.price),
       stock: parseInt(formData.stock, 10),
@@ -267,7 +303,10 @@ function AdminProducts() {
         <div className="admin-filter-scroll-row">
           <button
             className={`filter-pill ${selectedCategoryFilter === "all" ? "active" : ""}`}
-            onClick={() => setSelectedCategoryFilter("all")}
+            onClick={() => {
+              setSelectedCategoryFilter("all");
+              setSelectedSubCategoryFilter("all");
+            }}
           >
             <span>All Categories</span>
             <span className="filter-pill-count">{products.length}</span>
@@ -277,7 +316,10 @@ function AdminProducts() {
             return offersCount > 0 ? (
               <button
                 className={`filter-pill ${selectedCategoryFilter.toLowerCase() === "offers" ? "active" : ""}`}
-                onClick={() => setSelectedCategoryFilter("offers")}
+                onClick={() => {
+                  setSelectedCategoryFilter("offers");
+                  setSelectedSubCategoryFilter("all");
+                }}
                 style={selectedCategoryFilter.toLowerCase() === "offers" ? { background: '#dc2626', borderColor: '#b91c1c' } : {}}
               >
                 <span>🔥 Offers</span>
@@ -291,7 +333,10 @@ function AdminProducts() {
               <button
                 key={cat._id || cat.name}
                 className={`filter-pill ${selectedCategoryFilter === cat.name ? "active" : ""}`}
-                onClick={() => setSelectedCategoryFilter(cat.name)}
+                onClick={() => {
+                  setSelectedCategoryFilter(cat.name);
+                  setSelectedSubCategoryFilter("all");
+                }}
               >
                 <span>{cat.name}</span>
                 <span className="filter-pill-count">{count}</span>
@@ -299,6 +344,39 @@ function AdminProducts() {
             );
           })}
         </div>
+
+        {/* Subcategory Filter Pills (if active category has subcategories) */}
+        {availableSubCategoriesForFilter.length > 0 && (
+          <div className="admin-filter-scroll-row" style={{ marginTop: '8px', borderTop: '1px dashed #e2e8f0', paddingTop: '8px' }}>
+            <span style={{ fontSize: '0.75rem', fontWeight: 700, color: '#64748b', alignSelf: 'center', marginRight: '4px' }}>
+              Subcategory:
+            </span>
+            <button
+              className={`filter-pill ${selectedSubCategoryFilter === "all" ? "active" : ""}`}
+              onClick={() => setSelectedSubCategoryFilter("all")}
+              style={{ padding: '3px 10px', fontSize: '0.78rem' }}
+            >
+              All Types
+            </button>
+            {availableSubCategoriesForFilter.map((sub) => {
+              const count = products.filter(p => 
+                (p.category === selectedCategoryFilter || p.category?.toLowerCase() === selectedCategoryFilter.toLowerCase()) && 
+                p.subCategory?.toLowerCase() === sub.toLowerCase()
+              ).length;
+              return (
+                <button
+                  key={sub}
+                  className={`filter-pill ${selectedSubCategoryFilter.toLowerCase() === sub.toLowerCase() ? "active" : ""}`}
+                  onClick={() => setSelectedSubCategoryFilter(sub)}
+                  style={{ padding: '3px 10px', fontSize: '0.78rem' }}
+                >
+                  <span>{sub}</span>
+                  {count > 0 && <span className="filter-pill-count">{count}</span>}
+                </button>
+              );
+            })}
+          </div>
+        )}
       </div>
 
       {/* Error alert if any */}
@@ -354,6 +432,11 @@ function AdminProducts() {
                   <h3 className="product-card-title">{product.name}</h3>
                   <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px', margin: '3px 0' }}>
                     <span className="product-card-category-tag">{catDisplay}</span>
+                    {product.subCategory && (
+                      <span className="product-card-category-tag" style={{ background: '#f0f9ff', color: '#0284c7', borderColor: '#bae6fd' }}>
+                        🏷️ {product.subCategory}
+                      </span>
+                    )}
                     {(product.isDiscounted || (product.discount?.isActive && Number(product.discount?.value) > 0) || (product.discountPercent > 0)) && (
                       <span className="product-card-category-tag" style={{ background: '#fef2f2', color: '#dc2626', border: '1px solid #fecaca', fontWeight: 700 }}>
                         🔥 Offers
@@ -462,6 +545,63 @@ function AdminProducts() {
                       );
                     })}
                   </div>
+                </div>
+
+                {/* Subcategory / Type Selection */}
+                <div className="admin-form-group">
+                  <label className="admin-form-label" style={{ display: 'flex', justifyContent: 'space-between' }}>
+                    <span>Subcategory / Variety (Optional)</span>
+                    {formData.subCategory && (
+                      <button
+                        type="button"
+                        onClick={() => setFormData({ ...formData, subCategory: '' })}
+                        style={{ background: 'none', border: 'none', color: '#dc2626', fontSize: '0.75rem', cursor: 'pointer', padding: 0 }}
+                      >
+                        Clear
+                      </button>
+                    )}
+                  </label>
+
+                  {/* Available subcategory chips for fast 1-tap assignment */}
+                  {availableSubCategoriesForForm.length > 0 && (
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', marginBottom: '8px' }}>
+                      {availableSubCategoriesForForm.map((sub) => {
+                        const isChosen = formData.subCategory?.toLowerCase() === sub.toLowerCase();
+                        return (
+                          <button
+                            type="button"
+                            key={sub}
+                            onClick={() => setFormData({ ...formData, subCategory: isChosen ? '' : sub })}
+                            style={{
+                              background: isChosen ? '#0284c7' : '#f1f5f9',
+                              color: isChosen ? '#ffffff' : '#334155',
+                              border: isChosen ? '1.5px solid #0284c7' : '1px solid #cbd5e1',
+                              borderRadius: '20px',
+                              padding: '4px 10px',
+                              fontSize: '0.78rem',
+                              fontWeight: isChosen ? 700 : 500,
+                              cursor: 'pointer',
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              gap: '4px',
+                              transition: 'all 0.15s ease'
+                            }}
+                          >
+                            {isChosen && <Check size={12} />}
+                            {sub}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  )}
+
+                  <input
+                    type="text"
+                    className="admin-form-input"
+                    placeholder="Or type custom subcategory (e.g. Apples, Grapes, Citrus)..."
+                    value={formData.subCategory}
+                    onChange={(e) => setFormData({ ...formData, subCategory: e.target.value })}
+                  />
                 </div>
 
                 {/* Pricing & Unit Row */}

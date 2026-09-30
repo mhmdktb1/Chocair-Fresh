@@ -50,6 +50,11 @@ const productSchema = mongoose.Schema(
       type: String,
       required: true,
     },
+    subCategory: {
+      type: String,
+      default: '',
+      trim: true,
+    },
     unit: {
       type: String,
       required: true,

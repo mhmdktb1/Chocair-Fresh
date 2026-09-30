@@ -267,6 +267,86 @@
   transition: background-color 0.25s ease, color 0.25s ease;
 }
 
+/* Tier 3: Toters Subcategory Snap Rail (Sub-Pill Ribbon) */
+.toters-subcategory-snap-rail {
+  padding: 0.25rem 0 0.55rem;
+  width: 100%;
+  border-top: 1px solid #f1f5f9;
+  background: rgba(248, 250, 252, 0.7);
+}
+
+.toters-subrail-scroll-track {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  overflow-x: auto;
+  scrollbar-width: none;
+  -webkit-overflow-scrolling: touch;
+  padding: 0 1rem;
+}
+
+.toters-subrail-scroll-track::-webkit-scrollbar {
+  display: none;
+}
+
+.toters-subcategory-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 0.32rem 0.75rem;
+  border-radius: 9999px;
+  background: #ffffff;
+  border: 1.2px solid #e2e8f0;
+  color: #475569;
+  font-size: 0.76rem;
+  font-weight: 650;
+  cursor: pointer;
+  white-space: nowrap;
+  user-select: none;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  flex-shrink: 0;
+  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.04);
+}
+
+.toters-subcategory-pill:hover {
+  background: #f8fafc;
+  border-color: #cbd5e1;
+  color: #0f172a;
+}
+
+.toters-subcategory-pill.is-active {
+  background: #0284c7;
+  border-color: #0284c7;
+  color: #ffffff;
+  font-weight: 750;
+  box-shadow: 0 3px 10px rgba(2, 132, 199, 0.28);
+  transform: scale(1.02);
+}
+
+.toters-subcategory-pill.is-active .subpill-count {
+  background: rgba(255, 255, 255, 0.28);
+  color: #ffffff;
+}
+
+.subpill-emoji {
+  font-size: 0.85rem;
+  line-height: 1;
+}
+
+.subpill-name {
+  letter-spacing: -0.01em;
+}
+
+.subpill-count {
+  font-size: 0.65rem;
+  font-weight: 800;
+  background: #f1f5f9;
+  color: #64748b;
+  padding: 1px 5px;
+  border-radius: 9999px;
+  transition: background-color 0.2s ease, color 0.2s ease;
+}
+
 /* 4. Main Toters Shop Feed */
 .toters-shop-main-feed {
   padding-top: 0.75rem;
@@ -345,6 +425,45 @@
   background: #f0fdf4;
 }
 
+/* Quick Subcategory Discovery Chips in Category Rows */
+.toters-section-subcat-chips {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  overflow-x: auto;
+  scrollbar-width: none;
+  -webkit-overflow-scrolling: touch;
+  padding: 0 0.25rem 0.2rem 0.25rem;
+}
+
+.toters-section-subcat-chips::-webkit-scrollbar {
+  display: none;
+}
+
+.toters-mini-subcat-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 9999px;
+  padding: 3px 8px;
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: #475569;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.15s ease;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.03);
+}
+
+.toters-mini-subcat-chip:hover {
+  background: #f0f9ff;
+  border-color: #7dd3fc;
+  color: #0284c7;
+  transform: translateY(-1px);
+}
+
 /* Horizontal Products Touch Track */
 .toters-horizontal-products-track {
   display: flex;
@@ -372,29 +491,73 @@
 .toters-specific-grid-view {
   display: flex;
   flex-direction: column;
-  gap: 1rem;
+  gap: 1.25rem;
 }
 
 .specific-view-header {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   justify-content: space-between;
-  padding: 0.25rem 0;
-  border-bottom: 1px solid #edf2f7;
-  padding-bottom: 0.75rem;
+  padding: 0.25rem 0 0.85rem;
+  border-bottom: 1.5px solid #edf2f7;
+  gap: 0.75rem;
+}
+
+.specific-breadcrumbs {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 0.75rem;
+  margin-bottom: 4px;
+  color: #64748b;
+  flex-wrap: wrap;
+}
+
+.crumb-btn {
+  background: none;
+  border: none;
+  padding: 0;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #0284c7;
+  cursor: pointer;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.crumb-btn:hover {
+  color: #0369a1;
+}
+
+.crumb-sep {
+  color: #cbd5e1;
+  font-size: 0.75rem;
+}
+
+.crumb-current {
+  font-weight: 700;
+  color: #1e293b;
 }
 
 .specific-title {
-  font-size: 1.25rem;
+  font-size: 1.3rem;
   font-weight: 850;
   color: #0f172a;
-  margin: 0;
+  margin: 0 0 2px 0;
+  letter-spacing: -0.01em;
 }
 
 .specific-count-tag {
   font-size: 0.76rem;
   color: #64748b;
   font-weight: 600;
+}
+
+.specific-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
 }
 
 .see-all-aisles-btn {
@@ -406,6 +569,103 @@
   font-size: 0.78rem;
   font-weight: 700;
   cursor: pointer;
+  transition: all 0.15s ease;
+  white-space: nowrap;
+}
+
+.see-all-aisles-btn:hover {
+  background: #e2e8f0;
+  color: #0f172a;
+}
+
+/* Subcategory Groups Flow (Grouped subcategories under category, e.g. Apples -> 7 types, Grapes -> 5 types) */
+.subcategorized-groups-flow {
+  display: flex;
+  flex-direction: column;
+  gap: 1.75rem;
+}
+
+.subcat-group-section {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  background: #ffffff;
+  border: 1px solid #edf2f7;
+  border-radius: 18px;
+  padding: 1rem;
+  box-shadow: 0 2px 8px rgba(15, 23, 42, 0.02);
+}
+
+.subcat-group-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-bottom: 0.5rem;
+  border-bottom: 1px dashed #e2e8f0;
+}
+
+.subcat-title-wrap {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+}
+
+.subcat-emoji-bubble {
+  width: 32px;
+  height: 32px;
+  border-radius: 10px;
+  background: #f0f9ff;
+  border: 1px solid #bae6fd;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.1rem;
+  flex-shrink: 0;
+}
+
+.subcat-names {
+  display: flex;
+  align-items: baseline;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.subcat-title {
+  font-size: 1.05rem;
+  font-weight: 800;
+  color: #0f172a;
+  margin: 0;
+  letter-spacing: -0.01em;
+}
+
+.subcat-count-pill {
+  font-size: 0.7rem;
+  font-weight: 700;
+  color: #0284c7;
+  background: #e0f2fe;
+  padding: 2px 7px;
+  border-radius: 20px;
+}
+
+.subcat-isolate-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  color: #0284c7;
+  font-size: 0.75rem;
+  font-weight: 750;
+  cursor: pointer;
+  padding: 4px 8px;
+  border-radius: 8px;
+  transition: all 0.15s ease;
+}
+
+.subcat-isolate-btn:hover {
+  background: #0284c7;
+  border-color: #0284c7;
+  color: #ffffff;
 }
 
 .toters-grid-2col {
@@ -886,4 +1146,48 @@
 .dark-theme .toters-search-clear {
   background: #475569;
   color: #f8fafc;
+}
+
+[data-theme="dark"] .toters-subcategory-snap-rail,
+.dark-theme .toters-subcategory-snap-rail {
+  background: rgba(15, 23, 42, 0.7);
+  border-top-color: #1f2937;
+}
+
+[data-theme="dark"] .toters-subcategory-pill,
+.dark-theme .toters-subcategory-pill {
+  background: #1e293b;
+  border-color: #334155;
+  color: #94a3b8;
+}
+
+[data-theme="dark"] .toters-subcategory-pill.is-active,
+.dark-theme .toters-subcategory-pill.is-active {
+  background: #0284c7;
+  border-color: #0284c7;
+  color: #ffffff;
+}
+
+[data-theme="dark"] .subcat-group-section,
+.dark-theme .subcat-group-section {
+  background: #1e293b;
+  border-color: #334155;
+}
+
+[data-theme="dark"] .subcat-title,
+.dark-theme .subcat-title {
+  color: #f8fafc;
+}
+
+[data-theme="dark"] .subcat-emoji-bubble,
+.dark-theme .subcat-emoji-bubble {
+  background: #0f172a;
+  border-color: #334155;
+}
+
+[data-theme="dark"] .toters-mini-subcat-chip,
+.dark-theme .toters-mini-subcat-chip {
+  background: #1e293b;
+  border-color: #334155;
+  color: #cbd5e1;
 }

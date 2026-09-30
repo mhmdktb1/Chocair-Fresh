@@ -65,6 +65,7 @@ export const AdminProvider = ({ children }) => {
       _id: p._id || p.id,
       name: p.name,
       category: mainCategory,
+      subCategory: p.subCategory ? String(p.subCategory).trim() : "",
       categories: assignedCategories,
       price: p.price,
       originalPrice: p.originalPrice !== undefined ? p.originalPrice : (p.basePrice !== undefined ? p.basePrice : p.price),
@@ -304,6 +305,7 @@ export const AdminProvider = ({ children }) => {
         image: productData.image,
         brand: productData.brand || "Chocair",
         category: productData.category,
+        subCategory: productData.subCategory ? String(productData.subCategory).trim() : "",
         countInStock: parseInt(productData.stock),
         unit: selectedUnit,
         discount: productData.discount || {
@@ -333,6 +335,7 @@ export const AdminProvider = ({ children }) => {
         image: productData.image,
         brand: productData.brand || "Chocair",
         category: productData.category,
+        subCategory: productData.subCategory ? String(productData.subCategory).trim() : "",
         countInStock: parseInt(productData.stock),
         unit: selectedUnit,
         discount: productData.discount || {
