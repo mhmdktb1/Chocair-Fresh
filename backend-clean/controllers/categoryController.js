@@ -103,14 +103,4 @@ const updateCategory = async (req, res) => {
   }
 };
 
-      const updatedCategory = await category.save();
-      res.json(updatedCategory);
-    } else {
-      res.status(404).json({ message: 'Category not found' });
-    }
-  } catch (error) {
-    res.status(500).json({ message: error.message });
-  }
-};
-
 export { getCategories, createCategory, deleteCategory, updateCategory };

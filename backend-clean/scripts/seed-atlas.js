@@ -2521,8 +2521,25 @@ const importData = async () => {
     });
 
     console.log('🍎 Creating products...');
+    const normalizeUnit = (rawUnit) => {
+      if (!rawUnit) return '1kg';
+      const u = String(rawUnit).trim().toLowerCase();
+      if (u === '1kg' || u === '1 kg' || u === 'kg' || u === 'kilogram' || u === 'kilograms' || u === 'kilo') return '1kg';
+      if (u === '500g' || u === '500 g' || u === '0.5kg' || u === 'half kg' || u === 'g') return '500g';
+      if (u === '200g' || u === '200 g' || u === '0.2kg' || u === '250g' || u === '250 g') return '200g';
+      if (u === 'bunch' || u === 'bunches' || u === 'bundle' || u === 'bundles') return 'bunch';
+      if (u === 'piece' || u === 'peice' || u === 'pieces' || u === 'peices' || u === 'pcs' || u === 'pc' || u === 'unit') return 'piece';
+      if (u === 'pack' || u === 'packs' || u === 'box' || u === 'boxes' || u === 'jar' || u === 'bottle' || u === 'cup' || u === 'cups' || u === 'bag' || u === 'tub') return 'pack';
+      return '1kg';
+    };
+
     const sampleProducts = products.map(product => {
-      return { ...product, user: adminUser, category: categoryMap[product.category] || createdCategories[0]._id };
+      return { 
+        ...product, 
+        unit: normalizeUnit(product.unit),
+        user: adminUser, 
+        category: categoryMap[product.category] || createdCategories[0]._id 
+      };
     });
     const createdProducts = await Product.insertMany(sampleProducts);
 

@@ -191,6 +191,46 @@ const Shop = () => {
     );
   }, [categoriesList, selectedCategory, isOffersSelected]);
 
+  // Filter & Sort Logic for full/filtered list
+  const filteredProducts = useMemo(() => {
+    let result = products;
+
+    // 1. Search Query
+    if (searchQuery.trim()) {
+      const q = searchQuery.toLowerCase().trim();
+      result = result.filter(p => 
+        (p.name && p.name.toLowerCase().includes(q)) ||
+        (p.description && p.description.toLowerCase().includes(q)) ||
+        (p.category && p.category.toLowerCase().includes(q))
+      );
+    }
+
+    // 2. In Stock filter
+    if (onlyInStock) {
+      result = result.filter(p => p.stock === undefined || p.stock > 0);
+    }
+
+    // 3. On Sale filter
+    if (onlyDiscounted) {
+      result = result.filter(p => p.isDiscounted || (p.discountPercent > 0) || (p.originalPrice && p.originalPrice > p.price) || (p.discount?.isActive && p.discount?.value > 0));
+    }
+
+    // 4. Sorting
+    const sorted = [...result];
+    if (sortOption === 'price-asc') sorted.sort((a, b) => (a.finalPrice || a.price) - (b.finalPrice || b.price));
+    else if (sortOption === 'price-desc') sorted.sort((a, b) => (b.finalPrice || b.price) - (a.finalPrice || a.price));
+    else if (sortOption === 'name-asc') sorted.sort((a, b) => a.name.localeCompare(b.name));
+    else if (sortOption === 'discount') {
+      sorted.sort((a, b) => {
+        const discA = a.discountPercent || (a.originalPrice && a.originalPrice > a.price ? ((a.originalPrice - a.price) / a.originalPrice) * 100 : 0);
+        const discB = b.discountPercent || (b.originalPrice && b.originalPrice > b.price ? ((b.originalPrice - b.price) / b.originalPrice) * 100 : 0);
+        return discB - discA;
+      });
+    }
+
+    return sorted;
+  }, [products, searchQuery, onlyInStock, onlyDiscounted, sortOption]);
+
   // Available subcategories list for currently selected category or search results
   const subCategoriesList = useMemo(() => {
     if (selectedCategory === 'all' || isOffersSelected) {
@@ -284,46 +324,6 @@ const Shop = () => {
       });
     }
   }, [selectedSubCategory]);
-
-  // Filter & Sort Logic for full/filtered list
-  const filteredProducts = useMemo(() => {
-    let result = products;
-
-    // 1. Search Query
-    if (searchQuery.trim()) {
-      const q = searchQuery.toLowerCase().trim();
-      result = result.filter(p => 
-        (p.name && p.name.toLowerCase().includes(q)) ||
-        (p.description && p.description.toLowerCase().includes(q)) ||
-        (p.category && p.category.toLowerCase().includes(q))
-      );
-    }
-
-    // 2. In Stock filter
-    if (onlyInStock) {
-      result = result.filter(p => p.stock === undefined || p.stock > 0);
-    }
-
-    // 3. On Sale filter
-    if (onlyDiscounted) {
-      result = result.filter(p => p.isDiscounted || (p.discountPercent > 0) || (p.originalPrice && p.originalPrice > p.price) || (p.discount?.isActive && p.discount?.value > 0));
-    }
-
-    // 4. Sorting
-    const sorted = [...result];
-    if (sortOption === 'price-asc') sorted.sort((a, b) => (a.finalPrice || a.price) - (b.finalPrice || b.price));
-    else if (sortOption === 'price-desc') sorted.sort((a, b) => (b.finalPrice || b.price) - (a.finalPrice || a.price));
-    else if (sortOption === 'name-asc') sorted.sort((a, b) => a.name.localeCompare(b.name));
-    else if (sortOption === 'discount') {
-      sorted.sort((a, b) => {
-        const discA = a.discountPercent || (a.originalPrice && a.originalPrice > a.price ? ((a.originalPrice - a.price) / a.originalPrice) * 100 : 0);
-        const discB = b.discountPercent || (b.originalPrice && b.originalPrice > b.price ? ((b.originalPrice - b.price) / b.originalPrice) * 100 : 0);
-        return discB - discA;
-      });
-    }
-
-    return sorted;
-  }, [products, searchQuery, onlyInStock, onlyDiscounted, sortOption]);
 
   // Group products by category for the Toters horizontal rows
   const categorizedSections = useMemo(() => {

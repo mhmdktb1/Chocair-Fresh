@@ -14,7 +14,7 @@ const normalizeUnit = (rawUnit) => {
   if (u === '200g' || u === '200 g' || u === '0.2kg' || u === '250g' || u === '250 g') return '200g';
   if (u === 'bunch' || u === 'bunches' || u === 'bundle' || u === 'bundles') return 'bunch';
   if (u === 'piece' || u === 'peice' || u === 'pieces' || u === 'peices' || u === 'pcs' || u === 'pc' || u === 'unit') return 'piece';
-  if (u === 'pack' || u === 'packs' || u === 'box' || u === 'boxes' || u === 'jar' || u === 'bottle') return 'pack';
+  if (u === 'pack' || u === 'packs' || u === 'box' || u === 'boxes' || u === 'jar' || u === 'bottle' || u === 'cup' || u === 'cups' || u === 'tub' || u === 'tubs') return 'pack';
   return '1kg';
 };
 
