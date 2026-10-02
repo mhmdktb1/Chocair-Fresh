@@ -26,6 +26,7 @@ import { useTheme } from '../context/ThemeContext';
 import { translations } from '../utils/translations';
 import { formatCurrency } from '../utils/formatters';
 import { matchesProductQuery } from '../utils/productTranslation';
+import { getAssetUrl } from '../utils/api';
 import './Shop.css';
 
 const getCategoryEmoji = (name = '') => {
@@ -66,6 +67,47 @@ const getSubCategoryEmoji = (name = '') => {
   if (n.includes('mouneh') || n.includes('jam') || n.includes('pickle') || n.includes('olive')) return '🫒';
   if (n.includes('ready') || n.includes('cup') || n.includes('bowl') || n.includes('snack')) return '🥗';
   return '🏷️';
+};
+
+// Helper to find a representative image for category / subcategory visual card
+const getSubCategoryImage = (subName, catName, products = [], adminCategories = []) => {
+  // If 'all', return category image or first product of that category
+  if (!subName || subName.toLowerCase() === 'all') {
+    if (catName && catName !== 'all') {
+      const adminCat = adminCategories.find(c => c.name?.toLowerCase() === catName.toLowerCase());
+      if (adminCat?.image) return getAssetUrl(adminCat.image);
+      const firstCatProd = products.find(p => String(p.category || '').trim().toLowerCase() === String(catName).trim().toLowerCase() && p.image);
+      if (firstCatProd?.image) return getAssetUrl(firstCatProd.image);
+    }
+    return '';
+  }
+
+  // 1. Check if there's a product in this specific category & subcategory with an image
+  const targetCat = String(catName || '').trim().toLowerCase();
+  const targetSub = String(subName || '').trim().toLowerCase();
+
+  const directMatch = products.find(p => {
+    const pCat = String(p.category || '').trim().toLowerCase();
+    const pSub = String(p.subCategory || '').trim().toLowerCase();
+    if (targetCat && targetCat !== 'all') {
+      return pCat === targetCat && pSub === targetSub && p.image;
+    }
+    return pSub === targetSub && p.image;
+  });
+
+  if (directMatch?.image) {
+    return getAssetUrl(directMatch.image);
+  }
+
+  // 2. Fallback to any product matching subCategory name
+  const globalMatch = products.find(p => 
+    String(p.subCategory || '').trim().toLowerCase() === targetSub && p.image
+  );
+  if (globalMatch?.image) {
+    return getAssetUrl(globalMatch.image);
+  }
+
+  return '';
 };
 
 const Shop = () => {
@@ -229,9 +271,24 @@ const Shop = () => {
 
   // Available subcategories list for currently selected category or search results
   const subCategoriesList = useMemo(() => {
-    if (selectedCategory === 'all' || isOffersSelected) {
-      if (!searchQuery.trim()) return [];
-      // If searching, extract subcategories across matching items
+    if (selectedCategory === 'all' && !searchQuery.trim() && !isOffersSelected) {
+      // When on "All", show main categories as visual cards in the subcategory rail
+      const mainCategories = categoriesList.filter(c => c.id !== 'all');
+      return mainCategories.map(cat => ({
+        id: cat.id,
+        name: cat.name,
+        emoji: cat.emoji,
+        image: cat.image || getSubCategoryImage('all', cat.name, products, adminCategories),
+        count: cat.count,
+        isCategoryCard: true
+      }));
+    }
+
+    if (isOffersSelected) {
+      return [];
+    }
+
+    if (searchQuery.trim() && selectedCategory === 'all') {
       const subCatMap = new Map();
       filteredProducts.forEach(p => {
         if (p.subCategory && p.subCategory.trim()) {
@@ -244,7 +301,9 @@ const Shop = () => {
         id: name,
         name,
         emoji: getSubCategoryEmoji(name),
-        count
+        image: getSubCategoryImage(name, null, products, adminCategories),
+        count,
+        isCategoryCard: false
       }));
     }
 
@@ -276,12 +335,24 @@ const Shop = () => {
         id: subName,
         name: subName,
         emoji: getSubCategoryEmoji(subName),
-        count
+        image: getSubCategoryImage(subName, targetCatName, products, adminCategories),
+        count,
+        isCategoryCard: false
       };
     }).filter(s => s.count > 0);
 
     return mapped;
-  }, [selectedCategory, selectedCategoryObj, isOffersSelected, searchQuery, filteredProducts, adminCategories, products]);
+  }, [selectedCategory, selectedCategoryObj, isOffersSelected, searchQuery, filteredProducts, adminCategories, products, categoriesList]);
+
+  // Representative image for the "All" subcategory card
+  const allSubCardImage = useMemo(() => {
+    if (selectedCategory === 'all') {
+      const firstWithImage = products.find(p => p.image);
+      return firstWithImage ? getAssetUrl(firstWithImage.image) : '';
+    }
+    const targetCatName = selectedCategoryObj?.name || selectedCategory;
+    return getSubCategoryImage('all', targetCatName, products, adminCategories);
+  }, [selectedCategory, selectedCategoryObj, products, adminCategories]);
 
   // Center active category tab in rail whenever selected category changes
   useEffect(() => {
@@ -685,6 +756,17 @@ const Shop = () => {
         {/* Tier 2: Category Snap Rail Pinned Directly Below Search */}
         <nav className="toters-category-snap-rail" aria-label="Aisle Categories">
           <div className="toters-rail-scroll-track" ref={categoryTrackRef}>
+            {/* Grid / All Aisles Icon Button */}
+            <button
+              type="button"
+              className={`toters-category-icon-btn ${selectedCategory === 'all' ? 'is-chosen' : ''}`}
+              onClick={() => handleCategoryTabClick('all')}
+              title="All Aisles"
+              aria-label="All Aisles"
+            >
+              <LayoutGrid size={18} />
+            </button>
+
             {categoriesList.map((cat) => {
               // Explicitly chosen/filtered category
               const isChosen = selectedCategory !== 'all' && (
@@ -699,11 +781,7 @@ const Shop = () => {
                 activeSpyCategory === cat.id || (activeSpyCategory === 'all' && cat.id === 'all')
               );
 
-              const tabClass = isChosen 
-                ? 'is-chosen' 
-                : isBrowsingHere 
-                  ? 'is-browsing' 
-                  : '';
+              const isCatActive = isChosen || (selectedCategory === 'all' && cat.id === 'all');
 
               return (
                 <button
@@ -711,47 +789,70 @@ const Shop = () => {
                   id={`tab-btn-${cat.id}`}
                   type="button"
                   onClick={() => handleCategoryTabClick(cat.id)}
-                  className={`toters-category-tab ${tabClass}`}
+                  className={`toters-category-tab ${isCatActive ? 'is-active' : ''}`}
                 >
-                  <span className="tab-emoji">{cat.emoji}</span>
                   <span className="tab-name">{cat.name}</span>
-                  {cat.count > 0 && <span className="tab-count-pill">{cat.count}</span>}
                 </button>
               );
             })}
           </div>
         </nav>
 
-        {/* Tier 3: Subcategory Snap Rail (Smooth, Pinned, Swipeable Pills) */}
+        {/* Tier 3: Subcategory Visual Rail (Cards with Thumbnails & Titles Underneath) */}
         {subCategoriesList.length > 0 && (
-          <nav className="toters-subcategory-snap-rail" aria-label="Subcategories">
-            <div className="toters-subrail-scroll-track" ref={subCategoryTrackRef}>
+          <nav className="toters-subcat-visual-rail" aria-label="Subcategories">
+            <div className="toters-subcat-visual-track" ref={subCategoryTrackRef}>
+              {/* "All" Card */}
               <button
                 id="subtab-btn-all"
                 type="button"
                 onClick={() => handleSubCategoryTabClick('all')}
-                className={`toters-subcategory-pill ${selectedSubCategory === 'all' ? 'is-active' : ''}`}
+                className={`toters-subcat-visual-card ${selectedSubCategory === 'all' ? 'is-active' : ''}`}
               >
-                <span className="subpill-emoji">✨</span>
-                <span className="subpill-name">
-                  {selectedCategoryObj?.name ? `All ${selectedCategoryObj.name}` : 'All Varieties'}
-                </span>
-                <span className="subpill-count">{baseCategoryProducts.length}</span>
+                <div className="toters-subcat-img-box">
+                  {allSubCardImage ? (
+                    <img 
+                      src={allSubCardImage} 
+                      alt="All" 
+                      className="toters-subcat-img"
+                      loading="lazy"
+                      onError={(e) => { e.currentTarget.style.display = 'none'; }}
+                    />
+                  ) : (
+                    <span className="toters-subcat-emoji">{selectedCategoryObj?.emoji || '✨'}</span>
+                  )}
+                </div>
+                <span className="toters-subcat-card-name">All</span>
               </button>
 
+              {/* Subcategories Visual Cards */}
               {subCategoriesList.map((sub) => {
-                const isActive = selectedSubCategory?.toLowerCase() === sub.name?.toLowerCase();
+                const isActive = sub.isCategoryCard
+                  ? (selectedCategory === sub.id || selectedCategoryObj?.name?.toLowerCase() === sub.name?.toLowerCase())
+                  : (selectedSubCategory?.toLowerCase() === sub.name?.toLowerCase());
+
                 return (
                   <button
                     key={sub.id}
                     id={`subtab-btn-${sub.name}`}
                     type="button"
-                    onClick={() => handleSubCategoryTabClick(sub.name)}
-                    className={`toters-subcategory-pill ${isActive ? 'is-active' : ''}`}
+                    onClick={() => handleSubCategoryTabClick(sub)}
+                    className={`toters-subcat-visual-card ${isActive ? 'is-active' : ''}`}
                   >
-                    <span className="subpill-emoji">{sub.emoji}</span>
-                    <span className="subpill-name">{sub.name}</span>
-                    <span className="subpill-count">{sub.count}</span>
+                    <div className="toters-subcat-img-box">
+                      {sub.image ? (
+                        <img 
+                          src={sub.image} 
+                          alt={sub.name} 
+                          className="toters-subcat-img"
+                          loading="lazy"
+                          onError={(e) => { e.currentTarget.style.display = 'none'; }}
+                        />
+                      ) : (
+                        <span className="toters-subcat-emoji">{sub.emoji}</span>
+                      )}
+                    </div>
+                    <span className="toters-subcat-card-name">{sub.name}</span>
                   </button>
                 );
               })}
@@ -761,21 +862,16 @@ const Shop = () => {
       </div>
 
       {/* ==========================================
-          4. MAIN TOTERS SHOP AISLE FEED
+          4. MAIN TOTERS SHOP AISLE FEED (3-PER-LINE GRID)
           ========================================== */}
       <main className="container toters-shop-main-feed">
         {loading ? (
           <div className="toters-loading-state">
-            {[1, 2, 3].map(n => (
-              <div key={n} className="toters-skeleton-section">
-                <div className="skeleton-header-bar" />
-                <div className="skeleton-row-track">
-                  {[1, 2, 3, 4].map(k => (
-                    <div key={k} className="skeleton-card" />
-                  ))}
-                </div>
-              </div>
-            ))}
+            <div className="toters-skeleton-grid">
+              {[1, 2, 3, 4, 5, 6, 7, 8, 9].map(n => (
+                <div key={n} className="skeleton-card-compact" />
+              ))}
+            </div>
           </div>
         ) : error ? (
           <div className="toters-empty-state-card">
@@ -787,7 +883,7 @@ const Shop = () => {
             </button>
           </div>
         ) : isSpecificView ? (
-          /* SINGLE CATEGORY OR SEARCH RESULTS: MULTI-COLUMN GRID / GROUPED SUBCATEGORIES */
+          /* SINGLE CATEGORY OR SEARCH RESULTS: 3 ITEMS PER LINE GRID */
           <div className="toters-specific-grid-view fade-in">
             <div className="specific-view-header">
               <div className="header-left">
@@ -852,56 +948,9 @@ const Shop = () => {
                   Browse All Categories
                 </button>
               </div>
-            ) : subCategorizedSections.length > 0 ? (
-              /* GROUPED SUBCATEGORIES MODE (e.g. Apples -> 7 types, Grapes -> 5 types) */
-              <div className="subcategorized-groups-flow">
-                {subCategorizedSections.map((group) => (
-                  <section 
-                    key={group.id} 
-                    id={`subcat-section-${group.id}`} 
-                    className="subcat-group-section"
-                  >
-                    <div className="subcat-group-header">
-                      <div className="subcat-title-wrap">
-                        <span className="subcat-emoji-bubble">{group.emoji}</span>
-                        <div className="subcat-names">
-                          <h3 className="subcat-title">{group.name}</h3>
-                          <span className="subcat-count-pill">{group.count} {group.count === 1 ? 'variety' : 'varieties'}</span>
-                        </div>
-                      </div>
-
-                      <button
-                        type="button"
-                        className="subcat-isolate-btn"
-                        onClick={() => handleSubCategoryTabClick(group.name)}
-                      >
-                        <span>Only {group.name}</span>
-                        <ChevronRight size={14} />
-                      </button>
-                    </div>
-
-                    <div className="toters-horizontal-products-track">
-                      {group.items.map((product) => (
-                        <div key={product.id || product._id} className="toters-horizontal-card-item">
-                          <ProductCard
-                            product={{
-                              ...product,
-                              _id: product.id || product._id,
-                              rating: product.rating || 4.9,
-                              reviews: product.reviews || 16,
-                              isNew: product.isNew || false,
-                              discount: product.discount || 0
-                            }}
-                          />
-                        </div>
-                      ))}
-                    </div>
-                  </section>
-                ))}
-              </div>
             ) : (
-              /* FLAT 2-COL MOBILE GRID (WHEN SINGLE SUBCAT FILTERED OR NO SUBCATS) */
-              <div className="toters-grid-2col">
+              /* CLEAN 3-COL RESPONSIVE PRODUCT GRID */
+              <div className="toters-grid-3col">
                 {specificProducts.map((product) => (
                   <ProductCard
                     key={product.id || product._id}
@@ -919,7 +968,7 @@ const Shop = () => {
             )}
           </div>
         ) : (
-          /* TOTERS HORIZONTAL AISLES STREAM (BY CATEGORY) */
+          /* TOTERS STREAM: ALL PRODUCTS IN 3-COL GRID */
           <div className="toters-aisles-stream">
             {filteredProducts.length === 0 ? (
               <div className="toters-empty-state-card">
@@ -930,8 +979,8 @@ const Shop = () => {
                   Show All Produce
                 </button>
               </div>
-            ) : categorizedSections.length === 0 ? (
-              <div className="toters-grid-2col">
+            ) : (
+              <div className="toters-grid-3col">
                 {filteredProducts.map((product) => (
                   <ProductCard
                     key={product.id || product._id}
@@ -946,80 +995,6 @@ const Shop = () => {
                   />
                 ))}
               </div>
-            ) : (
-              categorizedSections.map((section) => {
-                // Find subcategories present in this section
-                const sectionSubCats = Array.from(
-                  new Set(
-                    section.items
-                      .map(p => p.subCategory ? p.subCategory.trim() : null)
-                      .filter(Boolean)
-                  )
-                ).slice(0, 4);
-
-                return (
-                  <section 
-                    key={section.id} 
-                    id={`cat-section-${section.id}`} 
-                    className="toters-category-row-section"
-                  >
-                    {/* Category Header Row */}
-                    <div className="toters-section-header">
-                      <div className="section-title-wrap">
-                        <span className="section-emoji-badge">{section.emoji}</span>
-                        <div className="section-headings">
-                          <h2 className="section-category-title">{section.name}</h2>
-                          <span className="section-items-badge">{section.items.length} {section.items.length === 1 ? 'item' : 'items'}</span>
-                        </div>
-                      </div>
-                      
-                      <button 
-                        type="button" 
-                        className="toters-see-all-action"
-                        onClick={() => handleSeeAllCategory(section.id, section.name)}
-                      >
-                        <span>See all</span>
-                        <ChevronRight size={15} />
-                      </button>
-                    </div>
-
-                    {/* Quick Subcategory Discovery Chips */}
-                    {sectionSubCats.length > 0 && (
-                      <div className="toters-section-subcat-chips">
-                        {sectionSubCats.map((subName) => (
-                          <button
-                            key={subName}
-                            type="button"
-                            className="toters-mini-subcat-chip"
-                            onClick={() => handleSeeAllCategory(section.id, section.name, subName)}
-                          >
-                            <span>{getSubCategoryEmoji(subName)}</span>
-                            <span>{subName}</span>
-                          </button>
-                        ))}
-                      </div>
-                    )}
-
-                    {/* Horizontal Touch Scroll Row */}
-                    <div className="toters-horizontal-products-track">
-                      {section.items.map((product) => (
-                        <div key={product.id || product._id} className="toters-horizontal-card-item">
-                          <ProductCard
-                            product={{
-                              ...product,
-                              _id: product.id || product._id,
-                              rating: product.rating || 4.9,
-                              reviews: product.reviews || 16,
-                              isNew: product.isNew || false,
-                              discount: product.discount || 0
-                            }}
-                          />
-                        </div>
-                      ))}
-                    </div>
-                  </section>
-                );
-              })
             )}
           </div>
         )}
@@ -1137,27 +1112,47 @@ const Shop = () => {
       )}
 
       {/* ==========================================
-          6. FLOATING SLEEK CART BAR (MOBILE ONLY)
+          6. FLOATING CIRCULAR PILL CART BAR (TOTERS STYLE)
           ========================================== */}
       {cartCount > 0 && (
         <aside className="toters-floating-cart-dock" aria-label="Shopping Cart Summary">
-          <div className="floating-cart-inner-pill" onClick={() => navigate('/cart')}>
-            <div className="cart-left-meta">
-              <div className="cart-icon-bubble">
-                <ShoppingBag size={17} />
-                <span className="cart-badge-number">{cartCount}</span>
+          <div className="toters-floating-cart-pill" onClick={() => navigate('/cart')}>
+            <div className="toters-cart-left-wrap">
+              {/* Overlapping Product Thumbnails Stack */}
+              <div className="toters-cart-thumbnails-stack">
+                {cartItems.slice(0, 3).map((item, idx) => {
+                  const itemImg = getAssetUrl(item.image) || '/assets/images/products/placeholder.jpg';
+                  return (
+                    <div 
+                      key={item._id || item.id || idx} 
+                      className="toters-cart-thumb-item"
+                      style={{ zIndex: 10 - idx }}
+                    >
+                      <img
+                        src={itemImg}
+                        alt={item.name}
+                        className="toters-cart-thumb-img"
+                        onError={(e) => { e.currentTarget.src = '/assets/images/products/placeholder.jpg'; }}
+                      />
+                    </div>
+                  );
+                })}
               </div>
-              <div className="cart-pricing-col">
-                <span className="cart-items-count-text">
-                  {cartCount} {cartCount === 1 ? 'fresh item' : 'fresh items'}
+
+              {/* Items Count & Total Price */}
+              <div className="toters-cart-info-col">
+                <span className="toters-cart-items-label">
+                  {cartCount} {cartCount === 1 ? 'item' : 'items'}
                 </span>
-                <strong className="cart-subtotal-val">{formatCurrency(cartTotal)}</strong>
+                <span className="toters-cart-price-val">
+                  {formatCurrency(cartTotal)}
+                </span>
               </div>
             </div>
 
-            <div className="cart-right-action">
-              <span>View Cart</span>
-              <ArrowRight size={16} />
+            {/* Circular Green Arrow Action Button */}
+            <div className="toters-cart-arrow-bubble">
+              <ChevronRight size={22} strokeWidth={3} />
             </div>
           </div>
         </aside>
