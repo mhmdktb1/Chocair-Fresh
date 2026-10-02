@@ -3,15 +3,10 @@ import { useLocation } from 'react-router-dom';
 import Navbar from '../components/layout/Navbar';
 import Hero from '../components/home/Hero';
 import CategoryMarquee from '../components/home/CategoryMarquee';
-import PromoBanners from '../components/home/PromoBanners';
-import DealSection from '../components/home/DealSection';
 import FeaturesSection from '../components/home/FeaturesSection';
 import AboutSection from '../components/home/AboutSection';
-import NewsletterSection from '../components/home/NewsletterSection';
-import CommentsSection from '../components/home/CommentsSection';
 import Footer from '../components/layout/Footer';
 import RecommendationRow from '../components/shop/RecommendationRow';
-import { useCart } from '../context/CartContext';
 import api, { getStoredUser } from '../utils/api';
 import './Home.css';
 
@@ -95,10 +90,8 @@ const defaultHomeConfig = {
 
 const Home = () => {
   const { hash } = useLocation();
-  const { cartItems } = useCart();
   const [user, setUser] = useState(null);
   const [homeConfig, setHomeConfig] = useState(defaultHomeConfig);
-  const [lastViewed, setLastViewed] = useState(null);
 
   useEffect(() => {
     const storedUser = getStoredUser();
@@ -112,16 +105,6 @@ const Home = () => {
       }
     } catch (e) {
       console.error('Failed to read cached home config', e);
-    }
-
-    // Get last viewed product
-    try {
-      const history = JSON.parse(localStorage.getItem('viewHistory') || '[]');
-      if (history.length > 0) {
-        setLastViewed(history[0]);
-      }
-    } catch (e) {
-      console.error(e);
     }
 
     const fetchHomeConfig = async () => {
@@ -156,24 +139,19 @@ const Home = () => {
       {/* 1. Hero */}
       <Hero data={activeHomeConfig.hero} />
       
-      {/* 2. Categories Bar / Mobile App Category Rail */}
+      {/* 2. Shop by Category */}
       <CategoryMarquee categories={activeHomeConfig.featuredCategories} />
-      
-      {/* 3. Promo Micro Banners (Seasonal Box & 1-Tap Coupon) */}
-      {activeHomeConfig.promos?.enabled !== false && (
-        <PromoBanners data={activeHomeConfig.promos} />
-      )}
 
-      {/* 4. Recommendation Rows: For You by ML Engine & Seasonal by Admin */}
+      {/* 3. For You & Seasonal Fruits Recommendations */}
       <div className="container home-recommendations-container">
-        {/* 1. Personalized Recommendations (For You) by Backend Engine */}
+        {/* For You Recommendations */}
         <RecommendationRow 
           title="For You" 
           type="personalized" 
           limit={8}
         />
 
-        {/* 2. Seasonal Fruits Category Showcase */}
+        {/* Seasonal Fruits Showcase */}
         <RecommendationRow 
           title={activeHomeConfig.seasonal?.title || "Seasonal Fruits"} 
           category="Seasonal Fruits"
@@ -181,41 +159,15 @@ const Home = () => {
           items={activeHomeConfig.seasonal?.products} 
           limit={8}
         />
-
-        {/* 3. Complete Your Basket (When items in cart) */}
-        {cartItems.length > 0 && (
-          <RecommendationRow 
-            title="Complete Your Fresh Basket" 
-            type="cart" 
-            cartItems={cartItems}
-          />
-        )}
       </div>
 
-      {/* 5. Flash Deal / Bundle Section */}
-      {activeHomeConfig.bundle?.enabled !== false && (
-        <DealSection data={activeHomeConfig.bundle} />
-      )}
+      {/* 4. What We Offer */}
+      <FeaturesSection data={activeHomeConfig.features} />
 
-      {/* 6. Key Value Propositions / Features */}
-      {activeHomeConfig.features?.enabled !== false && (
-        <FeaturesSection data={activeHomeConfig.features} />
-      )}
+      {/* 5. Our Story */}
+      <AboutSection data={activeHomeConfig.story} />
 
-      {/* 7. Brand Story & Heritage */}
-      {activeHomeConfig.story?.enabled !== false && (
-        <AboutSection data={activeHomeConfig.story} />
-      )}
-
-      {/* 8. Newsletter Club */}
-      {activeHomeConfig.newsletter?.enabled !== false && (
-        <NewsletterSection data={activeHomeConfig.newsletter} />
-      )}
-
-      {/* 9. Customer Reviews & Community Discussion */}
-      <CommentsSection />
-
-      {/* 11. Modern Footer */}
+      {/* 6. Footer */}
       <Footer />
     </div>
   );
