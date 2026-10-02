@@ -82,6 +82,7 @@ const getProducts = asyncHandler(async (req, res) => {
       const safeKeyword = escapeRegex(keyword.trim());
       query.$or = [
         { name: { $regex: safeKeyword, $options: 'i' } },
+        { nameAr: { $regex: safeKeyword, $options: 'i' } },
         { description: { $regex: safeKeyword, $options: 'i' } },
         { brand: { $regex: safeKeyword, $options: 'i' } },
         { subCategory: { $regex: safeKeyword, $options: 'i' } },
@@ -133,7 +134,7 @@ const getProductById = asyncHandler(async (req, res) => {
 // @route   POST /api/products
 // @access  Private / Admin
 const createProduct = asyncHandler(async (req, res) => {
-  const { name, price, description, image, brand, category, subCategory, countInStock, unit, discount } = req.body;
+  const { name, nameAr, price, description, image, brand, category, subCategory, countInStock, unit, discount } = req.body;
 
   if (typeof name !== 'string' || !name.trim()) {
     res.status(400);
@@ -150,6 +151,11 @@ const createProduct = asyncHandler(async (req, res) => {
   if (!Number.isFinite(numStock) || numStock < 0) {
     res.status(400);
     throw new Error('Valid non-negative finite stock count is required');
+  }
+
+  if (nameAr !== undefined && typeof nameAr !== 'string') {
+    res.status(400);
+    throw new Error('Arabic name must be a string');
   }
 
   if (description !== undefined && typeof description !== 'string') {
@@ -184,6 +190,7 @@ const createProduct = asyncHandler(async (req, res) => {
 
   const product = new Product({
     name: name.trim(),
+    nameAr: nameAr ? nameAr.trim() : '',
     price: numPrice,
     description: description ? description.trim() : '',
     image: image ? image.trim() : '/assets/images/placeholder-product.jpg',
@@ -203,7 +210,7 @@ const createProduct = asyncHandler(async (req, res) => {
 // @route   PUT /api/products/:id
 // @access  Private / Admin
 const updateProduct = asyncHandler(async (req, res) => {
-  const { name, price, description, image, brand, category, subCategory, countInStock, unit, discount } = req.body;
+  const { name, nameAr, price, description, image, brand, category, subCategory, countInStock, unit, discount } = req.body;
 
   const product = await Product.findById(req.params.id);
 
@@ -218,6 +225,10 @@ const updateProduct = asyncHandler(async (req, res) => {
       throw new Error('Product name must be a non-empty string');
     }
     product.name = name.trim();
+  }
+
+  if (nameAr !== undefined) {
+    product.nameAr = typeof nameAr === 'string' ? nameAr.trim() : '';
   }
 
   if (price !== undefined) {

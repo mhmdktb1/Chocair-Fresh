@@ -20,6 +20,7 @@ import { useCart } from '../../context/CartContext';
 import { useAuth } from '../../context/AuthContext';
 import { useTheme } from '../../context/ThemeContext';
 import { translations } from '../../utils/translations';
+import { getArabicProductName, matchesProductQuery } from '../../utils/productTranslation';
 import api from '../../utils/api';
 import './Navbar.css';
 
@@ -178,12 +179,7 @@ const Navbar = () => {
     }
 
     if (searchQuery.trim()) {
-      const q = searchQuery.toLowerCase().trim();
-      filtered = filtered.filter(p => 
-        (p.name && p.name.toLowerCase().includes(q)) ||
-        (p.category && p.category.toLowerCase().includes(q)) ||
-        (p.description && p.description.toLowerCase().includes(q))
-      );
+      filtered = filtered.filter(p => matchesProductQuery(p, searchQuery));
     }
 
     setRecommendations(filtered.slice(0, 8));
@@ -529,43 +525,53 @@ const Navbar = () => {
                 </div>
 
                 <div className="modern-search-results-list">
-                  {recommendations.map((product, idx) => (
-                    <div
-                      key={product._id}
-                      className={`modern-search-item ${selectedIndex === idx ? 'highlighted' : ''}`}
-                      onClick={() => handleRecommendationClick(product._id)}
-                      onMouseEnter={() => setSelectedIndex(idx)}
-                    >
-                      <div className="item-thumb-wrapper">
-                        <img 
-                          src={product.image || '/assets/images/placeholder.jpg'} 
-                          alt={product.name}
-                          onError={(e) => { e.target.src = 'https://images.unsplash.com/photo-1610832958506-aa56368176cf?w=150&auto=format&fit=crop&q=80'; }}
-                        />
-                      </div>
-                      <div className="item-meta">
-                        <div className="item-title-row">
-                          <span className="item-name">{product.name}</span>
-                          {product.category && (
-                            <span className="item-cat-tag">
-                              {CATEGORY_EMOJIS[product.category] || '🌱'} {product.category}
+                  {recommendations.map((product, idx) => {
+                    const arName = product.nameAr || getArabicProductName(product);
+                    return (
+                      <div
+                        key={product._id}
+                        className={`modern-search-item ${selectedIndex === idx ? 'highlighted' : ''}`}
+                        onClick={() => handleRecommendationClick(product._id)}
+                        onMouseEnter={() => setSelectedIndex(idx)}
+                      >
+                        <div className="item-thumb-wrapper">
+                          <img 
+                            src={product.image || '/assets/images/placeholder.jpg'} 
+                            alt={product.name}
+                            onError={(e) => { e.target.src = 'https://images.unsplash.com/photo-1610832958506-aa56368176cf?w=150&auto=format&fit=crop&q=80'; }}
+                          />
+                        </div>
+                        <div className="item-meta">
+                          <div className="item-title-row">
+                            <span className="item-name">
+                              {product.name}
+                              {arName && (
+                                <span className="item-name-ar" dir="rtl" style={{ marginLeft: '8px', color: '#16a34a', fontSize: '0.85em', fontWeight: 600 }}>
+                                  ({arName})
+                                </span>
+                              )}
                             </span>
+                            {product.category && (
+                              <span className="item-cat-tag">
+                                {CATEGORY_EMOJIS[product.category] || '🌱'} {product.category}
+                              </span>
+                            )}
+                          </div>
+                          {product.description && (
+                            <p className="item-description-preview">{product.description}</p>
                           )}
                         </div>
-                        {product.description && (
-                          <p className="item-description-preview">{product.description}</p>
-                        )}
+                        <div className="item-action-group">
+                          <span className="item-price">
+                            ${typeof product.price === 'number' ? product.price.toFixed(2) : product.price}
+                          </span>
+                          <button className="item-select-arrow" aria-label="View product">
+                            <ArrowRight size={16} />
+                          </button>
+                        </div>
                       </div>
-                      <div className="item-action-group">
-                        <span className="item-price">
-                          ${typeof product.price === 'number' ? product.price.toFixed(2) : product.price}
-                        </span>
-                        <button className="item-select-arrow" aria-label="View product">
-                          <ArrowRight size={16} />
-                        </button>
-                      </div>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               </div>
             )}

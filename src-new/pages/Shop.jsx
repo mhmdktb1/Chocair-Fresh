@@ -25,6 +25,7 @@ import { useCart } from '../context/CartContext';
 import { useTheme } from '../context/ThemeContext';
 import { translations } from '../utils/translations';
 import { formatCurrency } from '../utils/formatters';
+import { matchesProductQuery } from '../utils/productTranslation';
 import './Shop.css';
 
 const getCategoryEmoji = (name = '') => {
@@ -195,14 +196,9 @@ const Shop = () => {
   const filteredProducts = useMemo(() => {
     let result = products;
 
-    // 1. Search Query
+    // 1. Search Query (Bilingual English & Arabic)
     if (searchQuery.trim()) {
-      const q = searchQuery.toLowerCase().trim();
-      result = result.filter(p => 
-        (p.name && p.name.toLowerCase().includes(q)) ||
-        (p.description && p.description.toLowerCase().includes(q)) ||
-        (p.category && p.category.toLowerCase().includes(q))
-      );
+      result = result.filter(p => matchesProductQuery(p, searchQuery));
     }
 
     // 2. In Stock filter

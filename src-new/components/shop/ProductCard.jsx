@@ -6,11 +6,14 @@ import { useFavorites } from '../../context/FavoritesContext';
 import { formatCurrency } from '../../utils/formatters';
 import { normalizeUnit } from '../../utils/unitHelper';
 import { getAssetUrl } from '../../utils/api';
+import { getArabicProductName } from '../../utils/productTranslation';
 import './ProductCard.css';
 
 const ProductCard = ({ product }) => {
   const { cartItems = [], addToCart, updateQuantity, removeFromCart } = useCart();
   const { isFavorite, toggleFavorite } = useFavorites();
+
+  const arabicName = product.nameAr || getArabicProductName(product);
 
   // Helper to generate random rating for demo purposes if not provided
   const rating = product.rating || 4.5;
@@ -131,7 +134,12 @@ const ProductCard = ({ product }) => {
         </div>
         
         <Link to={`/product/${product._id}`} state={{ product }} style={{ textDecoration: 'none' }}>
-          <h3 className="product-name">{product.name}</h3>
+          <h3 className="product-name" title={`${product.name}${arabicName ? ` | ${arabicName}` : ''}`}>
+            <span className="product-name-en">{product.name}</span>
+            {arabicName && (
+              <span className="product-name-ar" dir="rtl">{arabicName}</span>
+            )}
+          </h3>
         </Link>
         
         <div className="product-footer">

@@ -3,6 +3,7 @@ import { useAdmin } from "../../context/AdminContext";
 import { useCMS } from "../../context/CMSContext";
 import { ALLOWED_UNITS, normalizeUnit, formatUnitRate } from "../../utils/unitHelper";
 import { getAssetUrl } from "../../utils/api";
+import { getArabicProductName } from "../../utils/productTranslation";
 import ImageUploadPicker from "../../components/admin/ImageUploadPicker";
 import { 
   Plus, 
@@ -30,6 +31,7 @@ function AdminProducts() {
 
   const [formData, setFormData] = useState({
     name: "",
+    nameAr: "",
     category: "",
     subCategory: "",
     categories: [],
@@ -80,10 +82,13 @@ function AdminProducts() {
     return products.filter(p => {
       const catName = categories.find(c => c._id === p.category)?.name || p.category || "";
       const isDisc = Boolean(p.isDiscounted || (p.discount?.isActive && Number(p.discount?.value) > 0) || (p.discountPercent > 0));
-      const matchesSearch = !searchQuery.trim() || 
-        p.name?.toLowerCase().includes(searchQuery.toLowerCase().trim()) ||
-        catName.toLowerCase().includes(searchQuery.toLowerCase().trim()) ||
-        (p.subCategory && p.subCategory.toLowerCase().includes(searchQuery.toLowerCase().trim()));
+      const q = searchQuery.toLowerCase().trim();
+      const pAr = (p.nameAr || getArabicProductName(p.name) || "").toLowerCase();
+      const matchesSearch = !q || 
+        p.name?.toLowerCase().includes(q) ||
+        pAr.includes(q) ||
+        catName.toLowerCase().includes(q) ||
+        (p.subCategory && p.subCategory.toLowerCase().includes(q));
 
       const isOffersFilter = selectedCategoryFilter.toLowerCase() === 'offers' || selectedCategoryFilter.toLowerCase() === 'discounts';
       const matchesCat = selectedCategoryFilter === "all" || 
@@ -139,6 +144,7 @@ function AdminProducts() {
 
       setFormData({
         name: product.name || "",
+        nameAr: product.nameAr || getArabicProductName(product.name) || "",
         category: product.category || "",
         subCategory: product.subCategory || "",
         categories: product.categories?.length ? product.categories : [product.category || ""].filter(Boolean),
@@ -161,6 +167,7 @@ function AdminProducts() {
       const defaultCat = categories.length > 0 ? categories[0].name : "";
       setFormData({
         name: "",
+        nameAr: "",
         category: defaultCat,
         subCategory: "",
         categories: defaultCat ? [defaultCat] : [],
@@ -212,6 +219,7 @@ function AdminProducts() {
 
     const productData = {
       name: formData.name.trim(),
+      nameAr: (formData.nameAr || '').trim() || getArabicProductName(formData.name.trim()),
       category: selectedCat,
       subCategory: (formData.subCategory || '').trim(),
       categories: formData.categories.length > 0 ? formData.categories : [selectedCat],
@@ -429,7 +437,14 @@ function AdminProducts() {
 
                 {/* Details */}
                 <div className="product-card-details">
-                  <h3 className="product-card-title">{product.name}</h3>
+                  <div style={{ display: 'flex', alignItems: 'baseline', gap: '8px', flexWrap: 'wrap' }}>
+                    <h3 className="product-card-title" style={{ margin: 0 }}>{product.name}</h3>
+                    {(product.nameAr || getArabicProductName(product)) && (
+                      <span style={{ fontSize: '0.82rem', fontWeight: 600, color: '#16a34a', direction: 'rtl' }}>
+                        ({product.nameAr || getArabicProductName(product)})
+                      </span>
+                    )}
+                  </div>
                   <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px', margin: '3px 0' }}>
                     <span className="product-card-category-tag">{catDisplay}</span>
                     {product.subCategory && (
@@ -513,17 +528,52 @@ function AdminProducts() {
 
             <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0 }}>
               <div className="admin-modal-body">
-                {/* Product Name */}
-                <div className="admin-form-group">
-                  <label className="admin-form-label">Product Name *</label>
-                  <input
-                    type="text"
-                    required
-                    className="admin-form-input"
-                    placeholder="e.g. Fresh Red Apples"
-                    value={formData.name}
-                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                  />
+                {/* Product Names: English & Arabic */}
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '1rem', marginBottom: '1rem' }}>
+                  <div className="admin-form-group" style={{ margin: 0 }}>
+                    <label className="admin-form-label">Product Name (English) *</label>
+                    <input
+                      type="text"
+                      required
+                      className="admin-form-input"
+                      placeholder="e.g. Fresh Red Apples"
+                      value={formData.name}
+                      onChange={(e) => {
+                        const newName = e.target.value;
+                        const autoAr = (!formData.nameAr || formData.nameAr === getArabicProductName(formData.name)) 
+                          ? getArabicProductName(newName) 
+                          : formData.nameAr;
+                        setFormData({ 
+                          ...formData, 
+                          name: newName,
+                          nameAr: autoAr || formData.nameAr
+                        });
+                      }}
+                    />
+                  </div>
+
+                  <div className="admin-form-group" style={{ margin: 0 }}>
+                    <label className="admin-form-label" style={{ display: 'flex', justifyContent: 'space-between' }}>
+                      <span>Product Name (Arabic / بالعربي)</span>
+                      {!formData.nameAr && formData.name && getArabicProductName(formData.name) && (
+                        <button
+                          type="button"
+                          onClick={() => setFormData({ ...formData, nameAr: getArabicProductName(formData.name) })}
+                          style={{ background: 'none', border: 'none', color: '#16a34a', fontSize: '0.75rem', fontWeight: 700, cursor: 'pointer', padding: 0 }}
+                        >
+                          Auto-fill
+                        </button>
+                      )}
+                    </label>
+                    <input
+                      type="text"
+                      dir="rtl"
+                      className="admin-form-input"
+                      placeholder="مثال: تفاح أحمر طازج"
+                      value={formData.nameAr}
+                      onChange={(e) => setFormData({ ...formData, nameAr: e.target.value })}
+                    />
+                  </div>
                 </div>
 
                 {/* Category Selection Chips */}

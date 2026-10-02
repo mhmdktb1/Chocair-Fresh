@@ -232,6 +232,12 @@
   border-bottom-color: rgba(255, 255, 255, 0.08);
 }
 
+.toters-product-title-group {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
 .toters-product-name {
   font-size: 1.65rem;
   font-weight: 800;
@@ -239,6 +245,16 @@
   letter-spacing: -0.5px;
   margin: 0;
   line-height: 1.2;
+}
+
+.toters-product-name-ar {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: #16a34a;
+  direction: rtl;
+  text-align: right;
+  line-height: 1.3;
+  margin-top: 2px;
 }
 
 .toters-unit-subtitle {

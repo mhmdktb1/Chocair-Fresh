@@ -14,6 +14,7 @@ import ProductCard from '../components/shop/ProductCard';
 import CartRecommendations from '../components/shop/CartRecommendations';
 import { formatCurrency, formatLL } from '../utils/formatters';
 import { normalizeUnit, formatQuantityWithUnit, formatUnitRate } from '../utils/unitHelper';
+import { getArabicProductName } from '../utils/productTranslation';
 import { toast } from 'react-toastify';
 import './Cart.css';
 
@@ -492,7 +493,12 @@ const Cart = () => {
                             <span className="cart-item-cat">{item.category}</span>
                           )}
                           <Link to={`/product/${item._id}`} className="cart-item-name">
-                            {item.name}
+                            <span>{item.name}</span>
+                            {(item.nameAr || getArabicProductName(item)) && (
+                              <span style={{ fontSize: '0.82rem', fontWeight: 600, color: '#16a34a', marginLeft: '6px', direction: 'rtl' }}>
+                                ({item.nameAr || getArabicProductName(item)})
+                              </span>
+                            )}
                           </Link>
                           <span className="cart-item-unit-rate">
                             <span style={{ fontWeight: 700, color: '#15803d' }}>{formatCurrency(itemPrice)}</span>

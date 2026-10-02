@@ -33,6 +33,12 @@ const productSchema = mongoose.Schema(
     name: {
       type: String,
       required: true,
+      trim: true,
+    },
+    nameAr: {
+      type: String,
+      default: '',
+      trim: true,
     },
     image: {
       type: String,

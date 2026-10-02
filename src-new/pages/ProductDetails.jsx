@@ -20,6 +20,7 @@ import Loading from '../components/common/Loading';
 import WeightScale from '../components/shop/WeightScale';
 import TotersProductRow from '../components/shop/TotersProductRow';
 import { normalizeUnit, formatQuantityWithUnit, getPresetOptions } from '../utils/unitHelper';
+import { getArabicProductName } from '../utils/productTranslation';
 import { toast } from 'react-toastify';
 import './ProductDetails.css';
 
@@ -101,6 +102,7 @@ const ProductDetails = () => {
   const normUnit = normalizeUnit(product?.unit);
   const isWeightBased = ['1kg', '500g', '200g'].includes(normUnit);
   const existingCartItem = cartItems.find(item => item._id === product?._id);
+  const arabicName = product?.nameAr || getArabicProductName(product);
 
   const handleQuantityChange = (delta) => {
     let newQty = quantity + delta;
@@ -227,7 +229,11 @@ const ProductDetails = () => {
         </button>
 
         <div className="toters-header-title">
-          {isScrolledHeader ? product.name : ''}
+          {isScrolledHeader ? (
+            <span title={`${product.name}${arabicName ? ` (${arabicName})` : ''}`}>
+              {product.name} {arabicName && <span style={{ color: '#16a34a', fontSize: '0.88em', fontWeight: 600 }}>({arabicName})</span>}
+            </span>
+          ) : ''}
         </div>
 
         <div className="toters-header-actions">
@@ -332,7 +338,12 @@ const ProductDetails = () => {
               )}
             </div>
 
-            <h1 className="toters-product-name">{product.name}</h1>
+            <div className="toters-product-title-group">
+              <h1 className="toters-product-name">{product.name}</h1>
+              {arabicName && (
+                <div className="toters-product-name-ar" dir="rtl">{arabicName}</div>
+              )}
+            </div>
             <div className="toters-unit-subtitle">
               Per {normUnit}
             </div>

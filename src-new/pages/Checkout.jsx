@@ -12,6 +12,7 @@ import { useAuth } from '../context/AuthContext';
 import { normalizeLebanesePhoneNumber } from '../utils/phoneUtils';
 import { formatCurrency, formatLL, USD_TO_LBP_RATE } from '../utils/formatters';
 import { normalizeUnit, formatQuantityWithUnit } from '../utils/unitHelper';
+import { getArabicProductName } from '../utils/productTranslation';
 import { 
   STORE_COORDS, 
   MAX_DELIVERY_RADIUS_KM, 
@@ -451,7 +452,14 @@ const Checkout = () => {
                       <span className="mobile-item-qty-pill">{item.quantity}</span>
                     </div>
                     <div className="mobile-item-info">
-                      <h4 className="mobile-item-name">{item.name}</h4>
+                      <h4 className="mobile-item-name">
+                        {item.name}
+                        {(item.nameAr || getArabicProductName(item)) && (
+                          <span style={{ color: '#16a34a', fontSize: '0.82em', fontWeight: 600, marginLeft: '5px', direction: 'rtl' }}>
+                            ({item.nameAr || getArabicProductName(item)})
+                          </span>
+                        )}
+                      </h4>
                       <span className="mobile-item-unit-rate">
                         <span style={{ fontWeight: 700, color: '#15803d' }}>{formatCurrency(itemPrice)}</span>
                         {isItemDiscounted && itemOrigPrice > itemPrice && (
@@ -1012,7 +1020,14 @@ const Checkout = () => {
                         <span className="thumb-qty-pill">{item.quantity}</span>
                       </div>
                       <div className="sidebar-item-info">
-                        <h4 className="sidebar-item-name">{item.name}</h4>
+                        <h4 className="sidebar-item-name">
+                          {item.name}
+                          {(item.nameAr || getArabicProductName(item)) && (
+                            <span style={{ color: '#16a34a', fontSize: '0.82em', fontWeight: 600, marginLeft: '5px', direction: 'rtl' }}>
+                              ({item.nameAr || getArabicProductName(item)})
+                            </span>
+                          )}
+                        </h4>
                         <span className="sidebar-item-rate">
                           <span style={{ fontWeight: 700, color: '#15803d' }}>{formatCurrency(itemPrice)}</span>
                           {isItemDiscounted && itemOrigPrice > itemPrice && (

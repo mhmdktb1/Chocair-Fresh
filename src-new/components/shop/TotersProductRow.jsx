@@ -4,6 +4,7 @@ import { Plus, ArrowRight } from 'lucide-react';
 import { useCart } from '../../context/CartContext';
 import api, { getAssetUrl } from '../../utils/api';
 import { normalizeUnit, formatQuantityWithUnit } from '../../utils/unitHelper';
+import { getArabicProductName } from '../../utils/productTranslation';
 import './TotersProductRow.css';
 
 const FALLBACK_IMAGE = 'https://images.unsplash.com/photo-1542838132-92c53300491e?auto=format&fit=crop&w=600&q=80';
@@ -115,6 +116,7 @@ const TotersProductRow = ({ title, type, productId = null, category = null, limi
             const inCartItem = cartItems.find(c => c._id === item._id);
             const normU = normalizeUnit(item.unit);
             const unitLabel = `Per ${normU}`;
+            const arName = item.nameAr || getArabicProductName(item);
 
             return (
               <div 
@@ -175,7 +177,10 @@ const TotersProductRow = ({ title, type, productId = null, category = null, limi
                       </span>
                     )}
                   </div>
-                  <div className="toters-item-name" title={item.name}>{item.name}</div>
+                  <div className="toters-item-name" title={`${item.name}${arName ? ` (${arName})` : ''}`}>
+                    <span className="toters-item-name-en">{item.name}</span>
+                    {arName && <span className="toters-item-name-ar" dir="rtl">{arName}</span>}
+                  </div>
                   <div className="toters-item-unit">{unitLabel}</div>
                 </div>
               </div>

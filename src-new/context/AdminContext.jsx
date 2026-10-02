@@ -64,6 +64,7 @@ export const AdminProvider = ({ children }) => {
       id: p._id || p.id,
       _id: p._id || p.id,
       name: p.name,
+      nameAr: p.nameAr || '',
       category: mainCategory,
       subCategory: p.subCategory ? String(p.subCategory).trim() : "",
       categories: assignedCategories,
@@ -300,6 +301,7 @@ export const AdminProvider = ({ children }) => {
       const selectedUnit = normalizeUnit(productData.unit || productData.priceUnit);
       const payload = {
         name: productData.name,
+        nameAr: productData.nameAr ? String(productData.nameAr).trim() : '',
         price: parseFloat(productData.price),
         description: productData.description || "No description",
         image: productData.image,
@@ -330,6 +332,7 @@ export const AdminProvider = ({ children }) => {
       const selectedUnit = normalizeUnit(productData.unit || productData.priceUnit);
       const payload = {
         name: productData.name,
+        nameAr: productData.nameAr !== undefined ? String(productData.nameAr).trim() : '',
         price: parseFloat(productData.price),
         description: productData.description || "No description",
         image: productData.image,
