@@ -924,180 +924,146 @@
     grid-template-columns: repeat(3, 1fr);
     gap: 0.4rem;
   }
+
+  .toters-horizontal-card-item {
+    width: 120px;
+    min-width: 120px;
+    max-width: 120px;
+  }
+
+  .toters-category-row-section {
+    gap: 0.5rem;
+    scroll-margin-top: 140px;
+  }
+
+  .section-category-title {
+    font-size: 1.05rem;
+  }
+
+  .toters-horizontal-products-track {
+    gap: 0.55rem;
+  }
 }
 
-.toters-category-tab {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  padding: 0.42rem 0.9rem;
-  border-radius: 9999px;
-  background: #f8fafc;
-  border: 1px solid #e2e8f0;
-  color: #475569;
-  font-size: 0.82rem;
-  font-weight: 600;
-  cursor: pointer;
-  white-space: nowrap;
-  user-select: none;
-  transition: background-color 0.25s ease, border-color 0.25s ease, color 0.25s ease, box-shadow 0.25s ease;
-  flex-shrink: 0;
-  position: relative;
+/* =========================================================
+   DARK THEME OVERRIDES FOR SHOP SEARCH DOCK
+   ========================================================= */
+[data-theme="dark"] .toters-unified-sticky-dock,
+.dark-theme .toters-unified-sticky-dock {
+  background: rgba(17, 24, 39, 0.96);
+  border-bottom-color: #1f2937;
 }
 
-.toters-category-tab:hover {
-  background: #f1f5f9;
-  border-color: #cbd5e1;
-  color: #0f172a;
+[data-theme="dark"] .toters-search-input,
+.dark-theme .toters-search-input {
+  background: #1e293b;
+  border-color: #334155;
+  color: #f8fafc;
 }
 
-/* 1) Browsing indicator: while scrolling down all aisles (Fresh Emerald Glow) */
-.toters-category-tab.is-browsing {
-  background: #ecfdf5;
-  border-color: #10b981;
-  color: #047857;
-  font-weight: 700;
-  box-shadow: 0 2px 10px rgba(16, 185, 129, 0.15);
+[data-theme="dark"] .toters-search-input:focus,
+.dark-theme .toters-search-input:focus {
+  background: #111827;
+  border-color: #00a680;
 }
 
-.toters-category-tab.is-browsing .tab-count-pill {
-  background: rgba(16, 185, 129, 0.18);
-  color: #047857;
+[data-theme="dark"] .toters-back-pill-btn,
+[data-theme="dark"] .toters-filter-trigger-btn,
+.dark-theme .toters-back-pill-btn,
+.dark-theme .toters-filter-trigger-btn {
+  background: #1e293b;
+  border-color: #334155;
+  color: #f8fafc;
 }
 
-/* 2) Chosen indicator: when user explicitly clicks/filters into a category (Deep Premium Cover) */
-.toters-category-tab.is-chosen {
-  background: linear-gradient(135deg, #15803d, #166534);
-  border-color: #15803d;
-  color: #ffffff;
-  font-weight: 700;
-  box-shadow: 0 4px 14px rgba(21, 128, 61, 0.25);
+[data-theme="dark"] .toters-search-clear,
+.dark-theme .toters-search-clear {
+  background: #475569;
+  color: #f8fafc;
 }
 
-.toters-category-tab.is-chosen .tab-count-pill {
-  background: rgba(255, 255, 255, 0.25);
-  color: #ffffff;
+[data-theme="dark"] .toters-category-tab,
+.dark-theme .toters-category-tab {
+  color: #94a3b8;
 }
 
-.tab-emoji {
-  font-size: 0.95rem;
-  line-height: 1;
+[data-theme="dark"] .toters-category-tab.is-active,
+.dark-theme .toters-category-tab.is-active {
+  color: #34d399;
 }
 
-.tab-count-pill {
-  font-size: 0.68rem;
-  font-weight: 800;
-  background: #e2e8f0;
-  color: #64748b;
-  padding: 1px 6px;
-  border-radius: 9999px;
-  transition: background-color 0.25s ease, color 0.25s ease;
+[data-theme="dark"] .toters-subcat-visual-rail,
+.dark-theme .toters-subcat-visual-rail {
+  background: #0f172a;
 }
 
-/* Tier 3: Toters Subcategory Snap Rail (Sub-Pill Ribbon) */
-.toters-subcategory-snap-rail {
-  padding: 0.25rem 0 0.55rem;
-  width: 100%;
-  border-top: 1px solid #f1f5f9;
-  background: rgba(248, 250, 252, 0.7);
+[data-theme="dark"] .toters-subcat-img-box,
+.dark-theme .toters-subcat-img-box {
+  background: #1e293b;
+  border-color: #334155;
 }
 
-.toters-subrail-scroll-track {
-  display: flex;
-  align-items: center;
-  gap: 0.45rem;
-  overflow-x: auto;
-  scrollbar-width: none;
-  -webkit-overflow-scrolling: touch;
-  padding: 0 1rem;
+[data-theme="dark"] .toters-subcat-card-name,
+.dark-theme .toters-subcat-card-name {
+  color: #94a3b8;
 }
 
-.toters-subrail-scroll-track::-webkit-scrollbar {
-  display: none;
+[data-theme="dark"] .toters-subcat-visual-card.is-active .toters-subcat-card-name,
+.dark-theme .toters-subcat-visual-card.is-active .toters-subcat-card-name {
+  color: #34d399;
 }
 
-.toters-subcategory-pill {
-  display: inline-flex;
-  align-items: center;
-  gap: 5px;
-  padding: 0.32rem 0.75rem;
-  border-radius: 9999px;
-  background: #ffffff;
-  border: 1.2px solid #e2e8f0;
-  color: #475569;
-  font-size: 0.76rem;
-  font-weight: 650;
-  cursor: pointer;
-  white-space: nowrap;
-  user-select: none;
-  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
-  flex-shrink: 0;
-  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.04);
+[data-theme="dark"] .section-category-title,
+.dark-theme .section-category-title {
+  color: #f8fafc;
 }
 
-.toters-subcategory-pill:hover {
-  background: #f8fafc;
-  border-color: #cbd5e1;
-  color: #0f172a;
+[data-theme="dark"] .see-all-aisles-btn,
+.dark-theme .see-all-aisles-btn {
+  background: #1e293b;
+  border-color: #334155;
+  color: #cbd5e1;
 }
 
-.toters-subcategory-pill.is-active {
-  background: #0284c7;
-  border-color: #0284c7;
-  color: #ffffff;
-  font-weight: 750;
-  box-shadow: 0 3px 10px rgba(2, 132, 199, 0.28);
-  transform: scale(1.02);
+[data-theme="dark"] .toters-bottom-sheet-drawer,
+.dark-theme .toters-bottom-sheet-drawer {
+  background: #1e293b;
+  color: #f8fafc;
 }
 
-.toters-subcategory-pill.is-active .subpill-count {
-  background: rgba(255, 255, 255, 0.28);
-  color: #ffffff;
+[data-theme="dark"] .drawer-title,
+.dark-theme .drawer-title {
+  color: #f8fafc;
 }
 
-.subpill-emoji {
-  font-size: 0.85rem;
-  line-height: 1;
+[data-theme="dark"] .drawer-group-label,
+.dark-theme .drawer-group-label {
+  color: #94a3b8;
 }
 
-.subpill-name {
-  letter-spacing: -0.01em;
+[data-theme="dark"] .drawer-option-pill,
+.dark-theme .drawer-option-pill {
+  background: #0f172a;
+  border-color: #334155;
+  color: #cbd5e1;
 }
 
-.subpill-count {
-  font-size: 0.65rem;
-  font-weight: 800;
-  background: #f1f5f9;
-  color: #64748b;
-  padding: 1px 5px;
-  border-radius: 9999px;
-  transition: background-color 0.2s ease, color 0.2s ease;
+[data-theme="dark"] .drawer-toggle-row,
+.dark-theme .drawer-toggle-row {
+  background: #0f172a;
+  border-color: #334155;
 }
 
-/* 4. Main Toters Shop Feed */
-.toters-shop-main-feed {
-  padding-top: 0.75rem;
-  display: flex;
-  flex-direction: column;
-  gap: 1.5rem;
+[data-theme="dark"] .toggle-label-text,
+.dark-theme .toggle-label-text {
+  color: #f8fafc;
 }
 
-/* Aisles Stream (Toters Category Row Section) */
-.toters-aisles-stream {
-  display: flex;
-  flex-direction: column;
-  gap: 1.75rem;
+[data-theme="dark"] .drawer-reset-btn,
+.dark-theme .drawer-reset-btn {
+  background: #334155;
+  color: #f8fafc;
 }
-
-.toters-category-row-section {
-  display: flex;
-  flex-direction: column;
-  gap: 0.75rem;
-  scroll-margin-top: 155px;
-}
-
-.toters-section-header {
-  display: flex;
   align-items: center;
   justify-content: space-between;
   padding: 0 0.25rem;

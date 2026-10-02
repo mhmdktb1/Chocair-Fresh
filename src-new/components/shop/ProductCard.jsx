@@ -127,13 +127,16 @@ const ProductCard = ({ product }) => {
 
       {/* Content */}
       <div className="product-content">
-        <div className="product-rating">
-          <Star size={12} className="star-icon filled" />
-          <span className="rating-value">{rating}</span>
-          <span className="review-count">({reviews})</span>
+        <div className="product-pricing-row">
+          <span className="current-price">{formatCurrency(currentPrice)}</span>
+          {isDiscounted && originalPrice > currentPrice && (
+            <span className="original-price">
+              {formatCurrency(originalPrice)}
+            </span>
+          )}
         </div>
-        
-        <Link to={`/product/${product._id}`} state={{ product }} className="product-name-link" style={{ textDecoration: 'none' }}>
+
+        <Link to={`/product/${product._id}`} state={{ product }} className="product-name-link">
           <h3 className="product-name" title={`${product.name}${arabicName ? ` | ${arabicName}` : ''}`}>
             <span className="product-name-en">{product.name}</span>
             {arabicName && (
@@ -142,16 +145,8 @@ const ProductCard = ({ product }) => {
           </h3>
         </Link>
         
-        <div className="product-footer">
-          <div className="price-wrapper">
-            <span className="current-price">{formatCurrency(currentPrice)}</span>
-            {isDiscounted && originalPrice > currentPrice && (
-              <span className="original-price" style={{ textDecoration: 'line-through', color: '#94a3b8', marginLeft: '6px', fontSize: '0.85em' }}>
-                {formatCurrency(originalPrice)}
-              </span>
-            )}
-          </div>
-          <span className="unit-label">/ {normalizeUnit(product.unit)}</span>
+        <div className="product-unit-row">
+          <span className="product-unit-label">{normalizeUnit(product.unit)}</span>
         </div>
       </div>
     </div>

@@ -271,17 +271,9 @@ const Shop = () => {
 
   // Available subcategories list for currently selected category or search results
   const subCategoriesList = useMemo(() => {
-    if (selectedCategory === 'all' && !searchQuery.trim() && !isOffersSelected) {
-      // When on "All", show main categories as visual cards in the subcategory rail
-      const mainCategories = categoriesList.filter(c => c.id !== 'all');
-      return mainCategories.map(cat => ({
-        id: cat.id,
-        name: cat.name,
-        emoji: cat.emoji,
-        image: cat.image || getSubCategoryImage('all', cat.name, products, adminCategories),
-        count: cat.count,
-        isCategoryCard: true
-      }));
+    // When viewing "All Products" without an active search, do NOT show the subcategory rail
+    if (selectedCategory === 'all' && !searchQuery.trim()) {
+      return [];
     }
 
     if (isOffersSelected) {
@@ -342,7 +334,7 @@ const Shop = () => {
     }).filter(s => s.count > 0);
 
     return mapped;
-  }, [selectedCategory, selectedCategoryObj, isOffersSelected, searchQuery, filteredProducts, adminCategories, products, categoriesList]);
+  }, [selectedCategory, selectedCategoryObj, isOffersSelected, searchQuery, filteredProducts, adminCategories, products]);
 
   // Representative image for the "All" subcategory card
   const allSubCardImage = useMemo(() => {
@@ -987,7 +979,7 @@ const Shop = () => {
             )}
           </div>
         ) : (
-          /* TOTERS STREAM: ALL PRODUCTS IN 3-COL GRID */
+          /* TOTERS HORIZONTAL AISLES STREAM (BY CATEGORY) */
           <div className="toters-aisles-stream">
             {filteredProducts.length === 0 ? (
               <div className="toters-empty-state-card">
@@ -998,7 +990,7 @@ const Shop = () => {
                   Show All Produce
                 </button>
               </div>
-            ) : (
+            ) : categorizedSections.length === 0 ? (
               <div className="toters-grid-3col">
                 {filteredProducts.map((product) => (
                   <ProductCard
@@ -1014,6 +1006,52 @@ const Shop = () => {
                   />
                 ))}
               </div>
+            ) : (
+              categorizedSections.map((section) => (
+                <section 
+                  key={section.id} 
+                  id={`cat-section-${section.id}`} 
+                  className="toters-category-row-section"
+                >
+                  {/* Category Header Row */}
+                  <div className="toters-section-header">
+                    <div className="section-title-wrap">
+                      <span className="section-emoji-badge">{section.emoji}</span>
+                      <div className="section-headings">
+                        <h2 className="section-category-title">{section.name}</h2>
+                        <span className="section-items-badge">{section.items.length} {section.items.length === 1 ? 'item' : 'items'}</span>
+                      </div>
+                    </div>
+                    
+                    <button 
+                      type="button" 
+                      className="toters-see-all-action"
+                      onClick={() => handleSeeAllCategory(section.id, section.name)}
+                    >
+                      <span>See all</span>
+                      <ChevronRight size={15} />
+                    </button>
+                  </div>
+
+                  {/* Horizontal Touch Scroll Row */}
+                  <div className="toters-horizontal-products-track">
+                    {section.items.map((product) => (
+                      <div key={product.id || product._id} className="toters-horizontal-card-item">
+                        <ProductCard
+                          product={{
+                            ...product,
+                            _id: product.id || product._id,
+                            rating: product.rating || 4.9,
+                            reviews: product.reviews || 16,
+                            isNew: product.isNew || false,
+                            discount: product.discount || 0
+                          }}
+                        />
+                      </div>
+                    ))}
+                  </div>
+                </section>
+              ))
             )}
           </div>
         )}
