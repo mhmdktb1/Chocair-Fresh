@@ -583,8 +583,19 @@ const Shop = () => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
-  const handleSubCategoryTabClick = (subId) => {
-    if (subId === 'all') {
+  const handleSubCategoryTabClick = (subTarget) => {
+    // If an object was passed (e.g. from visual rail)
+    if (subTarget && typeof subTarget === 'object') {
+      if (subTarget.isCategoryCard) {
+        handleCategoryTabClick(subTarget.id || subTarget.name);
+        return;
+      }
+      subTarget = subTarget.name || subTarget.id || 'all';
+    }
+
+    const subName = String(subTarget || 'all').trim();
+
+    if (subName.toLowerCase() === 'all' || !subName) {
       setSelectedSubCategory('all');
       setSearchParams(prev => {
         const next = new URLSearchParams(prev);
@@ -593,10 +604,10 @@ const Shop = () => {
         return next;
       });
     } else {
-      setSelectedSubCategory(subId);
+      setSelectedSubCategory(subName);
       setSearchParams(prev => {
         const next = new URLSearchParams(prev);
-        next.set('subCategory', subId);
+        next.set('subCategory', subName);
         return next;
       });
     }
@@ -645,9 +656,10 @@ const Shop = () => {
 
   // Specific products filtered by subcategory (if one is selected)
   const specificProducts = useMemo(() => {
-    if (selectedSubCategory && selectedSubCategory !== 'all') {
+    const subStr = String(selectedSubCategory || 'all').trim();
+    if (subStr && subStr.toLowerCase() !== 'all') {
       return baseCategoryProducts.filter(p => 
-        p.subCategory && p.subCategory.trim().toLowerCase() === selectedSubCategory.toLowerCase()
+        p.subCategory && String(p.subCategory).trim().toLowerCase() === subStr.toLowerCase()
       );
     }
     return baseCategoryProducts;
@@ -655,14 +667,15 @@ const Shop = () => {
 
   // Group specific category products into subcategory sections for structured mobile shopping
   const subCategorizedSections = useMemo(() => {
-    if (selectedSubCategory !== 'all' || subCategoriesList.length <= 1) {
+    const subStr = String(selectedSubCategory || 'all').trim();
+    if (subStr.toLowerCase() !== 'all' || subCategoriesList.length <= 1) {
       return [];
     }
     
     const sections = [];
     subCategoriesList.forEach(sub => {
       const items = baseCategoryProducts.filter(p => 
-        p.subCategory && p.subCategory.trim().toLowerCase() === sub.name.toLowerCase()
+        p.subCategory && String(p.subCategory).trim().toLowerCase() === String(sub.name || '').trim().toLowerCase()
       );
       if (items.length > 0) {
         sections.push({
@@ -827,17 +840,23 @@ const Shop = () => {
 
               {/* Subcategories Visual Cards */}
               {subCategoriesList.map((sub) => {
-                const isActive = sub.isCategoryCard
-                  ? (selectedCategory === sub.id || selectedCategoryObj?.name?.toLowerCase() === sub.name?.toLowerCase())
-                  : (selectedSubCategory?.toLowerCase() === sub.name?.toLowerCase());
+                const isSubActive = sub.isCategoryCard
+                  ? (selectedCategory === sub.id || String(selectedCategoryObj?.name || '').toLowerCase() === String(sub.name || '').toLowerCase())
+                  : (String(selectedSubCategory || '').toLowerCase() === String(sub.name || '').toLowerCase());
 
                 return (
                   <button
                     key={sub.id}
                     id={`subtab-btn-${sub.name}`}
                     type="button"
-                    onClick={() => handleSubCategoryTabClick(sub)}
-                    className={`toters-subcat-visual-card ${isActive ? 'is-active' : ''}`}
+                    onClick={() => {
+                      if (sub.isCategoryCard) {
+                        handleCategoryTabClick(sub.id || sub.name);
+                      } else {
+                        handleSubCategoryTabClick(sub.name);
+                      }
+                    }}
+                    className={`toters-subcat-visual-card ${isSubActive ? 'is-active' : ''}`}
                   >
                     <div className="toters-subcat-img-box">
                       {sub.image ? (
@@ -1036,7 +1055,7 @@ const Shop = () => {
                       <button
                         key={sub.id}
                         type="button"
-                        className={`drawer-option-pill ${selectedSubCategory?.toLowerCase() === sub.name?.toLowerCase() ? 'active' : ''}`}
+                        className={`drawer-option-pill ${String(selectedSubCategory || '').toLowerCase() === String(sub.name || '').toLowerCase() ? 'active' : ''}`}
                         onClick={() => handleSubCategoryTabClick(sub.name)}
                       >
                         {sub.emoji} {sub.name} ({sub.count})
