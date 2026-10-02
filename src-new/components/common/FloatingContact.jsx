@@ -140,7 +140,7 @@ const FloatingContact = () => {
     };
   }, [isOpen]);
 
-  if (isAdmin) {
+  if (isAdmin || isShopPage) {
     return null;
   }
 
