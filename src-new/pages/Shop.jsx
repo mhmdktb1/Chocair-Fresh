@@ -880,19 +880,20 @@ const Shop = () => {
                       </button>
                     </div>
 
-                    <div className="toters-grid-2col">
+                    <div className="toters-horizontal-products-track">
                       {group.items.map((product) => (
-                        <ProductCard
-                          key={product.id || product._id}
-                          product={{
-                            ...product,
-                            _id: product.id || product._id,
-                            rating: product.rating || 4.9,
-                            reviews: product.reviews || 16,
-                            isNew: product.isNew || false,
-                            discount: product.discount || 0
-                          }}
-                        />
+                        <div key={product.id || product._id} className="toters-horizontal-card-item">
+                          <ProductCard
+                            product={{
+                              ...product,
+                              _id: product.id || product._id,
+                              rating: product.rating || 4.9,
+                              reviews: product.reviews || 16,
+                              isNew: product.isNew || false,
+                              discount: product.discount || 0
+                            }}
+                          />
+                        </div>
                       ))}
                     </div>
                   </section>
