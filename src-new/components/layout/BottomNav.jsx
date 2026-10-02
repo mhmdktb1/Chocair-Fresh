@@ -1,13 +1,13 @@
 import React from 'react';
 import { NavLink, useLocation, useNavigate } from 'react-router-dom';
-import { Home as HomeIcon, ShoppingBag, Search, ShoppingCart, User } from 'lucide-react';
+import { Home as HomeIcon, ShoppingBag, Search, ShoppingCart, User, ShieldCheck } from 'lucide-react';
 import { useCart } from '../../context/CartContext';
 import { useAuth } from '../../context/AuthContext';
 import './BottomNav.css';
 
 const BottomNav = () => {
   const { cartCount } = useCart();
-  const { user } = useAuth();
+  const { user, isAdmin } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
 
@@ -99,6 +99,19 @@ const BottomNav = () => {
           </div>
           <span className="nav-label">{user ? 'Account' : 'Login'}</span>
         </NavLink>
+
+        {/* 6. Admin Portal (Admins only) */}
+        {isAdmin && (
+          <NavLink 
+            to="/admin" 
+            className={({ isActive }) => `bottom-nav-item bottom-nav-admin ${isActive ? 'active' : ''}`}
+          >
+            <div className="nav-icon-wrapper">
+              <ShieldCheck size={20} />
+            </div>
+            <span className="nav-label">Admin</span>
+          </NavLink>
+        )}
 
       </div>
     </nav>
