@@ -23,11 +23,12 @@ export const useCartLogic = () => {
   }, [cartItems]);
 
   const addToCart = (product, quantity = 1, instruction = undefined) => {
+    const pId = product._id || product.id;
     setCartItems(prevItems => {
-      const existingItem = prevItems.find(item => item._id === product._id);
+      const existingItem = prevItems.find(item => (item._id || item.id) === pId);
       if (existingItem) {
         return prevItems.map(item => 
-          item._id === product._id 
+          (item._id || item.id) === pId 
             ? { 
                 ...item, 
                 quantity: item.quantity + quantity,
@@ -46,7 +47,7 @@ export const useCartLogic = () => {
   };
 
   const removeFromCart = (productId) => {
-    setCartItems(prevItems => prevItems.filter(item => item._id !== productId));
+    setCartItems(prevItems => prevItems.filter(item => (item._id || item.id) !== productId));
   };
 
   const updateQuantity = (productId, newQuantity, instruction = undefined) => {
@@ -56,7 +57,7 @@ export const useCartLogic = () => {
     }
     setCartItems(prevItems => 
       prevItems.map(item => 
-        item._id === productId 
+        (item._id || item.id) === productId 
           ? { 
               ...item, 
               quantity: newQuantity,
@@ -70,8 +71,8 @@ export const useCartLogic = () => {
   const updateItemInstruction = (productId, instruction) => {
     setCartItems(prevItems => 
       prevItems.map(item => 
-        item._id === productId 
-          ? { ...item, instruction } 
+        (item._id || item.id) === productId 
+          ? { ...item, instruction: typeof instruction === 'string' ? instruction.trim() : '' } 
           : item
       )
     );

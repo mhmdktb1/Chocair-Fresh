@@ -3,7 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { 
   Trash2, Plus, Minus, ArrowRight, ShoppingBag, ArrowLeft, 
   Truck, CheckCircle, Tag, Lock, MessageSquare, AlertCircle, Check,
-  Search, Sparkles, Heart, Zap, ShieldCheck, Leaf, Copy, ChevronRight, Flame
+  Search, Sparkles, Heart, Zap, ShieldCheck, Leaf, Copy, ChevronRight, Flame, X
 } from 'lucide-react';
 import { useCart } from '../context/CartContext';
 import { useProducts } from '../hooks/useProducts';
@@ -36,6 +36,17 @@ const POPULAR_CATEGORIES = [
   { name: 'Dates', icon: '🌴', slug: 'Dates', countText: 'Medjool & Gourmet Dates' },
 ];
 
+const NOTE_PRESETS = [
+  'Extra ripe 🥑',
+  'Slightly green 🍌',
+  'Firm & crisp 🍏',
+  'Sliced / Cleaned 🔪',
+  'Pack separately 📦',
+  'Small / medium size ⚖️',
+  'Sweetest batch 🍯',
+  'Not too soft 👍'
+];
+
 const Cart = () => {
   const { cartItems, updateQuantity, updateItemInstruction, removeFromCart, clearCart, cartTotal, cartCount } = useCart();
   const { products, loading: productsLoading } = useProducts();
@@ -48,6 +59,55 @@ const Cart = () => {
   const [promoError, setPromoError] = useState('');
   const [confirmClear, setConfirmClear] = useState(false);
   const [copiedCode, setCopiedCode] = useState(false);
+
+  // Note Modal States
+  const [noteModalItem, setNoteModalItem] = useState(null);
+  const [noteText, setNoteText] = useState('');
+
+  const handleOpenNoteModal = (item) => {
+    setNoteModalItem(item);
+    setNoteText(item.instruction || '');
+  };
+
+  const handleCloseNoteModal = () => {
+    setNoteModalItem(null);
+    setNoteText('');
+  };
+
+  const handleSaveNote = () => {
+    if (!noteModalItem) return;
+    const cleanNote = noteText.trim();
+    const itemId = noteModalItem._id || noteModalItem.id;
+    updateItemInstruction(itemId, cleanNote);
+    if (cleanNote) {
+      toast.success(`Note updated for ${noteModalItem.name}!`);
+    } else {
+      toast.info(`Note cleared for ${noteModalItem.name}`);
+    }
+    handleCloseNoteModal();
+  };
+
+  const handleRemoveNoteDirect = (item, e) => {
+    e?.stopPropagation();
+    const itemId = item._id || item.id;
+    updateItemInstruction(itemId, '');
+    toast.info(`Removed note from ${item.name}`);
+  };
+
+  const handleTogglePreset = (preset) => {
+    if (!noteText.trim()) {
+      setNoteText(preset);
+    } else if (noteText.includes(preset)) {
+      const updated = noteText
+        .replace(preset, '')
+        .replace(/,\s*,/g, ',')
+        .replace(/^,\s*|,\s*$/g, '')
+        .trim();
+      setNoteText(updated);
+    } else {
+      setNoteText(`${noteText.trim()}, ${preset}`);
+    }
+  };
 
   // Calculations
   const isFreeShippingByThreshold = cartTotal >= FREE_SHIPPING_THRESHOLD;
@@ -528,25 +588,23 @@ const Cart = () => {
                           {item.instruction ? (
                             <div className="cart-item-instruction-box">
                               <MessageSquare size={12} className="cart-instruction-icon" />
-                              <span className="cart-instruction-text">"{item.instruction}"</span>
+                              <span className="cart-instruction-text" title={item.instruction}>
+                                "{item.instruction}"
+                              </span>
                               <button
                                 type="button"
                                 className="cart-instruction-edit-btn"
-                                onClick={() => {
-                                  const newNote = window.prompt(`Edit instructions for ${item.name}:`, item.instruction || '');
-                                  if (newNote !== null) {
-                                    updateItemInstruction(item._id, newNote.trim());
-                                  }
-                                }}
-                                title="Edit instruction"
+                                onClick={() => handleOpenNoteModal(item)}
+                                title="Edit note"
                               >
                                 Edit
                               </button>
                               <button
                                 type="button"
                                 className="cart-instruction-remove-btn"
-                                onClick={() => updateItemInstruction(item._id, '')}
-                                title="Remove instruction"
+                                onClick={(e) => handleRemoveNoteDirect(item, e)}
+                                title="Remove note"
+                                aria-label="Remove note"
                               >
                                 ×
                               </button>
@@ -555,12 +613,7 @@ const Cart = () => {
                             <button
                               type="button"
                               className="cart-item-add-instruction-btn"
-                              onClick={() => {
-                                const newNote = window.prompt(`Special instructions for ${item.name} (e.g. extra ripe, green, sliced):`);
-                                if (newNote !== null && newNote.trim()) {
-                                  updateItemInstruction(item._id, newNote.trim());
-                                }
-                              }}
+                              onClick={() => handleOpenNoteModal(item)}
                             >
                               <MessageSquare size={11} />
                               <span>Add note</span>
@@ -781,6 +834,137 @@ const Cart = () => {
           Checkout <ArrowRight size={16} />
         </Button>
       </div>
+
+      {/* Product Instruction / Note Modal */}
+      {noteModalItem && (
+        <div className="cart-note-modal-overlay" onClick={handleCloseNoteModal}>
+          <div 
+            className="cart-note-modal-content"
+            onClick={(e) => e.stopPropagation()}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="cart-note-modal-title"
+          >
+            <div className="cart-note-modal-header">
+              <div className="cart-note-modal-product-info">
+                <img 
+                  src={noteModalItem.image || 'https://images.unsplash.com/photo-1610832958506-aa56368176cf?w=200&auto=format&fit=crop&q=80'} 
+                  alt={noteModalItem.name} 
+                  className="cart-note-modal-thumb"
+                />
+                <div className="cart-note-modal-titles">
+                  <h3 id="cart-note-modal-title" className="cart-note-modal-title">
+                    Special Note for {noteModalItem.name}
+                  </h3>
+                  {(noteModalItem.nameAr || getArabicProductName(noteModalItem)) && (
+                    <span className="cart-note-modal-arabic">
+                      {noteModalItem.nameAr || getArabicProductName(noteModalItem)}
+                    </span>
+                  )}
+                </div>
+              </div>
+              <button 
+                type="button" 
+                className="cart-note-modal-close"
+                onClick={handleCloseNoteModal}
+                aria-label="Close note modal"
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            <div className="cart-note-modal-body">
+              <label className="cart-note-input-label">
+                Quick Suggestions:
+              </label>
+              <div className="cart-note-preset-chips">
+                {NOTE_PRESETS.map((preset) => {
+                  const isSelected = noteText.includes(preset);
+                  return (
+                    <button
+                      key={preset}
+                      type="button"
+                      className={`cart-note-chip ${isSelected ? 'active' : ''}`}
+                      onClick={() => handleTogglePreset(preset)}
+                    >
+                      {preset}
+                    </button>
+                  );
+                })}
+              </div>
+
+              <div className="cart-note-textarea-wrap">
+                <textarea
+                  className="cart-note-textarea"
+                  placeholder="e.g. Please choose yellow bananas, or pack in separate bags..."
+                  value={noteText}
+                  onChange={(e) => setNoteText(e.target.value.slice(0, 160))}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Escape') {
+                      handleCloseNoteModal();
+                    } else if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
+                      e.preventDefault();
+                      handleSaveNote();
+                    }
+                  }}
+                  rows={3}
+                  autoFocus
+                />
+                <div className="cart-note-textarea-footer">
+                  <span className="cart-note-hint">Tip: Press Ctrl+Enter to save quickly</span>
+                  <span className="cart-note-char-count">{noteText.length}/160</span>
+                </div>
+              </div>
+            </div>
+
+            <div className="cart-note-modal-footer">
+              {noteModalItem.instruction ? (
+                <button
+                  type="button"
+                  className="cart-note-delete-btn"
+                  onClick={() => {
+                    const itemId = noteModalItem._id || noteModalItem.id;
+                    updateItemInstruction(itemId, '');
+                    toast.info(`Note removed from ${noteModalItem.name}`);
+                    handleCloseNoteModal();
+                  }}
+                >
+                  <Trash2 size={15} />
+                  <span>Remove Note</span>
+                </button>
+              ) : (
+                <button
+                  type="button"
+                  className="cart-note-cancel-btn"
+                  onClick={handleCloseNoteModal}
+                >
+                  Cancel
+                </button>
+              )}
+
+              <div className="cart-note-save-actions">
+                {noteModalItem.instruction && (
+                  <button
+                    type="button"
+                    className="cart-note-cancel-btn"
+                    onClick={handleCloseNoteModal}
+                  >
+                    Cancel
+                  </button>
+                )}
+                <button
+                  type="button"
+                  className="cart-note-save-btn"
+                  onClick={handleSaveNote}
+                >
+                  <Check size={16} />
+                  <span>Save Note</span>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
