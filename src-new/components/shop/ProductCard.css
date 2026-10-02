@@ -19,7 +19,7 @@
 .product-image-wrapper {
   position: relative;
   aspect-ratio: 1;
-  background-color: #f8f9fa;
+  background-color: #ffffff;
   border-radius: 20px;
   overflow: hidden;
   margin-bottom: 1.25rem;
@@ -383,7 +383,7 @@
     border-radius: 10px;
     margin-bottom: 0.35rem;
     aspect-ratio: 1;
-    background: #f8f9fa;
+    background: #ffffff;
     position: relative;
     overflow: hidden;
   }
