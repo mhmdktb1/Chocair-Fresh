@@ -133,7 +133,7 @@ const ProductCard = ({ product }) => {
           <span className="review-count">({reviews})</span>
         </div>
         
-        <Link to={`/product/${product._id}`} state={{ product }} style={{ textDecoration: 'none' }}>
+        <Link to={`/product/${product._id}`} state={{ product }} className="product-name-link" style={{ textDecoration: 'none' }}>
           <h3 className="product-name" title={`${product.name}${arabicName ? ` | ${arabicName}` : ''}`}>
             <span className="product-name-en">{product.name}</span>
             {arabicName && (
