@@ -802,8 +802,9 @@ const Shop = () => {
             })}
           </div>
         </nav>
+      </div>
 
-        {/* Tier 3: Subcategory Visual Rail (Cards with Thumbnails & Titles Underneath) */}
+      {/* Tier 3: Subcategory Visual Rail (non-sticky, scrolls with the page) */}
         {subCategoriesList.length > 0 && (
           <nav className="toters-subcat-visual-rail" aria-label="Subcategories">
             <div className="toters-subcat-visual-track" ref={subCategoryTrackRef}>
@@ -870,7 +871,6 @@ const Shop = () => {
             </div>
           </nav>
         )}
-      </div>
 
       {/* ==========================================
           4. MAIN TOTERS SHOP AISLE FEED (3-PER-LINE GRID)
@@ -896,60 +896,6 @@ const Shop = () => {
         ) : isSpecificView ? (
           /* SINGLE CATEGORY OR SEARCH RESULTS: 3 ITEMS PER LINE GRID */
           <div className="toters-specific-grid-view fade-in">
-            <div className="specific-view-header">
-              <div className="header-left">
-                <div className="specific-breadcrumbs">
-                  <button type="button" className="crumb-btn" onClick={resetAllFilters}>
-                    Market
-                  </button>
-                  {selectedCategory !== 'all' && (
-                    <>
-                      <span className="crumb-sep">›</span>
-                      <button 
-                        type="button" 
-                        className="crumb-btn"
-                        onClick={() => handleSubCategoryTabClick('all')}
-                      >
-                        {selectedCategoryObj?.name || selectedCategory}
-                      </button>
-                    </>
-                  )}
-                  {selectedSubCategory !== 'all' && (
-                    <>
-                      <span className="crumb-sep">›</span>
-                      <span className="crumb-current">{selectedSubCategory}</span>
-                    </>
-                  )}
-                </div>
-
-                <h2 className="specific-title">
-                  {searchQuery 
-                    ? `Results for "${searchQuery}"` 
-                    : selectedSubCategory !== 'all'
-                      ? `${getSubCategoryEmoji(selectedSubCategory)} ${selectedSubCategory}`
-                      : `${selectedCategoryObj?.emoji || '🧺'} ${selectedCategoryObj?.name || 'Fresh Market'}`}
-                </h2>
-                <span className="specific-count-tag">
-                  {specificProducts.length} {specificProducts.length === 1 ? 'item' : 'items'} available
-                </span>
-              </div>
-
-              <div className="specific-header-actions">
-                {selectedSubCategory !== 'all' && (
-                  <button 
-                    type="button" 
-                    className="see-all-aisles-btn"
-                    onClick={() => handleSubCategoryTabClick('all')}
-                  >
-                    All {selectedCategoryObj?.name || 'Category'}
-                  </button>
-                )}
-                <button type="button" className="see-all-aisles-btn" onClick={resetAllFilters}>
-                  View All Aisles
-                </button>
-              </div>
-            </div>
-
             {specificProducts.length === 0 ? (
               <div className="toters-empty-state-card">
                 <div className="empty-icon-wrap">🧺</div>
@@ -1209,7 +1155,7 @@ const Shop = () => {
 
             {/* Circular Green Arrow Action Button */}
             <div className="toters-cart-arrow-bubble">
-              <ChevronRight size={22} strokeWidth={3} />
+              <ChevronRight size={14} strokeWidth={3} />
             </div>
           </div>
         </aside>
