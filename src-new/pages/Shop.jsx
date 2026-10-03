@@ -1,4 +1,4 @@
-﻿import React, { useState, useMemo, useEffect, useRef } from 'react';
+import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { 
   Search, 
@@ -111,7 +111,7 @@ const getSubCategoryImage = (subName, catName, products = [], adminCategories = 
 };
 
 const Shop = () => {
-  const { products, categories: adminCategories, loading, error } = useAdmin();
+  const { products, categories: adminCategories, loading, error, refreshProducts } = useAdmin();
   const { cartItems, cartCount, cartTotal } = useCart();
   const { language } = useTheme();
   const t = translations[language] || translations.en;
@@ -889,7 +889,7 @@ const Shop = () => {
             <div className="empty-icon-wrap">⚠️</div>
             <h3>Unable to load fresh aisles</h3>
             <p>Please check your connection or tap below to refresh.</p>
-            <button type="button" onClick={() => window.location.reload()} className="toters-refresh-btn">
+            <button type="button" onClick={() => refreshProducts()} className="toters-refresh-btn">
               Retry Harvest
             </button>
           </div>

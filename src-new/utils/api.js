@@ -32,14 +32,38 @@ export const getAssetUrl = (url) => {
   return `${API_HOST}${cleanPath}`;
 };
 
-// Create axios instance with default config
+// Create axios instance with default config.
+// 30s per attempt: the free Render instance can take ~30-60s to wake from sleep.
 const api = axios.create({
   baseURL: API_BASE_URL,
-  timeout: 15000,
+  timeout: 30000,
   headers: {
     'Content-Type': 'application/json',
   },
 });
+
+const RETRYABLE_METHODS = new Set(['get', 'head', 'options']);
+const RETRYABLE_STATUS = new Set([408, 425, 429, 502, 503, 504]);
+const DEFAULT_RETRIES = 3;
+
+const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
+// Only idempotent reads are retried, so a slow/failed checkout can never be submitted twice.
+const shouldRetry = (error) => {
+  const config = error?.config;
+  if (!config || axios.isCancel(error)) return false;
+  if (!RETRYABLE_METHODS.has((config.method || 'get').toLowerCase())) return false;
+  const maxRetries = config.retries ?? DEFAULT_RETRIES;
+  if ((config.__retryCount || 0) >= maxRetries) return false;
+  if (!error.response) return true; // network error, timeout, server waking up
+  return RETRYABLE_STATUS.has(error.response.status);
+};
+
+const retryDelay = (error, attempt) => {
+  const retryAfter = Number(error.response?.headers?.['retry-after']);
+  if (Number.isFinite(retryAfter) && retryAfter > 0) return Math.min(retryAfter * 1000, 10000);
+  return Math.min(1000 * 2 ** (attempt - 1), 8000) + Math.floor(Math.random() * 300);
+};
 
 // Request interceptor to add auth token
 api.interceptors.request.use(
@@ -55,13 +79,19 @@ api.interceptors.request.use(
   }
 );
 
-// Response interceptor for global error handling
+// Response interceptor: transparent retry for transient failures + global error shaping
 api.interceptors.response.use(
   (response) => {
     return response;
   },
-  (error) => {
-    // Handle common errors
+  async (error) => {
+    if (shouldRetry(error)) {
+      const config = error.config;
+      config.__retryCount = (config.__retryCount || 0) + 1;
+      await sleep(retryDelay(error, config.__retryCount));
+      return api(config);
+    }
+
     const message = error.response?.data?.message || error.message || 'Something went wrong';
     return Promise.reject({ ...error, message });
   }

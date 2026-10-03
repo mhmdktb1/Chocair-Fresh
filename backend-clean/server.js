@@ -4,7 +4,7 @@ import dotenv from 'dotenv';
 import cors from 'cors';
 import morgan from 'morgan';
 import rateLimit from 'express-rate-limit';
-import connectDB from './config/db.js';
+import connectDB, { isDbConnected } from './config/db.js';
 import { notFound, errorHandler } from './middleware/errorMiddleware.js';
 import productRoutes from './routes/productRoutes.js';
 import orderRoutes from './routes/orderRoutes.js';
@@ -45,6 +45,13 @@ if (process.env.NODE_ENV === 'development') {
   app.use(morgan('dev'));
 }
 
+// gzip responses when the optional dependency is installed (it is in package.json).
+try {
+  const { default: compression } = await import('compression');
+  app.use(compression({ threshold: 1024 }));
+} catch {
+  console.warn('⚠️  "compression" package not installed – responses will not be gzipped. Run npm install.');
+}
 app.use(express.json());
 
 // Dynamic CORS configuration supporting explicit allowed origins + localhost development
@@ -133,7 +140,9 @@ const uploadLimiter = rateLimit({
 });
 
 app.use('/api/users/auth', authLimiter);
-app.use('/api/orders', orderLimiter);
+// Only throttle order *placement*. Applying this to every /api/orders request made the
+// admin dashboard's 8s order polling hit 429 after ~7 minutes, so orders stopped loading.
+app.post('/api/orders', orderLimiter);
 app.use('/api/upload', uploadLimiter);
 
 // Health check endpoints for Render and monitoring
@@ -147,9 +156,11 @@ app.get('/', (req, res) => {
 });
 
 app.get('/api/health', (req, res) => {
+  res.set('Cache-Control', 'no-store');
   res.status(200).json({
     status: 'OK',
     message: 'Backend running',
+    db: isDbConnected() ? 'connected' : 'connecting',
     uptime: process.uptime(),
     timestamp: new Date().toISOString(),
   });
@@ -177,6 +188,11 @@ if (process.env.NODE_ENV !== 'test') {
   const server = app.listen(PORT, () => {
     console.log(`Server running in ${process.env.NODE_ENV} mode on port ${PORT}`);
   });
+
+  // Must exceed the load balancer's idle timeout (Render/AWS ≈ 60s); otherwise Node closes
+  // idle sockets the proxy still reuses, producing sporadic 502s on random requests.
+  server.keepAliveTimeout = 65000;
+  server.headersTimeout = 66000;
 
   server.on('error', (error) => {
     if (error.code === 'EADDRINUSE') {

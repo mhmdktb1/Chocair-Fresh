@@ -75,7 +75,11 @@ Maintenance and database seeding scripts.
 - `seed.js`: Main database seeding script (products, users).
 - `set-placeholder-images.js`: Updates database products with consistent placeholder images.
 
+### `services/`
+- `catalogService.js`: In-memory cached product catalog, categories and home config (served without a DB round-trip; invalidated automatically by model write hooks).
+
 ### `utils/`
+- `cache.js`: Single-flight, stale-while-revalidate cache with ETag responses and Mongoose write-hook invalidation.
 - `generateToken.js`: Utility function to generate JWTs for authentication.
 
 ---
@@ -109,8 +113,8 @@ React Context Providers for global state management.
 ### `hooks/`
 Custom React Hooks for logic encapsulation.
 - `useCart.js`: Hook to access cart logic easily.
-- `useCategories.js`: Hook to fetch and manage categories.
-- `useProducts.js`: Hook to fetch and manage products.
+- `useCategories.js`: Shared category list (backed by `utils/resourceStore.js`).
+- `useProducts.js`: Shared product catalog (backed by `utils/resourceStore.js`).
 
 ### `pages/`
 Route components (Views). Most include a corresponding `.css` file for styling.
@@ -130,7 +134,8 @@ Route components (Views). Most include a corresponding `.css` file for styling.
 - `variables.css`: CSS variables (colors, fonts, spacing) for consistent theming.
 
 ### `utils/`
-- `api.js`: Axios instance configurations and interceptors.
+- `api.js`: Axios instance, auth interceptor, and automatic retry of failed GET requests (cold starts, timeouts, 5xx).
+- `resourceStore.js`: App-wide deduplicated, localStorage-backed, self-retrying store for products and categories.
 - `formatters.js`: Helpers for currency (IDR) and date formatting.
 - `phoneUtils.js`: Phone number validation and formatting utilities.
 - `textUtils.jsx`: Text processing helpers (truncation, capitalization).

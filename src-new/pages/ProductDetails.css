@@ -312,6 +312,91 @@
 }
 
 /* =========================================================
+   PRODUCT DESCRIPTION
+   ========================================================= */
+.toters-description-section {
+  border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+  padding-bottom: 1.1rem;
+  margin-bottom: 1.25rem;
+}
+
+[data-theme="dark"] .toters-description-section {
+  border-bottom-color: rgba(255, 255, 255, 0.08);
+}
+
+.toters-section-title {
+  font-size: 1.05rem;
+  font-weight: 800;
+  color: var(--text-main, #111827);
+  letter-spacing: -0.2px;
+  margin: 0 0 0.5rem 0;
+}
+
+.toters-description-text {
+  margin: 0;
+  font-size: 0.95rem;
+  line-height: 1.6;
+  color: var(--text-light, #4b5563);
+  white-space: pre-line;
+  overflow-wrap: anywhere;
+  text-align: start;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 5;
+  line-clamp: 5;
+  overflow: hidden;
+}
+
+.toters-description-text.expanded {
+  display: block;
+  -webkit-line-clamp: unset;
+  line-clamp: unset;
+  overflow: visible;
+}
+
+[data-theme="dark"] .toters-description-text {
+  color: #cbd5e1;
+}
+
+.toters-description-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  min-height: 44px;
+  margin-top: 0.15rem;
+  padding: 0 0.15rem;
+  background: none;
+  border: none;
+  color: #00a877;
+  font-size: 0.9rem;
+  font-weight: 700;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.toters-description-toggle:hover {
+  text-decoration: underline;
+}
+
+.toters-description-toggle:focus-visible {
+  outline: 2px solid #00c98d;
+  outline-offset: 2px;
+  border-radius: 6px;
+}
+
+.toters-description-toggle svg {
+  transition: transform 0.2s ease;
+}
+
+.toters-description-toggle svg.rotated {
+  transform: rotate(180deg);
+}
+
+[data-theme="dark"] .toters-description-toggle {
+  color: #34d399;
+}
+
+/* =========================================================
    PRESETS SECTION
    ========================================================= */
 .toters-presets-section {
@@ -668,6 +753,12 @@
 
   .toters-product-name {
     font-size: 1.45rem;
+  }
+
+  .toters-description-text {
+    -webkit-line-clamp: 3;
+    line-clamp: 3;
+    font-size: 0.92rem;
   }
 
   .toters-sticky-bottom-bar {

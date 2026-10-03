@@ -202,6 +202,44 @@ describe('Product API', () => {
     expect(badUpdateRes.status).toBe(400);
   });
 
+  it('DESCRIPTION: is optional, trimmed, editable and length-capped', async () => {
+    const auth = `Bearer ${adminToken}`;
+    const { description, ...withoutDescription } = productData;
+
+    const noDescRes = await request(app)
+      .post('/api/products')
+      .set('Authorization', auth)
+      .send(withoutDescription);
+    expect(noDescRes.status).toBe(201);
+    expect(noDescRes.body.description).toBe('');
+
+    const updateRes = await request(app)
+      .put(`/api/products/${noDescRes.body._id}`)
+      .set('Authorization', auth)
+      .send({ description: '  Crisp and juicy.\nGreat for salads.  ' });
+    expect(updateRes.status).toBe(200);
+    expect(updateRes.body.description).toBe('Crisp and juicy.\nGreat for salads.');
+
+    const clearRes = await request(app)
+      .put(`/api/products/${noDescRes.body._id}`)
+      .set('Authorization', auth)
+      .send({ description: '' });
+    expect(clearRes.status).toBe(200);
+    expect(clearRes.body.description).toBe('');
+
+    const tooLongCreate = await request(app)
+      .post('/api/products')
+      .set('Authorization', auth)
+      .send({ ...productData, description: 'a'.repeat(1001) });
+    expect(tooLongCreate.status).toBe(400);
+
+    const tooLongUpdate = await request(app)
+      .put(`/api/products/${noDescRes.body._id}`)
+      .set('Authorization', auth)
+      .send({ description: 'a'.repeat(1001) });
+    expect(tooLongUpdate.status).toBe(400);
+  });
+
   it('DISCOUNT SYSTEM: handles active percentage, fixed discounts, and date windows securely', async () => {
     // 1. Percentage discount: $10.00 base with 20% discount -> $8.00
     const pctProductRes = await request(app)

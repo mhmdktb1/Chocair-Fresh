@@ -70,6 +70,11 @@ const orderSchema = mongoose.Schema(
   }
 );
 
+orderSchema.index({ createdAt: -1 });
+orderSchema.index({ user: 1, createdAt: -1 });
+orderSchema.index({ 'customerInfo.phone': 1, createdAt: -1 });
+orderSchema.index({ 'customerInfo.email': 1, createdAt: -1 });
+
 const Order = mongoose.model('Order', orderSchema);
 
 export default Order;

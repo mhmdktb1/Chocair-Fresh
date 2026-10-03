@@ -18,3 +18,11 @@ export const parseHighlightedText = (text, highlightClass = 'highlight') => {
     return <React.Fragment key={index}>{part}</React.Fragment>;
   });
 };
+
+const PLACEHOLDER_DESCRIPTIONS = new Set(['no description', 'no description available', 'n/a']);
+
+// Returns the product's description, or '' when it is missing or a legacy placeholder.
+export const getProductDescription = (product) => {
+  const raw = typeof product?.description === 'string' ? product.description.trim() : '';
+  return PLACEHOLDER_DESCRIPTIONS.has(raw.toLowerCase()) ? '' : raw;
+};

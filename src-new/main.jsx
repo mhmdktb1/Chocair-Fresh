@@ -1,7 +1,11 @@
 import React from 'react';
 import ReactDOM from 'react-dom/client';
 import App from './App';
+import { prefetchCatalog } from './utils/resourceStore';
 import './styles/global.css';
+
+// Start loading products/categories immediately, in parallel with React booting.
+prefetchCatalog();
 
 // Ensure stale service worker registrations and CacheStorage caches are cleared on new deployments
 if (typeof window !== 'undefined') {

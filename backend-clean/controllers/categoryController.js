@@ -1,15 +1,18 @@
 import Category from '../models/categoryModel.js';
+import { sendCachedJson } from '../utils/cache.js';
+import { getCategoriesEntry } from '../services/catalogService.js';
 
 // @desc    Fetch all categories
 // @route   GET /api/categories
 // @access  Public
 const getCategories = async (req, res) => {
   try {
-    const categories = await Category.find({});
-    res.json(categories);
+    const entry = await getCategoriesEntry();
+    sendCachedJson(req, res, entry);
   } catch (error) {
     console.error('DB error in getCategories:', error.message);
-    res.json([]);
+    res.set('Retry-After', '3');
+    res.status(503).json({ message: 'Categories are temporarily unavailable, please retry.' });
   }
 };
 

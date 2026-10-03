@@ -35,7 +35,7 @@ const addOrderItems = asyncHandler(async (req, res) => {
   // Fetch active store delivery settings
   let storeConfig = null;
   try {
-    storeConfig = await HomeConfig.findOne();
+    storeConfig = await HomeConfig.findOne().select('delivery');
   } catch (err) {
     console.warn('Failed to fetch storeConfig in addOrderItems:', err.message);
   }
@@ -77,7 +77,8 @@ const addOrderItems = asyncHandler(async (req, res) => {
   let calculatedItemsPrice = 0;
 
   try {
-    for (const item of orderItems) {
+    // Validate every line before touching stock so bad input never needs a rollback.
+    const parsedItems = orderItems.map((item) => {
       const productId = item.product || item._id || item.id;
       const rawQty = item.qty !== undefined ? item.qty : item.quantity;
       const qty = Number(rawQty);
@@ -92,19 +93,38 @@ const addOrderItems = asyncHandler(async (req, res) => {
         throw new Error(`Invalid product reference for item: ${item.name || 'Unknown'}`);
       }
 
-      const updatedProduct = await Product.findOneAndUpdate(
-        { _id: productId, countInStock: { $gte: qty } },
-        { $inc: { countInStock: -qty } },
-        { new: true }
-      );
+      return { item, productId, qty };
+    });
 
-      if (!updatedProduct) {
-        throw new Error(
-          `Insufficient stock for "${item.name || 'Product'}". Please reduce quantity.`
-        );
+    // Each decrement is an atomic conditional update; running them concurrently keeps
+    // checkout fast (one DB round-trip instead of one per line item).
+    const results = await Promise.allSettled(
+      parsedItems.map(({ productId, qty }) =>
+        Product.findOneAndUpdate(
+          { _id: productId, countInStock: { $gte: qty } },
+          { $inc: { countInStock: -qty } },
+          { new: true }
+        ).lean()
+      )
+    );
+
+    let firstFailure = null;
+    results.forEach((result, idx) => {
+      const { item, productId, qty } = parsedItems[idx];
+      if (result.status === 'fulfilled' && result.value) {
+        decrementedItems.push({ productId, qty });
+      } else if (!firstFailure) {
+        firstFailure =
+          result.status === 'rejected'
+            ? result.reason
+            : new Error(`Insufficient stock for "${item.name || 'Product'}". Please reduce quantity.`);
       }
+    });
 
-      decrementedItems.push({ productId, qty });
+    if (firstFailure) throw firstFailure;
+
+    parsedItems.forEach(({ item, qty }, idx) => {
+      const updatedProduct = results[idx].value;
 
       // Calculate server-side product discount
       const discountCalc = calculateProductDiscount(updatedProduct);
@@ -124,7 +144,7 @@ const addOrderItems = asyncHandler(async (req, res) => {
         image: updatedProduct.image || item.image || '/assets/images/placeholder-product.jpg',
         instruction: item.instruction || item.instructions || item.specialInstructions || item.note || item.notes || '',
       });
-    }
+    });
 
     calculatedItemsPrice = Number(calculatedItemsPrice.toFixed(2));
     
@@ -165,61 +185,68 @@ const addOrderItems = asyncHandler(async (req, res) => {
 
     console.log(`🔔 [Admin Notification] New order #${createdOrder._id} ($${createdOrder.totalPrice}) placed by ${customerInfo?.name || 'Guest'}`);
 
-    // Trigger WhatsApp notifications asynchronously (non-blocking)
-    const notificationTargets = [];
-
-    if (customerInfo && customerInfo.phone) {
-      notificationTargets.push({ phone: customerInfo.phone, isAdmin: false });
-    }
-
-    const adminPhones = new Set();
-    if (process.env.ADMIN_PHONE) {
-      adminPhones.add(process.env.ADMIN_PHONE);
-    }
-    if (process.env.ADMIN_NOTIFICATION_PHONE) {
-      adminPhones.add(process.env.ADMIN_NOTIFICATION_PHONE);
-    }
-
-    try {
-      const adminUsers = await User.find({ isAdmin: true }).lean();
-      for (const admin of adminUsers) {
-        if (admin.phone) {
-          adminPhones.add(admin.phone);
-        }
-      }
-    } catch (adminFetchErr) {
-      console.warn('Could not retrieve admin users for order notification:', adminFetchErr.message);
-    }
-
-    for (const phone of adminPhones) {
-      notificationTargets.push({ phone, isAdmin: true });
-    }
-
-    for (const target of notificationTargets) {
-      sendWhatsAppOrderNotification(target.phone, createdOrder, { isAdmin: target.isAdmin }).catch((err) =>
-        console.error('WhatsApp notification dispatch failed:', err.message)
-      );
-    }
-
-    // Dispatch Instant Telegram Alert to Store Admin Phone
-    sendTelegramOrderAlert(createdOrder).catch((telegramErr) =>
-      console.error('Telegram notification dispatch failed:', telegramErr.message)
-    );
-
     res.status(201).json(createdOrder);
+
+    // Fire-and-forget: the customer should not wait for admin lookups or messaging APIs.
+    dispatchOrderNotifications(createdOrder, customerInfo).catch((err) =>
+      console.error('Order notification dispatch failed:', err.message)
+    );
   } catch (error) {
     // Rollback decremented quantities on failure
-    for (const dec of decrementedItems) {
-      await Product.updateOne(
-        { _id: dec.productId },
-        { $inc: { countInStock: dec.qty } }
-      ).catch((err) => console.error('Rollback error:', err.message));
-    }
+    await Promise.all(
+      decrementedItems.map((dec) =>
+        Product.updateOne({ _id: dec.productId }, { $inc: { countInStock: dec.qty } }).catch((err) =>
+          console.error('Rollback error:', err.message)
+        )
+      )
+    );
 
     res.status(400);
     throw new Error(error.message || 'Failed to place order due to inventory constraints');
   }
 });
+
+const dispatchOrderNotifications = async (createdOrder, customerInfo) => {
+  const notificationTargets = [];
+
+  if (customerInfo && customerInfo.phone) {
+    notificationTargets.push({ phone: customerInfo.phone, isAdmin: false });
+  }
+
+  const adminPhones = new Set();
+  if (process.env.ADMIN_PHONE) {
+    adminPhones.add(process.env.ADMIN_PHONE);
+  }
+  if (process.env.ADMIN_NOTIFICATION_PHONE) {
+    adminPhones.add(process.env.ADMIN_NOTIFICATION_PHONE);
+  }
+
+  try {
+    const adminUsers = await User.find({ isAdmin: true }).select('phone').lean();
+    for (const admin of adminUsers) {
+      if (admin.phone) {
+        adminPhones.add(admin.phone);
+      }
+    }
+  } catch (adminFetchErr) {
+    console.warn('Could not retrieve admin users for order notification:', adminFetchErr.message);
+  }
+
+  for (const phone of adminPhones) {
+    notificationTargets.push({ phone, isAdmin: true });
+  }
+
+  for (const target of notificationTargets) {
+    sendWhatsAppOrderNotification(target.phone, createdOrder, { isAdmin: target.isAdmin }).catch((err) =>
+      console.error('WhatsApp notification dispatch failed:', err.message)
+    );
+  }
+
+  // Dispatch Instant Telegram Alert to Store Admin Phone
+  sendTelegramOrderAlert(createdOrder).catch((telegramErr) =>
+    console.error('Telegram notification dispatch failed:', telegramErr.message)
+  );
+};
 
 // @desc    Get order by ID
 // @route   GET /api/orders/:id
@@ -278,7 +305,9 @@ const getOrders = asyncHandler(async (req, res) => {
   if (email) query['customerInfo.email'] = email;
   if (phone) query['customerInfo.phone'] = phone;
 
-  const orders = await Order.find(query).sort({ createdAt: -1 });
+  const orders = await Order.find(query).sort({ createdAt: -1 }).lean();
+  // Polled every few seconds by the admin dashboard: let the browser revalidate via ETag (304).
+  res.set('Cache-Control', 'private, no-cache');
   res.json(orders);
 });
 
@@ -299,14 +328,15 @@ const updateOrderStatus = asyncHandler(async (req, res) => {
 
     // Restore stock if transitioning to Cancelled
     if (newStatus === 'Cancelled' && previousStatus !== 'Cancelled') {
-      for (const item of order.orderItems) {
-        if (item.product) {
-          await Product.updateOne(
-            { _id: item.product },
-            { $inc: { countInStock: item.qty } }
-          ).catch((err) => console.error('Restore stock error:', err.message));
-        }
-      }
+      await Promise.all(
+        order.orderItems
+          .filter((item) => item.product)
+          .map((item) =>
+            Product.updateOne({ _id: item.product }, { $inc: { countInStock: item.qty } }).catch((err) =>
+              console.error('Restore stock error:', err.message)
+            )
+          )
+      );
     }
 
     const updatedOrder = await order.save();
@@ -362,7 +392,8 @@ const getMyOrders = asyncHandler(async (req, res) => {
   // Also include orders linked by user ID (if any)
   query.$or.push({ user: req.user._id });
 
-  const orders = await Order.find(query).sort({ createdAt: -1 });
+  const orders = await Order.find(query).sort({ createdAt: -1 }).lean();
+  res.set('Cache-Control', 'private, no-cache');
   res.json(orders);
 });
 
@@ -413,14 +444,15 @@ const cancelMyOrder = asyncHandler(async (req, res) => {
     }
 
     order.status = 'Cancelled';
-    for (const item of order.orderItems) {
-      if (item.product) {
-        await Product.updateOne(
-          { _id: item.product },
-          { $inc: { countInStock: item.qty } }
-        ).catch((err) => console.error('Restore stock error on user cancel:', err.message));
-      }
-    }
+    await Promise.all(
+      order.orderItems
+        .filter((item) => item.product)
+        .map((item) =>
+          Product.updateOne({ _id: item.product }, { $inc: { countInStock: item.qty } }).catch((err) =>
+            console.error('Restore stock error on user cancel:', err.message)
+          )
+        )
+    );
 
     const updatedOrder = await order.save();
     res.json(updatedOrder);

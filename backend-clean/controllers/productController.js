@@ -1,9 +1,12 @@
+import mongoose from 'mongoose';
 import asyncHandler from '../middleware/asyncHandler.js';
 import Product from '../models/productModel.js';
 import { applyDiscountToProductDoc } from '../utils/discountHelper.js';
+import { sendCachedJson } from '../utils/cache.js';
+import { getProductCatalog } from '../services/catalogService.js';
 
-// Helper to escape regex special characters
-const escapeRegex = (str) => String(str).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+const MAX_DESCRIPTION_LENGTH = 1000;
+
 
 // Normalize unit to one of the 6 allowed units: 1kg, 500g, 200g, bunch, piece, pack
 const normalizeUnit = (rawUnit) => {
@@ -56,78 +59,89 @@ const parseDiscountPayload = (discount) => {
   };
 };
 
+const OFFER_ALIASES = ['offers', 'offer', 'deals', 'deal', 'discounts', 'discount', 'special offers', 'sales', 'sale'];
+
+const sameText = (a, b) => String(a ?? '').trim().toLowerCase() === b;
+
 // @desc    Fetch all products (supports category, subCategory, keyword, and limit query params)
 // @route   GET /api/products
 // @access  Public
 const getProducts = asyncHandler(async (req, res) => {
-  try {
-    const { category, subCategory, keyword, limit, discount, discounted } = req.query;
-    const query = {};
+  const { category, subCategory, keyword, limit, discount, discounted } = req.query;
+  const { entry, list } = await getProductCatalog();
 
-    const rawCategory = category ? category.trim().toLowerCase() : '';
-    const isOffersCategory = ['offers', 'offer', 'deals', 'deal', 'discounts', 'discount', 'special offers', 'sales', 'sale'].includes(rawCategory);
-    const filterOnlyDiscounted = isOffersCategory || discount === 'true' || discounted === 'true';
+  const rawCategory = typeof category === 'string' ? category.trim().toLowerCase() : '';
+  const isOffersCategory = OFFER_ALIASES.includes(rawCategory);
+  const filterOnlyDiscounted = isOffersCategory || discount === 'true' || discounted === 'true';
+  const rawSubCategory = typeof subCategory === 'string' ? subCategory.trim().toLowerCase() : '';
+  const rawKeyword = typeof keyword === 'string' ? keyword.trim().toLowerCase() : '';
+  const numLimit = Number(limit);
+  const hasLimit = Number.isFinite(numLimit) && numLimit > 0;
 
-    if (category && category !== 'all' && !isOffersCategory) {
-      const safeCat = escapeRegex(category.trim());
-      query.category = { $regex: `^${safeCat}$`, $options: 'i' };
-    }
+  const hasFilters =
+    (rawCategory && rawCategory !== 'all') ||
+    (rawSubCategory && rawSubCategory !== 'all') ||
+    rawKeyword ||
+    filterOnlyDiscounted;
 
-    if (subCategory && subCategory !== 'all') {
-      const safeSubCat = escapeRegex(subCategory.trim());
-      query.subCategory = { $regex: `^${safeSubCat}$`, $options: 'i' };
-    }
-
-    if (keyword && typeof keyword === 'string' && keyword.trim()) {
-      const safeKeyword = escapeRegex(keyword.trim());
-      query.$or = [
-        { name: { $regex: safeKeyword, $options: 'i' } },
-        { nameAr: { $regex: safeKeyword, $options: 'i' } },
-        { description: { $regex: safeKeyword, $options: 'i' } },
-        { brand: { $regex: safeKeyword, $options: 'i' } },
-        { subCategory: { $regex: safeKeyword, $options: 'i' } },
-      ];
-    }
-
-    let productQuery = Product.find(query).sort({ createdAt: -1 });
-
-    if (limit && Number(limit) > 0) {
-      productQuery = productQuery.limit(Math.min(Number(limit), 1000));
-    }
-
-    const products = await productQuery;
-    let transformed = products.map(p => applyDiscountToProductDoc(p));
-
-    // If offers/discount category was requested, filter for currently active discounted products or products explicitly named under Offers
-    if (filterOnlyDiscounted) {
-      transformed = transformed.filter(p => p.isDiscounted || (p.category && p.category.toLowerCase() === 'offers'));
-    }
-
-    res.json(transformed);
-  } catch (error) {
-    console.error('DB error in getProducts:', error.message);
-    res.json([]);
+  // Fast path: full catalog straight from the pre-serialized cache entry.
+  if (!hasFilters && (!hasLimit || numLimit >= list.length)) {
+    sendCachedJson(req, res, entry);
+    return;
   }
+
+  let result = list;
+
+  if (rawCategory && rawCategory !== 'all' && !isOffersCategory) {
+    result = result.filter((p) => sameText(p.category, rawCategory));
+  }
+
+  if (rawSubCategory && rawSubCategory !== 'all') {
+    result = result.filter((p) => sameText(p.subCategory, rawSubCategory));
+  }
+
+  if (rawKeyword) {
+    const fields = ['name', 'nameAr', 'description', 'brand', 'subCategory'];
+    result = result.filter((p) => fields.some((f) => String(p[f] ?? '').toLowerCase().includes(rawKeyword)));
+  }
+
+  if (filterOnlyDiscounted) {
+    result = result.filter((p) => p.isDiscounted || sameText(p.category, 'offers'));
+  }
+
+  if (hasLimit) {
+    result = result.slice(0, Math.min(numLimit, 1000));
+  }
+
+  res.set('Cache-Control', 'no-cache');
+  res.json(result);
 });
 
 // @desc    Get product by ID
 // @route   GET /api/products/:id
 // @access  Public
 const getProductById = asyncHandler(async (req, res) => {
-  try {
-    const product = await Product.findById(req.params.id);
-
-    if (product) {
-      res.json(applyDiscountToProductDoc(product));
-    } else {
-      res.status(404);
-      throw new Error('Product not found');
-    }
-  } catch (error) {
-    console.error('DB error in getProductById:', error.message);
+  if (!mongoose.isValidObjectId(req.params.id)) {
     res.status(404);
     throw new Error('Product not found');
   }
+
+  const { byId } = await getProductCatalog();
+  let product = byId.get(String(req.params.id));
+
+  if (!product) {
+    // Catalog may be a few seconds behind writes made outside this process.
+    const doc = await Product.findById(req.params.id).lean();
+    product = doc ? applyDiscountToProductDoc(doc) : null;
+  }
+
+  if (!product) {
+    res.status(404);
+    throw new Error('Product not found');
+  }
+
+  res.set('Cache-Control', 'no-cache');
+  res.json(product);
 });
 
 // @desc    Create a product
@@ -161,6 +175,11 @@ const createProduct = asyncHandler(async (req, res) => {
   if (description !== undefined && typeof description !== 'string') {
     res.status(400);
     throw new Error('Description must be a string');
+  }
+
+  if (typeof description === 'string' && description.trim().length > MAX_DESCRIPTION_LENGTH) {
+    res.status(400);
+    throw new Error(`Description must be ${MAX_DESCRIPTION_LENGTH} characters or fewer`);
   }
 
   if (image !== undefined && typeof image !== 'string') {
@@ -253,6 +272,10 @@ const updateProduct = asyncHandler(async (req, res) => {
     if (typeof description !== 'string') {
       res.status(400);
       throw new Error('Description must be a string');
+    }
+    if (description.trim().length > MAX_DESCRIPTION_LENGTH) {
+      res.status(400);
+      throw new Error(`Description must be ${MAX_DESCRIPTION_LENGTH} characters or fewer`);
     }
     product.description = description.trim();
   }

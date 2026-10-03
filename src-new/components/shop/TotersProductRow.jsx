@@ -22,17 +22,16 @@ const TotersProductRow = ({ title, type, productId = null, category = null, limi
     const fetchItems = async () => {
       try {
         setLoading(true);
-        const t = Date.now();
         let response;
 
         if (type === 'similar' && productId) {
-          response = await api.post(`/recommend/product?t=${t}`, { productId, limit, type: 'similar' });
+          response = await api.post('/recommend/product', { productId, limit, type: 'similar' });
         } else if (type === 'related' && productId) {
-          response = await api.post(`/recommend/product?t=${t}`, { productId, limit, type: 'associations' });
+          response = await api.post('/recommend/product', { productId, limit, type: 'associations' });
         } else if (category) {
-          response = await api.get(`/products?category=${category}&limit=${limit}&t=${t}`);
+          response = await api.get(`/products?category=${encodeURIComponent(category)}&limit=${limit}`);
         } else {
-          response = await api.get(`/products?limit=${limit}&t=${t}`);
+          response = await api.get(`/products?limit=${limit}`);
         }
 
         let loaded = [];

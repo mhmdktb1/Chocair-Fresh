@@ -1,119 +1,135 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ArrowRight, ArrowLeft } from 'lucide-react';
 import ProductCard from './ProductCard';
 import api from '../../utils/api';
+import { useProducts } from '../../hooks/useProducts';
 import { normalizeUnit } from '../../utils/unitHelper';
 import './RecommendationRow.css';
 
+const toCard = (p) => ({ ...p, _id: p._id || p.id });
+
+const extractItems = (response) => {
+  if (response?.data?.success && Array.isArray(response.data.data)) {
+    return response.data.data
+      .map((item) => (item.product ? toCard(item.product) : null))
+      .filter(Boolean);
+  }
+  if (Array.isArray(response?.data)) return response.data.map(toCard);
+  if (Array.isArray(response?.data?.products)) return response.data.products.map(toCard);
+  return [];
+};
+
 const RecommendationRow = ({ title, subtitle = null, type, category = null, viewAllLink = null, productId = null, limit = 8, cartItems = [], items = [] }) => {
   const navigate = useNavigate();
-  const [products, setProducts] = useState(items || []);
+  const { products: catalog } = useProducts();
+  const [fetched, setFetched] = useState([]);
   const [loading, setLoading] = useState(true);
   const [scrollProgress, setScrollProgress] = useState(0);
   const scrollRef = useRef(null);
 
+  const catalogById = useMemo(
+    () => new Map(catalog.map((p) => [String(p._id || p.id), p])),
+    [catalog]
+  );
+
+  const hasManualItems = Array.isArray(items) && items.length > 0 && (type === 'manual' || type === 'category');
+  const isCategoryRow = !hasManualItems && (type === 'category' || Boolean(category));
+  const targetCategory = String(category || title || '').trim().toLowerCase();
+  // Category rows are served straight from the already-loaded catalog when available.
+  const catalogCanServe = isCategoryRow && catalog.length > 0;
+
+  const derived = useMemo(() => {
+    if (hasManualItems) {
+      // Prefer live catalog data so seasonal picks show current price/stock/discount.
+      return items
+        .filter(Boolean)
+        .map((p) => catalogById.get(String(p._id || p.id)) || p)
+        .map(toCard);
+    }
+    if (catalogCanServe) {
+      return catalog
+        .filter((p) => String(p.category || '').trim().toLowerCase() === targetCategory)
+        .slice(0, limit)
+        .map(toCard);
+    }
+    return null;
+  }, [hasManualItems, items, catalogById, catalogCanServe, catalog, targetCategory, limit]);
+
+  const itemsKey = hasManualItems ? items.map((p) => p?._id || p?.id).join(',') : '';
+  const cartKey = (cartItems || []).map((c) => `${c._id || c.id}:${c.quantity || c.qty || 1}`).join(',');
+
   useEffect(() => {
+    if (hasManualItems || catalogCanServe) {
+      setLoading(false);
+      return undefined;
+    }
+
     let isMounted = true;
 
     const fetchRecommendations = async () => {
       try {
         setLoading(true);
-        
-        // 1. Manual curation (e.g. Admin Seasonal Picks or explicit items array)
-        if (type === 'manual' || (type === 'category' && items && items.length > 0)) {
-          if (items && items.length > 0) {
-            if (isMounted) {
-              setProducts(items.map(p => ({ ...p, _id: p._id || p.id })));
-              setLoading(false);
-            }
-            return;
-          }
-        }
 
-        // 2. Specific Category Row (e.g. Seasonal Fruits category)
-        if (type === 'category' || category) {
-          const targetCategory = category || title;
-          const catRes = await api.get(`/products?category=${encodeURIComponent(targetCategory)}&limit=${limit}`);
-          const catData = Array.isArray(catRes.data) ? catRes.data : catRes.data?.products || [];
-          if (isMounted) {
-            setProducts(catData.map(p => ({ ...p, _id: p._id || p.id })).slice(0, limit));
-            setLoading(false);
-          }
+        if (isCategoryRow) {
+          const catRes = await api.get(`/products?category=${encodeURIComponent(category || title)}&limit=${limit}`);
+          if (isMounted) setFetched(extractItems(catRes).slice(0, limit));
           return;
         }
 
         let response;
-        const t = Date.now();
-
         switch (type) {
-          case 'popular': // Best Sellers / Trending
-            response = await api.get(`/recommend/trending?limit=${limit}&t=${t}`);
+          case 'popular':
+            response = await api.get(`/recommend/trending?limit=${limit}`);
             break;
-          case 'new': // Trending Now
-            response = await api.get(`/recommend/new?limit=${limit}&t=${t}`);
+          case 'new':
+            response = await api.get(`/recommend/new?limit=${limit}`);
             break;
-          case 'top-rated': // Top Rated
-            response = await api.get(`/recommend/top-rated?limit=${limit}&t=${t}`);
+          case 'top-rated':
+            response = await api.get(`/recommend/top-rated?limit=${limit}`);
             break;
-          case 'personalized': // Just For You / For You
+          case 'personalized':
           case 'for-you':
-            response = await api.get(`/recommend/personalized?limit=${limit}&t=${t}`);
+            response = await api.get(`/recommend/personalized?limit=${limit}`);
             break;
-          case 'related': // Frequently Bought Together
+          case 'related':
             if (productId) {
-              response = await api.post(`/recommend/product?t=${t}`, { productId, limit, type: 'associations' });
+              response = await api.post('/recommend/product', { productId, limit, type: 'associations' });
             }
             break;
-          case 'similar': // Similar Products
+          case 'similar':
             if (productId) {
-              response = await api.post(`/recommend/product?t=${t}`, { productId, limit, type: 'similar' });
+              response = await api.post('/recommend/product', { productId, limit, type: 'similar' });
             }
             break;
-          case 'cart': // Complete Your Cart
+          case 'cart':
             if (cartItems && cartItems.length > 0) {
-              response = await api.post(`/recommend/cart?t=${t}`, { cartItems, limit });
+              response = await api.post('/recommend/cart', { cartItems, limit });
             }
             break;
           default:
             break;
         }
 
-        let loadedItems = [];
-        if (response?.data?.success && Array.isArray(response.data.data) && response.data.data.length > 0) {
-          loadedItems = response.data.data
-            .map(item => (item.product ? { ...item.product, _id: item.product._id || item.product.id } : null))
-            .filter(Boolean);
-        } else if (Array.isArray(response?.data)) {
-          loadedItems = response.data.map(p => ({ ...p, _id: p._id || p.id }));
-        }
+        let loadedItems = extractItems(response);
 
-        // Fallback: If ML recommendations return 0 items (cold start), fetch general catalog products
-        if (loadedItems.length === 0 && (type === 'popular' || type === 'new' || type === 'personalized' || type === 'for-you')) {
+        // Cold start: if ML recommendations are empty, show the general catalog instead
+        if (loadedItems.length === 0 && ['popular', 'new', 'personalized', 'for-you'].includes(type)) {
           const fallbackRes = await api.get(`/products?limit=${limit}`);
-          const fallbackData = Array.isArray(fallbackRes.data) ? fallbackRes.data : fallbackRes.data?.products || [];
-          loadedItems = fallbackData.map(p => ({ ...p, _id: p._id || p.id })).slice(0, limit);
+          loadedItems = extractItems(fallbackRes).slice(0, limit);
         }
 
-        if (isMounted) {
-          setProducts(loadedItems);
-        }
+        if (isMounted) setFetched(loadedItems);
       } catch (error) {
         console.error(`Error fetching ${type} recommendations:`, error);
-        // On error, fallback to general products to ensure content always renders
         try {
           const fallbackRes = await api.get(`/products?limit=${limit}`);
-          const fallbackData = Array.isArray(fallbackRes.data) ? fallbackRes.data : fallbackRes.data?.products || [];
-          if (isMounted) {
-            setProducts(fallbackData.map(p => ({ ...p, _id: p._id || p.id })).slice(0, limit));
-          }
+          if (isMounted) setFetched(extractItems(fallbackRes).slice(0, limit));
         } catch (e) {
           console.error('Fallback failed', e);
         }
       } finally {
-        if (isMounted) {
-          setLoading(false);
-        }
+        if (isMounted) setLoading(false);
       }
     };
 
@@ -122,7 +138,10 @@ const RecommendationRow = ({ title, subtitle = null, type, category = null, view
     return () => {
       isMounted = false;
     };
-  }, [type, productId, limit, JSON.stringify(items)]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [type, productId, limit, category, title, itemsKey, cartKey, hasManualItems, catalogCanServe, isCategoryRow]);
+
+  const products = derived || fetched;
 
   const handleScroll = () => {
     if (scrollRef.current) {
@@ -141,7 +160,7 @@ const RecommendationRow = ({ title, subtitle = null, type, category = null, view
     }
   };
 
-  if (loading && products.length === 0) {
+  if (!derived && loading && products.length === 0) {
     return (
       <section className="recommendation-row skeleton-row">
         <div className="container">

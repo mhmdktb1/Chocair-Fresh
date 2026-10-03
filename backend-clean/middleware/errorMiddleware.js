@@ -27,6 +27,16 @@ const errorHandler = (err, req, res, next) => {
     message = Object.values(err.errors).map(val => val.message).join(', ');
   }
 
+  // Database temporarily unreachable (cold start, Atlas failover, network blip)
+  const isDbUnavailable =
+    /^(MongooseServerSelectionError|MongoServerSelectionError|MongoNetworkError|MongoNetworkTimeoutError|MongoNotConnectedError|MongoTopologyClosedError)$/.test(err.name || '') ||
+    /buffering timed out/i.test(err.message || '');
+  if (isDbUnavailable) {
+    statusCode = 503;
+    message = 'Service temporarily unavailable, please retry.';
+    res.set('Retry-After', '3');
+  }
+
   // Sanitize 500 internal server errors in production to avoid leaking server paths/secrets
   if (statusCode === 500 && process.env.NODE_ENV === 'production') {
     message = 'Internal Server Error';

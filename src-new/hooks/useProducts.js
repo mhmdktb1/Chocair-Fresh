@@ -1,28 +1,7 @@
-import { useState, useEffect } from 'react';
-import api from '../utils/api';
+import { productsStore, useResource } from '../utils/resourceStore';
 
+/** Raw product catalog from the API, shared across the whole app. */
 export const useProducts = () => {
-  const [products, setProducts] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
-
-  const fetchProducts = async () => {
-    try {
-      setLoading(true);
-      const response = await api.get('/products');
-      setProducts(response.data);
-      setError(null);
-    } catch (err) {
-      console.error('Error fetching products:', err);
-      setError(err.message || 'Failed to fetch products');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    fetchProducts();
-  }, []);
-
-  return { products, loading, error, refetch: fetchProducts };
+  const { data, loading, error, refetch } = useResource(productsStore);
+  return { products: data, loading, error, refetch };
 };

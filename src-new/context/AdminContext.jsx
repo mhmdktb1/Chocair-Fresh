@@ -1,5 +1,6 @@
-import { createContext, useContext, useState, useEffect, useRef, useCallback } from "react";
+import { createContext, useContext, useState, useEffect, useRef, useCallback, useMemo } from "react";
 import api from "../utils/api";
+import { productsStore, categoriesStore, useResource } from "../utils/resourceStore";
 import { useAuth } from "./AuthContext";
 import { normalizeUnit } from "../utils/unitHelper";
 import { adminNotification } from "../utils/adminNotificationSound";
@@ -15,29 +16,88 @@ export const useAdmin = () => {
   return context;
 };
 
+// Helper to normalize backend product to UI shape
+const mapProduct = (p) => {
+  const isDiscounted = Boolean(p.isDiscounted || (p.discount?.isActive && Number(p.discount?.value) > 0));
+  const mainCategory = p.category ? String(p.category).trim() : "Uncategorized";
+  const assignedCategories = [mainCategory];
+  if (isDiscounted && !assignedCategories.some(c => c.toLowerCase() === 'offers')) {
+    assignedCategories.push('Offers');
+  }
+
+  return {
+    id: p._id || p.id,
+    _id: p._id || p.id,
+    name: p.name,
+    nameAr: p.nameAr || '',
+    category: mainCategory,
+    subCategory: p.subCategory ? String(p.subCategory).trim() : "",
+    categories: assignedCategories,
+    price: p.price,
+    originalPrice: p.originalPrice !== undefined ? p.originalPrice : (p.basePrice !== undefined ? p.basePrice : p.price),
+    finalPrice: p.finalPrice !== undefined ? p.finalPrice : p.price,
+    isDiscounted,
+    discountPercent: p.discountPercent || 0,
+    discountAmount: p.discountAmount || 0,
+    discount: {
+      isActive: Boolean(p.discount?.isActive),
+      type: p.discount?.type || 'percentage',
+      value: Number(p.discount?.value || 0),
+      startDate: p.discount?.startDate || null,
+      endDate: p.discount?.endDate || null,
+    },
+    priceUnit: normalizeUnit(p.unit), 
+    unit: normalizeUnit(p.unit),
+    stock: p.countInStock !== undefined ? p.countInStock : p.stock,
+    image: p.image,
+    description: p.description,
+    brand: p.brand,
+    featured: false, // Not in backend
+    customPrices: {} // Not in backend
+  };
+};
+
+// Helper to normalize backend order to UI shape
+const mapOrder = (o) => ({
+  id: o._id || o.id,
+  customer: o.customerInfo?.name || o.name || "Guest",
+  email: o.customerInfo?.email || o.email,
+  phone: o.customerInfo?.phone || o.phone,
+  googleMapsLink: o.customerInfo?.googleMapsLink,
+  items: (o.orderItems || []).map(item => ({
+    name: item.name || (item.product?.name) || "Product",
+    quantity: item.qty || item.quantity || 1,
+    price: item.price !== undefined ? item.price : (item.product?.price || 0),
+    originalPrice: item.originalPrice !== undefined ? item.originalPrice : (item.product?.originalPrice || item.price),
+    discountPercent: item.discountPercent || 0,
+    discountAmount: item.discountAmount || 0,
+    total: (item.qty || item.quantity || 1) * (item.price !== undefined ? item.price : (item.product?.price || 0)),
+    image: item.image || item.product?.image,
+    unit: normalizeUnit(item.unit || item.product?.unit),
+    instruction: item.instruction || item.instructions || item.specialInstructions || item.note || item.notes || ""
+  })),
+  total: o.totalPrice || o.total || 0,
+  itemsPrice: o.itemsPrice !== undefined ? o.itemsPrice : (o.totalPrice || o.total || 0),
+  shippingPrice: o.shippingPrice !== undefined ? o.shippingPrice : 0,
+  distanceKm: o.customerInfo?.distanceKm,
+  status: o.status || "Pending",
+  date: o.createdAt || o.date || new Date().toISOString(),
+  deliveryPreference: o.deliveryPreference || o.customerInfo?.deliveryPreference,
+  shippingAddress: o.customerInfo || o.shippingAddress
+});
+
 export const AdminProvider = ({ children }) => {
   const { isAdmin } = useAuth();
-  const [products, setProducts] = useState(() => {
-    try {
-      const cached = localStorage.getItem('cf_cached_products');
-      return cached ? JSON.parse(cached) : [];
-    } catch {
-      return [];
-    }
-  });
+  const {
+    data: rawProducts,
+    loading,
+    error: productsError,
+  } = useResource(productsStore);
+  const { data: categories } = useResource(categoriesStore);
   const [orders, setOrders] = useState([]);
-  const [categories, setCategories] = useState(() => {
-    try {
-      const cached = localStorage.getItem('cf_cached_categories');
-      return cached ? JSON.parse(cached) : [];
-    } catch {
-      return [];
-    }
-  });
   const [heroSlides, setHeroSlides] = useState([]);
   const [users, setUsers] = useState([]); 
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
+  const error = productsError ? "Failed to load products" : "";
   
   // Real-time Admin Notification State
   const [soundEnabled, setSoundEnabledState] = useState(() => adminNotification.isSoundEnabled());
@@ -50,100 +110,19 @@ export const AdminProvider = ({ children }) => {
   // References for tracking known orders across polling cycles
   const knownOrderIdsRef = useRef(new Set());
   const isInitialOrderLoadRef = useRef(true);
+  const lastOrdersPayloadRef = useRef("");
 
-  // Helper to normalize backend product to UI shape
-  const mapProduct = (p) => {
-    const isDiscounted = Boolean(p.isDiscounted || (p.discount?.isActive && Number(p.discount?.value) > 0));
-    const mainCategory = p.category ? String(p.category).trim() : "Uncategorized";
-    const assignedCategories = [mainCategory];
-    if (isDiscounted && !assignedCategories.some(c => c.toLowerCase() === 'offers')) {
-      assignedCategories.push('Offers');
-    }
+  const products = useMemo(() => rawProducts.map(mapProduct), [rawProducts]);
 
-    return {
-      id: p._id || p.id,
-      _id: p._id || p.id,
-      name: p.name,
-      nameAr: p.nameAr || '',
-      category: mainCategory,
-      subCategory: p.subCategory ? String(p.subCategory).trim() : "",
-      categories: assignedCategories,
-      price: p.price,
-      originalPrice: p.originalPrice !== undefined ? p.originalPrice : (p.basePrice !== undefined ? p.basePrice : p.price),
-      finalPrice: p.finalPrice !== undefined ? p.finalPrice : p.price,
-      isDiscounted,
-      discountPercent: p.discountPercent || 0,
-      discountAmount: p.discountAmount || 0,
-      discount: {
-        isActive: Boolean(p.discount?.isActive),
-        type: p.discount?.type || 'percentage',
-        value: Number(p.discount?.value || 0),
-        startDate: p.discount?.startDate || null,
-        endDate: p.discount?.endDate || null,
-      },
-      priceUnit: normalizeUnit(p.unit), 
-      unit: normalizeUnit(p.unit),
-      stock: p.countInStock !== undefined ? p.countInStock : p.stock,
-      image: p.image,
-      description: p.description,
-      brand: p.brand,
-      featured: false, // Not in backend
-      customPrices: {} // Not in backend
-    };
-  };
-
-  // Helper to normalize backend order to UI shape
-  const mapOrder = (o) => ({
-    id: o._id || o.id,
-    customer: o.customerInfo?.name || o.name || "Guest",
-    email: o.customerInfo?.email || o.email,
-    phone: o.customerInfo?.phone || o.phone,
-    googleMapsLink: o.customerInfo?.googleMapsLink,
-    items: (o.orderItems || []).map(item => ({
-      name: item.name || (item.product?.name) || "Product",
-      quantity: item.qty || item.quantity || 1,
-      price: item.price !== undefined ? item.price : (item.product?.price || 0),
-      originalPrice: item.originalPrice !== undefined ? item.originalPrice : (item.product?.originalPrice || item.price),
-      discountPercent: item.discountPercent || 0,
-      discountAmount: item.discountAmount || 0,
-      total: (item.qty || item.quantity || 1) * (item.price !== undefined ? item.price : (item.product?.price || 0)),
-      image: item.image || item.product?.image,
-      unit: normalizeUnit(item.unit || item.product?.unit),
-      instruction: item.instruction || item.instructions || item.specialInstructions || item.note || item.notes || ""
-    })),
-    total: o.totalPrice || o.total || 0,
-    itemsPrice: o.itemsPrice !== undefined ? o.itemsPrice : (o.totalPrice || o.total || 0),
-    shippingPrice: o.shippingPrice !== undefined ? o.shippingPrice : 0,
-    distanceKm: o.customerInfo?.distanceKm,
-    status: o.status || "Pending",
-    date: o.createdAt || o.date || new Date().toISOString(),
-    deliveryPreference: o.deliveryPreference || o.customerInfo?.deliveryPreference,
-    shippingAddress: o.customerInfo || o.shippingAddress
-  });
-
-  const fetchProducts = async () => {
-    try {
-      const hasCached = products && products.length > 0;
-      if (!hasCached) setLoading(true);
-      const response = await api.get("/products");
-      const mapped = response.data.map(mapProduct);
-      setProducts(mapped);
-      try {
-        localStorage.setItem('cf_cached_products', JSON.stringify(mapped));
-      } catch (e) {
-        // ignore quota
-      }
-    } catch (e) {
-      console.error("Failed to load products", e);
-      setError("Failed to load products");
-    } finally {
-      setLoading(false);
-    }
-  };
+  const fetchProducts = useCallback(() => productsStore.fetch({ force: true }), []);
 
   const fetchOrders = useCallback(async (isBackground = false) => {
     try {
-      const response = await api.get("/orders");
+      const response = await api.get("/orders", { retries: isBackground ? 0 : 3 });
+      // Polling usually returns identical data; skip re-rendering every consumer in that case.
+      const payload = JSON.stringify(response.data);
+      if (payload === lastOrdersPayloadRef.current) return;
+      lastOrdersPayloadRef.current = payload;
       const mapped = response.data.map(mapOrder);
 
       if (isInitialOrderLoadRef.current) {
@@ -189,20 +168,6 @@ export const AdminProvider = ({ children }) => {
     }
   }, []);
 
-  const fetchCategories = async () => {
-    try {
-      const response = await api.get("/categories");
-      setCategories(response.data);
-      try {
-        localStorage.setItem('cf_cached_categories', JSON.stringify(response.data));
-      } catch (e) {
-        // ignore quota
-      }
-    } catch (e) {
-      console.error("Failed to load categories", e);
-    }
-  };
-
   const fetchHeroes = async () => {
     try {
       const response = await api.get("/hero");
@@ -235,11 +200,10 @@ export const AdminProvider = ({ children }) => {
   };
 
   useEffect(() => {
-    fetchProducts();
-    fetchCategories();
-    fetchHeroes();
-    
     if (isAdmin) {
+      // Admins always want the freshest catalog (stock levels change with every order).
+      productsStore.fetch({ force: true });
+      fetchHeroes();
       fetchOrders(false);
       fetchUsers();
 
@@ -303,7 +267,7 @@ export const AdminProvider = ({ children }) => {
         name: productData.name,
         nameAr: productData.nameAr ? String(productData.nameAr).trim() : '',
         price: parseFloat(productData.price),
-        description: productData.description || "No description",
+        description: productData.description ? String(productData.description).trim() : '',
         image: productData.image,
         brand: productData.brand || "Chocair",
         category: productData.category,
@@ -319,7 +283,7 @@ export const AdminProvider = ({ children }) => {
 
       const response = await api.post("/products", payload);
       const newProduct = mapProduct(response.data);
-      setProducts((prev) => [...prev, newProduct]);
+      productsStore.mutate((prev) => [response.data, ...prev]);
       return newProduct;
     } catch (e) {
       console.error("Add product failed", e);
@@ -334,7 +298,7 @@ export const AdminProvider = ({ children }) => {
         name: productData.name,
         nameAr: productData.nameAr !== undefined ? String(productData.nameAr).trim() : '',
         price: parseFloat(productData.price),
-        description: productData.description || "No description",
+        description: productData.description !== undefined ? String(productData.description).trim() : '',
         image: productData.image,
         brand: productData.brand || "Chocair",
         category: productData.category,
@@ -350,7 +314,7 @@ export const AdminProvider = ({ children }) => {
 
       const response = await api.put(`/products/${id}`, payload);
       const updated = mapProduct(response.data);
-      setProducts((prev) => prev.map((p) => (p.id === id ? updated : p)));
+      productsStore.mutate((prev) => prev.map((p) => (String(p._id) === String(id) ? response.data : p)));
       return updated;
     } catch (e) {
       console.error("Update product failed", e);
@@ -361,7 +325,7 @@ export const AdminProvider = ({ children }) => {
   const deleteProduct = async (id) => {
     try {
       await api.delete(`/products/${id}`);
-      setProducts((prev) => prev.filter((p) => p.id !== id));
+      productsStore.mutate((prev) => prev.filter((p) => String(p._id) !== String(id)));
     } catch (e) {
       console.error("Delete product failed", e);
       throw e;
@@ -423,7 +387,7 @@ export const AdminProvider = ({ children }) => {
   const addCategory = async (categoryData) => {
     try {
       const response = await api.post("/categories", categoryData);
-      setCategories((prev) => [...prev, response.data]);
+      categoriesStore.mutate((prev) => [...prev, response.data]);
       return { success: true };
     } catch (e) {
       console.error("Failed to add category", e);
@@ -434,7 +398,7 @@ export const AdminProvider = ({ children }) => {
   const updateCategory = async (id, categoryData) => {
     try {
       const response = await api.put(`/categories/${id}`, categoryData);
-      setCategories((prev) => prev.map((c) => (c._id === id ? response.data : c)));
+      categoriesStore.mutate((prev) => prev.map((c) => (c._id === id ? response.data : c)));
       return { success: true };
     } catch (e) {
       console.error("Failed to update category", e);
@@ -445,7 +409,7 @@ export const AdminProvider = ({ children }) => {
   const deleteCategory = async (id) => {
     try {
       await api.delete(`/categories/${id}`);
-      setCategories((prev) => prev.filter((c) => c._id !== id));
+      categoriesStore.mutate((prev) => prev.filter((c) => c._id !== id));
       return { success: true };
     } catch (e) {
       console.error("Failed to delete category", e);

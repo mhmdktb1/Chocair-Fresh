@@ -1,4 +1,5 @@
 import mongoose from 'mongoose';
+import { invalidateOnWrite } from '../utils/cache.js';
 
 const categorySchema = mongoose.Schema(
   {
@@ -31,6 +32,8 @@ const categorySchema = mongoose.Schema(
     timestamps: true,
   }
 );
+
+invalidateOnWrite(categorySchema, 'categories');
 
 const Category = mongoose.model('Category', categorySchema);
 

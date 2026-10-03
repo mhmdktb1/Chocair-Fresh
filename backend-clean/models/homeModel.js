@@ -1,4 +1,5 @@
 import mongoose from 'mongoose';
+import { invalidateOnWrite } from '../utils/cache.js';
 
 const homeSchema = mongoose.Schema({
   hero: {
@@ -137,6 +138,8 @@ const homeSchema = mongoose.Schema({
     }
   }
 }, { timestamps: true });
+
+invalidateOnWrite(homeSchema, 'home');
 
 const HomeConfig = mongoose.model('HomeConfig', homeSchema);
 export default HomeConfig;

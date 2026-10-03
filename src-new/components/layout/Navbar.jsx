@@ -21,7 +21,7 @@ import { useAuth } from '../../context/AuthContext';
 import { useTheme } from '../../context/ThemeContext';
 import { translations } from '../../utils/translations';
 import { getArabicProductName, matchesProductQuery } from '../../utils/productTranslation';
-import api from '../../utils/api';
+import { useProducts } from '../../hooks/useProducts';
 import './Navbar.css';
 
 const CATEGORY_EMOJIS = {
@@ -56,7 +56,7 @@ const Navbar = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [activeCategory, setActiveCategory] = useState('All');
   const [recommendations, setRecommendations] = useState([]);
-  const [allProducts, setAllProducts] = useState([]);
+  const { products: allProducts } = useProducts();
   const [selectedIndex, setSelectedIndex] = useState(-1);
   const searchInputRef = useRef(null);
   const { cartCount } = useCart();
@@ -123,22 +123,6 @@ const Navbar = () => {
     window.addEventListener('keydown', handleGlobalKeyDown);
     return () => window.removeEventListener('keydown', handleGlobalKeyDown);
   }, [searchOpen]);
-
-  // Fetch products for search recommendations
-  useEffect(() => {
-    const fetchProducts = async () => {
-      try {
-        const response = await api.get('/products');
-        setAllProducts(response.data);
-      } catch (error) {
-        console.error('Failed to fetch products for search', error);
-      }
-    };
-
-    if (searchOpen && allProducts.length === 0) {
-      fetchProducts();
-    }
-  }, [searchOpen, allProducts.length]);
 
   useEffect(() => {
     if (searchOpen && searchInputRef.current) {

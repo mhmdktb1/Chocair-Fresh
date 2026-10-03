@@ -4,6 +4,7 @@ import { useCMS } from "../../context/CMSContext";
 import { ALLOWED_UNITS, normalizeUnit, formatUnitRate } from "../../utils/unitHelper";
 import { getAssetUrl } from "../../utils/api";
 import { getArabicProductName } from "../../utils/productTranslation";
+import { getProductDescription } from "../../utils/textUtils";
 import ImageUploadPicker from "../../components/admin/ImageUploadPicker";
 import { 
   Plus, 
@@ -18,6 +19,8 @@ import {
   Tag
 } from "lucide-react";
 import './AdminComponents.css';
+
+const DESCRIPTION_MAX_LENGTH = 1000;
 
 function AdminProducts() {
   const { products, categories, addProduct, updateProduct, deleteProduct, loading, error } = useAdmin();
@@ -154,7 +157,7 @@ function AdminProducts() {
         stock: product.stock !== undefined ? String(product.stock) : "50",
         image: product.image || "",
         featured: product.featured || false,
-        description: product.description || "",
+        description: getProductDescription(product),
         customPrices: product.customPrices || {},
         discountActive: Boolean(product.discount?.isActive),
         discountType: product.discount?.type || "percentage",
@@ -228,7 +231,7 @@ function AdminProducts() {
       priceUnit: chosenUnit,
       unit: chosenUnit,
       featured: formData.featured || false,
-      description: formData.description || '',
+      description: (formData.description || '').trim(),
       image: formData.image.trim() || '/assets/images/products/placeholder.jpg',
       discount: {
         isActive: Boolean(formData.discountActive),
@@ -574,6 +577,32 @@ function AdminProducts() {
                       onChange={(e) => setFormData({ ...formData, nameAr: e.target.value })}
                     />
                   </div>
+                </div>
+
+                {/* Product Description */}
+                <div className="admin-form-group">
+                  <label htmlFor="productDescriptionInput" className="admin-form-label admin-form-label-row">
+                    <span>Description (Optional)</span>
+                    <span
+                      className={`admin-char-counter ${formData.description.length > DESCRIPTION_MAX_LENGTH * 0.9 ? 'near-limit' : ''}`}
+                      aria-live="polite"
+                    >
+                      {formData.description.length}/{DESCRIPTION_MAX_LENGTH}
+                    </span>
+                  </label>
+                  <textarea
+                    id="productDescriptionInput"
+                    className="admin-form-textarea admin-description-textarea"
+                    dir="auto"
+                    rows={4}
+                    maxLength={DESCRIPTION_MAX_LENGTH}
+                    placeholder="e.g. Crisp, juicy apples picked fresh from Lebanese orchards. Great for snacking and salads."
+                    value={formData.description}
+                    onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                  />
+                  <span className="admin-form-hint">
+                    Shown on the product page. Tip: mention taste, origin, freshness or storage. Arabic is supported.
+                  </span>
                 </div>
 
                 {/* Category Selection Chips */}

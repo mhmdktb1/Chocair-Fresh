@@ -1,120 +1,20 @@
 import HomeConfig from '../models/homeModel.js';
+import { sendCachedJson } from '../utils/cache.js';
+import { getHomeConfigEntry } from '../services/catalogService.js';
 
 // @desc    Get Home Config
 // @route   GET /api/home-config
 // @access  Public
 const getHomeConfig = async (req, res) => {
   try {
-    // Find the first config or create default if none exists
-    let config = await HomeConfig.findOne()
-      .populate('featuredCategories')
-      .populate('seasonal.products');
-      
-    if (!config) {
-      config = await HomeConfig.create({});
-      config = await HomeConfig.findById(config._id)
-        .populate('featuredCategories')
-        .populate('seasonal.products');
-    }
-    res.json(config);
+    const entry = await getHomeConfigEntry();
+    sendCachedJson(req, res, entry);
   } catch (error) {
+    // Never answer with a fabricated default config: clients would cache it over the real
+    // one and the admin editor could save it back. A 503 lets clients keep their cache.
     console.error('DB error in getHomeConfig:', error.message);
-    const defaultConfig = {
-      hero: {
-        title: "FRESHER. CLEANER. BETTER.",
-        subtitle: "Carefully selected fresh produce, every day.",
-        backgroundImage: "https://images.unsplash.com/photo-1610348725531-843dff563e2c?auto=format&fit=crop&w=1200&q=80",
-        ctaText: "Shop Now",
-        ctaLink: "/shop",
-        secondaryText: "Explore Produce",
-        secondaryLink: "/shop",
-        theme: "emerald",
-        stats: [
-          { label: "Happy Customers", value: "20k+" },
-          { label: "Fresh Products", value: "500+" },
-          { label: "Fast Delivery", value: "24h" }
-        ]
-      },
-      featuredCategories: [],
-      promos: {
-        enabled: true,
-        boxCard: {
-          badge: "Hot Offer",
-          discountTag: "Save 25%",
-          title: "Weekly Organic Harvest Box",
-          description: "Freshly harvested local vegetables & berries",
-          ctaText: "Shop Box",
-          ctaLink: "/shop?category=Organic",
-          emoji: "🥗"
-        },
-        couponCard: {
-          badge: "New Customer",
-          discountTag: "$10 OFF",
-          title: "Use Code at Checkout",
-          description: "Valid on your first order over $35",
-          code: "FRESH30",
-          emoji: "🎟️"
-        }
-      },
-      bundle: {
-        enabled: true,
-        title: "Organic Summer Berry Bundle",
-        description: "Get a curated selection of our freshest strawberries, blueberries, and raspberries. Perfect for smoothies, desserts, or healthy snacking.",
-        price: 29.99,
-        originalPrice: 45.00,
-        saveAmount: "Save $15.01",
-        claimedPercentage: 84,
-        stockLeftText: "Only 16 bundles left",
-        image: "https://images.unsplash.com/photo-1619566636858-adf3ef46400b?auto=format&fit=crop&w=1000&q=80",
-        link: "/shop?discount=true"
-      },
-      story: {
-        enabled: true,
-        title: "Our Story",
-        subtitle: "",
-        lead: "We started with a simple idea: fresh produce should feel better from the moment you order it to the moment it reaches your kitchen.",
-        description: "At Chocair Fresh, we carefully select, check, and pack every order before it leaves us. We focus on the little details — choosing clean, good-looking pieces and packing them neatly so your order arrives the way you’d expect it to.",
-        image: "",
-        yearsOfService: ""
-      },
-      features: {
-        enabled: true,
-        pillText: "",
-        title: "What We Offer",
-        items: [
-          { title: "Carefully Selected", description: "Fresh, quality produce carefully chosen for every order.", icon: "Sparkles", color: "#2ecc71" },
-          { title: "Checked & Packed", description: "Every item is checked and neatly packed before it leaves us.", icon: "PackageCheck", color: "#3498db" },
-          { title: "Fast Delivery", description: "Your order arrives quickly, fresh and ready for your kitchen.", icon: "Truck", color: "#9b59b6" },
-          { title: "Quality Guarantee", description: "Not satisfied with something? We’ll make it right.", icon: "ShieldCheck", color: "#e67e22" }
-        ]
-      },
-      newsletter: {
-        enabled: true,
-        badge: "Join The Club",
-        title: "Get Fresh Updates",
-        description: "Subscribe to our newsletter and get 10% off your first order. Plus, receive weekly healthy recipes and exclusive deals."
-      },
-      seasonal: {
-        title: "Seasonal Fruits",
-        subtitle: "Fresh seasonal harvest straight from the farm",
-        products: []
-      },
-      delivery: {
-        maxDeliveryRadiusKm: 4.0,
-        pricingType: 'distance',
-        fixedFee: 2.0,
-        freeDeliveryThreshold: 50.0,
-        freeDeliveryEnabled: true,
-        distanceTiers: {
-          tier1MaxKm: 1.5,
-          tier1Fee: 1.50,
-          tier2MaxKm: 2.5,
-          tier2Fee: 2.50,
-          tier3Fee: 3.50,
-        }
-      }
-    };
-    res.json(defaultConfig);
+    res.set('Retry-After', '3');
+    res.status(503).json({ message: 'Home configuration is temporarily unavailable, please retry.' });
   }
 };
 

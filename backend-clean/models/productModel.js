@@ -1,4 +1,5 @@
 import mongoose from 'mongoose';
+import { invalidateOnWrite } from '../utils/cache.js';
 
 const discountSchema = mongoose.Schema(
   {
@@ -46,7 +47,9 @@ const productSchema = mongoose.Schema(
     },
     description: {
       type: String,
-      required: true,
+      default: '',
+      trim: true,
+      maxlength: 1000,
     },
     brand: {
       type: String,
@@ -96,6 +99,12 @@ const productSchema = mongoose.Schema(
     timestamps: true,
   }
 );
+
+productSchema.index({ createdAt: -1 });
+productSchema.index({ category: 1, createdAt: -1 });
+productSchema.index({ rating: -1, numReviews: -1 });
+
+invalidateOnWrite(productSchema, 'products');
 
 const Product = mongoose.model('Product', productSchema);
 

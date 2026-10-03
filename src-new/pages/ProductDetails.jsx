@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useLayoutEffect, useRef } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { 
   Minus, 
@@ -7,7 +7,8 @@ import {
   Heart, 
   Share2, 
   Scale, 
-  Maximize2 
+  Maximize2,
+  ChevronDown
 } from 'lucide-react';
 import Navbar from '../components/layout/Navbar';
 import { useCart } from '../context/CartContext';
@@ -21,6 +22,7 @@ import WeightScale from '../components/shop/WeightScale';
 import TotersProductRow from '../components/shop/TotersProductRow';
 import { normalizeUnit, formatQuantityWithUnit, getPresetOptions } from '../utils/unitHelper';
 import { getArabicProductName } from '../utils/productTranslation';
+import { getProductDescription } from '../utils/textUtils';
 import { toast } from 'react-toastify';
 import './ProductDetails.css';
 
@@ -45,8 +47,26 @@ const ProductDetails = () => {
   const [specialInstructions, setSpecialInstructions] = useState('');
   const [imageError, setImageError] = useState(false);
   const [isScrolledHeader, setIsScrolledHeader] = useState(false);
+  const [isDescriptionExpanded, setIsDescriptionExpanded] = useState(false);
+  const [isDescriptionClamped, setIsDescriptionClamped] = useState(false);
+  const descriptionRef = useRef(null);
 
   const isFavorite = checkIsFavorite(product?._id || id);
+  const description = getProductDescription(product);
+
+  // Only offer "Read more" when the collapsed description actually overflows
+  useLayoutEffect(() => {
+    const el = descriptionRef.current;
+    if (!el || isDescriptionExpanded) return undefined;
+    const measure = () => setIsDescriptionClamped(el.scrollHeight - el.clientHeight > 1);
+    measure();
+    window.addEventListener('resize', measure);
+    return () => window.removeEventListener('resize', measure);
+  }, [description, isDescriptionExpanded, loading]);
+
+  useEffect(() => {
+    setIsDescriptionExpanded(false);
+  }, [id]);
 
   // Track scroll for top sticky header bar
   useEffect(() => {
@@ -373,6 +393,32 @@ const ProductDetails = () => {
               </span>
             </div>
           </div>
+
+          {description && (
+            <section className="toters-description-section" aria-labelledby="product-description-title">
+              <h2 id="product-description-title" className="toters-section-title">About this product</h2>
+              <p
+                id="product-description-text"
+                ref={descriptionRef}
+                dir="auto"
+                className={`toters-description-text ${isDescriptionExpanded ? 'expanded' : ''}`}
+              >
+                {description}
+              </p>
+              {(isDescriptionClamped || isDescriptionExpanded) && (
+                <button
+                  type="button"
+                  className="toters-description-toggle"
+                  onClick={() => setIsDescriptionExpanded((v) => !v)}
+                  aria-expanded={isDescriptionExpanded}
+                  aria-controls="product-description-text"
+                >
+                  {isDescriptionExpanded ? 'Show less' : 'Read more'}
+                  <ChevronDown size={16} className={isDescriptionExpanded ? 'rotated' : ''} />
+                </button>
+              )}
+            </section>
+          )}
 
           {/* Preset Weight / Quantity Chips */}
           <div className="toters-presets-section">

@@ -22,6 +22,7 @@ import { useAuth } from '../context/AuthContext';
 import { useCart } from '../context/CartContext';
 import { useFavorites } from '../context/FavoritesContext';
 import { useTheme } from '../context/ThemeContext';
+import { useProducts } from '../hooks/useProducts';
 import { translations } from '../utils/translations';
 import Button from '../components/common/Button';
 import Loading from '../components/common/Loading';
@@ -60,7 +61,7 @@ const Profile = () => {
     settings: location.state?.activeTab === 'settings' || location.state?.activeTab === 'preferences',
   }));
   const [orders, setOrders] = useState([]);
-  const [allProducts, setAllProducts] = useState([]);
+  const { products: allProducts } = useProducts();
   const [loading, setLoading] = useState(false);
   const [initialLoading, setInitialLoading] = useState(!cachedUser);
   const [isEditing, setIsEditing] = useState(false);
@@ -168,10 +169,9 @@ const Profile = () => {
       setFormData(storedUser);
 
       try {
-        const [profileRes, ordersRes, productsRes] = await Promise.allSettled([
+        const [profileRes, ordersRes] = await Promise.allSettled([
           api.get('/users/profile'),
-          api.get('/orders/myorders'),
-          api.get('/products')
+          api.get('/orders/myorders')
         ]);
 
         if (profileRes.status === 'fulfilled' && profileRes.value?.data) {
@@ -185,10 +185,6 @@ const Profile = () => {
         if (ordersRes.status === 'fulfilled' && ordersRes.value?.data) {
           const fetchedOrders = ordersRes.value.data || [];
           setOrders(fetchedOrders);
-        }
-
-        if (productsRes.status === 'fulfilled' && productsRes.value?.data) {
-          setAllProducts(productsRes.value.data || []);
         }
       } catch (err) {
         console.error("Failed to refresh user data", err);
