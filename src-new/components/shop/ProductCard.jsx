@@ -52,7 +52,7 @@ const ProductCard = ({ product }) => {
           <Heart size={18} fill={isFav ? '#e74c3c' : 'none'} color={isFav ? '#e74c3c' : 'currentColor'} />
         </button>
 
-        <Link to={`/product/${product._id}`} state={{ product }}>
+        <Link to={`/product/${product._id}`} state={{ product }} className="product-image-link">
           <img 
             src={getAssetUrl(product.image) || '/assets/images/products/placeholder.jpg'} 
             alt={product.name} 
