@@ -7,6 +7,9 @@ import axios from 'axios';
 
 const LBP_RATE = 89500;
 const DEFAULT_BOT_TOKEN = '8943676195:AAGSac7PomfLgvImeqDGiJwTBbHQ3fP1dUE';
+const DEFAULT_CHAT_ID = '6498962795';
+
+let cachedChatId = null;
 
 export const sendTelegramOrderAlert = async (order) => {
   if (process.env.NODE_ENV === 'test') {
@@ -14,17 +17,18 @@ export const sendTelegramOrderAlert = async (order) => {
   }
 
   const botToken = process.env.TELEGRAM_BOT_TOKEN || DEFAULT_BOT_TOKEN;
-  let chatId = process.env.TELEGRAM_CHAT_ID || process.env.TELEGRAM_ADMIN_CHAT_ID;
+  let rawChatId = process.env.TELEGRAM_CHAT_ID || process.env.TELEGRAM_ADMIN_CHAT_ID || cachedChatId || DEFAULT_CHAT_ID;
 
-  // If chat ID is not hardcoded, try to auto-discover it from the bot's latest active chats
-  if (!chatId) {
+  // If chat ID is still not found, try to auto-discover it from the bot's latest active chats
+  if (!rawChatId) {
     try {
       const updatesRes = await axios.get(`https://api.telegram.org/bot${botToken}/getUpdates`, { timeout: 5000 });
       const updates = updatesRes.data?.result || [];
       if (updates.length > 0) {
         const lastMsg = updates[updates.length - 1]?.message || updates[updates.length - 1]?.channel_post;
         if (lastMsg?.chat?.id) {
-          chatId = lastMsg.chat.id;
+          rawChatId = String(lastMsg.chat.id);
+          cachedChatId = rawChatId;
         }
       }
     } catch (discErr) {
@@ -32,10 +36,12 @@ export const sendTelegramOrderAlert = async (order) => {
     }
   }
 
-  if (!chatId) {
+  if (!rawChatId) {
     console.log(`ℹ️ [Telegram Alert] Bot active (@chocair_fresh_bot), but Chat ID not yet received. Please open https://t.me/chocair_fresh_bot on your phone and press Start.`);
     return { success: false, reason: 'unconfigured_chat_id' };
   }
+
+  const chatIds = String(rawChatId).split(',').map((id) => id.trim()).filter(Boolean);
 
   try {
     const orderShortId = (order._id || order.id || '').toString().slice(-6).toUpperCase();
@@ -70,9 +76,6 @@ export const sendTelegramOrderAlert = async (order) => {
     if (customer.distanceKm != null) {
       locationDetails += `📏 <b>Distance from Store:</b> ${Number(customer.distanceKm).toFixed(1)} km\n`;
     }
-    if (customer.googleMapsLink) {
-      locationDetails += `🗺️ <a href="${customer.googleMapsLink}">Open in Google Maps</a>\n`;
-    }
 
     const messageHtml = 
 `🚨 <b>NEW ORDER RECEIVED! #${orderShortId}</b>
@@ -94,35 +97,66 @@ ${locationDetails}
 
     const url = `https://api.telegram.org/bot${botToken}/sendMessage`;
     
-    // Send message with Telegram HTML formatting and quick Action inline buttons
-    const payload = {
-      chat_id: chatId,
-      text: messageHtml,
-      parse_mode: 'HTML',
-      disable_web_page_preview: false,
-      reply_markup: {
-        inline_keyboard: [
-          [
-            ...(customerPhone && customerPhone !== 'Not provided' ? [
-              {
-                text: '💬 WhatsApp Customer',
-                url: `https://wa.me/${normalizePhoneForWa(customerPhone)}?text=${encodeURIComponent(`Hello ${customerName}, this is Chocair Fresh regarding your order #${orderShortId}.`)}`
-              }
-            ] : []),
-            ...(customer.googleMapsLink ? [
-              {
-                text: '📍 Navigate Map',
-                url: customer.googleMapsLink
-              }
-            ] : [])
-          ]
-        ]
-      }
-    };
+    const inlineButtons = [];
+    const actionRow = [];
 
-    const response = await axios.post(url, payload, { timeout: 10000 });
-    console.log(`✅ [Telegram Service] Order #${orderShortId} alert sent successfully to Chat ID: ${chatId}`);
-    return { success: true, messageId: response.data?.result?.message_id };
+    if (customerPhone && customerPhone !== 'Not provided') {
+      actionRow.push({
+        text: '💬 WhatsApp Customer',
+        url: `https://wa.me/${normalizePhoneForWa(customerPhone)}?text=${encodeURIComponent(`Hello ${customerName}, this is Chocair Fresh regarding your order #${orderShortId}.`)}`
+      });
+    }
+
+    if (customer.googleMapsLink) {
+      actionRow.push({
+        text: '📍 Navigate Map',
+        url: customer.googleMapsLink
+      });
+    }
+
+    if (actionRow.length > 0) {
+      inlineButtons.push(actionRow);
+    }
+
+    const sendPromises = chatIds.map(async (targetChatId) => {
+      const payload = {
+        chat_id: targetChatId,
+        text: messageHtml,
+        parse_mode: 'HTML',
+        disable_web_page_preview: false,
+        ...(inlineButtons.length > 0 ? { reply_markup: { inline_keyboard: inlineButtons } } : {})
+      };
+
+      try {
+        const response = await axios.post(url, payload, { timeout: 10000 });
+        return { success: true, chatId: targetChatId, messageId: response.data?.result?.message_id };
+      } catch (postErr) {
+        // Fallback: If HTML parsing fails, send plain text to guarantee delivery
+        if (postErr.response?.data?.error_code === 400) {
+          const plainText = stripHtmlTags(messageHtml);
+          const fallbackPayload = {
+            chat_id: targetChatId,
+            text: plainText,
+            disable_web_page_preview: false,
+            ...(inlineButtons.length > 0 ? { reply_markup: { inline_keyboard: inlineButtons } } : {})
+          };
+          const fallbackRes = await axios.post(url, fallbackPayload, { timeout: 10000 });
+          return { success: true, chatId: targetChatId, messageId: fallbackRes.data?.result?.message_id };
+        }
+        throw postErr;
+      }
+    });
+
+    const results = await Promise.allSettled(sendPromises);
+    const successful = results.filter((r) => r.status === 'fulfilled');
+
+    if (successful.length > 0) {
+      console.log(`✅ [Telegram Service] Order #${orderShortId} alert sent to ${successful.length} admin chat(s).`);
+      return { success: true, sentCount: successful.length };
+    } else {
+      const firstError = results.find((r) => r.status === 'rejected')?.reason;
+      throw firstError || new Error('Failed to deliver Telegram notification');
+    }
   } catch (err) {
     console.error(`❌ [Telegram Service Error]:`, err.response?.data || err.message);
     return { success: false, error: err.message };
@@ -135,6 +169,15 @@ const escapeHtml = (text) => {
     .replace(/&/g, '&amp;')
     .replace(/</g, '&lt;')
     .replace(/>/g, '&gt;');
+};
+
+const stripHtmlTags = (text) => {
+  if (!text) return '';
+  return String(text)
+    .replace(/<[^>]*>/g, '')
+    .replace(/&amp;/g, '&')
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>');
 };
 
 const normalizePhoneForWa = (phone) => {

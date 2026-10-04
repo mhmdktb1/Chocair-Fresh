@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useCallback, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Plus, Minus, Eye, Star, Heart } from 'lucide-react';
 import { useCart } from '../../context/CartContext';
@@ -7,6 +7,8 @@ import { formatCurrency } from '../../utils/formatters';
 import { normalizeUnit } from '../../utils/unitHelper';
 import { getAssetUrl } from '../../utils/api';
 import { getArabicProductName } from '../../utils/productTranslation';
+import useLongPress from '../../hooks/useLongPress';
+import ProductQuickPopup from './ProductQuickPopup';
 import './ProductCard.css';
 
 const ProductCard = ({ product }) => {
@@ -27,9 +29,40 @@ const ProductCard = ({ product }) => {
   const originalPrice = product.originalPrice !== undefined ? Number(product.originalPrice) : (product.oldPrice !== undefined ? Number(product.oldPrice) : currentPrice);
   const isDiscounted = Boolean(product.isDiscounted || (originalPrice > currentPrice && currentPrice > 0));
   const discountPercent = product.discountPercent || (isDiscounted && originalPrice > 0 ? Math.round(((originalPrice - currentPrice) / originalPrice) * 100) : (product.discount || 0));
+  const unit = normalizeUnit(product.unit);
+  const imageSrc = getAssetUrl(product.image) || '/assets/images/products/placeholder.jpg';
+
+  const handleAddToCart = () => {
+    addToCart({ 
+      ...product, 
+      price: currentPrice,
+      originalPrice: originalPrice,
+      isDiscounted: isDiscounted,
+      discountPercent: discountPercent,
+      unit 
+    });
+  };
+
+  const handleDecrease = () => {
+    if (!cartItem) return;
+    if (cartItem.quantity <= 1) {
+      removeFromCart(product._id);
+    } else {
+      updateQuantity(product._id, cartItem.quantity - 1);
+    }
+  };
+
+  const handleIncrease = () => {
+    if (cartItem) updateQuantity(product._id, cartItem.quantity + 1);
+  };
+
+  // Mobile long-press opens a contextual quick-view; a normal tap still navigates.
+  const [popupAnchor, setPopupAnchor] = useState(null);
+  const closePopup = useCallback(() => setPopupAnchor(null), []);
+  const longPressHandlers = useLongPress(setPopupAnchor);
 
   return (
-    <div className="product-card group">
+    <div className="product-card group" {...longPressHandlers}>
       {/* Image Container */}
       <div className="product-image-wrapper">
         <div className="product-badges">
@@ -54,7 +87,7 @@ const ProductCard = ({ product }) => {
 
         <Link to={`/product/${product._id}`} state={{ product }}>
           <img 
-            src={getAssetUrl(product.image) || '/assets/images/products/placeholder.jpg'} 
+            src={imageSrc} 
             alt={product.name} 
             className="product-image" 
             loading="lazy" 
@@ -76,11 +109,7 @@ const ProductCard = ({ product }) => {
                 onClick={(e) => {
                   e.preventDefault();
                   e.stopPropagation();
-                  if (cartItem.quantity <= 1) {
-                    removeFromCart(product._id);
-                  } else {
-                    updateQuantity(product._id, cartItem.quantity - 1);
-                  }
+                  handleDecrease();
                 }}
                 aria-label="Decrease quantity"
               >
@@ -93,7 +122,7 @@ const ProductCard = ({ product }) => {
                 onClick={(e) => {
                   e.preventDefault();
                   e.stopPropagation();
-                  updateQuantity(product._id, cartItem.quantity + 1);
+                  handleIncrease();
                 }}
                 aria-label="Increase quantity"
               >
@@ -107,14 +136,7 @@ const ProductCard = ({ product }) => {
               onClick={(e) => {
                 e.preventDefault();
                 e.stopPropagation();
-                addToCart({ 
-                  ...product, 
-                  price: currentPrice,
-                  originalPrice: originalPrice,
-                  isDiscounted: isDiscounted,
-                  discountPercent: discountPercent,
-                  unit: normalizeUnit(product.unit) 
-                });
+                handleAddToCart();
               }}
               title="Add to Cart"
               aria-label={`Add ${product.name} to cart`}
@@ -146,9 +168,28 @@ const ProductCard = ({ product }) => {
         </Link>
         
         <div className="product-unit-row">
-          <span className="product-unit-label">{normalizeUnit(product.unit)}</span>
+          <span className="product-unit-label">{unit}</span>
         </div>
       </div>
+
+      {popupAnchor && (
+        <ProductQuickPopup
+          anchorEl={popupAnchor}
+          onClose={closePopup}
+          product={product}
+          arabicName={arabicName}
+          imageSrc={imageSrc}
+          unit={unit}
+          currentPrice={currentPrice}
+          originalPrice={originalPrice}
+          isDiscounted={isDiscounted}
+          discountPercent={discountPercent}
+          cartItem={cartItem}
+          onAdd={handleAddToCart}
+          onIncrease={handleIncrease}
+          onDecrease={handleDecrease}
+        />
+      )}
     </div>
   );
 };
