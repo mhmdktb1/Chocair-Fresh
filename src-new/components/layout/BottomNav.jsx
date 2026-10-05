@@ -11,8 +11,12 @@ const BottomNav = () => {
   const location = useLocation();
   const navigate = useNavigate();
 
-  // Hide bottom nav on admin routes and checkout (so checkout bottom dock has full focus)
-  if (location.pathname.startsWith('/admin') || location.pathname === '/checkout') {
+  // Hide bottom nav on admin routes, checkout, and product details pages (so product sticky action bar and checkout dock have full focus)
+  if (
+    location.pathname.startsWith('/admin') ||
+    location.pathname === '/checkout' ||
+    location.pathname.startsWith('/product')
+  ) {
     return null;
   }
 

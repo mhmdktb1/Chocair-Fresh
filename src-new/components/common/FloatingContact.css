@@ -918,9 +918,9 @@
     z-index: 1010;
   }
 
-  /* Product Page mobile: sit comfortably above Toters sticky bottom bar (60px) + BottomNav (60px) */
+  /* Product Page mobile: sit comfortably above Toters sticky bottom bar */
   .floating-contact-wrapper.is-product-page {
-    bottom: 138px;
+    bottom: calc(76px + env(safe-area-inset-bottom, 0px));
   }
 
   /* Cart Page mobile: sit above sticky checkout bar (60px) + BottomNav (60px) */

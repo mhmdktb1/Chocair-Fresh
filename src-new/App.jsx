@@ -1,5 +1,5 @@
 import React, { Suspense, lazy, useEffect } from 'react';
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, useLocation } from 'react-router-dom';
 import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import { ThemeProvider } from './context/ThemeContext';
@@ -13,6 +13,21 @@ import Shop from './pages/Shop';
 import Loading from './components/common/Loading';
 import BottomNav from './components/layout/BottomNav';
 import FloatingContact from './components/common/FloatingContact';
+
+// Scroll window to top on route navigation
+function ScrollToTop() {
+  const { pathname } = useLocation();
+
+  useEffect(() => {
+    window.scrollTo({
+      top: 0,
+      left: 0,
+      behavior: 'instant'
+    });
+  }, [pathname]);
+
+  return null;
+}
 
 // Storefront entry pages (Home, Shop) ship in the main bundle; everything else is split
 // so shoppers don't download the admin dashboard, maps and Firebase up front.
@@ -72,6 +87,7 @@ function App() {
             <CartProvider>
               <FavoritesProvider>
                 <Router>
+                  <ScrollToTop />
                   <ToastContainer position="top-right" autoClose={3000} />
                   <Suspense fallback={<Loading />}>
                     <Routes>

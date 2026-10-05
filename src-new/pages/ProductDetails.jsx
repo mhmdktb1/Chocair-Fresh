@@ -64,6 +64,15 @@ const ProductDetails = () => {
     return () => window.removeEventListener('resize', measure);
   }, [description, isDescriptionExpanded, loading]);
 
+  // Reset scroll to top and description collapse state on product navigation
+  useLayoutEffect(() => {
+    window.scrollTo({
+      top: 0,
+      left: 0,
+      behavior: 'instant'
+    });
+  }, [id]);
+
   useEffect(() => {
     setIsDescriptionExpanded(false);
   }, [id]);

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { 
   CheckCircle, CreditCard, Truck, MapPin, X, ArrowLeft, ArrowRight,
@@ -28,7 +28,7 @@ import './Checkout.css';
 
 const Checkout = () => {
   const { cartItems, cartTotal, clearCart, cartCount } = useCart();
-  const { user, login } = useAuth();
+  const { user, login, updateUser } = useAuth();
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -123,9 +123,70 @@ const Checkout = () => {
         ...prev,
         name: user.name || prev.name || '',
         phone: user.phone || prev.phone || '',
-        address: prev.address || user.location || '',
+        // Address starts empty on checkout entry so user can pick from saved chips or enter a new one
+        address: prev.address || '',
       }));
     }
+  }, [user]);
+
+  // Consolidate user's saved addresses, profile location, and recent order locations into saved chips
+  const combinedSavedAddresses = useMemo(() => {
+    const list = [];
+    const seen = new Set();
+
+    // 1. User profile addresses
+    if (user?.addresses && Array.isArray(user.addresses)) {
+      user.addresses.forEach((a, idx) => {
+        const addrText = (a.address || '').trim();
+        if (addrText && !seen.has(addrText.toLowerCase())) {
+          seen.add(addrText.toLowerCase());
+          list.push({
+            id: a._id || a.id || `user-addr-${idx}`,
+            label: a.label || 'Saved Address',
+            address: addrText,
+            notes: a.notes || '',
+            isDefault: Boolean(a.isDefault),
+          });
+        }
+      });
+    }
+
+    // 2. User profile primary location (if not already in addresses)
+    if (user?.location && typeof user.location === 'string') {
+      const locText = user.location.trim();
+      if (locText && locText !== 'Unknown' && !seen.has(locText.toLowerCase())) {
+        seen.add(locText.toLowerCase());
+        list.push({
+          id: 'user-profile-location',
+          label: 'Saved Location',
+          address: locText,
+          notes: '',
+        });
+      }
+    }
+
+    // 3. Local storage saved addresses (from previous orders)
+    try {
+      const localAddrs = JSON.parse(localStorage.getItem('cf_recent_addresses') || '[]');
+      if (Array.isArray(localAddrs)) {
+        localAddrs.forEach((la, idx) => {
+          const addrText = (typeof la === 'string' ? la : la?.address || '').trim();
+          if (addrText && !seen.has(addrText.toLowerCase())) {
+            seen.add(addrText.toLowerCase());
+            list.push({
+              id: `local-addr-${idx}`,
+              label: (typeof la === 'object' && la?.label) || 'Recent Address',
+              address: addrText,
+              notes: (typeof la === 'object' && la?.notes) || '',
+            });
+          }
+        });
+      }
+    } catch {
+      // ignore
+    }
+
+    return list;
   }, [user]);
 
   const [deliveryConfig, setDeliveryConfig] = useState(DEFAULT_DELIVERY_CONFIG);
@@ -222,6 +283,14 @@ const Checkout = () => {
 
   const createOrder = async (authToken = null) => {
     try {
+      if (!formData.address || !formData.address.trim()) {
+        const msg = 'Please choose your delivery location before placing your order.';
+        setError(msg);
+        toast.error(msg);
+        setLoading(false);
+        return;
+      }
+
       const formattedDeliveryPref = getFormattedDeliveryPreference();
       const orderData = {
         orderItems: cartItems.map(item => ({
@@ -260,6 +329,66 @@ const Checkout = () => {
       } : {};
 
       await api.post('/orders', orderData, config);
+
+      // Save the location the user entered to be remembered for future checkouts
+      try {
+        const existingLocal = JSON.parse(localStorage.getItem('cf_recent_addresses') || '[]');
+        const filtered = Array.isArray(existingLocal)
+          ? existingLocal.filter(item => {
+              const text = typeof item === 'string' ? item : item?.address;
+              return text && text.trim().toLowerCase() !== formData.address.trim().toLowerCase();
+            })
+          : [];
+        const newEntry = {
+          label: formData.building ? `Delivery (${formData.building})` : 'Recent Address',
+          address: formData.address,
+          notes: formData.additionalInfo || '',
+          date: Date.now(),
+        };
+        const updatedLocal = [newEntry, ...filtered].slice(0, 5);
+        localStorage.setItem('cf_recent_addresses', JSON.stringify(updatedLocal));
+      } catch (e) {
+        console.warn('Could not save recent address to localStorage', e);
+      }
+
+      // If user is authenticated, also persist to their profile in backend
+      const activeUser = user;
+      if (activeUser) {
+        try {
+          const userAddresses = Array.isArray(activeUser.addresses) ? [...activeUser.addresses] : [];
+          const exists = userAddresses.some(
+            a => (a.address || '').trim().toLowerCase() === formData.address.trim().toLowerCase()
+          );
+          let updatedUserAddresses = userAddresses;
+          if (!exists) {
+            updatedUserAddresses = [
+              {
+                label: formData.building ? `Delivery (${formData.building})` : 'Saved Address',
+                address: formData.address,
+                city: 'Beirut',
+                notes: formData.additionalInfo || '',
+                isDefault: userAddresses.length === 0,
+              },
+              ...userAddresses,
+            ];
+          }
+
+          api.put('/users/profile', {
+            name: activeUser.name,
+            email: activeUser.email,
+            location: formData.address,
+            addresses: updatedUserAddresses,
+          }).then(res => {
+            if (res.data) {
+              updateUser(res.data);
+            }
+          }).catch(err => {
+            console.warn('Could not update user saved address in profile:', err?.message || err);
+          });
+        } catch (e) {
+          console.warn('Could not save address to profile', e);
+        }
+      }
 
       setOrderPlaced(true);
       clearCart();
@@ -330,21 +459,29 @@ const Checkout = () => {
     const currentPhone = user?.phone || formData.phone;
 
     if (!currentName || !currentName.trim()) {
-      setError('Please enter your full name');
+      const msg = 'Please enter your full name';
+      setError(msg);
+      toast.error(msg);
       return;
     }
 
-    if (!formData.address || formData.address.trim() === '') {
-      setError('Please select or pin your delivery location');
+    if (!formData.address || !formData.address.trim()) {
+      const msg = 'Please choose your delivery location using "Locate Me", "Pick on map", or a saved address.';
+      setError(msg);
+      toast.error(msg);
+      document.getElementById('checkout-address-section')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
       return;
     }
 
-    if (!formData.building?.trim() || !formData.floor?.trim()) {
-      if (!formData.address?.includes('Bldg:') || !formData.address?.includes('Fl:')) {
-        setError('Please enter your Building and Floor');
-        toast.warn('Please enter your Building and Floor');
-        return;
-      }
+    const hasBuilding = Boolean(formData.building?.trim() || formData.address.includes('Bldg:'));
+    const hasFloor = Boolean(formData.floor?.trim() || formData.address.includes('Fl:'));
+
+    if (!hasBuilding || !hasFloor) {
+      const msg = 'Please enter your Building and Floor number for delivery.';
+      setError(msg);
+      toast.error(msg);
+      document.getElementById('checkout-address-section')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      return;
     }
 
     if (formData.isOutOfRange || (formData.distanceKm != null && formData.distanceKm > activeMaxRadius)) {
@@ -352,12 +489,15 @@ const Checkout = () => {
       const msg = `Delivery location is out of our ${activeMaxRadius} km delivery range${distText}. We only deliver within ${activeMaxRadius} km of our store.`;
       setError(msg);
       toast.error(msg, { autoClose: 5000 });
+      document.getElementById('checkout-address-section')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
       return;
     }
 
     const normalizedPhone = normalizeLebanesePhoneNumber(currentPhone);
     if (!normalizedPhone) {
-      setError('Please enter a valid Lebanese phone number (e.g., 70 123 456 or 03 123 456)');
+      const msg = 'Please enter a valid Lebanese phone number (e.g., 70 123 456 or 03 123 456)';
+      setError(msg);
+      toast.error(msg);
       return;
     }
     
@@ -703,7 +843,7 @@ const Checkout = () => {
               )}
 
               {/* BOX 2: Delivery Address */}
-              <div className="checkout-section-box">
+              <div className="checkout-section-box" id="checkout-address-section">
                 <div className="section-box-header">
                   <div className="section-header-icon-wrap">
                     <MapPin size={18} />
@@ -724,7 +864,7 @@ const Checkout = () => {
                     onLocationSelect={handleLocationSelect} 
                     initialLocation={formData.address}
                     maxDeliveryRadiusKm={activeMaxRadius}
-                    savedAddresses={user?.addresses || []}
+                    savedAddresses={combinedSavedAddresses}
                   />
                 </div>
               </div>

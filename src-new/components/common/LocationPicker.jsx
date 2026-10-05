@@ -407,6 +407,16 @@ const LocationPicker = ({
   };
 
   const pickSaved = (saved, key) => {
+    if (selectedSavedKey === key) {
+      // Tapping active chip deselects it and resets back to clean empty state
+      setArea("");
+      setDetails(EMPTY_DETAILS);
+      setCoords(null);
+      setSelectedSavedKey(null);
+      setShowExtras(false);
+      emit("", null, EMPTY_DETAILS, "saved");
+      return;
+    }
     const parsed = parseAddressString(saved.address);
     const merged = {
       ...parsed.details,
