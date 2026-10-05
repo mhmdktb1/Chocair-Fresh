@@ -3,8 +3,7 @@ import { useNavigate, Link } from 'react-router-dom';
 import { 
   CheckCircle, CreditCard, Truck, MapPin, X, ArrowLeft, ArrowRight,
   ShieldCheck, Lock, ChevronDown, ChevronUp, ShoppingBag, Phone, User,
-  MessageSquare, AlertCircle, Copy, Check, Sparkles, Clock, Zap, Calendar, Sun,
-  AlertTriangle, Store
+  MessageSquare, AlertCircle, Copy, Check, Sparkles, Clock, Zap, Calendar, Sun
 } from 'lucide-react';
 import { toast } from 'react-toastify';
 import { useCart } from '../context/CartContext';
@@ -157,6 +156,13 @@ const Checkout = () => {
   const shippingCost = deliveryFeeInfo.fee;
   const finalTotal = cartTotal + shippingCost;
 
+  const isAddressComplete = Boolean(
+    formData.address?.trim() &&
+    !formData.isOutOfRange &&
+    (formData.building?.trim() || formData.address.includes('Bldg:')) &&
+    (formData.floor?.trim() || formData.address.includes('Fl:'))
+  );
+
   const handleInputChange = (e) => {
     const { name, value } = e.target;
     setFormData(prev => ({ ...prev, [name]: value }));
@@ -174,26 +180,28 @@ const Checkout = () => {
         isOutOfRange: false,
       }));
     } else {
-      const link = (locationData.lat != null && locationData.lng != null)
+      const hasPin = locationData.lat != null && locationData.lng != null;
+      const link = hasPin
         ? `https://www.google.com/maps/search/?api=1&query=${locationData.lat},${locationData.lng}`
         : '';
       const dist = locationData.distanceKm != null 
         ? locationData.distanceKm 
-        : (locationData.lat != null && locationData.lng != null 
+        : (hasPin 
             ? calculateDistanceKm(STORE_COORDS.lat, STORE_COORDS.lng, locationData.lat, locationData.lng) 
             : null);
       const outOfRange = locationData.isOutOfRange != null 
         ? locationData.isOutOfRange 
         : (dist != null && dist > activeMaxRadius);
 
+      // The picker always sends the full, current location — never keep a stale pin from a previous choice.
       setFormData(prev => ({
         ...prev,
         address: locationData.address || prev.address,
         building: locationData.building !== undefined ? locationData.building : prev.building,
         floor: locationData.floor !== undefined ? locationData.floor : prev.floor,
-        googleMapsLink: link || prev.googleMapsLink,
-        lat: locationData.lat ?? prev.lat,
-        lng: locationData.lng ?? prev.lng,
+        googleMapsLink: link,
+        lat: hasPin ? locationData.lat : null,
+        lng: hasPin ? locationData.lng : null,
         distanceKm: dist,
         isOutOfRange: outOfRange,
       }));
@@ -694,16 +702,21 @@ const Checkout = () => {
                 </div>
               )}
 
-              {/* BOX 2: Dedicated Delivery Address & Location Section */}
+              {/* BOX 2: Delivery Address */}
               <div className="checkout-section-box">
                 <div className="section-box-header">
                   <div className="section-header-icon-wrap">
                     <MapPin size={18} />
                   </div>
-                  <div>
+                  <div className="section-header-text">
                     <h2 className="section-box-title">Delivery Address</h2>
-                    <p className="section-box-subtitle">Set your delivery location</p>
+                    <p className="section-box-subtitle">Where should we bring your order?</p>
                   </div>
+                  {isAddressComplete && (
+                    <span className="section-ready-pill">
+                      <CheckCircle size={12} /> Ready
+                    </span>
+                  )}
                 </div>
 
                 <div className="form-card-inner">
@@ -711,17 +724,8 @@ const Checkout = () => {
                     onLocationSelect={handleLocationSelect} 
                     initialLocation={formData.address}
                     maxDeliveryRadiusKm={activeMaxRadius}
+                    savedAddresses={user?.addresses || []}
                   />
-
-                  {formData.isOutOfRange && (
-                    <div className="checkout-out-of-range-alert">
-                      <AlertTriangle size={18} className="alert-icon-svg" />
-                      <div className="alert-text-col">
-                        <strong>Delivery Range Exceeded ({formData.distanceKm} km away)</strong>
-                        <span>We deliver within {activeMaxRadius} km of our store. Please choose a closer location.</span>
-                      </div>
-                    </div>
-                  )}
                 </div>
               </div>
 

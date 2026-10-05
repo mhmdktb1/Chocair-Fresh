@@ -1,10 +1,10 @@
 import React, { useEffect, useMemo, useRef, useState, useCallback } from "react";
 import { createPortal } from "react-dom";
 import { GoogleMap, useJsApiLoader, Circle, Marker } from "@react-google-maps/api";
-import { 
-  MapPin, Crosshair, Building, Layers, 
-  Compass, Check, X, AlertTriangle, 
-  Store, Loader2
+import {
+  MapPin, Crosshair, Building2, Layers, Check, X, AlertTriangle,
+  Store, Loader2, Map, ArrowRight, Pencil, Plus, Home, Briefcase,
+  CheckCircle2, Navigation, DoorOpen, Landmark, Move
 } from "lucide-react";
 import { toast } from "react-toastify";
 import {
@@ -17,627 +17,715 @@ import {
 import "./LocationPicker.css";
 
 const GOOGLE_LIBRARIES = ["places"];
+const EMPTY_DETAILS = { building: "", floor: "", apartment: "", landmark: "" };
+
+const TOKEN_FIELDS = [
+  [/^bldg:\s*/i, "building"],
+  [/^fl:\s*/i, "floor"],
+  [/^apt:\s*/i, "apartment"],
+  [/^note:\s*/i, "landmark"],
+];
+
+/** Splits a composed address ("Dbayeh, Bldg: A, Fl: 2") back into area + details. */
+const parseAddressString = (str) => {
+  const details = { ...EMPTY_DETAILS };
+  const areaParts = [];
+  String(str || "")
+    .split(",")
+    .map((p) => p.trim())
+    .filter(Boolean)
+    .forEach((part) => {
+      const hit = TOKEN_FIELDS.find(([re]) => re.test(part));
+      if (hit) details[hit[1]] = part.replace(hit[0], "").trim();
+      else areaParts.push(part);
+    });
+  return { area: areaParts.join(", "), details };
+};
+
+const composeFullAddress = (area, d) => {
+  const parts = [];
+  if (area) parts.push(area);
+  if (d.building?.trim()) parts.push(`Bldg: ${d.building.trim()}`);
+  if (d.floor?.trim()) parts.push(`Fl: ${d.floor.trim()}`);
+  if (d.apartment?.trim()) parts.push(`Apt: ${d.apartment.trim()}`);
+  if (d.landmark?.trim()) parts.push(`Note: ${d.landmark.trim()}`);
+  return parts.join(", ");
+};
+
+const iconForLabel = (label = "") => {
+  const l = String(label).toLowerCase();
+  if (/work|office/.test(l)) return Briefcase;
+  if (/home|house/.test(l)) return Home;
+  return MapPin;
+};
+
+const distanceTo = (coords) =>
+  coords && coords.lat != null && coords.lng != null
+    ? calculateDistanceKm(STORE_COORDS.lat, STORE_COORDS.lng, coords.lat, coords.lng)
+    : null;
 
 /**
- * Clean & Fast Delivery Location Picker
- * - Building & Floor are mandatory fields
- * - Fast GPS location only when user presses "Locate Me"
- * - No text clutter (no "detecting area", no distance from store)
- * - Map modal without search bar or quick areas
+ * Delivery address picker
+ * Step 1: choose how to set the spot (GPS / map / saved address)
+ * Step 2: confirm the spot, add Building & Floor (optional apartment / landmark)
  */
-const LocationPicker = ({ 
-  onLocationSelect, 
-  initialLocation, 
-  autoLocate = false,
-  maxDeliveryRadiusKm = MAX_DELIVERY_RADIUS_KM 
+const LocationPicker = ({
+  onLocationSelect,
+  initialLocation,
+  maxDeliveryRadiusKm = MAX_DELIVERY_RADIUS_KM,
+  savedAddresses = [],
 }) => {
-  const activeRadiusKm = Number(maxDeliveryRadiusKm || MAX_DELIVERY_RADIUS_KM);
-  const defaultCenter = useMemo(() => ({ lat: STORE_COORDS.lat, lng: STORE_COORDS.lng }), []);
-  const [selectedCoords, setSelectedCoords] = useState(null);
-  const [areaAddress, setAreaAddress] = useState("");
-  
-  // Building & floor details (Building and Floor are mandatory)
-  const [buildingDetails, setBuildingDetails] = useState({
-    building: "",
-    floor: "",
-    apartment: "",
-    landmark: "",
-  });
+  const radiusKm = Number(maxDeliveryRadiusKm || MAX_DELIVERY_RADIUS_KM);
+  const storeCenter = useMemo(() => ({ lat: STORE_COORDS.lat, lng: STORE_COORDS.lng }), []);
 
-  const [isLocatingCard, setIsLocatingCard] = useState(false);
-  const [isLocatingModal, setIsLocatingModal] = useState(false);
-  const [showMapModal, setShowMapModal] = useState(false);
-  
-  // Temp states for map modal
-  const [tempCoords, setTempCoords] = useState(defaultCenter);
-  const [tempAddress, setTempAddress] = useState("");
+  const [coords, setCoords] = useState(null);
+  const [area, setArea] = useState("");
+  const [details, setDetails] = useState(EMPTY_DETAILS);
+  const [showExtras, setShowExtras] = useState(false);
+  const [selectedSavedKey, setSelectedSavedKey] = useState(null);
+  const [isLocating, setIsLocating] = useState(false);
+
+  const [showMap, setShowMap] = useState(false);
+  const [tempCoords, setTempCoords] = useState(storeCenter);
+  const [tempArea, setTempArea] = useState("");
   const [isDragging, setIsDragging] = useState(false);
-  const [tempDetails, setTempDetails] = useState({
-    building: "",
-    floor: "",
-    apartment: "",
-    landmark: "",
-  });
+  const [hasMovedMap, setHasMovedMap] = useState(false);
+  const [isLocatingInMap, setIsLocatingInMap] = useState(false);
 
   const mapRef = useRef(null);
   const geocoderRef = useRef(null);
-  const lastGeocodeIdRef = useRef(0);
-  const dragTimeoutRef = useRef(null);
+  const geocodeSeqRef = useRef(0);
+  const idleTimerRef = useRef(null);
+  // Last address string we sent to the parent; used to ignore our own echo via `initialLocation`.
+  const lastEmittedRef = useRef(null);
 
   const googleMapsApiKey =
     import.meta.env.VITE_GOOGLE_MAPS_API_KEY || "AIzaSyA2sDabFv8XdkWGWQ6OBRFK17iDnDqcN9Y";
 
-  const { isLoaded, loadError } = useJsApiLoader({
-    googleMapsApiKey,
-    libraries: GOOGLE_LIBRARIES,
-  });
+  const { isLoaded, loadError } = useJsApiLoader({ googleMapsApiKey, libraries: GOOGLE_LIBRARIES });
 
-  // Distance calculations
-  const currentDistanceKm = useMemo(() => {
-    if (!selectedCoords || selectedCoords.lat == null || selectedCoords.lng == null) return null;
-    return calculateDistanceKm(STORE_COORDS.lat, STORE_COORDS.lng, selectedCoords.lat, selectedCoords.lng);
-  }, [selectedCoords]);
+  const distanceKm = useMemo(() => distanceTo(coords), [coords]);
+  const isOut = distanceKm != null && distanceKm > radiusKm;
+  const tempDistanceKm = useMemo(() => distanceTo(tempCoords), [tempCoords]);
+  const isTempOut = tempDistanceKm != null && tempDistanceKm > radiusKm;
 
-  const isSelectedOutOfRange = useMemo(() => {
-    return currentDistanceKm != null && currentDistanceKm > activeRadiusKm;
-  }, [currentDistanceKm, activeRadiusKm]);
+  const hasLocation = Boolean(area);
+  const hasRequired = Boolean(details.building.trim() && details.floor.trim());
+  const isComplete = hasLocation && hasRequired && !isOut;
 
-  const tempDistanceKm = useMemo(() => {
-    if (!tempCoords || tempCoords.lat == null || tempCoords.lng == null) return null;
-    return calculateDistanceKm(STORE_COORDS.lat, STORE_COORDS.lng, tempCoords.lat, tempCoords.lng);
-  }, [tempCoords]);
+  const emit = useCallback(
+    (nextArea, nextCoords, nextDetails, source) => {
+      const dist = distanceTo(nextCoords);
+      const out = dist != null && dist > radiusKm;
+      const full = composeFullAddress(nextArea, nextDetails);
+      lastEmittedRef.current = full;
+      onLocationSelect?.({
+        address: full,
+        lat: nextCoords?.lat ?? null,
+        lng: nextCoords?.lng ?? null,
+        distanceKm: dist,
+        isOutOfRange: out,
+        source,
+        details: nextDetails,
+        building: nextDetails.building.trim(),
+        floor: nextDetails.floor.trim(),
+        apartment: nextDetails.apartment.trim(),
+        landmark: nextDetails.landmark.trim(),
+        isComplete: Boolean(nextArea && nextDetails.building.trim() && nextDetails.floor.trim() && !out),
+      });
+    },
+    [onLocationSelect, radiusKm]
+  );
 
-  const isTempOutOfRange = useMemo(() => {
-    return tempDistanceKm != null && tempDistanceKm > activeRadiusKm;
-  }, [tempDistanceKm, activeRadiusKm]);
-
-  // Helper to compose full formatted address
-  const composeFullAddress = useCallback((baseArea, details) => {
-    const parts = [];
-    if (baseArea) parts.push(baseArea);
-    if (details.building?.trim()) parts.push(`Bldg: ${details.building.trim()}`);
-    if (details.floor?.trim()) parts.push(`Fl: ${details.floor.trim()}`);
-    if (details.apartment?.trim()) parts.push(`Apt: ${details.apartment.trim()}`);
-    if (details.landmark?.trim()) parts.push(`Note: ${details.landmark.trim()}`);
-    return parts.join(", ");
+  const applyParsed = useCallback((str) => {
+    const parsed = parseAddressString(str);
+    setArea(parsed.area);
+    setDetails((prev) => ({
+      building: parsed.details.building || prev.building,
+      floor: parsed.details.floor || prev.floor,
+      apartment: parsed.details.apartment || prev.apartment,
+      landmark: parsed.details.landmark || prev.landmark,
+    }));
+    if (parsed.details.apartment || parsed.details.landmark) setShowExtras(true);
   }, []);
 
-  // Reverse geocoding helper (extracts exact street/area name)
-  const reverseGeocode = useCallback((loc, callback) => {
-    if (!loc || loc.lat == null || loc.lng == null) {
-      callback?.("Dbayeh");
-      return;
-    }
-
-    const fallbackArea = getNearestAreaName(loc.lat, loc.lng) || "Dbayeh";
-
-    if (!geocoderRef.current && window.google?.maps) {
-      geocoderRef.current = new window.google.maps.Geocoder();
-    }
-
-    if (!geocoderRef.current) {
-      callback?.(fallbackArea);
-      return;
-    }
-
-    const geocodeId = ++lastGeocodeIdRef.current;
-    geocoderRef.current.geocode({ location: loc }, (results, status) => {
-      if (geocodeId !== lastGeocodeIdRef.current) return;
-      if (status === "OK" && Array.isArray(results) && results.length > 0) {
-        const areaName = extractAreaName(results, loc);
-        callback?.(areaName || fallbackArea);
-      } else {
-        callback?.(fallbackArea);
-      }
-    });
-  }, []);
-
-  // Sync back to parent when details or address changes
-  const notifyParent = useCallback((addr, coords, details, dist, outOfRange, src = "map") => {
-    const full = composeFullAddress(addr, details);
-    const hasRequired = Boolean(details.building?.trim() && details.floor?.trim());
-    onLocationSelect?.({
-      address: full,
-      lat: coords?.lat ?? null,
-      lng: coords?.lng ?? null,
-      distanceKm: dist,
-      isOutOfRange: outOfRange,
-      source: src,
-      details,
-      building: details.building?.trim() || "",
-      floor: details.floor?.trim() || "",
-      apartment: details.apartment?.trim() || "",
-      landmark: details.landmark?.trim() || "",
-      isComplete: Boolean(addr && hasRequired && !outOfRange),
-    });
-  }, [composeFullAddress, onLocationSelect]);
-
-  // Initialize with initialLocation if given
   useEffect(() => {
-    if (initialLocation) {
-      if (typeof initialLocation === "string" && initialLocation.trim() !== "") {
-        setAreaAddress(initialLocation);
-        return;
-      }
-      if (typeof initialLocation === "object") {
-        const initAddr = initialLocation.address || "";
-        const initLat = typeof initialLocation.lat === "number" ? initialLocation.lat : null;
-        const initLng = typeof initialLocation.lng === "number" ? initialLocation.lng : null;
-
-        if (initAddr) setAreaAddress(initAddr);
-        if (initLat != null && initLng != null) {
-          const loc = { lat: initLat, lng: initLng };
-          setSelectedCoords(loc);
-          setTempCoords(loc);
-        }
+    if (!initialLocation) return;
+    if (typeof initialLocation === "string") {
+      const str = initialLocation.trim();
+      if (!str || str === lastEmittedRef.current) return;
+      applyParsed(str);
+      return;
+    }
+    if (typeof initialLocation === "object") {
+      if (initialLocation.address) applyParsed(initialLocation.address);
+      if (typeof initialLocation.lat === "number" && typeof initialLocation.lng === "number") {
+        const loc = { lat: initialLocation.lat, lng: initialLocation.lng };
+        setCoords(loc);
+        setTempCoords(loc);
       }
     }
-  }, [initialLocation]);
+  }, [initialLocation, applyParsed]);
 
-  // Map load callback
-  const onMapLoad = useCallback((map) => {
-    mapRef.current = map;
-    geocoderRef.current = new window.google.maps.Geocoder();
-    const initialPos = tempCoords || selectedCoords || defaultCenter;
-    map.panTo(initialPos);
-    map.setZoom(15);
-    reverseGeocode(initialPos, (addr) => setTempAddress(addr));
-  }, [tempCoords, selectedCoords, defaultCenter, reverseGeocode]);
+  useEffect(() => {
+    if (!showMap) return undefined;
+    const prevOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    const onKey = (e) => e.key === "Escape" && setShowMap(false);
+    window.addEventListener("keydown", onKey);
+    return () => {
+      document.body.style.overflow = prevOverflow;
+      window.removeEventListener("keydown", onKey);
+    };
+  }, [showMap]);
 
-  const handleMapDragStart = useCallback(() => {
-    setIsDragging(true);
+  const getGeocoder = useCallback(() => {
+    if (geocoderRef.current) return geocoderRef.current;
+    try {
+      if (typeof window.google?.maps?.Geocoder === "function") {
+        geocoderRef.current = new window.google.maps.Geocoder();
+      }
+    } catch {
+      geocoderRef.current = null;
+    }
+    return geocoderRef.current;
   }, []);
 
-  const handleMapDrag = useCallback(() => {
+  const reverseGeocode = useCallback(
+    (loc, cb) => {
+      const fallback = getNearestAreaName(loc?.lat, loc?.lng) || "Dbayeh";
+      if (!loc || loc.lat == null || loc.lng == null) return cb?.(fallback);
+
+      const geocoder = getGeocoder();
+      if (!geocoder) return cb?.(fallback);
+
+      const seq = ++geocodeSeqRef.current;
+      let settled = false;
+      const finish = (name) => {
+        if (settled || seq !== geocodeSeqRef.current) return;
+        settled = true;
+        clearTimeout(timer);
+        cb?.(name || fallback);
+      };
+      // Slow or blocked geocoding must never stall the flow; fall back to the nearest known area.
+      const timer = setTimeout(() => finish(fallback), 2500);
+
+      try {
+        geocoder.geocode({ location: loc }, (results, status) => {
+          if (status === "OK" && Array.isArray(results) && results.length > 0) {
+            finish(extractAreaName(results, loc) || fallback);
+          } else {
+            finish(fallback);
+          }
+        });
+      } catch {
+        finish(fallback);
+      }
+    },
+    [getGeocoder]
+  );
+
+  // ---- Map handlers ----
+  const onMapLoad = useCallback(
+    (map) => {
+      mapRef.current = map;
+      getGeocoder();
+      const start = tempCoords || coords || storeCenter;
+      map.panTo(start);
+      map.setZoom(coords ? 16 : 15);
+      reverseGeocode(start, setTempArea);
+    },
+    [tempCoords, coords, storeCenter, reverseGeocode, getGeocoder]
+  );
+
+  const onMapDragStart = useCallback(() => {
     setIsDragging(true);
-    if (dragTimeoutRef.current) clearTimeout(dragTimeoutRef.current);
+    setHasMovedMap(true);
+    if (idleTimerRef.current) clearTimeout(idleTimerRef.current);
   }, []);
 
-  const onCameraIdle = useCallback(() => {
-    if (dragTimeoutRef.current) clearTimeout(dragTimeoutRef.current);
-    dragTimeoutRef.current = setTimeout(() => {
+  const onMapIdle = useCallback(() => {
+    if (idleTimerRef.current) clearTimeout(idleTimerRef.current);
+    idleTimerRef.current = setTimeout(() => {
       setIsDragging(false);
-      if (!mapRef.current) return;
-      const center = mapRef.current.getCenter();
+      const center = mapRef.current?.getCenter();
       if (!center) return;
-
-      const newLoc = { lat: center.lat(), lng: center.lng() };
-      setTempCoords(newLoc);
-      reverseGeocode(newLoc, (addr) => setTempAddress(addr));
-    }, 100);
+      const loc = { lat: center.lat(), lng: center.lng() };
+      setTempCoords(loc);
+      reverseGeocode(loc, setTempArea);
+    }, 120);
   }, [reverseGeocode]);
 
-  const handleMapClick = useCallback((e) => {
+  const onMapClick = useCallback((e) => {
     if (e.latLng && mapRef.current) {
       setIsDragging(true);
+      setHasMovedMap(true);
       mapRef.current.panTo(e.latLng);
     }
   }, []);
 
-  // Fast GPS locate ONLY when user presses button
-  const handleGpsLocate = useCallback((isModal = false) => {
-    if (!navigator.geolocation) {
-      toast.warn("Geolocation is not supported on this device.");
-      return;
-    }
-
-    if (isModal) setIsLocatingModal(true);
-    else setIsLocatingCard(true);
-
-    const onPosSuccess = (pos) => {
-      if (isModal) setIsLocatingModal(false);
-      else setIsLocatingCard(false);
-
-      const loc = { lat: pos.coords.latitude, lng: pos.coords.longitude };
-      const dist = calculateDistanceKm(STORE_COORDS.lat, STORE_COORDS.lng, loc.lat, loc.lng);
-      const outOfRange = dist != null && dist > activeRadiusKm;
-
-      setSelectedCoords(loc);
-      setTempCoords(loc);
-
-      if (mapRef.current) {
-        mapRef.current.panTo(loc);
-        mapRef.current.setZoom(16);
-      }
-
-      reverseGeocode(loc, (addr) => {
-        setAreaAddress(addr);
-        setTempAddress(addr);
-        notifyParent(addr, loc, buildingDetails, dist, outOfRange, "gps");
-      });
-    };
-
-    const onPosError = (err) => {
-      if (err.code === 3) {
-        navigator.geolocation.getCurrentPosition(
-          onPosSuccess,
-          () => {
-            if (isModal) setIsLocatingModal(false);
-            else setIsLocatingCard(false);
-            toast.error("Could not get GPS location. Please pin on map.");
-          },
-          { enableHighAccuracy: false, timeout: 3500, maximumAge: 300000 }
-        );
+  // ---- Actions ----
+  const locateMe = useCallback(
+    (inMap = false) => {
+      if (!navigator.geolocation) {
+        toast.warn("Location services are not available on this device.");
         return;
       }
+      const setBusy = inMap ? setIsLocatingInMap : setIsLocating;
+      setBusy(true);
 
-      if (isModal) setIsLocatingModal(false);
-      else setIsLocatingCard(false);
-      if (err.code === 1) toast.error("Please allow location access in browser settings.");
-      else toast.error("Could not retrieve GPS location.");
-    };
+      const onSuccess = (pos) => {
+        setBusy(false);
+        const loc = { lat: pos.coords.latitude, lng: pos.coords.longitude };
+        setTempCoords(loc);
+        setHasMovedMap(true);
+        if (mapRef.current) {
+          mapRef.current.panTo(loc);
+          mapRef.current.setZoom(17);
+        }
+        reverseGeocode(loc, (name) => {
+          setTempArea(name);
+          if (!inMap) {
+            setCoords(loc);
+            setArea(name);
+            setSelectedSavedKey(null);
+            emit(name, loc, details, "gps");
+          }
+        });
+      };
 
-    navigator.geolocation.getCurrentPosition(
-      onPosSuccess,
-      onPosError,
-      { enableHighAccuracy: true, timeout: 5000, maximumAge: 60000 }
-    );
-  }, [reverseGeocode, notifyParent, buildingDetails]);
+      const onError = (err) => {
+        if (err.code === 3) {
+          navigator.geolocation.getCurrentPosition(
+            onSuccess,
+            () => {
+              setBusy(false);
+              toast.error("Couldn't find your location. Try picking it on the map.");
+            },
+            { enableHighAccuracy: false, timeout: 4000, maximumAge: 300000 }
+          );
+          return;
+        }
+        setBusy(false);
+        if (err.code === 1) toast.error("Location access is blocked. Allow it in your browser settings or pick on the map.");
+        else toast.error("Couldn't find your location. Try picking it on the map.");
+      };
 
-  // Center on store
-  const handleCenterOnStore = () => {
-    const storeLoc = { lat: STORE_COORDS.lat, lng: STORE_COORDS.lng };
-    setTempCoords(storeLoc);
-    mapRef.current?.panTo(storeLoc);
+      navigator.geolocation.getCurrentPosition(onSuccess, onError, {
+        enableHighAccuracy: true,
+        timeout: 6000,
+        maximumAge: 60000,
+      });
+    },
+    [reverseGeocode, emit, details]
+  );
+
+  const openMap = () => {
+    const start = coords || storeCenter;
+    setTempCoords(start);
+    setTempArea(coords ? area : "");
+    setHasMovedMap(false);
+    setShowMap(true);
+  };
+
+  const centerOnStore = () => {
+    setTempCoords(storeCenter);
+    setHasMovedMap(true);
+    mapRef.current?.panTo(storeCenter);
     mapRef.current?.setZoom(15);
-    reverseGeocode(storeLoc, (addr) => setTempAddress(addr));
+    reverseGeocode(storeCenter, setTempArea);
   };
 
-  // Open map modal
-  const handleOpenMap = () => {
-    const startPos = selectedCoords || defaultCenter;
-    const defaultArea = getNearestAreaName(startPos?.lat, startPos?.lng) || "Dbayeh";
-    setTempCoords(startPos);
-    setTempAddress(areaAddress || defaultArea);
-    setTempDetails({ ...buildingDetails });
-    setShowMapModal(true);
-  };
-
-  // Confirm location from modal
-  const handleConfirmModal = () => {
-    if (isTempOutOfRange) {
-      toast.error("Delivery is only available within 4 km of our store. Please choose a closer location.");
+  const confirmMap = () => {
+    if (isTempOut) {
+      toast.error(`We deliver within ${radiusKm} km of our store. Please choose a closer spot.`);
       return;
     }
-
-    if (!tempDetails.building?.trim() || !tempDetails.floor?.trim()) {
-      toast.warn("Building and Floor are required.");
-    }
-
-    const fallbackArea = getNearestAreaName(tempCoords?.lat, tempCoords?.lng) || "Dbayeh";
-    const chosenArea = tempAddress || fallbackArea;
-    setSelectedCoords(tempCoords);
-    setAreaAddress(chosenArea);
-    setBuildingDetails(tempDetails);
-    setShowMapModal(false);
-
-    notifyParent(chosenArea, tempCoords, tempDetails, tempDistanceKm, false, "map");
+    const chosen = tempArea || getNearestAreaName(tempCoords?.lat, tempCoords?.lng) || "Dbayeh";
+    setCoords(tempCoords);
+    setArea(chosen);
+    setSelectedSavedKey(null);
+    setShowMap(false);
+    emit(chosen, tempCoords, details, "map");
   };
 
-  // Update inline building details
-  const handleDetailChange = (field, value) => {
-    const updated = { ...buildingDetails, [field]: value };
-    setBuildingDetails(updated);
-    notifyParent(areaAddress, selectedCoords, updated, currentDistanceKm, isSelectedOutOfRange, "manual");
+  const pickSaved = (saved, key) => {
+    const parsed = parseAddressString(saved.address);
+    const merged = {
+      ...parsed.details,
+      landmark: parsed.details.landmark || saved.notes || "",
+    };
+    setArea(parsed.area);
+    setDetails(merged);
+    setCoords(null);
+    setSelectedSavedKey(key);
+    if (merged.apartment || merged.landmark) setShowExtras(true);
+    emit(parsed.area, null, merged, "saved");
   };
 
-  // Fallback for manual typing if Google Map fails to load
+  const changeDetail = (field, value) => {
+    const next = { ...details, [field]: value };
+    setDetails(next);
+    emit(area, coords, next, "manual");
+  };
+
+  const changeTypedArea = (value) => {
+    setArea(value);
+    setCoords(null);
+    setSelectedSavedKey(null);
+    emit(value, null, details, "manual");
+  };
+
+  const fmtKm = (km) => (km != null ? `${Number(km).toFixed(1)} km` : "");
+
+  // ---- Sub-renders ----
+  const renderSavedChips = () =>
+    savedAddresses.length > 0 && (
+      <div className="addr-saved">
+        <span className="addr-saved-label">Saved</span>
+        <div className="addr-saved-chips">
+          {savedAddresses.map((s, i) => {
+            const key = s._id || s.id || `saved-${i}`;
+            const Icon = iconForLabel(s.label);
+            return (
+              <button
+                key={key}
+                type="button"
+                className={`addr-chip ${selectedSavedKey === key ? "is-active" : ""}`}
+                onClick={() => pickSaved(s, key)}
+                title={s.address}
+              >
+                <Icon size={13} />
+                <span>{s.label || "Address"}</span>
+                {selectedSavedKey === key && <Check size={12} strokeWidth={3} />}
+              </button>
+            );
+          })}
+        </div>
+      </div>
+    );
+
+  const renderChoiceButtons = (variant = "") => (
+    <div className={`addr-choice-grid ${variant}`}>
+      <button
+        type="button"
+        className={`addr-choice is-primary ${isLocating ? "is-busy" : ""}`}
+        onClick={() => locateMe(false)}
+        disabled={isLocating}
+      >
+        <span className="addr-choice-icon">
+          {isLocating ? <Loader2 size={20} className="animate-spin" /> : <Crosshair size={20} />}
+        </span>
+        <span className="addr-choice-text">
+          <strong>{isLocating ? "Finding you…" : "Use my location"}</strong>
+          <small>Fastest · one tap</small>
+        </span>
+        <ArrowRight size={16} className="addr-choice-arrow" />
+      </button>
+
+      <button type="button" className="addr-choice" onClick={openMap}>
+        <span className="addr-choice-icon is-map">
+          <Map size={20} />
+        </span>
+        <span className="addr-choice-text">
+          <strong>Pick on map</strong>
+          <small>Drop a pin anywhere</small>
+        </span>
+        <ArrowRight size={16} className="addr-choice-arrow" />
+      </button>
+    </div>
+  );
+
+  const renderDetailFields = () => (
+    <div className="addr-details">
+      <div className="addr-fields-row">
+        <label className="addr-field">
+          <span className="addr-field-label">
+            Building <i className="addr-req">*</i>
+          </span>
+          <span className={`addr-input-wrap ${details.building.trim() ? "is-filled" : ""}`}>
+            <Building2 size={15} />
+            <input
+              type="text"
+              required
+              autoComplete="off"
+              placeholder="Name or number"
+              value={details.building}
+              onChange={(e) => changeDetail("building", e.target.value)}
+            />
+          </span>
+        </label>
+
+        <label className="addr-field">
+          <span className="addr-field-label">
+            Floor <i className="addr-req">*</i>
+          </span>
+          <span className={`addr-input-wrap ${details.floor.trim() ? "is-filled" : ""}`}>
+            <Layers size={15} />
+            <input
+              type="text"
+              required
+              autoComplete="off"
+              placeholder="e.g. 3 or Ground"
+              value={details.floor}
+              onChange={(e) => changeDetail("floor", e.target.value)}
+            />
+          </span>
+        </label>
+      </div>
+
+      {showExtras ? (
+        <div className="addr-fields-row addr-fields-extra">
+          <label className="addr-field">
+            <span className="addr-field-label">Apartment</span>
+            <span className={`addr-input-wrap ${details.apartment.trim() ? "is-filled" : ""}`}>
+              <DoorOpen size={15} />
+              <input
+                type="text"
+                autoComplete="off"
+                placeholder="e.g. 4B"
+                value={details.apartment}
+                onChange={(e) => changeDetail("apartment", e.target.value)}
+              />
+            </span>
+          </label>
+          <label className="addr-field">
+            <span className="addr-field-label">Landmark / note for the driver</span>
+            <span className={`addr-input-wrap ${details.landmark.trim() ? "is-filled" : ""}`}>
+              <Landmark size={15} />
+              <input
+                type="text"
+                autoComplete="off"
+                placeholder="e.g. Next to the pharmacy"
+                value={details.landmark}
+                onChange={(e) => changeDetail("landmark", e.target.value)}
+              />
+            </span>
+          </label>
+        </div>
+      ) : (
+        <button type="button" className="addr-more-btn" onClick={() => setShowExtras(true)}>
+          <Plus size={14} /> Add apartment, landmark or note
+        </button>
+      )}
+    </div>
+  );
+
+  // Google Maps failed to load → simple typed fallback
   if (loadError) {
     return (
-      <div className="loc-clean-card">
-        <div className="loc-fallback-input-wrap">
-          <MapPin size={16} className="loc-fallback-icon" />
-          <input
-            type="text"
-            placeholder="Enter delivery area / street..."
-            value={areaAddress}
-            onChange={(e) => {
-              const v = e.target.value;
-              setAreaAddress(v);
-              notifyParent(v, null, buildingDetails, null, false, "manual");
-            }}
-            className="loc-fallback-input"
-          />
-        </div>
-        <div className="loc-inline-row-2">
-          <input
-            type="text"
-            placeholder="Building *"
-            required
-            value={buildingDetails.building}
-            onChange={(e) => handleDetailChange("building", e.target.value)}
-            className="loc-input"
-          />
-          <input
-            type="text"
-            placeholder="Floor *"
-            required
-            value={buildingDetails.floor}
-            onChange={(e) => handleDetailChange("floor", e.target.value)}
-            className="loc-input"
-          />
+      <div className="addr-picker">
+        {renderSavedChips()}
+        <div className="addr-card">
+          <label className="addr-field">
+            <span className="addr-field-label">
+              Area / street <i className="addr-req">*</i>
+            </span>
+            <span className={`addr-input-wrap ${area.trim() ? "is-filled" : ""}`}>
+              <MapPin size={15} />
+              <input
+                type="text"
+                placeholder="e.g. Dbayeh, Main road"
+                value={area}
+                onChange={(e) => changeTypedArea(e.target.value)}
+              />
+            </span>
+          </label>
+          {renderDetailFields()}
         </div>
       </div>
     );
   }
 
   return (
-    <div className="loc-delivery-selector">
-      {/* 1. Main Clean Card */}
-      <div className={`loc-clean-card ${isSelectedOutOfRange ? "is-out" : areaAddress ? "is-ready" : ""}`}>
-        
-        {/* Card Header: Fast Action Buttons */}
-        <div className="loc-card-header">
-          <span className="loc-header-title">
-            <MapPin size={13} /> Delivery Location
-          </span>
+    <div className="addr-picker">
+      {renderSavedChips()}
 
-          <div className="loc-header-actions">
-            {/* Fast 1-Tap Locate Me Button */}
-            <button
-              type="button"
-              className={`loc-action-btn loc-gps-btn ${isLocatingCard ? "is-spinning" : ""}`}
-              onClick={() => handleGpsLocate(false)}
-              disabled={isLocatingCard}
-              title="Locate my position"
-            >
-              {isLocatingCard ? (
-                <Loader2 size={13} className="animate-spin" />
-              ) : (
-                <Crosshair size={13} />
-              )}
-              <span>Locate Me</span>
-            </button>
-
-            {/* Map Pin Button */}
-            <button
-              type="button"
-              className="loc-action-btn loc-map-btn"
-              onClick={handleOpenMap}
-              title="Choose location on map"
-            >
-              <MapPin size={13} />
-              <span>Map</span>
-            </button>
+      {!hasLocation ? (
+        <div className="addr-empty">
+          <div className="addr-empty-head">
+            <h3>Where should we deliver?</h3>
+            <p>
+              <Store size={13} /> We deliver within {radiusKm} km of our store
+            </p>
           </div>
+          {renderChoiceButtons()}
         </div>
-
-        {/* Selected Area / Pin Row */}
-        <div className="loc-address-row" onClick={handleOpenMap} role="button" tabIndex={0}>
-          <div className={`loc-pin-box ${isSelectedOutOfRange ? "pin-box-out" : ""}`}>
-            <MapPin size={18} />
-          </div>
-          <div className="loc-address-content">
-            <div className={`loc-address-title ${!areaAddress ? "placeholder" : ""}`}>
-              {areaAddress || "Select delivery location on map..."}
+      ) : (
+        <div className={`addr-card ${isOut ? "is-out" : isComplete ? "is-complete" : "is-set"}`}>
+          <div className="addr-card-top">
+            <div className="addr-pin">
+              {isOut ? <AlertTriangle size={20} /> : isComplete ? <CheckCircle2 size={20} /> : <MapPin size={20} />}
             </div>
-          </div>
-        </div>
-
-        {/* Mandatory Building & Floor Fields (Clean & Direct) */}
-        <div className="loc-inline-details-drawer">
-          <div className="loc-inline-grid">
-            <div className="loc-inline-row-2">
-              <div className="loc-field-wrap">
-                <label className="loc-field-label">
-                  <Building size={12} /> Building <span className="req-star">*</span>
-                </label>
-                <input
-                  type="text"
-                  required
-                  placeholder="Building name"
-                  value={buildingDetails.building}
-                  onChange={(e) => handleDetailChange("building", e.target.value)}
-                  className={`loc-input ${!buildingDetails.building ? "input-missing" : ""}`}
-                />
-              </div>
-
-              <div className="loc-field-wrap">
-                <label className="loc-field-label">
-                  <Layers size={12} /> Floor <span className="req-star">*</span>
-                </label>
-                <input
-                  type="text"
-                  required
-                  placeholder="Floor (e.g. 2nd)"
-                  value={buildingDetails.floor}
-                  onChange={(e) => handleDetailChange("floor", e.target.value)}
-                  className={`loc-input ${!buildingDetails.floor ? "input-missing" : ""}`}
-                />
-              </div>
-            </div>
-
-            <div className="loc-inline-row-2">
-              <div className="loc-field-wrap">
-                <label className="loc-field-label">Apartment</label>
-                <input
-                  type="text"
-                  placeholder="Apt (e.g. 4B)"
-                  value={buildingDetails.apartment}
-                  onChange={(e) => handleDetailChange("apartment", e.target.value)}
-                  className="loc-input"
-                />
-              </div>
-
-              <div className="loc-field-wrap">
-                <label className="loc-field-label">
-                  <Compass size={12} /> Landmark / Note
-                </label>
-                <input
-                  type="text"
-                  placeholder="e.g. Near pharmacy"
-                  value={buildingDetails.landmark}
-                  onChange={(e) => handleDetailChange("landmark", e.target.value)}
-                  className="loc-input"
-                />
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* 2. Map Modal (Clean, No Search, No Quick Areas) */}
-      {showMapModal && typeof document !== "undefined" && createPortal(
-        <div className="loc-modal-overlay" onClick={() => setShowMapModal(false)}>
-          <div className="loc-modal-dialog" onClick={(e) => e.stopPropagation()}>
-            
-            {/* Modal Header */}
-            <div className="loc-modal-head">
-              <h3 className="loc-modal-title">Pin Delivery Location</h3>
-              <button 
-                type="button" 
-                className="loc-close-btn"
-                onClick={() => setShowMapModal(false)}
-                aria-label="Close"
-              >
-                <X size={18} />
-              </button>
-            </div>
-
-            {/* Map Canvas Viewport */}
-            <div className="loc-map-frame">
-              {/* Center Pin */}
-              <div className="loc-center-pin-hub">
-                <div className={`loc-pin-svg-wrap ${isDragging ? "lifting" : "dropped"}`}>
-                  <svg 
-                    width="40" 
-                    height="48" 
-                    viewBox="0 0 42 50" 
-                    fill="none" 
-                    xmlns="http://www.w3.org/2000/svg"
-                  >
-                    <path 
-                      d="M21 0C9.402 0 0 9.402 0 21C0 34.125 18.375 48.825 20.097 50.169C20.6355 50.5895 21.3645 50.5895 21.903 50.169C23.625 48.825 42 34.125 42 21C42 9.402 32.598 0 21 0Z" 
-                      fill={isTempOutOfRange ? "#dc2626" : "#16a34a"}
-                    />
-                    <circle cx="21" cy="20" r="7.5" fill="#ffffff"/>
-                    <circle cx="21" cy="20" r="4" fill={isTempOutOfRange ? "#991b1b" : "#15803d"}/>
-                  </svg>
-                </div>
-                <div className="loc-pin-shadow" />
-              </div>
-
-              {/* Floating Map Actions */}
-              <div className="loc-map-floating-actions">
-                <button
-                  type="button"
-                  className="loc-fab-btn"
-                  onClick={handleCenterOnStore}
-                  title="Store Location"
-                >
-                  <Store size={17} />
-                </button>
-                <button
-                  type="button"
-                  className={`loc-fab-btn ${isLocatingModal ? "is-locating" : ""}`}
-                  onClick={() => handleGpsLocate(true)}
-                  disabled={isLocatingModal}
-                  title="Locate Me"
-                >
-                  {isLocatingModal ? (
-                    <Loader2 size={17} className="animate-spin text-blue-600" />
-                  ) : (
-                    <Crosshair size={17} />
-                  )}
-                </button>
-              </div>
-
-              {/* Google Map */}
-              {isLoaded ? (
-                <GoogleMap
-                  mapContainerStyle={{ width: "100%", height: "100%" }}
-                  center={tempCoords}
-                  zoom={15}
-                  onLoad={onMapLoad}
-                  onDragStart={handleMapDragStart}
-                  onDrag={handleMapDrag}
-                  onIdle={onCameraIdle}
-                  onClick={handleMapClick}
-                  options={{
-                    fullscreenControl: false,
-                    streetViewControl: false,
-                    mapTypeControl: false,
-                    zoomControl: false,
-                    gestureHandling: "greedy",
-                    clickableIcons: false,
-                  }}
-                >
-                  {/* Delivery Radius Ring */}
-                  <Circle
-                    center={STORE_COORDS}
-                    radius={activeRadiusKm * 1000}
-                    options={{
-                      strokeColor: "#16a34a",
-                      strokeOpacity: 0.85,
-                      strokeWeight: 2,
-                      fillColor: "#22c55e",
-                      fillOpacity: 0.08,
-                      clickable: false,
-                    }}
-                  />
-                  <Marker position={STORE_COORDS} title="Store Hub" />
-                </GoogleMap>
-              ) : (
-                <div className="loc-map-loading">
-                  <Loader2 size={24} className="animate-spin text-green-600" />
-                </div>
-              )}
-            </div>
-
-            {/* Modal Bottom Sheet */}
-            <div className="loc-modal-footer">
-              <div className="loc-footer-addr-row">
-                <MapPin size={17} className={isTempOutOfRange ? "text-red-500" : "text-green-600"} />
-                <div className="loc-footer-addr-info">
-                  <span className="loc-footer-addr-text">
-                    {tempAddress || getNearestAreaName(tempCoords?.lat, tempCoords?.lng) || "Select Area"}
-                  </span>
-                </div>
-              </div>
-
-              {/* Mandatory Building & Floor inputs in modal */}
-              <div className="loc-modal-details-grid">
-                <input
-                  type="text"
-                  required
-                  placeholder="Building *"
-                  value={tempDetails.building}
-                  onChange={(e) => setTempDetails({ ...tempDetails, building: e.target.value })}
-                  className="loc-input-sm"
-                />
-                <input
-                  type="text"
-                  required
-                  placeholder="Floor *"
-                  value={tempDetails.floor}
-                  onChange={(e) => setTempDetails({ ...tempDetails, floor: e.target.value })}
-                  className="loc-input-sm"
-                />
-              </div>
-
-              <button
-                type="button"
-                className={`loc-confirm-btn ${isTempOutOfRange ? "btn-out" : ""}`}
-                onClick={handleConfirmModal}
-              >
-                {isTempOutOfRange ? (
+            <div className="addr-card-text">
+              <div className="addr-area" title={area}>{area}</div>
+              <div className={`addr-status ${isOut ? "is-out" : coords ? "is-ok" : "is-muted"}`}>
+                {isOut ? (
+                  <>Outside our {radiusKm} km delivery zone · {fmtKm(distanceKm)} away</>
+                ) : coords ? (
                   <>
-                    <AlertTriangle size={16} />
-                    <span>Outside Delivery Zone</span>
+                    <Check size={12} strokeWidth={3} /> In delivery zone · {fmtKm(distanceKm)} from store
                   </>
                 ) : (
                   <>
-                    <Check size={16} />
-                    <span>Confirm Location</span>
+                    <Navigation size={12} /> Not pinned yet · tap Change to pin the exact spot
                   </>
                 )}
-              </button>
+              </div>
             </div>
-
+            <button type="button" className="addr-change-btn" onClick={openMap}>
+              <Pencil size={13} />
+              <span>Change</span>
+            </button>
           </div>
-        </div>,
-        document.body
+
+          {isOut ? (
+            <div className="addr-out-actions">
+              <p>Sorry, we can't reach this spot yet. Please pick a location closer to the store.</p>
+              {renderChoiceButtons("is-compact")}
+            </div>
+          ) : (
+            renderDetailFields()
+          )}
+        </div>
       )}
+
+      {showMap &&
+        typeof document !== "undefined" &&
+        createPortal(
+          <div className="addr-modal-overlay" onClick={() => setShowMap(false)}>
+            <div
+              className="addr-modal"
+              role="dialog"
+              aria-modal="true"
+              aria-label="Pin your delivery location"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="addr-modal-head">
+                <div className="addr-modal-title-wrap">
+                  <h3>Pin your location</h3>
+                  <span className="addr-zone-badge">
+                    <Store size={11} /> {radiusKm} km zone
+                  </span>
+                </div>
+                <button type="button" className="addr-close-btn" onClick={() => setShowMap(false)} aria-label="Close">
+                  <X size={18} />
+                </button>
+              </div>
+
+              <div className="addr-map-frame">
+                {!hasMovedMap && (
+                  <div className="addr-map-hint">
+                    <Move size={13} /> Drag the map to place the pin
+                  </div>
+                )}
+
+                <div className="addr-center-pin" aria-hidden="true">
+                  <div className={`addr-pin-svg ${isDragging ? "is-lifting" : "is-dropped"}`}>
+                    <svg width="40" height="48" viewBox="0 0 42 50" fill="none" xmlns="http://www.w3.org/2000/svg">
+                      <path
+                        d="M21 0C9.402 0 0 9.402 0 21C0 34.125 18.375 48.825 20.097 50.169C20.6355 50.5895 21.3645 50.5895 21.903 50.169C23.625 48.825 42 34.125 42 21C42 9.402 32.598 0 21 0Z"
+                        fill={isTempOut ? "#dc2626" : "#16a34a"}
+                      />
+                      <circle cx="21" cy="20" r="7.5" fill="#ffffff" />
+                      <circle cx="21" cy="20" r="4" fill={isTempOut ? "#991b1b" : "#15803d"} />
+                    </svg>
+                  </div>
+                  <div className="addr-pin-shadow" />
+                </div>
+
+                <div className="addr-map-fabs">
+                  <button type="button" className="addr-fab" onClick={centerOnStore} title="Go to store">
+                    <Store size={17} />
+                  </button>
+                  <button
+                    type="button"
+                    className={`addr-fab is-gps ${isLocatingInMap ? "is-busy" : ""}`}
+                    onClick={() => locateMe(true)}
+                    disabled={isLocatingInMap}
+                    title="Use my location"
+                  >
+                    {isLocatingInMap ? <Loader2 size={17} className="animate-spin" /> : <Crosshair size={17} />}
+                  </button>
+                </div>
+
+                {isLoaded ? (
+                  <GoogleMap
+                    mapContainerStyle={{ width: "100%", height: "100%" }}
+                    center={tempCoords}
+                    zoom={15}
+                    onLoad={onMapLoad}
+                    onDragStart={onMapDragStart}
+                    onIdle={onMapIdle}
+                    onClick={onMapClick}
+                    options={{
+                      fullscreenControl: false,
+                      streetViewControl: false,
+                      mapTypeControl: false,
+                      zoomControl: false,
+                      gestureHandling: "greedy",
+                      clickableIcons: false,
+                    }}
+                  >
+                    <Circle
+                      center={STORE_COORDS}
+                      radius={radiusKm * 1000}
+                      options={{
+                        strokeColor: "#16a34a",
+                        strokeOpacity: 0.85,
+                        strokeWeight: 2,
+                        fillColor: "#22c55e",
+                        fillOpacity: 0.08,
+                        clickable: false,
+                      }}
+                    />
+                    <Marker position={STORE_COORDS} title="Chocair Fresh" />
+                  </GoogleMap>
+                ) : (
+                  <div className="addr-map-loading">
+                    <Loader2 size={26} className="animate-spin" />
+                  </div>
+                )}
+              </div>
+
+              <div className="addr-sheet">
+                <div className="addr-sheet-row">
+                  <div className={`addr-sheet-pin ${isTempOut ? "is-out" : ""}`}>
+                    <MapPin size={18} />
+                  </div>
+                  <div className="addr-sheet-text">
+                    <strong>{tempArea || "Locating…"}</strong>
+                    {tempDistanceKm != null && (
+                      <span className={isTempOut ? "is-out" : "is-ok"}>
+                        {isTempOut
+                          ? `Outside our ${radiusKm} km zone · ${fmtKm(tempDistanceKm)} away`
+                          : `In delivery zone · ${fmtKm(tempDistanceKm)} from store`}
+                      </span>
+                    )}
+                  </div>
+                </div>
+
+                <button
+                  type="button"
+                  className={`addr-confirm-btn ${isTempOut ? "is-out" : ""}`}
+                  onClick={confirmMap}
+                  disabled={isTempOut}
+                >
+                  {isTempOut ? (
+                    <>
+                      <AlertTriangle size={16} /> Move the pin closer to the store
+                    </>
+                  ) : (
+                    <>
+                      <Check size={16} strokeWidth={3} /> Confirm this spot
+                    </>
+                  )}
+                </button>
+              </div>
+            </div>
+          </div>,
+          document.body
+        )}
     </div>
   );
 };
