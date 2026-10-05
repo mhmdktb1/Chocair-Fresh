@@ -142,8 +142,10 @@ const Checkout = () => {
           seen.add(addrText.toLowerCase());
           list.push({
             id: a._id || a.id || `user-addr-${idx}`,
-            label: a.label || 'Saved Address',
+            label: a.label || a.building || 'Saved Address',
             address: addrText,
+            lat: a.lat != null ? Number(a.lat) : undefined,
+            lng: a.lng != null ? Number(a.lng) : undefined,
             notes: a.notes || '',
             isDefault: Boolean(a.isDefault),
           });
@@ -177,6 +179,8 @@ const Checkout = () => {
               id: `local-addr-${idx}`,
               label: (typeof la === 'object' && la?.label) || 'Recent Address',
               address: addrText,
+              lat: (typeof la === 'object' && la?.lat != null) ? Number(la.lat) : undefined,
+              lng: (typeof la === 'object' && la?.lng != null) ? Number(la.lng) : undefined,
               notes: (typeof la === 'object' && la?.notes) || '',
             });
           }
@@ -331,6 +335,7 @@ const Checkout = () => {
       await api.post('/orders', orderData, config);
 
       // Save the location the user entered to be remembered for future checkouts
+      const cleanLabel = formData.building?.trim() || (formData.address ? formData.address.split(',')[0].trim() : 'Saved Address');
       try {
         const existingLocal = JSON.parse(localStorage.getItem('cf_recent_addresses') || '[]');
         const filtered = Array.isArray(existingLocal)
@@ -340,8 +345,10 @@ const Checkout = () => {
             })
           : [];
         const newEntry = {
-          label: formData.building ? `Delivery (${formData.building})` : 'Recent Address',
+          label: cleanLabel,
           address: formData.address,
+          lat: formData.lat != null ? Number(formData.lat) : undefined,
+          lng: formData.lng != null ? Number(formData.lng) : undefined,
           notes: formData.additionalInfo || '',
           date: Date.now(),
         };
@@ -363,8 +370,10 @@ const Checkout = () => {
           if (!exists) {
             updatedUserAddresses = [
               {
-                label: formData.building ? `Delivery (${formData.building})` : 'Saved Address',
+                label: cleanLabel,
                 address: formData.address,
+                lat: formData.lat != null ? Number(formData.lat) : undefined,
+                lng: formData.lng != null ? Number(formData.lng) : undefined,
                 city: 'Beirut',
                 notes: formData.additionalInfo || '',
                 isDefault: userAddresses.length === 0,

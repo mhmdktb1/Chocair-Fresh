@@ -22,13 +22,12 @@ const BottomNav = () => {
 
   const handleSearchClick = (e) => {
     e.preventDefault();
-    if (location.pathname === '/shop') {
-      const searchInput = document.querySelector('.search-input, .search-input-large');
-      if (searchInput) {
-        searchInput.focus();
-      }
-    } else {
-      navigate('/shop?focus=search');
+    // Open the home / spotlight search overlay
+    window.dispatchEvent(new CustomEvent('open-search'));
+    // Fallback: trigger click on the search toggle button in navbar if available
+    const searchBtn = document.querySelector('.search-toggle, .nav-search-trigger');
+    if (searchBtn && !document.querySelector('.modern-search-overlay.active')) {
+      searchBtn.click();
     }
   };
 

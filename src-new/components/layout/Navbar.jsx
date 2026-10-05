@@ -107,7 +107,7 @@ const Navbar = () => {
     return () => window.removeEventListener('scroll', handleScroll);
   }, [curtainOpen, searchOpen]);
 
-  // Global keyboard shortcut for Search (Cmd+K / Ctrl+K / Esc)
+  // Global keyboard shortcut for Search (Cmd+K / Ctrl+K / Esc) and custom event listeners
   useEffect(() => {
     const handleGlobalKeyDown = (e) => {
       if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') {
@@ -120,8 +120,29 @@ const Navbar = () => {
       }
     };
 
+    const handleOpenSearch = () => {
+      setSearchOpen(true);
+    };
+
+    const handleCloseSearch = () => {
+      setSearchOpen(false);
+    };
+
+    const handleToggleSearch = () => {
+      setSearchOpen(prev => !prev);
+    };
+
     window.addEventListener('keydown', handleGlobalKeyDown);
-    return () => window.removeEventListener('keydown', handleGlobalKeyDown);
+    window.addEventListener('open-search', handleOpenSearch);
+    window.addEventListener('close-search', handleCloseSearch);
+    window.addEventListener('toggle-search', handleToggleSearch);
+
+    return () => {
+      window.removeEventListener('keydown', handleGlobalKeyDown);
+      window.removeEventListener('open-search', handleOpenSearch);
+      window.removeEventListener('close-search', handleCloseSearch);
+      window.removeEventListener('toggle-search', handleToggleSearch);
+    };
   }, [searchOpen]);
 
   useEffect(() => {

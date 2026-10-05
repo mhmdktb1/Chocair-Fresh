@@ -13,6 +13,7 @@ import {
   calculateDistanceKm,
   getNearestAreaName,
   extractAreaName,
+  KNOWN_AREAS,
 } from "../../utils/distanceHelper";
 import "./LocationPicker.css";
 
@@ -57,6 +58,19 @@ const iconForLabel = (label = "") => {
   if (/work|office/.test(l)) return Briefcase;
   if (/home|house/.test(l)) return Home;
   return MapPin;
+};
+
+const cleanChipLabel = (rawLabel = "") => {
+  if (!rawLabel) return "Address";
+  const str = String(rawLabel).trim();
+  // Strip "Delivery (name)" or "Delivery(name)" -> "name"
+  const match = str.match(/^Delivery\s*\((.*?)\)$/i);
+  if (match && match[1]) {
+    return match[1].trim() || "Address";
+  }
+  // Strip "Delivery -" or "Delivery:" or "Delivery "
+  const stripped = str.replace(/^Delivery\s*[:-]?\s*/i, "").trim();
+  return stripped || "Address";
 };
 
 const distanceTo = (coords) =>
@@ -422,12 +436,34 @@ const LocationPicker = ({
       ...parsed.details,
       landmark: parsed.details.landmark || saved.notes || "",
     };
+
+    // Assign pinned coordinates: from saved object OR by matching area in KNOWN_AREAS OR store location
+    let assignedCoords = null;
+    if (typeof saved.lat === "number" && typeof saved.lng === "number" && !isNaN(saved.lat) && !isNaN(saved.lng)) {
+      assignedCoords = { lat: saved.lat, lng: saved.lng };
+    } else if (parsed.area) {
+      const parsedLower = parsed.area.toLowerCase();
+      const matched = KNOWN_AREAS?.find((a) =>
+        parsedLower.includes(a.name.toLowerCase()) || a.name.toLowerCase().includes(parsedLower)
+      );
+      if (matched) {
+        assignedCoords = { lat: matched.lat, lng: matched.lng };
+      } else {
+        assignedCoords = { lat: STORE_COORDS.lat, lng: STORE_COORDS.lng };
+      }
+    } else {
+      assignedCoords = { lat: STORE_COORDS.lat, lng: STORE_COORDS.lng };
+    }
+
     setArea(parsed.area);
     setDetails(merged);
-    setCoords(null);
+    setCoords(assignedCoords);
+    if (assignedCoords) {
+      setTempCoords(assignedCoords);
+    }
     setSelectedSavedKey(key);
     if (merged.apartment || merged.landmark) setShowExtras(true);
-    emit(parsed.area, null, merged, "saved");
+    emit(parsed.area, assignedCoords, merged, "saved");
   };
 
   const changeDetail = (field, value) => {
@@ -453,7 +489,8 @@ const LocationPicker = ({
         <div className="addr-saved-chips">
           {savedAddresses.map((s, i) => {
             const key = s._id || s.id || `saved-${i}`;
-            const Icon = iconForLabel(s.label);
+            const cleanTitle = cleanChipLabel(s.label || s.building || s.address?.split(",")[0] || "Address");
+            const Icon = iconForLabel(cleanTitle);
             return (
               <button
                 key={key}
@@ -463,7 +500,7 @@ const LocationPicker = ({
                 title={s.address}
               >
                 <Icon size={13} />
-                <span>{s.label || "Address"}</span>
+                <span>{cleanTitle}</span>
                 {selectedSavedKey === key && <Check size={12} strokeWidth={3} />}
               </button>
             );
@@ -626,9 +663,13 @@ const LocationPicker = ({
             </div>
             <div className="addr-card-text">
               <div className="addr-area" title={area}>{area}</div>
-              <div className={`addr-status ${isOut ? "is-out" : coords ? "is-ok" : "is-muted"}`}>
+              <div className={`addr-status ${isOut ? "is-out" : (coords || selectedSavedKey) ? "is-ok" : "is-muted"}`}>
                 {isOut ? (
                   <>Outside our {radiusKm} km delivery zone · {fmtKm(distanceKm)} away</>
+                ) : selectedSavedKey ? (
+                  <>
+                    <Check size={12} strokeWidth={3} /> Saved delivery address{distanceKm != null ? ` · ${fmtKm(distanceKm)} from store` : " · In delivery zone"}
+                  </>
                 ) : coords ? (
                   <>
                     <Check size={12} strokeWidth={3} /> In delivery zone · {fmtKm(distanceKm)} from store
