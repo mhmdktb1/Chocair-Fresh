@@ -96,8 +96,33 @@ const LocationPicker = ({
   const geocoderRef = useRef(null);
   const geocodeSeqRef = useRef(0);
   const idleTimerRef = useRef(null);
+  const cachedGeoPosRef = useRef(null);
   // Last address string we sent to the parent; used to ignore our own echo via `initialLocation`.
   const lastEmittedRef = useRef(null);
+
+  // Background pre-warming: if geolocation permission is already granted,
+  // pre-fetch coordinates silently so "Locate Me" resolves in 0ms when clicked.
+  useEffect(() => {
+    if (typeof navigator !== 'undefined' && navigator.geolocation) {
+      if (navigator.permissions && navigator.permissions.query) {
+        navigator.permissions.query({ name: 'geolocation' }).then((status) => {
+          if (status.state === 'granted') {
+            navigator.geolocation.getCurrentPosition(
+              (pos) => {
+                cachedGeoPosRef.current = {
+                  lat: pos.coords.latitude,
+                  lng: pos.coords.longitude,
+                  timestamp: Date.now(),
+                };
+              },
+              () => {},
+              { enableHighAccuracy: false, maximumAge: 300000, timeout: 3000 }
+            );
+          }
+        }).catch(() => {});
+      }
+    }
+  }, []);
 
   const googleMapsApiKey =
     import.meta.env.VITE_GOOGLE_MAPS_API_KEY || "AIzaSyA2sDabFv8XdkWGWQ6OBRFK17iDnDqcN9Y";
@@ -264,6 +289,41 @@ const LocationPicker = ({
     }
   }, []);
 
+  // Fast position applicator: updates coordinates and computes local area immediately (0ms),
+  // then refines with Google Geocoder in background without blocking the UI.
+  const applyLocatePosition = useCallback(
+    (loc, inMap) => {
+      const instantArea = getNearestAreaName(loc.lat, loc.lng) || "Dbayeh";
+      setTempCoords(loc);
+      setTempArea(instantArea);
+      setHasMovedMap(true);
+
+      if (mapRef.current) {
+        mapRef.current.panTo(loc);
+        mapRef.current.setZoom(17);
+      }
+
+      if (!inMap) {
+        setCoords(loc);
+        setArea(instantArea);
+        setSelectedSavedKey(null);
+        emit(instantArea, loc, details, "gps");
+      }
+
+      // Background refinement for neighborhood / street name
+      reverseGeocode(loc, (detailedName) => {
+        if (detailedName && detailedName !== instantArea) {
+          setTempArea(detailedName);
+          if (!inMap) {
+            setArea(detailedName);
+            emit(detailedName, loc, details, "gps");
+          }
+        }
+      });
+    },
+    [reverseGeocode, emit, details]
+  );
+
   // ---- Actions ----
   const locateMe = useCallback(
     (inMap = false) => {
@@ -271,38 +331,34 @@ const LocationPicker = ({
         toast.warn("Location services are not available on this device.");
         return;
       }
+
+      // 1. Instant check: if we have a fresh pre-warmed GPS cache (< 5 min old), apply immediately!
+      const cached = cachedGeoPosRef.current;
+      if (cached && Date.now() - cached.timestamp < 300000) {
+        applyLocatePosition(cached, inMap);
+        return;
+      }
+
       const setBusy = inMap ? setIsLocatingInMap : setIsLocating;
       setBusy(true);
 
-      const onSuccess = (pos) => {
+      const onPosSuccess = (pos) => {
         setBusy(false);
         const loc = { lat: pos.coords.latitude, lng: pos.coords.longitude };
-        setTempCoords(loc);
-        setHasMovedMap(true);
-        if (mapRef.current) {
-          mapRef.current.panTo(loc);
-          mapRef.current.setZoom(17);
-        }
-        reverseGeocode(loc, (name) => {
-          setTempArea(name);
-          if (!inMap) {
-            setCoords(loc);
-            setArea(name);
-            setSelectedSavedKey(null);
-            emit(name, loc, details, "gps");
-          }
-        });
+        cachedGeoPosRef.current = { ...loc, timestamp: Date.now() };
+        applyLocatePosition(loc, inMap);
       };
 
-      const onError = (err) => {
+      const onPosError = (err) => {
+        // Fallback: try standard accuracy if high accuracy timed out
         if (err.code === 3) {
           navigator.geolocation.getCurrentPosition(
-            onSuccess,
+            onPosSuccess,
             () => {
               setBusy(false);
               toast.error("Couldn't find your location. Try picking it on the map.");
             },
-            { enableHighAccuracy: false, timeout: 4000, maximumAge: 300000 }
+            { enableHighAccuracy: false, timeout: 3500, maximumAge: 300000 }
           );
           return;
         }
@@ -311,13 +367,14 @@ const LocationPicker = ({
         else toast.error("Couldn't find your location. Try picking it on the map.");
       };
 
-      navigator.geolocation.getCurrentPosition(onSuccess, onError, {
+      // Use fast cached / Wi-Fi position first with high-accuracy fallback
+      navigator.geolocation.getCurrentPosition(onPosSuccess, onPosError, {
         enableHighAccuracy: true,
-        timeout: 6000,
-        maximumAge: 60000,
+        timeout: 4500,
+        maximumAge: 120000,
       });
     },
-    [reverseGeocode, emit, details]
+    [applyLocatePosition]
   );
 
   const openMap = () => {
@@ -417,8 +474,8 @@ const LocationPicker = ({
           {isLocating ? <Loader2 size={20} className="animate-spin" /> : <Crosshair size={20} />}
         </span>
         <span className="addr-choice-text">
-          <strong>{isLocating ? "Finding you…" : "Use my location"}</strong>
-          <small>Fastest · one tap</small>
+          <strong>{isLocating ? "Locating…" : "Locate Me"}</strong>
+          <small>Fastest · 1-tap GPS</small>
         </span>
         <ArrowRight size={16} className="addr-choice-arrow" />
       </button>
@@ -634,18 +691,29 @@ const LocationPicker = ({
                   <div className="addr-pin-shadow" />
                 </div>
 
-                <div className="addr-map-fabs">
-                  <button type="button" className="addr-fab" onClick={centerOnStore} title="Go to store">
-                    <Store size={17} />
+                <div className="addr-map-actions">
+                  <button
+                    type="button"
+                    className="addr-map-pill is-store"
+                    onClick={centerOnStore}
+                    title="Center on Store Hub"
+                  >
+                    <Store size={14} />
+                    <span>Store</span>
                   </button>
                   <button
                     type="button"
-                    className={`addr-fab is-gps ${isLocatingInMap ? "is-busy" : ""}`}
+                    className={`addr-map-pill is-locate ${isLocatingInMap ? "is-busy" : ""}`}
                     onClick={() => locateMe(true)}
                     disabled={isLocatingInMap}
-                    title="Use my location"
+                    title="Locate my position"
                   >
-                    {isLocatingInMap ? <Loader2 size={17} className="animate-spin" /> : <Crosshair size={17} />}
+                    {isLocatingInMap ? (
+                      <Loader2 size={14} className="animate-spin" />
+                    ) : (
+                      <Crosshair size={14} />
+                    )}
+                    <span>{isLocatingInMap ? "Locating…" : "Locate Me"}</span>
                   </button>
                 </div>
 

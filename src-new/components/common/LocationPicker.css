@@ -656,42 +656,68 @@
   background: radial-gradient(ellipse at center, rgba(0, 0, 0, 0.4) 0%, rgba(0, 0, 0, 0) 70%);
 }
 
-.addr-map-fabs {
+.addr-map-actions {
   position: absolute;
   right: 14px;
   bottom: 16px;
   z-index: 50;
   display: flex;
-  flex-direction: column;
+  align-items: center;
   gap: 8px;
 }
 
-.addr-fab {
-  width: 42px;
-  height: 42px;
-  border-radius: 50%;
+.addr-map-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px;
+  border-radius: 999px;
   border: 1px solid rgba(0, 0, 0, 0.08);
   background: #ffffff;
   color: #1e293b;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  font-size: 0.8rem;
+  font-weight: 700;
   cursor: pointer;
-  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.18);
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.16);
   transition: all 0.15s ease;
+  user-select: none;
 }
 
-.addr-fab:hover {
-  transform: scale(1.06);
-  color: #16a34a;
+.addr-map-pill:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.22);
 }
 
-.addr-fab.is-gps {
-  color: #2563eb;
+.addr-map-pill:active {
+  transform: scale(0.98);
 }
 
-.addr-fab.is-busy {
+.addr-map-pill.is-store {
+  color: #15803d;
+  background: #ffffff;
+}
+
+.addr-map-pill.is-store:hover {
+  background: #f0fdf4;
+  border-color: #86efac;
+}
+
+.addr-map-pill.is-locate {
+  background: #16a34a;
+  color: #ffffff;
+  border-color: #16a34a;
+  box-shadow: 0 4px 14px rgba(22, 163, 74, 0.35);
+}
+
+.addr-map-pill.is-locate:hover {
+  background: #15803d;
+  box-shadow: 0 6px 18px rgba(22, 163, 74, 0.45);
+}
+
+.addr-map-pill.is-locate.is-busy {
   background: #eff6ff;
+  color: #2563eb;
+  border-color: #93c5fd;
   cursor: wait;
 }
 
