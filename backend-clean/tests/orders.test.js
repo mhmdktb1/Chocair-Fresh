@@ -491,4 +491,45 @@ describe('Order API', () => {
     expect(deliverRes.body.isDelivered).toBe(true);
     expect(deliverRes.body.deliveredAt).toBeDefined();
   });
+
+  it('2-STATION SCHEDULING: accurately schedules parallel orders across 2 packing stations', async () => {
+    // 1. First order: 10 min prep, status 'Preparing' (Station 1 busy for 10 min)
+    const order1 = {
+      _id: 'ord1',
+      status: 'Preparing',
+      prepStartedAt: new Date(Date.now() - 2 * 60000), // 2 mins elapsed -> 8 mins left
+      estimatedPrepMinutes: 10,
+    };
+
+    // 2. Second order: 15 min prep, status 'Preparing' (Station 2 busy for 15 min)
+    const order2 = {
+      _id: 'ord2',
+      status: 'Preparing',
+      prepStartedAt: new Date(Date.now() - 5 * 60000), // 5 mins elapsed -> 10 mins left
+      estimatedPrepMinutes: 15,
+    };
+
+    // 3. Third order: 6 min prep, status 'Pending' (starts on Station 1 at t=8, finishes at t=14)
+    const order3 = {
+      _id: 'ord3',
+      status: 'Pending',
+      estimatedPrepMinutes: 6,
+    };
+
+    const { calculateQueueWaitMinutes } = await import('../utils/etaHelper.js');
+
+    // Case A: Only order1 is preparing (Station 2 is idle) -> new order starts immediately (0 wait)
+    const waitWith1Prep = calculateQueueWaitMinutes([order1]);
+    expect(waitWith1Prep).toBe(0);
+
+    // Case B: Both order1 (8m left) and order2 (10m left) are preparing -> order3 starts at t=8 (earliest station free)
+    const waitOrder3 = calculateQueueWaitMinutes([order1, order2, order3], 'ord3');
+    expect(waitOrder3).toBe(8);
+
+    // Case C: A new checkout order (after order3 is queued)
+    // Station 1: 8 + 6 = 14 min. Station 2: 10 min.
+    // Earliest station for new order is Station 2 at t=10!
+    const waitNewOrder = calculateQueueWaitMinutes([order1, order2, order3]);
+    expect(waitNewOrder).toBe(10);
+  });
 });

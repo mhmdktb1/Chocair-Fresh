@@ -104,11 +104,13 @@ export const calculateEtaWindow = (totalMinutes) => {
 };
 
 /**
- * Calculate the store queue wait time based on all currently active orders.
- * Active orders: status in ['Pending', 'Preparing'].
- * @param {Array} activeOrders - Array of active order objects
- * @param {string|null} beforeOrderId - If provided, only count queue ahead of this order
- * @returns {number} Queue wait time in minutes
+ * Calculate the store queue wait time using a discrete 2-station parallel scheduling algorithm.
+ * Simulates real store packing stations to calculate the exact minute
+ * an active or new order can begin preparation.
+ *
+ * @param {Array} activeOrders - Array of active order objects (sorted FIFO)
+ * @param {string|null} beforeOrderId - If provided, returns wait time until this specific order starts
+ * @returns {number} Queue wait time in minutes until preparation starts
  */
 export const calculateQueueWaitMinutes = (activeOrders = [], beforeOrderId = null) => {
   if (!Array.isArray(activeOrders) || activeOrders.length === 0) {
@@ -116,37 +118,56 @@ export const calculateQueueWaitMinutes = (activeOrders = [], beforeOrderId = nul
   }
 
   const now = Date.now();
-  let remainingWorkloadMinutes = 0;
+  // Array tracking when each station (Station 1, Station 2) will next become idle (in minutes from now)
+  const stationAvailability = [0, 0];
 
-  for (const order of activeOrders) {
-    const orderIdStr = String(order._id || order.id || '');
-    if (beforeOrderId && orderIdStr === String(beforeOrderId)) {
-      // Reached target order in queue
-      break;
-    }
-
-    const status = order.status || 'Pending';
-    if (status === 'Cancelled' || status === 'Delivered' || status === 'On the Way') {
-      continue;
-    }
-
-    const items = order.orderItems || order.items || [];
-    const estimatedPrep = Number(order.estimatedPrepMinutes || calculateOrderPrepMinutes(items));
-
-    if (status === 'Preparing') {
-      // Calculate remaining prep time
-      const prepStart = order.prepStartedAt ? new Date(order.prepStartedAt).getTime() : now;
-      const elapsedMinutes = Math.max(0, Math.floor((now - prepStart) / 60000));
-      const remainingPrep = Math.max(1, estimatedPrep - elapsedMinutes);
-      remainingWorkloadMinutes += remainingPrep;
-    } else if (status === 'Pending') {
-      // In queue waiting to be started
-      remainingWorkloadMinutes += estimatedPrep;
+  // If beforeOrderId was specified and it's already in 'Preparing' status, its wait time is 0
+  if (beforeOrderId) {
+    const targetOrder = activeOrders.find(o => String(o._id || o.id || '') === String(beforeOrderId));
+    if (targetOrder && targetOrder.status === 'Preparing') {
+      return 0;
     }
   }
 
-  const waitMinutes = Math.round(remainingWorkloadMinutes / ETA_CONFIG.CONCURRENT_PREP_STATIONS);
-  return Math.max(0, waitMinutes);
+  // 1. First schedule all currently "Preparing" orders to their active stations
+  for (const order of activeOrders) {
+    const status = order.status || 'Pending';
+    if (status !== 'Preparing') continue;
+
+    const items = order.orderItems || order.items || [];
+    const estimatedPrep = Number(order.estimatedPrepMinutes || order.eta?.prepMinutes || calculateOrderPrepMinutes(items));
+    const prepStart = order.prepStartedAt || order.eta?.prepStartedAt ? new Date(order.prepStartedAt || order.eta?.prepStartedAt).getTime() : now;
+    const elapsedMinutes = Math.max(0, Math.floor((now - prepStart) / 60000));
+    const remainingPrep = Math.max(1, estimatedPrep - elapsedMinutes);
+
+    // Assign to the station that becomes free first
+    const earliestStationIdx = stationAvailability[0] <= stationAvailability[1] ? 0 : 1;
+    stationAvailability[earliestStationIdx] += remainingPrep;
+  }
+
+  // 2. Schedule "Pending" orders in strict FIFO sequence
+  for (const order of activeOrders) {
+    const status = order.status || 'Pending';
+    if (status !== 'Pending') continue;
+
+    const orderIdStr = String(order._id || order.id || '');
+    // If target order reached, its wait time is when the next station opens
+    if (beforeOrderId && orderIdStr === String(beforeOrderId)) {
+      const waitTime = Math.min(stationAvailability[0], stationAvailability[1]);
+      return Math.max(0, Math.round(waitTime));
+    }
+
+    const items = order.orderItems || order.items || [];
+    const estimatedPrep = Number(order.estimatedPrepMinutes || order.eta?.prepMinutes || calculateOrderPrepMinutes(items));
+
+    // Order begins at earliest available station
+    const earliestStationIdx = stationAvailability[0] <= stationAvailability[1] ? 0 : 1;
+    stationAvailability[earliestStationIdx] += estimatedPrep;
+  }
+
+  // 3. For a new order (e.g. at Checkout), its wait time is when the next station becomes free
+  const newOrderWaitTime = Math.min(stationAvailability[0], stationAvailability[1]);
+  return Math.max(0, Math.round(newOrderWaitTime));
 };
 
 /**
