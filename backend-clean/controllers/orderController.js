@@ -14,6 +14,14 @@ import {
   STORE_COORDS,
   extractCoordsFromUrl,
 } from '../utils/distanceHelper.js';
+import {
+  calculateOrderPrepMinutes,
+  calculateDeliveryMinutes,
+  calculateEtaWindow,
+  calculateQueueWaitMinutes,
+  computeDynamicOrderEta,
+  previewCheckoutEta,
+} from '../utils/etaHelper.js';
 
 // @desc    Create new order
 // @route   POST /api/orders
@@ -170,6 +178,30 @@ const addOrderItems = asyncHandler(async (req, res) => {
       distanceKm: calculatedDistanceKm != null ? calculatedDistanceKm : undefined,
     };
 
+    // Calculate dynamic ETA metrics for the new order based on current store workload
+    const activeOrders = await Order.find({ status: { $in: ['Pending', 'Preparing'] } }).sort({ createdAt: 1 }).lean();
+    const prepMinutes = calculateOrderPrepMinutes(normalizedOrderItems);
+    const queueMinutes = calculateQueueWaitMinutes(activeOrders);
+    const deliveryMinutes = calculateDeliveryMinutes(calculatedDistanceKm);
+    const totalMinutes = deliveryMinutes != null ? (queueMinutes + prepMinutes + deliveryMinutes) : null;
+    const etaWindowObj = calculateEtaWindow(totalMinutes);
+
+    const initialEta = {
+      prepMinutes,
+      queueMinutes,
+      deliveryMinutes,
+      totalMinutes,
+      remainingMinutes: totalMinutes,
+      windowText: etaWindowObj ? etaWindowObj.text : null,
+      minWindowMinutes: etaWindowObj ? etaWindowObj.min : null,
+      maxWindowMinutes: etaWindowObj ? etaWindowObj.max : null,
+      prepStartedAt: null,
+      prepCompletedAt: null,
+      dispatchedAt: null,
+      deliveredAt: null,
+      actualPrepMinutes: null,
+    };
+
     const order = new Order({
       orderItems: normalizedOrderItems,
       user: req.user ? req.user._id : undefined,
@@ -179,6 +211,12 @@ const addOrderItems = asyncHandler(async (req, res) => {
       itemsPrice: calculatedItemsPrice,
       shippingPrice: calculatedShippingPrice,
       totalPrice: calculatedTotalPrice,
+      estimatedPrepMinutes: prepMinutes,
+      estimatedQueueMinutes: queueMinutes,
+      estimatedDeliveryMinutes: deliveryMinutes,
+      estimatedTotalMinutes: totalMinutes,
+      etaWindow: etaWindowObj ? etaWindowObj.text : null,
+      eta: initialEta,
     });
 
     const createdOrder = await order.save();
@@ -248,16 +286,33 @@ const dispatchOrderNotifications = async (createdOrder, customerInfo) => {
   );
 };
 
+// @desc    Preview dynamic ETA for checkout
+// @route   POST /api/orders/eta-preview
+// @access  Public
+const getCheckoutEtaPreview = asyncHandler(async (req, res) => {
+  const { cartItems, distanceKm, lat, lng } = req.body || {};
+
+  let effectiveDist = distanceKm != null ? Number(distanceKm) : null;
+  if (effectiveDist == null && lat != null && lng != null) {
+    effectiveDist = calculateDistanceKm(STORE_COORDS.lat, STORE_COORDS.lng, Number(lat), Number(lng));
+  }
+
+  const activeOrders = await Order.find({ status: { $in: ['Pending', 'Preparing'] } }).sort({ createdAt: 1 }).lean();
+  const preview = previewCheckoutEta(cartItems || [], effectiveDist, activeOrders);
+
+  res.json(preview);
+});
+
 // @desc    Get order by ID
 // @route   GET /api/orders/:id
 // @access  Public / Private (Admin or Owner)
 const getOrderById = asyncHandler(async (req, res) => {
-  const order = await Order.findById(req.params.id).populate(
+  const orderDoc = await Order.findById(req.params.id).populate(
     'orderItems.product',
     'name image email'
   );
 
-  if (!order) {
+  if (!orderDoc) {
     res.status(404);
     throw new Error('Order not found');
   }
@@ -265,11 +320,11 @@ const getOrderById = asyncHandler(async (req, res) => {
   // Check authorization if user context is provided
   if (req.user && req.user.role !== 'admin' && !req.user.isAdmin) {
     let isOwner = false;
-    if (order.user && order.user.toString() === req.user._id.toString()) {
+    if (orderDoc.user && orderDoc.user.toString() === req.user._id.toString()) {
       isOwner = true;
     }
     if (!isOwner && req.user.phone) {
-      const orderPhone = order.customerInfo?.phone;
+      const orderPhone = orderDoc.customerInfo?.phone;
       const userPhone = req.user.phone;
       if (orderPhone === userPhone) {
         isOwner = true;
@@ -280,8 +335,8 @@ const getOrderById = asyncHandler(async (req, res) => {
         }
       }
     }
-    if (!isOwner && req.user.email && order.customerInfo?.email) {
-      if (order.customerInfo.email.toLowerCase() === req.user.email.toLowerCase()) {
+    if (!isOwner && req.user.email && orderDoc.customerInfo?.email) {
+      if (orderDoc.customerInfo.email.toLowerCase() === req.user.email.toLowerCase()) {
         isOwner = true;
       }
     }
@@ -290,6 +345,10 @@ const getOrderById = asyncHandler(async (req, res) => {
       throw new Error('Not authorized to view this order');
     }
   }
+
+  const order = orderDoc.toObject();
+  const activeOrders = await Order.find({ status: { $in: ['Pending', 'Preparing'] } }).sort({ createdAt: 1 }).lean();
+  order.eta = computeDynamicOrderEta(order, activeOrders);
 
   res.json(order);
 });
@@ -305,10 +364,19 @@ const getOrders = asyncHandler(async (req, res) => {
   if (email) query['customerInfo.email'] = email;
   if (phone) query['customerInfo.phone'] = phone;
 
-  const orders = await Order.find(query).sort({ createdAt: -1 }).lean();
+  const [orders, activeOrders] = await Promise.all([
+    Order.find(query).sort({ createdAt: -1 }).lean(),
+    Order.find({ status: { $in: ['Pending', 'Preparing'] } }).sort({ createdAt: 1 }).lean(),
+  ]);
+
+  const enrichedOrders = orders.map((o) => ({
+    ...o,
+    eta: computeDynamicOrderEta(o, activeOrders),
+  }));
+
   // Polled every few seconds by the admin dashboard: let the browser revalidate via ETag (304).
   res.set('Cache-Control', 'private, no-cache');
-  res.json(orders);
+  res.json(enrichedOrders);
 });
 
 // @desc    Update order status
@@ -320,9 +388,26 @@ const updateOrderStatus = asyncHandler(async (req, res) => {
   if (order) {
     const previousStatus = order.status;
     const newStatus = req.body.status || order.status;
+    const now = new Date();
+
     order.status = newStatus;
     
-    if (newStatus === 'Delivered') {
+    // Status transition tracking for dynamic ETA
+    if (newStatus === 'Preparing') {
+      if (!order.prepStartedAt) {
+        order.prepStartedAt = now;
+      }
+      if (!order.estimatedPrepMinutes) {
+        order.estimatedPrepMinutes = calculateOrderPrepMinutes(order.orderItems);
+      }
+    } else if (newStatus === 'On the Way') {
+      order.dispatchedAt = now;
+      if (order.prepStartedAt) {
+        order.prepCompletedAt = now;
+        order.actualPrepMinutes = Math.max(1, Math.round((now.getTime() - new Date(order.prepStartedAt).getTime()) / 60000));
+      }
+    } else if (newStatus === 'Delivered') {
+      order.deliveredAt = now;
       order.isDelivered = true;
     }
 
@@ -339,8 +424,16 @@ const updateOrderStatus = asyncHandler(async (req, res) => {
       );
     }
 
+    // Calculate dynamic ETA for the updated state
+    const activeOrders = await Order.find({ _id: { $ne: order._id }, status: { $in: ['Pending', 'Preparing'] } }).sort({ createdAt: 1 }).lean();
+    const updatedEta = computeDynamicOrderEta(order, activeOrders);
+    order.eta = updatedEta;
+
     const updatedOrder = await order.save();
-    res.json(updatedOrder);
+    const resultObj = updatedOrder.toObject();
+    resultObj.eta = updatedEta;
+
+    res.json(resultObj);
   } else {
     res.status(404);
     throw new Error('Order not found');
@@ -392,9 +485,18 @@ const getMyOrders = asyncHandler(async (req, res) => {
   // Also include orders linked by user ID (if any)
   query.$or.push({ user: req.user._id });
 
-  const orders = await Order.find(query).sort({ createdAt: -1 }).lean();
+  const [orders, activeOrders] = await Promise.all([
+    Order.find(query).sort({ createdAt: -1 }).lean(),
+    Order.find({ status: { $in: ['Pending', 'Preparing'] } }).sort({ createdAt: 1 }).lean(),
+  ]);
+
+  const enrichedOrders = orders.map((o) => ({
+    ...o,
+    eta: computeDynamicOrderEta(o, activeOrders),
+  }));
+
   res.set('Cache-Control', 'private, no-cache');
-  res.json(orders);
+  res.json(enrichedOrders);
 });
 
 // @desc    Cancel order
@@ -462,4 +564,13 @@ const cancelMyOrder = asyncHandler(async (req, res) => {
   }
 });
 
-export { addOrderItems, getOrderById, getOrders, updateOrderStatus, deleteOrder, getMyOrders, cancelMyOrder };
+export { 
+  addOrderItems, 
+  getOrderById, 
+  getOrders, 
+  updateOrderStatus, 
+  deleteOrder, 
+  getMyOrders, 
+  cancelMyOrder,
+  getCheckoutEtaPreview,
+};

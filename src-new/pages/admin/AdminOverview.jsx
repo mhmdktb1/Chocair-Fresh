@@ -25,6 +25,7 @@ function AdminOverview() {
   const totalOrdersCount = stats.totalOrders || 1;
   const pendingPct = Math.round((stats.pendingOrders / totalOrdersCount) * 100) || 0;
   const preparingPct = Math.round((stats.preparingOrders / totalOrdersCount) * 100) || 0;
+  const onTheWayPct = Math.round(((stats.onTheWayOrders || 0) / totalOrdersCount) * 100) || 0;
   const deliveredPct = Math.round((stats.deliveredOrders / totalOrdersCount) * 100) || 0;
 
   return (
@@ -70,7 +71,7 @@ function AdminOverview() {
           <span>Fulfillment Status Pipeline</span>
         </h3>
 
-        <div className="pipeline-stages-grid">
+        <div className="pipeline-stages-grid" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))' }}>
           <div className="pipeline-stage-box" style={{ background: '#ffedd5', border: '1px solid #fed7aa' }}>
             <div className="stage-badge-label" style={{ color: '#c2410c' }}>
               <Clock size={14} /> Pending
@@ -85,13 +86,25 @@ function AdminOverview() {
 
           <div className="pipeline-stage-box" style={{ background: '#e0f2fe', border: '1px solid #bae6fd' }}>
             <div className="stage-badge-label" style={{ color: '#0369a1' }}>
-              <Truck size={14} /> Preparing
+              <Clock size={14} /> Preparing
             </div>
             <div className="stage-count-val" style={{ color: '#0369a1' }}>
               {stats.preparingOrders}
             </div>
             <div className="stage-pct-val" style={{ color: '#075985' }}>
               {preparingPct}% of orders
+            </div>
+          </div>
+
+          <div className="pipeline-stage-box" style={{ background: '#ede9fe', border: '1px solid #ddd6fe' }}>
+            <div className="stage-badge-label" style={{ color: '#6d28d9' }}>
+              <Truck size={14} /> On the Way
+            </div>
+            <div className="stage-count-val" style={{ color: '#6d28d9' }}>
+              {stats.onTheWayOrders || 0}
+            </div>
+            <div className="stage-pct-val" style={{ color: '#5b21b6' }}>
+              {onTheWayPct}% of orders
             </div>
           </div>
 
@@ -120,6 +133,7 @@ function AdminOverview() {
         }}>
           <div style={{ width: `${pendingPct}%`, background: '#ea580c', transition: 'width 0.4s ease' }} title={`Pending: ${pendingPct}%`} />
           <div style={{ width: `${preparingPct}%`, background: '#0284c7', transition: 'width 0.4s ease' }} title={`Preparing: ${preparingPct}%`} />
+          <div style={{ width: `${onTheWayPct}%`, background: '#7c3aed', transition: 'width 0.4s ease' }} title={`On the Way: ${onTheWayPct}%`} />
           <div style={{ width: `${deliveredPct}%`, background: '#16a34a', transition: 'width 0.4s ease' }} title={`Delivered: ${deliveredPct}%`} />
         </div>
       </div>

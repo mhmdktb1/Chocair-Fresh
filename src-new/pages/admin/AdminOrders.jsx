@@ -1,4 +1,4 @@
-import { useState, useMemo, useCallback } from "react";
+import { useState, useMemo, useCallback, useEffect } from "react";
 import { useAdmin } from "../../context/AdminContext";
 import { 
   Package, 
@@ -31,9 +31,11 @@ import {
   CreditCard,
   ChevronDown,
   ChevronUp,
-  Info
+  Info,
+  Zap
 } from "lucide-react";
 import { normalizeUnit, formatQuantityWithUnit } from "../../utils/unitHelper";
+import { formatCountdownTimer, getRemainingPrepSeconds, getRemainingDeliverySeconds } from "../../utils/etaHelper";
 import './AdminComponents.css';
 
 // Normalize phone numbers for WhatsApp URL scheme
@@ -137,6 +139,15 @@ function AdminOrders() {
   const [copiedId, setCopiedId] = useState(null);
   const ordersPerPage = 12;
 
+  // Live preparation & transit countdown ticker (1s interval)
+  const [, setNowTick] = useState(Date.now());
+  useEffect(() => {
+    const hasActive = orders?.some(o => ["Pending", "Preparing", "On the Way"].includes(o.status));
+    if (!hasActive) return;
+    const interval = setInterval(() => setNowTick(Date.now()), 1000);
+    return () => clearInterval(interval);
+  }, [orders]);
+
   const hasActiveFilters = dateFilter !== "today" || sortBy !== "date-desc";
   const activeFiltersCount = (dateFilter !== "today" ? 1 : 0) + (sortBy !== "date-desc" ? 1 : 0);
 
@@ -146,6 +157,7 @@ function AdminOrders() {
       all: orders?.length || 0,
       Pending: orders?.filter(o => o.status === "Pending")?.length || 0,
       Preparing: orders?.filter(o => o.status === "Preparing")?.length || 0,
+      "On the Way": orders?.filter(o => o.status === "On the Way")?.length || 0,
       Delivered: orders?.filter(o => o.status === "Delivered")?.length || 0,
       Cancelled: orders?.filter(o => o.status === "Cancelled")?.length || 0,
     };
@@ -219,7 +231,7 @@ function AdminOrders() {
         case "total-asc":
           return (a.total || 0) - (b.total || 0);
         case "status": {
-          const statusOrder = { "Pending": 0, "Preparing": 1, "Delivered": 2, "Cancelled": 3 };
+          const statusOrder = { "Pending": 0, "Preparing": 1, "On the Way": 2, "Delivered": 3, "Cancelled": 4 };
           return (statusOrder[a.status] ?? 99) - (statusOrder[b.status] ?? 99);
         }
         default:
@@ -266,6 +278,7 @@ function AdminOrders() {
     switch (status) {
       case "Pending": return "status-pending";
       case "Preparing": return "status-preparing";
+      case "On the Way": return "status-ontheway";
       case "Delivered": return "status-delivered";
       case "Cancelled": return "status-cancelled";
       default: return "status-pending";
@@ -275,7 +288,8 @@ function AdminOrders() {
   const getStatusIcon = (status) => {
     switch (status) {
       case "Pending": return <Clock size={13} />;
-      case "Preparing": return <Truck size={13} />;
+      case "Preparing": return <Sparkles size={13} />;
+      case "On the Way": return <Truck size={13} />;
       case "Delivered": return <CheckCircle size={13} />;
       case "Cancelled": return <XCircle size={13} />;
       default: return <Package size={13} />;
@@ -454,6 +468,14 @@ function AdminOrders() {
           </button>
 
           <button
+            className={`filter-pill ${filterStatus === "On the Way" ? "active pill-ontheway" : ""}`}
+            onClick={() => handleFilterChange(setFilterStatus)("On the Way")}
+          >
+            <span>On the Way</span>
+            <span className="filter-pill-count">{counts["On the Way"] || 0}</span>
+          </button>
+
+          <button
             className={`filter-pill ${filterStatus === "Delivered" ? "active pill-delivered" : ""}`}
             onClick={() => handleFilterChange(setFilterStatus)("Delivered")}
           >
@@ -536,10 +558,30 @@ function AdminOrders() {
                     )}
                     <span className="order-date-tag">{formatOrderDate(order.date)}</span>
                   </div>
-                  <span className={`order-status-badge ${getStatusBadgeClass(order.status)}`}>
-                    {getStatusIcon(order.status)}
-                    <span>{order.status}</span>
-                  </span>
+
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                    {/* Live Dynamic ETA Badge */}
+                    {order.status === 'Preparing' && (
+                      <span className="admin-order-eta-badge badge-prep" title="Preparation countdown active">
+                        <Sparkles size={11} /> Prep: {formatCountdownTimer(getRemainingPrepSeconds(order))}
+                      </span>
+                    )}
+                    {order.status === 'On the Way' && (
+                      <span className="admin-order-eta-badge badge-ontheway" title="Courier transit countdown">
+                        <Truck size={11} /> ~{Math.max(1, Math.ceil(getRemainingDeliverySeconds(order) / 60))}m left
+                      </span>
+                    )}
+                    {order.status === 'Pending' && (
+                      <span className="admin-order-eta-badge badge-pending" title="Estimated delivery window">
+                        <Clock size={11} /> {order.eta?.windowText || order.etaWindow || '30–45 min'}
+                      </span>
+                    )}
+
+                    <span className={`order-status-badge ${getStatusBadgeClass(order.status)}`}>
+                      {getStatusIcon(order.status)}
+                      <span>{order.status}</span>
+                    </span>
+                  </div>
                 </div>
 
                 {/* Customer Info & Financials */}
@@ -641,14 +683,27 @@ function AdminOrders() {
                         type="button"
                         className="action-btn action-btn-advance action-btn-advance-prep"
                         onClick={() => handleStatusChange(order.id, "Preparing")}
-                        title="Mark Preparing"
+                        title="Start preparation and trigger countdown"
                       >
-                        <Truck size={14} />
+                        <Sparkles size={14} />
                         <span>Prepare</span>
                       </button>
                     )}
 
                     {order.status === "Preparing" && (
+                      <button
+                        type="button"
+                        className="action-btn action-btn-advance action-btn-advance-dispatch"
+                        onClick={() => handleStatusChange(order.id, "On the Way")}
+                        title="Mark dispatched & update real-time transit ETA"
+                        style={{ background: '#0284c7', borderColor: '#0284c7' }}
+                      >
+                        <Truck size={14} />
+                        <span>Dispatch</span>
+                      </button>
+                    )}
+
+                    {order.status === "On the Way" && (
                       <button
                         type="button"
                         className="action-btn action-btn-advance"
@@ -668,6 +723,7 @@ function AdminOrders() {
                     >
                       <option value="Pending">Pending</option>
                       <option value="Preparing">Preparing</option>
+                      <option value="On the Way">On the Way</option>
                       <option value="Delivered">Delivered</option>
                       <option value="Cancelled">Cancelled</option>
                     </select>
@@ -700,12 +756,23 @@ function AdminOrders() {
                         type="button"
                         className="action-btn action-btn-advance action-btn-advance-prep"
                         onClick={() => handleStatusChange(order.id, "Preparing")}
-                        title="Mark Preparing"
+                        title="Start preparation"
                       >
-                        <Truck size={15} />
+                        <Sparkles size={15} />
                         <span>Prepare</span>
                       </button>
                     ) : order.status === "Preparing" ? (
+                      <button
+                        type="button"
+                        className="action-btn action-btn-advance action-btn-advance-dispatch"
+                        onClick={() => handleStatusChange(order.id, "On the Way")}
+                        title="Mark dispatched"
+                        style={{ background: '#0284c7', borderColor: '#0284c7' }}
+                      >
+                        <Truck size={15} />
+                        <span>Dispatch</span>
+                      </button>
+                    ) : order.status === "On the Way" ? (
                       <button
                         type="button"
                         className="action-btn action-btn-advance"
@@ -724,6 +791,7 @@ function AdminOrders() {
                       >
                         <option value="Pending">Pending</option>
                         <option value="Preparing">Preparing</option>
+                        <option value="On the Way">On the Way</option>
                         <option value="Delivered">Delivered</option>
                         <option value="Cancelled">Cancelled</option>
                       </select>
@@ -1205,26 +1273,61 @@ function AdminOrders() {
                   </div>
                 </div>
 
+                {/* Dynamic Delivery ETA Operations Box */}
+                <div className="order-sheet-card order-sheet-eta-card">
+                  <div className="order-sheet-section-title" style={{ marginBottom: '0.45rem' }}>
+                    <div className="order-sheet-title-left">
+                      <Zap size={16} color="#16a34a" />
+                      <span>Dynamic Delivery ETA Operations</span>
+                    </div>
+                    <span className="order-sheet-eta-window-badge">
+                      {selectedOrder.eta?.windowText || selectedOrder.etaWindow || '30–45 min'}
+                    </span>
+                  </div>
+
+                  <div className="admin-modal-eta-grid">
+                    <div className="modal-eta-item">
+                      <span className="modal-eta-label">Target Prep Time:</span>
+                      <strong className="modal-eta-val">~{selectedOrder.estimatedPrepMinutes || selectedOrder.eta?.prepMinutes || 8} min</strong>
+                    </div>
+                    <div className="modal-eta-item">
+                      <span className="modal-eta-label">Queue Delay:</span>
+                      <strong className="modal-eta-val">~{selectedOrder.estimatedQueueMinutes || selectedOrder.eta?.queueMinutes || 0} min</strong>
+                    </div>
+                    <div className="modal-eta-item">
+                      <span className="modal-eta-label">Transit Time ({selectedOrder.distanceKm || selectedOrder.shippingAddress?.distanceKm || '—'} km):</span>
+                      <strong className="modal-eta-val">~{selectedOrder.estimatedDeliveryMinutes || selectedOrder.eta?.deliveryMinutes || 10} min</strong>
+                    </div>
+                    <div className="modal-eta-item">
+                      <span className="modal-eta-label">Prep Countdown:</span>
+                      <strong className="modal-eta-val" style={{ color: selectedOrder.status === 'Preparing' ? '#16a34a' : '#64748b' }}>
+                        {selectedOrder.status === 'Preparing' ? formatCountdownTimer(getRemainingPrepSeconds(selectedOrder)) : (selectedOrder.actualPrepMinutes ? `${selectedOrder.actualPrepMinutes} min (Done)` : 'Not active')}
+                      </strong>
+                    </div>
+                  </div>
+                </div>
+
                 {/* 4. Order Status Fast Selector */}
                 <div className="order-sheet-status-control">
                   <label className="order-sheet-status-label">
-                    <span>Order Status</span>
+                    <span>Order Status Operations</span>
                   </label>
                   <div className="order-sheet-status-pills">
-                    {["Pending", "Preparing", "Delivered", "Cancelled"].map((st) => {
+                    {["Pending", "Preparing", "On the Way", "Delivered", "Cancelled"].map((st) => {
                       const isActive = selectedOrder.status === st;
                       return (
                         <button
                           key={st}
                           type="button"
-                          className={`order-sheet-status-btn ${st.toLowerCase()} ${isActive ? 'is-active' : ''}`}
+                          className={`order-sheet-status-btn ${st.toLowerCase().replace(/\s+/g, '-')} ${isActive ? 'is-active' : ''}`}
                           onClick={() => {
                             handleStatusChange(selectedOrder.id, st);
                             setSelectedOrder(prev => ({ ...prev, status: st }));
                           }}
                         >
                           {st === "Pending" && <Clock size={14} />}
-                          {st === "Preparing" && <Truck size={14} />}
+                          {st === "Preparing" && <Sparkles size={14} />}
+                          {st === "On the Way" && <Truck size={14} />}
                           {st === "Delivered" && <CheckCircle size={14} />}
                           {st === "Cancelled" && <XCircle size={14} />}
                           <span>{st}</span>

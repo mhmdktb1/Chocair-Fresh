@@ -65,6 +65,8 @@ export const translations = {
     ordersDeliveries: 'My Orders',
     all: 'All',
     active: 'Active',
+    preparing: 'Preparing',
+    onTheWay: 'On the Way',
     delivered: 'Delivered',
     cancelled: 'Cancelled',
     reorderAll: 'Reorder All Items',
@@ -76,6 +78,10 @@ export const translations = {
     recipientPhone: 'Recipient Phone',
     noOrdersFound: 'No Orders Found',
     exploreHarvest: 'Explore Daily Harvest',
+    dynamicEta: 'Estimated Delivery ETA',
+    prepTime: 'Preparation',
+    queueTime: 'Store Queue',
+    transitTime: 'Delivery Transit',
 
     // Saved Addresses
     savedAddresses: 'Saved Addresses',
@@ -167,6 +173,8 @@ export const translations = {
     ordersDeliveries: 'طلباتي',
     all: 'الكل',
     active: 'النشطة',
+    preparing: 'قيد التجهيز',
+    onTheWay: 'في الطريق',
     delivered: 'تم التوصيل',
     cancelled: 'ملغية',
     reorderAll: 'إعادة طلب المنتجات',
@@ -178,6 +186,10 @@ export const translations = {
     recipientPhone: 'رقم المستلم',
     noOrdersFound: 'لا توجد طلبات',
     exploreHarvest: 'تصفح قطاف اليوم',
+    dynamicEta: 'الوقت المتوقع للوصول',
+    prepTime: 'وقت التجهيز والوزن',
+    queueTime: 'دور الطلبات',
+    transitTime: 'وقت الطريق والتوصيل',
 
     // Saved Addresses
     savedAddresses: 'العناوين المحفوظة',

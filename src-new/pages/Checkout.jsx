@@ -19,6 +19,12 @@ import {
   calculateDistanceKm,
   calculateDeliveryFee
 } from '../utils/distanceHelper';
+import {
+  calculateOrderPrepMinutes,
+  calculateDeliveryMinutes,
+  calculateEtaWindow,
+  formatArrivalTimeWindow
+} from '../utils/etaHelper';
 import Navbar from '../components/layout/Navbar';
 import Button from '../components/common/Button';
 import LocationPicker from '../components/common/LocationPicker';
@@ -98,6 +104,58 @@ const Checkout = () => {
 
   const [scheduledDate, setScheduledDate] = useState(todayIso);
   const [scheduledTimeSlot, setScheduledTimeSlot] = useState("9 AM - 10 AM");
+  const [etaPreview, setEtaPreview] = useState(null);
+
+  useEffect(() => {
+    let isMounted = true;
+    const fetchEta = async () => {
+      const hasLocation = Boolean(formData.distanceKm != null || (formData.lat != null && formData.lng != null));
+      if (!hasLocation) {
+        if (isMounted) {
+          setEtaPreview(null);
+        }
+        return;
+      }
+
+      try {
+        const itemsPayload = cartItems.map(item => ({
+          qty: item.quantity,
+          unit: item.unit,
+          instruction: item.instruction || '',
+          name: item.name
+        }));
+        const res = await api.post('/orders/eta-preview', {
+          cartItems: itemsPayload,
+          distanceKm: formData.distanceKm,
+          lat: formData.lat,
+          lng: formData.lng,
+        });
+        if (isMounted && res.data) {
+          setEtaPreview(res.data);
+        }
+      } catch {
+        if (isMounted) {
+          const prep = calculateOrderPrepMinutes(cartItems);
+          const deliv = calculateDeliveryMinutes(formData.distanceKm);
+          const total = deliv != null ? (prep + deliv) : null;
+          const windowObj = calculateEtaWindow(total);
+          setEtaPreview({
+            hasLocation: Boolean(deliv != null),
+            prepMinutes: prep,
+            queueMinutes: 0,
+            deliveryMinutes: deliv,
+            totalMinutes: total,
+            windowText: windowObj?.text || null,
+            minWindowMinutes: windowObj?.min || null,
+            maxWindowMinutes: windowObj?.max || null,
+          });
+        }
+      }
+    };
+
+    fetchEta();
+    return () => { isMounted = false; };
+  }, [cartItems, formData.distanceKm, formData.lat, formData.lng]);
 
   const getFormattedDeliveryPreference = () => {
     if (deliveryPreference === 'asap') {
@@ -695,11 +753,19 @@ const Checkout = () => {
               <div className="calc-row">
                 <span>Timing</span>
                 <span style={{ fontWeight: 700, color: '#15803d' }}>
-                  {deliveryPreference === 'asap' && '⚡ ASAP'}
+                  {deliveryPreference === 'asap' && (etaPreview?.hasLocation ? `⚡ ${etaPreview.windowText}` : '⚡ ASAP')}
                   {deliveryPreference === 'anytime' && '🕒 Anytime'}
                   {deliveryPreference === 'schedule' && `📅 ${scheduledDayOption === 'today' ? 'Today' : scheduledDayOption === 'tomorrow' ? 'Tomorrow' : scheduledDate}`}
                 </span>
               </div>
+              {etaPreview?.hasLocation && (
+                <div className="calc-row" style={{ background: '#f0fdf4', padding: '6px 8px', borderRadius: '6px', margin: '4px 0' }}>
+                  <span style={{ color: '#15803d', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '4px' }}>
+                    <Zap size={13} /> Live ETA
+                  </span>
+                  <span style={{ color: '#15803d', fontWeight: 800 }}>{etaPreview.windowText}</span>
+                </div>
+              )}
               <div className="calc-divider" />
               <div className="calc-row total">
                 <div className="calc-total-labels">
@@ -908,7 +974,9 @@ const Checkout = () => {
                       </div>
                       <div className="timing-card-info">
                         <strong className="timing-card-title">ASAP</strong>
-                        <p className="timing-card-desc">Express fresh delivery (~30–60 min)</p>
+                        <p className="timing-card-desc">
+                          {etaPreview?.hasLocation ? `Dynamic ETA: ${etaPreview.windowText}` : 'Express delivery (select location)'}
+                        </p>
                       </div>
                     </div>
 
@@ -951,6 +1019,61 @@ const Checkout = () => {
                         <p className="timing-card-desc">Pick preferred date & slot</p>
                       </div>
                     </div>
+                  </div>
+
+                  {/* Dynamic Delivery ETA Display */}
+                  <div className="dynamic-eta-checkout-card">
+                    {etaPreview?.hasLocation && etaPreview?.windowText ? (
+                      <div className="dynamic-eta-active-box">
+                        <div className="dynamic-eta-header-row">
+                          <div className="dynamic-eta-badge-group">
+                            <span className="dynamic-eta-icon-pulse">
+                              <Zap size={15} />
+                            </span>
+                            <span className="dynamic-eta-title">Live Dynamic ETA</span>
+                          </div>
+                          <span className="dynamic-eta-window-val">
+                            {etaPreview.windowText}
+                          </span>
+                        </div>
+
+                        {etaPreview.minWindowMinutes != null && etaPreview.maxWindowMinutes != null && (
+                          <div className="dynamic-eta-arrival-time">
+                            <Clock size={13} />
+                            <span>
+                              Expected arrival: <strong>{formatArrivalTimeWindow(etaPreview.minWindowMinutes, etaPreview.maxWindowMinutes)}</strong>
+                            </span>
+                          </div>
+                        )}
+
+                        <div className="dynamic-eta-breakdown-row">
+                          <div className="eta-breakdown-chip" title="Preparation time calculated from your basket items and produce weighing">
+                            <span className="eta-chip-label">Prep:</span>
+                            <span className="eta-chip-val">~{etaPreview.prepMinutes} min</span>
+                          </div>
+                          <div className="eta-breakdown-chip" title="Wait time based on active store preparation orders">
+                            <span className="eta-chip-label">Queue:</span>
+                            <span className="eta-chip-val">~{etaPreview.queueMinutes} min</span>
+                          </div>
+                          <div className="eta-breakdown-chip" title="Delivery transit time based on exact distance">
+                            <span className="eta-chip-label">Transit ({formData.distanceKm} km):</span>
+                            <span className="eta-chip-val">~{etaPreview.deliveryMinutes} min</span>
+                          </div>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="dynamic-eta-pending-box">
+                        <div className="eta-pending-icon">
+                          <MapPin size={16} />
+                        </div>
+                        <div className="eta-pending-content">
+                          <strong className="eta-pending-title">Live Dynamic ETA Calculation</strong>
+                          <p className="eta-pending-desc">
+                            Select your delivery location above to calculate the dynamic 15-minute arrival window based on basket preparation, store queue, and road distance.
+                          </p>
+                        </div>
+                      </div>
+                    )}
                   </div>
 
                   {/* Scheduled Date & Window Picker */}
@@ -1260,11 +1383,29 @@ const Checkout = () => {
                 <div className="sidebar-calc-row">
                   <span>Timing</span>
                   <span className="calc-val" style={{ color: '#15803d', fontWeight: 700 }}>
-                    {deliveryPreference === 'asap' && '⚡ ASAP'}
+                    {deliveryPreference === 'asap' && (etaPreview?.hasLocation ? `⚡ ${etaPreview.windowText}` : '⚡ ASAP')}
                     {deliveryPreference === 'anytime' && '🕒 Anytime (Flexible)'}
                     {deliveryPreference === 'schedule' && `📅 ${scheduledDayOption === 'today' ? 'Today' : scheduledDayOption === 'tomorrow' ? 'Tomorrow' : scheduledDate}`}
                   </span>
                 </div>
+
+                {etaPreview?.hasLocation && (
+                  <div className="sidebar-calc-row" style={{ background: '#f0fdf4', padding: '6px 10px', borderRadius: '8px', margin: '4px 0', border: '1px solid #bbf7d0' }}>
+                    <div style={{ display: 'flex', flexDirection: 'column' }}>
+                      <span style={{ color: '#15803d', fontWeight: 700, fontSize: '0.8rem', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                        <Zap size={14} /> Live ETA Window
+                      </span>
+                      {etaPreview.minWindowMinutes != null && etaPreview.maxWindowMinutes != null && (
+                        <span style={{ fontSize: '0.72rem', color: '#16a34a' }}>
+                          {formatArrivalTimeWindow(etaPreview.minWindowMinutes, etaPreview.maxWindowMinutes)}
+                        </span>
+                      )}
+                    </div>
+                    <span style={{ color: '#15803d', fontWeight: 800, fontSize: '0.9rem' }}>
+                      {etaPreview.windowText}
+                    </span>
+                  </div>
+                )}
                 
                 <div className="sidebar-divider" />
                 

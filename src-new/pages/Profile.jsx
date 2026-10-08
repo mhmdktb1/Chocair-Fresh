@@ -30,6 +30,11 @@ import { normalizeLebanesePhoneNumber, formatPhoneNumber } from '../utils/phoneU
 import { formatCurrency, formatDate } from '../utils/formatters';
 import { normalizeUnit } from '../utils/unitHelper';
 import { formatLocationDisplay } from '../utils/distanceHelper';
+import {
+  formatCountdownTimer,
+  getRemainingPrepSeconds,
+  getRemainingDeliverySeconds,
+} from '../utils/etaHelper';
 import { toast } from 'react-toastify';
 import './Profile.css';
 
@@ -155,6 +160,40 @@ const Profile = () => {
       else if (tab === 'settings' || tab === 'preferences') expandAndScrollToSection('settings');
     }
   }, [location.state]);
+
+  // Live Dynamic ETA & Countdown Ticker
+  const [, setNowTick] = useState(Date.now());
+
+  useEffect(() => {
+    const hasActiveOrders = orders.some(o => {
+      const st = (o.status || '').toLowerCase();
+      return ['pending', 'preparing', 'on the way', 'out_for_delivery', 'in transit'].includes(st);
+    });
+
+    if (!hasActiveOrders) return;
+
+    // 1-second interval to update live countdown timer displays
+    const tickInterval = setInterval(() => {
+      setNowTick(Date.now());
+    }, 1000);
+
+    // 7-second polling interval to fetch updated orders and queue changes in real-time
+    const pollInterval = setInterval(async () => {
+      try {
+        const { data } = await api.get('/orders/myorders');
+        if (Array.isArray(data)) {
+          setOrders(data);
+        }
+      } catch (err) {
+        console.warn('Could not auto-refresh active orders:', err.message);
+      }
+    }, 7000);
+
+    return () => {
+      clearInterval(tickInterval);
+      clearInterval(pollInterval);
+    };
+  }, [orders]);
 
   // Initial load: user, orders, products
   useEffect(() => {
@@ -623,8 +662,8 @@ const Profile = () => {
     const st = (status || 'pending').toLowerCase();
     if (st === 'cancelled') return -1;
     if (st === 'delivered') return 4;
-    if (st === 'shipped' || st === 'out_for_delivery') return 3;
-    if (st === 'processing' || st === 'confirmed') return 2;
+    if (st === 'on the way' || st === 'shipped' || st === 'out_for_delivery' || st === 'in transit') return 3;
+    if (st === 'preparing' || st === 'processing' || st === 'confirmed') return 2;
     return 1;
   };
 
@@ -800,6 +839,11 @@ const Profile = () => {
             const isCancelled = statusLower === 'cancelled';
             const orderCode = `#${order._id.slice(-6).toUpperCase()}`;
 
+            const remainingPrepSecs = getRemainingPrepSeconds(order);
+            const remainingDeliverySecs = getRemainingDeliverySeconds(order);
+            const remainingDeliveryMins = Math.max(1, Math.ceil(remainingDeliverySecs / 60));
+            const etaWindow = order.eta?.windowText || order.etaWindow || '30–45 min';
+
             return (
               <div 
                 key={order._id} 
@@ -831,7 +875,29 @@ const Profile = () => {
                   </div>
 
                   <div className="compact-order-actions">
-                    <span className={`order-status-pill status-${statusLower}`}>
+                    {/* Live Dynamic ETA Badge */}
+                    {!isCancelled && order.status !== 'Delivered' && (
+                      <span className={`order-eta-pill eta-${statusLower.replace(/\s+/g, '-')}`}>
+                        {statusLower === 'preparing' ? (
+                          <>
+                            <Zap size={11} className="eta-pulse-icon" />
+                            <span>Prep: {formatCountdownTimer(remainingPrepSecs)}</span>
+                          </>
+                        ) : (statusLower === 'on the way' || statusLower === 'out_for_delivery') ? (
+                          <>
+                            <Truck size={11} />
+                            <span>On Way: ~{remainingDeliveryMins}m</span>
+                          </>
+                        ) : (
+                          <>
+                            <Clock size={11} />
+                            <span>ETA: {etaWindow}</span>
+                          </>
+                        )}
+                      </span>
+                    )}
+
+                    <span className={`order-status-pill status-${statusLower.replace(/\s+/g, '-')}`}>
                       {order.status || 'Pending'}
                     </span>
                     <button 
@@ -865,7 +931,7 @@ const Profile = () => {
                           <div className="step-dot">
                             <Check size={10} strokeWidth={3} />
                           </div>
-                          <span className="step-label">Confirmed</span>
+                          <span className="step-label">Preparing</span>
                         </div>
 
                         <div className={`progress-line ${progressStep >= 3 ? 'completed' : ''}`} />
@@ -889,6 +955,60 @@ const Profile = () => {
                     ) : (
                       <div className="order-cancelled-banner">
                         <AlertCircle size={15} /> Order Cancelled
+                      </div>
+                    )}
+
+                    {/* Prominent Live Dynamic ETA Card */}
+                    {!isCancelled && order.status !== 'Delivered' && (
+                      <div className="order-live-eta-banner">
+                        {statusLower === 'preparing' ? (
+                          <div className="eta-banner-inner preparing">
+                            <div className="eta-banner-header">
+                              <div className="eta-banner-title-group">
+                                <span className="eta-pulse-dot" />
+                                <strong>Preparing Fresh Produce</strong>
+                              </div>
+                              <span className="eta-countdown-clock">
+                                {formatCountdownTimer(remainingPrepSecs)}
+                              </span>
+                            </div>
+                            <p className="eta-banner-subtext">
+                              Countdown active • Target prep: ~{order.eta?.prepMinutes || order.estimatedPrepMinutes || 8} min • Total ETA: <strong>{etaWindow}</strong>
+                            </p>
+                          </div>
+                        ) : (statusLower === 'on the way' || statusLower === 'out_for_delivery') ? (
+                          <div className="eta-banner-inner transit">
+                            <div className="eta-banner-header">
+                              <div className="eta-banner-title-group">
+                                <Truck size={16} color="#0284c7" />
+                                <strong>Courier On the Way</strong>
+                              </div>
+                              <span className="eta-countdown-clock transit-clock">
+                                ~{remainingDeliveryMins} min
+                              </span>
+                            </div>
+                            <p className="eta-banner-subtext">
+                              Prep completed in {order.actualPrepMinutes || order.eta?.actualPrepMinutes || 6} min • Driver heading directly to your address
+                            </p>
+                          </div>
+                        ) : (
+                          <div className="eta-banner-inner pending">
+                            <div className="eta-banner-header">
+                              <div className="eta-banner-title-group">
+                                <Clock size={16} color="#c2410c" />
+                                <strong>Order Received • In Queue</strong>
+                              </div>
+                              <span className="eta-countdown-clock pending-clock">
+                                {etaWindow}
+                              </span>
+                            </div>
+                            <div className="eta-breakdown-subchips">
+                              <span>Prep: ~{order.eta?.prepMinutes || order.estimatedPrepMinutes || 6}m</span>
+                              <span>Queue: ~{order.eta?.queueMinutes || order.estimatedQueueMinutes || 0}m</span>
+                              <span>Delivery: ~{order.eta?.deliveryMinutes || order.estimatedDeliveryMinutes || 10}m</span>
+                            </div>
+                          </div>
+                        )}
                       </div>
                     )}
 

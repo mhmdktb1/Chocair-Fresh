@@ -83,7 +83,18 @@ const mapOrder = (o) => ({
   status: o.status || "Pending",
   date: o.createdAt || o.date || new Date().toISOString(),
   deliveryPreference: o.deliveryPreference || o.customerInfo?.deliveryPreference,
-  shippingAddress: o.customerInfo || o.shippingAddress
+  shippingAddress: o.customerInfo || o.shippingAddress,
+  estimatedPrepMinutes: o.estimatedPrepMinutes,
+  estimatedQueueMinutes: o.estimatedQueueMinutes,
+  estimatedDeliveryMinutes: o.estimatedDeliveryMinutes,
+  estimatedTotalMinutes: o.estimatedTotalMinutes,
+  etaWindow: o.etaWindow,
+  prepStartedAt: o.prepStartedAt,
+  prepCompletedAt: o.prepCompletedAt,
+  dispatchedAt: o.dispatchedAt,
+  deliveredAt: o.deliveredAt,
+  actualPrepMinutes: o.actualPrepMinutes,
+  eta: o.eta || null,
 });
 
 export const AdminProvider = ({ children }) => {
@@ -380,7 +391,9 @@ export const AdminProvider = ({ children }) => {
       totalRevenue: orders.reduce((sum, order) => sum + (order.total || 0), 0),
       pendingOrders: orders.filter(o => o.status === "Pending").length,
       preparingOrders: orders.filter(o => o.status === "Preparing").length,
+      onTheWayOrders: orders.filter(o => o.status === "On the Way").length,
       deliveredOrders: orders.filter(o => o.status === "Delivered").length,
+      cancelledOrders: orders.filter(o => o.status === "Cancelled").length,
     };
   };
 

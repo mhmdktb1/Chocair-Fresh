@@ -409,4 +409,86 @@ describe('Order API', () => {
     expect(res.status).toBe(400);
     expect(res.body.message).toMatch(/out of our 4 km delivery range/i);
   });
+
+  // ================= DYNAMIC DELIVERY ETA TESTS =================
+
+  it('DYNAMIC ETA: calculates prep time, queue time, delivery time, and 15-min window on order placement', async () => {
+    const payload = createOrderData();
+    payload.customerInfo.lat = 33.9350;
+    payload.customerInfo.lng = 35.5880; // ~1.03 km
+
+    const res = await request(app).post('/api/orders').send(payload);
+    expect(res.status).toBe(201);
+    expect(res.body.estimatedPrepMinutes).toBeDefined();
+    expect(res.body.estimatedPrepMinutes).toBeGreaterThanOrEqual(5);
+    expect(res.body.estimatedDeliveryMinutes).toBeDefined();
+    expect(res.body.estimatedDeliveryMinutes).toBeGreaterThanOrEqual(5);
+    expect(res.body.etaWindow).toBeDefined();
+    expect(res.body.etaWindow).toMatch(/^\d+–\d+ min$/);
+    expect(res.body.eta).toBeDefined();
+  });
+
+  it('DYNAMIC ETA PREVIEW: returns dynamic ETA calculation before order is placed', async () => {
+    const previewRes = await request(app)
+      .post('/api/orders/eta-preview')
+      .send({
+        cartItems: [
+          { qty: 2, unit: '1kg', name: 'Test Orange' },
+          { qty: 1, unit: 'pack', name: 'Strawberries', instruction: 'Very fresh' }
+        ],
+        lat: 33.9350,
+        lng: 35.5880
+      });
+
+    expect(previewRes.status).toBe(200);
+    expect(previewRes.body.hasLocation).toBe(true);
+    expect(previewRes.body.prepMinutes).toBeGreaterThanOrEqual(5);
+    expect(previewRes.body.deliveryMinutes).toBeGreaterThanOrEqual(5);
+    expect(previewRes.body.totalMinutes).toBeGreaterThan(0);
+    expect(previewRes.body.windowText).toMatch(/^\d+–\d+ min$/);
+  });
+
+  it('DYNAMIC ETA STATUS TRANSITIONS: Preparing starts countdown, On the Way recalculates remaining transit', async () => {
+    const payload = createOrderData();
+    payload.customerInfo.lat = 33.9350;
+    payload.customerInfo.lng = 35.5880;
+
+    const createRes = await request(app).post('/api/orders').send(payload);
+    const orderId = createRes.body._id;
+
+    // 1. Admin advances to 'Preparing'
+    const prepRes = await request(app)
+      .put(`/api/orders/${orderId}/status`)
+      .set('Authorization', `Bearer ${adminToken}`)
+      .send({ status: 'Preparing' });
+
+    expect(prepRes.status).toBe(200);
+    expect(prepRes.body.status).toBe('Preparing');
+    expect(prepRes.body.prepStartedAt).toBeDefined();
+    expect(prepRes.body.eta.prepStartedAt).toBeDefined();
+
+    // 2. Admin advances to 'On the Way'
+    const dispatchRes = await request(app)
+      .put(`/api/orders/${orderId}/status`)
+      .set('Authorization', `Bearer ${adminToken}`)
+      .send({ status: 'On the Way' });
+
+    expect(dispatchRes.status).toBe(200);
+    expect(dispatchRes.body.status).toBe('On the Way');
+    expect(dispatchRes.body.dispatchedAt).toBeDefined();
+    expect(dispatchRes.body.prepCompletedAt).toBeDefined();
+    expect(dispatchRes.body.actualPrepMinutes).toBeDefined();
+    expect(dispatchRes.body.eta.remainingMinutes).toBeDefined();
+
+    // 3. Admin advances to 'Delivered'
+    const deliverRes = await request(app)
+      .put(`/api/orders/${orderId}/status`)
+      .set('Authorization', `Bearer ${adminToken}`)
+      .send({ status: 'Delivered' });
+
+    expect(deliverRes.status).toBe(200);
+    expect(deliverRes.body.status).toBe('Delivered');
+    expect(deliverRes.body.isDelivered).toBe(true);
+    expect(deliverRes.body.deliveredAt).toBeDefined();
+  });
 });
