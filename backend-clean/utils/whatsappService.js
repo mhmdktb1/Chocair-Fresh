@@ -52,7 +52,7 @@ export const sendWhatsAppOtp = async (phone, otp) => {
             parameters: [
               {
                 type: 'text',
-                text: 'Chocair Customer',
+                text: 'Choucair Customer',
               },
               {
                 type: 'text',
@@ -91,7 +91,7 @@ export const sendWhatsAppOtp = async (phone, otp) => {
       type: 'text',
       text: {
         preview_url: false,
-        body: `🍏 *Chocair Fresh Verification Code*\n\nYour verification code is: *${otp}*\n\nThis code expires in 5 minutes. Do not share it with anyone.`,
+        body: `🍏 *Choucair Fresh Verification Code*\n\nYour verification code is: *${otp}*\n\nThis code expires in 5 minutes. Do not share it with anyone.`,
       },
     };
 
@@ -135,8 +135,8 @@ export const sendWhatsAppOrderNotification = async (phone, order, options = {}) 
       .join('\n');
 
     const messageText = isAdmin
-      ? `🚨 *Chocair Fresh - New Order Alert*\n\nA new order has been placed.\n\n*Order ID:* #${order._id.toString().slice(-6).toUpperCase()}\n*Customer:* ${order.customerInfo?.name || 'Guest'}\n*Phone:* ${order.customerInfo?.phone || 'Not provided'}\n*Total:* $${order.totalPrice?.toFixed(2)}\n*Payment Method:* ${order.paymentMethod}\n\n*Items:*\n${itemsSummary}\n\n*Delivery Address:* ${order.customerInfo?.address || 'Provided Location'}`
-      : `🍏 *Chocair Fresh - Order Confirmation*\n\nThank you for your order, *${order.customerInfo?.name || 'Valued Customer'}*!\n\n*Order ID:* #${order._id.toString().slice(-6).toUpperCase()}\n*Total:* $${order.totalPrice?.toFixed(2)}\n*Payment Method:* ${order.paymentMethod}\n*Delivery Address:* ${order.customerInfo?.address || 'Provided Location'}\n\n*Items:*\n${itemsSummary}\n\nOur team is preparing your fresh order. Track updates on your Chocair Fresh profile!`;
+      ? `🚨 *Choucair Fresh - New Order Alert*\n\nA new order has been placed.\n\n*Order ID:* #${order._id.toString().slice(-6).toUpperCase()}\n*Customer:* ${order.customerInfo?.name || 'Guest'}\n*Phone:* ${order.customerInfo?.phone || 'Not provided'}\n*Total:* $${order.totalPrice?.toFixed(2)}\n*Payment Method:* ${order.paymentMethod}\n\n*Items:*\n${itemsSummary}\n\n*Delivery Address:* ${order.customerInfo?.address || 'Provided Location'}`
+      : `🍏 *Choucair Fresh - Order Confirmation*\n\nThank you for your order, *${order.customerInfo?.name || 'Valued Customer'}*!\n\n*Order ID:* #${order._id.toString().slice(-6).toUpperCase()}\n*Total:* $${order.totalPrice?.toFixed(2)}\n*Payment Method:* ${order.paymentMethod}\n*Delivery Address:* ${order.customerInfo?.address || 'Provided Location'}\n\n*Items:*\n${itemsSummary}\n\nOur team is preparing your fresh order. Track updates on your Choucair Fresh profile!`;
 
     const url = `https://graph.facebook.com/v18.0/${phoneNumberId}/messages`;
     const payload = {

@@ -286,7 +286,7 @@ const Navbar = () => {
               <span className="intro-particle leaf-p1">🍃</span>
             </span>
 
-            <span className="brand-chocair">Chocair</span>
+            <span className="brand-chocair">Choucair</span>
             <span className="brand-fresh">
               FR
               <span className="e-dash-group" title="Quick Navigation">
@@ -348,7 +348,7 @@ const Navbar = () => {
       {/* Full Screen Top Curtain Menu */}
       <div id="curtain-drawer" className={`curtain-drawer ${curtainOpen ? 'open' : ''}`}>
         <div className="curtain-header">
-          <span className="curtain-title">Explore Chocair Fresh</span>
+          <span className="curtain-title">Explore Choucair Fresh</span>
           <button className="curtain-close-btn" onClick={() => setCurtainOpen(false)} aria-label="Close">
             <X size={26} />
           </button>

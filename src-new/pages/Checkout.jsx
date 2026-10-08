@@ -1219,7 +1219,7 @@ const Checkout = () => {
                       </div>
                       <div className="whish-account-row">
                         <span className="whish-num">+961 70 123 456</span>
-                        <span className="whish-holder">Chocair Fresh</span>
+                        <span className="whish-holder">Choucair Fresh</span>
                       </div>
                       <p className="whish-note">
                         Transfer exact total: <strong>{formatCurrency(finalTotal)}</strong> / <strong>{formatLL(finalTotal)}</strong>

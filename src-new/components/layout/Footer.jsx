@@ -19,7 +19,7 @@ const Footer = () => {
           <div className="footer-info-col">
             <div className="footer-brand-section">
               <Link to="/" className="footer-brand">
-                Chocair<span className="brand-highlight">Fresh</span>
+                Choucair<span className="brand-highlight">Fresh</span>
               </Link>
               <p className="footer-tagline">
                 Premium hand-picked produce, fruits, and daily essentials delivered fresh to your door across Beirut.
@@ -32,7 +32,7 @@ const Footer = () => {
                 <MapPin size={18} className="footer-meta-icon pin-icon" />
                 <div>
                   <span className="footer-meta-title">Store Location</span>
-                  <p className="footer-meta-text">Chocair Market "Anas Fruits", Beirut, Lebanon</p>
+                  <p className="footer-meta-text">Choucair Market "Anas Fruits", Beirut, Lebanon</p>
                 </div>
               </div>
               <div className="footer-meta-item">
@@ -126,13 +126,13 @@ const Footer = () => {
               </div>
               <div className="footer-map-card">
                 <iframe 
-                  src="https://maps.google.com/maps?q=WHVR%2BGVR+Chocair+Market+%22Anas+Fruits%22,+Beirut&t=&z=16&ie=UTF8&iwloc=&output=embed" 
+                  src="https://maps.google.com/maps?q=WHVR%2BGVR+Choucair+Market+%22Anas+Fruits%22,+Beirut&t=&z=16&ie=UTF8&iwloc=&output=embed" 
                   width="100%" 
                   height="100%" 
                   style={{ border: 0 }} 
                   allowFullScreen="" 
                   loading="lazy"
-                  title="Chocair Market Anas Fruits Google Maps Location"
+                  title="Choucair Market Anas Fruits Google Maps Location"
                 ></iframe>
               </div>
             </div>
@@ -143,7 +143,7 @@ const Footer = () => {
         {/* Bottom Strip */}
         <div className="footer-bottom-row">
           <p className="footer-copyright">
-            &copy; {currentYear} <strong>Chocair Fresh</strong>. All rights reserved.
+            &copy; {currentYear} <strong>Choucair Fresh</strong>. All rights reserved.
           </p>
         </div>
       </div>

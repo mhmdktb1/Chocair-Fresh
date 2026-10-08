@@ -4,7 +4,7 @@ import { Sprout, CheckCircle2, ShieldCheck, ArrowRight, HeartHandshake, Sparkles
 import './AboutSection.css';
 
 const DEFAULT_LEAD = "We started with a simple idea: fresh produce should feel better from the moment you order it to the moment it reaches your kitchen.";
-const DEFAULT_BODY = "At Chocair Fresh, we carefully select, check, and pack every order before it leaves us. We focus on the little details — choosing clean, good-looking pieces and packing them neatly so your order arrives the way you’d expect it to.";
+const DEFAULT_BODY = "At Choucair Fresh, we carefully select, check, and pack every order before it leaves us. We focus on the little details — choosing clean, good-looking pieces and packing them neatly so your order arrives the way you’d expect it to.";
 const DEFAULT_IMAGE = "https://images.unsplash.com/photo-1595855709915-445676d2f6cd?ixlib=rb-4.0.3&auto=format&fit=crop&w=1000&q=80";
 
 const storyHighlights = [
@@ -47,7 +47,7 @@ const AboutSection = ({ data }) => {
             <div className="story-image-container">
               <img 
                 src={image} 
-                alt="Chocair Fresh Farm Story" 
+                alt="Choucair Fresh Farm Story" 
                 className="story-scene-img" 
                 loading="lazy" 
               />

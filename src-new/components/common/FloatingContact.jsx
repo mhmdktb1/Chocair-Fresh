@@ -28,13 +28,13 @@ const GENERAL_INQUIRIES = [
     id: 'order',
     emoji: '📦',
     label: 'Track Order',
-    text: 'Hello Chocair Fresh! I would like to check the status of my order.'
+    text: 'Hello Choucair Fresh! I would like to check the status of my order.'
   },
   {
     id: 'fruits',
     emoji: '🍎',
     label: 'Fresh Produce',
-    text: "Hello Chocair Fresh! I have a question about fruit availability and today's arrivals."
+    text: "Hello Choucair Fresh! I have a question about fruit availability and today's arrivals."
   },
   {
     id: 'delivery',
@@ -46,7 +46,7 @@ const GENERAL_INQUIRIES = [
     id: 'general',
     emoji: '💬',
     label: 'General Chat',
-    text: 'Hello Chocair Fresh team! I have a general question.'
+    text: 'Hello Choucair Fresh team! I have a general question.'
   }
 ];
 
@@ -149,7 +149,7 @@ const FloatingContact = () => {
   };
 
   const getWhatsAppLink = (message) => {
-    const encoded = encodeURIComponent(message || 'Hello Chocair Fresh, I have an inquiry.');
+    const encoded = encodeURIComponent(message || 'Hello Choucair Fresh, I have an inquiry.');
     return `https://wa.me/${RAW_PHONE}?text=${encoded}`;
   };
 
@@ -166,19 +166,19 @@ const FloatingContact = () => {
       id: 'prod-fresh',
       emoji: '🌿',
       label: 'Freshness & Stock',
-      text: `Hello Chocair Fresh! Is "${productName}" available and fresh in stock today?\n🔗 ${currentUrl}`
+      text: `Hello Choucair Fresh! Is "${productName}" available and fresh in stock today?\n🔗 ${currentUrl}`
     },
     {
       id: 'prod-price',
       emoji: '⚖️',
       label: 'Price & Weights',
-      text: `Hello Chocair Fresh! I would like to know more about weight options and pricing for "${productName}" (${formattedPrice} ${productUnit}).\n🔗 ${currentUrl}`
+      text: `Hello Choucair Fresh! I would like to know more about weight options and pricing for "${productName}" (${formattedPrice} ${productUnit}).\n🔗 ${currentUrl}`
     },
     {
       id: 'prod-bulk',
       emoji: '📦',
       label: 'Bulk / Box Order',
-      text: `Hello Chocair Fresh! Do you offer bulk crates or wholesale pricing for "${productName}"?\n🔗 ${currentUrl}`
+      text: `Hello Choucair Fresh! Do you offer bulk crates or wholesale pricing for "${productName}"?\n🔗 ${currentUrl}`
     },
     {
       id: 'prod-delivery',
@@ -192,12 +192,12 @@ const FloatingContact = () => {
 
   // Primary WhatsApp action text
   const primaryChatText = (isProductPage && product)
-    ? `Hello Chocair Fresh! I have a question about "${productName}" (${formattedPrice}):\n🔗 ${currentUrl}`
-    : 'Hello Chocair Fresh! I would like to ask a question.';
+    ? `Hello Choucair Fresh! I have a question about "${productName}" (${formattedPrice}):\n🔗 ${currentUrl}`
+    : 'Hello Choucair Fresh! I would like to ask a question.';
 
   const handleCustomSend = (e) => {
     e.preventDefault();
-    const base = customMsg.trim() || (isProductPage && product ? `Inquiry regarding ${productName}` : 'Hello Chocair Fresh!');
+    const base = customMsg.trim() || (isProductPage && product ? `Inquiry regarding ${productName}` : 'Hello Choucair Fresh!');
     const fullText = (isProductPage && product)
       ? `${base}\n\n📍 Product: ${productName} (${formattedPrice})\n🔗 ${currentUrl}`
       : base;
@@ -296,7 +296,7 @@ const FloatingContact = () => {
               <div className="popover-titles">
                 <div className="popover-heading-row">
                   <h3 id="contact-popover-heading" className="popover-title">
-                    {isProductPage && product ? 'Product Inquiry' : 'Chocair Fresh Support'}
+                    {isProductPage && product ? 'Product Inquiry' : 'Choucair Fresh Support'}
                   </h3>
                   <span className="popover-verified-tag">
                     <Sparkles size={11} /> {isProductPage && product ? 'Live Item Help' : 'Fresh Help'}
@@ -445,7 +445,7 @@ const FloatingContact = () => {
               >
                 <MapPin size={14} className="meta-row-icon" />
                 <div className="meta-row-text">
-                  <span>Chocair Market, Beirut</span>
+                  <span>Choucair Market, Beirut</span>
                 </div>
                 <ExternalLink size={12} className="meta-link-icon" />
               </a>

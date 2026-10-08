@@ -211,7 +211,7 @@ const VisualBasket = ({ cartItems = [] }) => {
           {/* Artisan Stenciled Brand Badge */}
           <div className="crate-brand-plaque">
             <Sparkles size={11} className="plaque-sparkle" />
-            <span>Chocair Harvest</span>
+            <span>Choucair Harvest</span>
           </div>
         </div>
 

@@ -174,7 +174,7 @@ const ProductDetails = () => {
       try {
         await navigator.share({
           title: product.name,
-          text: `Check out fresh ${product.name} at Chocair Fresh!`,
+          text: `Check out fresh ${product.name} at Choucair Fresh!`,
           url: window.location.href,
         });
       } catch (err) {

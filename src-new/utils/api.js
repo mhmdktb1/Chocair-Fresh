@@ -12,7 +12,7 @@ import axios from 'axios';
 const API_BASE_URL =
   import.meta.env.VITE_API_BASE_URL || 'http://localhost:5001/api';
 
-// Derived host for uploads & static assets (e.g. http://localhost:5001 or https://chocair-backend.onrender.com)
+// Derived host for uploads & static assets (e.g. http://localhost:5001 or https://choucair-backend.onrender.com)
 export const API_HOST = API_BASE_URL.replace(/\/api\/?$/, '');
 
 export const getAssetUrl = (url) => {

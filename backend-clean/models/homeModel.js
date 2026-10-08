@@ -74,7 +74,7 @@ const homeSchema = mongoose.Schema({
     title: { type: String, default: "Our Story" },
     subtitle: { type: String, default: "" },
     lead: { type: String, default: "We started with a simple idea: fresh produce should feel better from the moment you order it to the moment it reaches your kitchen." },
-    description: { type: String, default: "At Chocair Fresh, we carefully select, check, and pack every order before it leaves us. We focus on the little details — choosing clean, good-looking pieces and packing them neatly so your order arrives the way you’d expect it to." },
+    description: { type: String, default: "At Choucair Fresh, we carefully select, check, and pack every order before it leaves us. We focus on the little details — choosing clean, good-looking pieces and packing them neatly so your order arrives the way you’d expect it to." },
     image: { type: String, default: "" },
     yearsOfService: { type: String, default: "" }
   },

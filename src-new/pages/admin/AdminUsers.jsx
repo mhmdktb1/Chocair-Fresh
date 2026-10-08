@@ -48,7 +48,7 @@ function AdminUsers() {
   const getWhatsAppLink = (user) => {
     if (!user.phone) return null;
     const cleanPhone = user.phone.replace(/[^0-9+]/g, '');
-    const text = encodeURIComponent(`Hello ${user.name || 'Customer'}, this is Chocair Fresh customer care.`);
+    const text = encodeURIComponent(`Hello ${user.name || 'Customer'}, this is Choucair Fresh customer care.`);
     return `https://wa.me/${cleanPhone}?text=${text}`;
   };
 

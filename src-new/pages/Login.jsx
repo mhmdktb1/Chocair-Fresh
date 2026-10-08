@@ -326,7 +326,7 @@ const Login = () => {
           <ArrowLeft size={20} />
         </button>
         <div className="login-mobile-title-wrap">
-          <span className="login-mobile-brand">Chocair Fresh</span>
+          <span className="login-mobile-brand">Choucair Fresh</span>
         </div>
         <div style={{ width: 36 }} />
       </header>
@@ -337,7 +337,7 @@ const Login = () => {
           {/* Header */}
           <div className="login-header">
             <h1 className="login-title">
-              {step === 'PHONE' && 'Welcome to Chocair Fresh'}
+              {step === 'PHONE' && 'Welcome to Choucair Fresh'}
               {step === 'OTP' && 'Verify Your Phone'}
               {step === 'REGISTER' && 'Complete Your Profile'}
             </h1>

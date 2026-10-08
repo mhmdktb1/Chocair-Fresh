@@ -798,7 +798,7 @@ const LocationPicker = ({
                         clickable: false,
                       }}
                     />
-                    <Marker position={STORE_COORDS} title="Chocair Fresh" />
+                    <Marker position={STORE_COORDS} title="Choucair Fresh" />
                   </GoogleMap>
                 ) : (
                   <div className="addr-map-loading">

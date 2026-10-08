@@ -48,7 +48,7 @@ const ContactSection = () => {
               <ContactInfo 
                 icon={Mail} 
                 title="Email" 
-                content="hello@chocairfresh.com" 
+                content="hello@choucairfresh.com" 
               />
               <ContactInfo 
                 icon={MapPin} 

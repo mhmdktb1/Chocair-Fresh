@@ -28,7 +28,7 @@ const defaultSampleComments = [
     _id: 'sample-1',
     user: { name: 'Sarah Jenkins', avatar: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&q=80&w=120' },
     rating: 5,
-    content: 'The produce is impossibly fresh! Same-day delivery right to my doorstep. Chocair Fresh has completely changed our family healthy eating habits.',
+    content: 'The produce is impossibly fresh! Same-day delivery right to my doorstep. Choucair Fresh has completely changed our family healthy eating habits.',
     createdAt: new Date().toISOString()
   },
   {

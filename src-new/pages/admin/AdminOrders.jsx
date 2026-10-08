@@ -75,7 +75,7 @@ export const formatWhatsAppOrderMessage = (order) => {
   const mapsLink = order.googleMapsLink || '';
   const items = Array.isArray(order.items) ? order.items : [];
 
-  let text = `🍏 *CHOCAIR FRESH — ORDER SUMMARY*\n`;
+  let text = `🍏 *CHOUCAIR FRESH — ORDER SUMMARY*\n`;
   text += `━━━━━━━━━━━━━━━━━━━━━\n`;
   text += `🧾 *Order ID:* ${shortId}\n`;
   text += `📅 *Date:* ${formattedDate}\n`;
@@ -118,7 +118,7 @@ export const formatWhatsAppOrderMessage = (order) => {
   text += `💵 *TOTAL AMOUNT: $${Number(order.total || 0).toFixed(2)}*\n`;
   text += `💳 *Payment:* ${order.paymentMethod || 'Cash on Delivery'}\n`;
   text += `━━━━━━━━━━━━━━━━━━━━━\n`;
-  text += `🌱 _Chocair Fresh • Quality & Freshness Delivered_`;
+  text += `🌱 _Choucair Fresh • Quality & Freshness Delivered_`;
 
   return text;
 };
@@ -365,7 +365,7 @@ function AdminOrders() {
 
     if (navigator.share) {
       navigator.share({
-        title: `Chocair Fresh - Order ${shortId}`,
+        title: `Choucair Fresh - Order ${shortId}`,
         text: text,
       }).catch((err) => {
         if (err.name !== 'AbortError') {

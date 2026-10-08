@@ -81,7 +81,7 @@ const categories = [
 const users = [
   {
     name: 'Admin User',
-    email: 'admin@chocair.com',
+    email: 'admin@Choucair.com',
     phone: '+96170516382',
     password: 'admin123',
     role: 'admin',
@@ -90,7 +90,7 @@ const users = [
   },
   {
     name: 'Admin Secondary',
-    email: 'admin2@chocair.com',
+    email: 'admin2@Choucair.com',
     phone: '+9618199999',
     password: 'admin123',
     role: 'admin',
@@ -237,7 +237,7 @@ const seedDatabase = async () => {
     console.log(`✅ Created ${createdOrders.length} orders\n`);
 
     console.log('═══════════════════════════════════════════════');
-    console.log('✅ CHOCAIR FRESH DATABASE SEEDED WITH REAL DATA!');
+    console.log('✅ Choucair FRESH DATABASE SEEDED WITH REAL DATA!');
     console.log('═══════════════════════════════════════════════');
     console.log(`📊 Summary:`);
     console.log(`   • Categories: ${createdCategories.length}`);
@@ -247,7 +247,7 @@ const seedDatabase = async () => {
     console.log('═══════════════════════════════════════════════\n');
     
     console.log('🔑 Admin Credentials:');
-    console.log('   Email: admin@chocair.com');
+    console.log('   Email: admin@Choucair.com');
     console.log('   Phone: +9618199999');
     console.log('   Password: admin123\n');
 

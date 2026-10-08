@@ -213,7 +213,7 @@ const createProduct = asyncHandler(async (req, res) => {
     price: numPrice,
     description: description ? description.trim() : '',
     image: image ? image.trim() : '/assets/images/placeholder-product.jpg',
-    brand: brand ? brand.trim() : 'Chocair Fresh',
+    brand: brand ? brand.trim() : 'Choucair Fresh',
     category: category ? category.trim() : 'general',
     subCategory: subCategory ? subCategory.trim() : '',
     countInStock: numStock,

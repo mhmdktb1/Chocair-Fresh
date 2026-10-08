@@ -103,7 +103,7 @@ ${locationDetails}
     if (customerPhone && customerPhone !== 'Not provided') {
       actionRow.push({
         text: '💬 WhatsApp Customer',
-        url: `https://wa.me/${normalizePhoneForWa(customerPhone)}?text=${encodeURIComponent(`Hello ${customerName}, this is Chocair Fresh regarding your order #${orderShortId}.`)}`
+        url: `https://wa.me/${normalizePhoneForWa(customerPhone)}?text=${encodeURIComponent(`Hello ${customerName}, this is Choucair Fresh regarding your order #${orderShortId}.`)}`
       });
     }
 

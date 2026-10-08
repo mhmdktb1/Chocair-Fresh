@@ -63,7 +63,7 @@ const defaultHomeConfig = {
     enabled: true,
     title: 'Our Story',
     lead: 'We started with a simple idea: fresh produce should feel better from the moment you order it to the moment it reaches your kitchen.',
-    description: 'At Chocair Fresh, we carefully select, check, and pack every order before it leaves us. We focus on the little details — choosing clean, good-looking pieces and packing them neatly so your order arrives the way you’d expect it to.'
+    description: 'At Choucair Fresh, we carefully select, check, and pack every order before it leaves us. We focus on the little details — choosing clean, good-looking pieces and packing them neatly so your order arrives the way you’d expect it to.'
   },
   features: {
     enabled: true,

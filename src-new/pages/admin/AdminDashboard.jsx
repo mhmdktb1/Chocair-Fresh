@@ -182,7 +182,7 @@ const AdminDashboard = () => {
         <div className="sidebar-header">
           <div className="sidebar-brand">
             <span className="brand-dot"></span>
-            <h2>Chocair <span className="highlight">Admin</span></h2>
+            <h2>Choucair <span className="highlight">Admin</span></h2>
           </div>
           <button 
             className="close-sidebar-btn" 

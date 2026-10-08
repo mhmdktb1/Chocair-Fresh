@@ -387,7 +387,7 @@ const Profile = () => {
   const handleWhatsAppHelp = (e, order) => {
     e.stopPropagation();
     const orderCode = `#${order._id.slice(-6).toUpperCase()}`;
-    const text = encodeURIComponent(`Hi Chocair Fresh! I need assistance with my Order ${orderCode}.`);
+    const text = encodeURIComponent(`Hi Choucair Fresh! I need assistance with my Order ${orderCode}.`);
     window.open(`https://wa.me/96171966828?text=${text}`, '_blank');
   };
 
@@ -1965,7 +1965,7 @@ const Profile = () => {
             <div className="logout-icon-wrap">
               <LogOut size={28} />
             </div>
-            <h3 className="logout-confirm-title">Sign Out of Chocair Fresh?</h3>
+            <h3 className="logout-confirm-title">Sign Out of Choucair Fresh?</h3>
             <p className="logout-confirm-desc">
               Your saved addresses and order history will be waiting for you.
             </p>

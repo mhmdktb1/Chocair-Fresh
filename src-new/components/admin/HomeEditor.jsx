@@ -120,7 +120,7 @@ const HomeEditor = () => {
       enabled: true,
       title: 'Our Story', 
       subtitle: '', 
-      description: 'At Chocair Fresh, we carefully select, check, and pack every order before it leaves us. We focus on the little details — choosing clean, good-looking pieces and packing them neatly so your order arrives the way you’d expect it to.', 
+      description: 'At Choucair Fresh, we carefully select, check, and pack every order before it leaves us. We focus on the little details — choosing clean, good-looking pieces and packing them neatly so your order arrives the way you’d expect it to.', 
       image: '',
       yearsOfService: ''
     },

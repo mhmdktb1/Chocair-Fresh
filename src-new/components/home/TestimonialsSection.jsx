@@ -16,7 +16,7 @@ const testimonials = [
     name: "Michael Chen",
     role: "Chef",
     image: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?ixlib=rb-4.0.3&auto=format&fit=crop&w=200&q=80",
-    text: "As a chef, freshness is everything. Chocair Fresh delivers consistent quality that I can rely on for my restaurant's signature dishes.",
+    text: "As a chef, freshness is everything. Choucair Fresh delivers consistent quality that I can rely on for my restaurant's signature dishes.",
     rating: 5
   },
   {

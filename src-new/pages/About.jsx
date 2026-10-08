@@ -81,7 +81,7 @@ const About = () => {
             </div>
             <h2 className="section-title">Our Story</h2>
             <p className="story-text">
-              Started in 2010, Chocair Fresh began with a simple mission: to bridge the gap between local growers and urban households. We noticed that while farmers struggled to find fair markets, families craved authentic, chemical-free produce with real flavor.
+              Started in 2010, Choucair Fresh began with a simple mission: to bridge the gap between local growers and urban households. We noticed that while farmers struggled to find fair markets, families craved authentic, chemical-free produce with real flavor.
             </p>
             <p className="story-text">
               Today, we partner with over 50 local farms, ensuring that the fruits and greens on your table are harvested at peak ripeness and handled with the utmost care. We are not just a grocery store — we are a family committed to sustainable, healthy living.
