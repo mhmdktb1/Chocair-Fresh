@@ -178,10 +178,10 @@ const addOrderItems = asyncHandler(async (req, res) => {
       distanceKm: calculatedDistanceKm != null ? calculatedDistanceKm : undefined,
     };
 
-    // Calculate dynamic ETA metrics for the new order based on current store workload
-    const activeOrders = await Order.find({ status: { $in: ['Pending', 'Preparing'] } }).sort({ createdAt: 1 }).lean();
+    // Calculate dynamic ETA metrics for the new order based on current store workload & 2-driver capacity
+    const activeOrders = await Order.find({ status: { $in: ['Pending', 'Preparing', 'On the Way'] } }).sort({ createdAt: 1 }).lean();
     const prepMinutes = calculateOrderPrepMinutes(normalizedOrderItems);
-    const queueMinutes = calculateQueueWaitMinutes(activeOrders);
+    const queueMinutes = calculateQueueWaitMinutes(activeOrders, null, prepMinutes);
     const deliveryMinutes = calculateDeliveryMinutes(calculatedDistanceKm);
     const totalMinutes = deliveryMinutes != null ? (queueMinutes + prepMinutes + deliveryMinutes) : null;
     const etaWindowObj = calculateEtaWindow(totalMinutes);
@@ -297,7 +297,7 @@ const getCheckoutEtaPreview = asyncHandler(async (req, res) => {
     effectiveDist = calculateDistanceKm(STORE_COORDS.lat, STORE_COORDS.lng, Number(lat), Number(lng));
   }
 
-  const activeOrders = await Order.find({ status: { $in: ['Pending', 'Preparing'] } }).sort({ createdAt: 1 }).lean();
+  const activeOrders = await Order.find({ status: { $in: ['Pending', 'Preparing', 'On the Way'] } }).sort({ createdAt: 1 }).lean();
   const preview = previewCheckoutEta(cartItems || [], effectiveDist, activeOrders);
 
   res.json(preview);
@@ -347,7 +347,7 @@ const getOrderById = asyncHandler(async (req, res) => {
   }
 
   const order = orderDoc.toObject();
-  const activeOrders = await Order.find({ status: { $in: ['Pending', 'Preparing'] } }).sort({ createdAt: 1 }).lean();
+  const activeOrders = await Order.find({ status: { $in: ['Pending', 'Preparing', 'On the Way'] } }).sort({ createdAt: 1 }).lean();
   order.eta = computeDynamicOrderEta(order, activeOrders);
 
   res.json(order);
@@ -366,7 +366,7 @@ const getOrders = asyncHandler(async (req, res) => {
 
   const [orders, activeOrders] = await Promise.all([
     Order.find(query).sort({ createdAt: -1 }).lean(),
-    Order.find({ status: { $in: ['Pending', 'Preparing'] } }).sort({ createdAt: 1 }).lean(),
+    Order.find({ status: { $in: ['Pending', 'Preparing', 'On the Way'] } }).sort({ createdAt: 1 }).lean(),
   ]);
 
   const enrichedOrders = orders.map((o) => ({
@@ -425,7 +425,7 @@ const updateOrderStatus = asyncHandler(async (req, res) => {
     }
 
     // Calculate dynamic ETA for the updated state
-    const activeOrders = await Order.find({ _id: { $ne: order._id }, status: { $in: ['Pending', 'Preparing'] } }).sort({ createdAt: 1 }).lean();
+    const activeOrders = await Order.find({ _id: { $ne: order._id }, status: { $in: ['Pending', 'Preparing', 'On the Way'] } }).sort({ createdAt: 1 }).lean();
     const updatedEta = computeDynamicOrderEta(order, activeOrders);
     order.eta = updatedEta;
 
@@ -487,7 +487,7 @@ const getMyOrders = asyncHandler(async (req, res) => {
 
   const [orders, activeOrders] = await Promise.all([
     Order.find(query).sort({ createdAt: -1 }).lean(),
-    Order.find({ status: { $in: ['Pending', 'Preparing'] } }).sort({ createdAt: 1 }).lean(),
+    Order.find({ status: { $in: ['Pending', 'Preparing', 'On the Way'] } }).sort({ createdAt: 1 }).lean(),
   ]);
 
   const enrichedOrders = orders.map((o) => ({

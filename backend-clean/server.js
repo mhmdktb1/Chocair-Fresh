@@ -3,6 +3,7 @@ import express from 'express';
 import dotenv from 'dotenv';
 import cors from 'cors';
 import morgan from 'morgan';
+import compression from 'compression';
 import rateLimit from 'express-rate-limit';
 import connectDB, { isDbConnected } from './config/db.js';
 import { notFound, errorHandler } from './middleware/errorMiddleware.js';
@@ -45,13 +46,7 @@ if (process.env.NODE_ENV === 'development') {
   app.use(morgan('dev'));
 }
 
-// gzip responses when the optional dependency is installed (it is in package.json).
-try {
-  const { default: compression } = await import('compression');
-  app.use(compression({ threshold: 1024 }));
-} catch {
-  console.warn('⚠️  "compression" package not installed – responses will not be gzipped. Run npm install.');
-}
+app.use(compression({ threshold: 1024 }));
 app.use(express.json());
 
 // Dynamic CORS configuration supporting explicit allowed origins + localhost development

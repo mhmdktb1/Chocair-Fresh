@@ -12,25 +12,29 @@
  */
 
 export const ETA_CONFIG = {
-  // Store prep capacity
+  // Store capacity: 2 prep stations and 2 delivery drivers
   CONCURRENT_PREP_STATIONS: 2, // 2 active orders packed concurrently in store
-  BASE_PREP_MINUTES: 3,        // Order box, invoice, packaging setup & QA inspection
-  ITEM_BASE_MINUTES: 1.0,      // Picking & inspection per unique line item
-  WEIGHED_UNIT_PER_KG: 0.35,   // Additional time per kg for precision weighing
-  PACKAGED_UNIT_RATE: 0.15,    // Additional time per packaged unit
+  CONCURRENT_DELIVERY_DRIVERS: 2, // 2 delivery drivers for store deliveries
+  MIN_PREP_MINUTES: 7,         // Minimum preparation time (7 min)
+  MAX_PREP_MINUTES: 20,        // Maximum preparation time (20 min)
+  BASE_PREP_MINUTES: 4,        // Order box, invoice, packaging setup & QA inspection
+  ITEM_BASE_MINUTES: 1.2,      // Picking & inspection per unique line item
+  WEIGHED_UNIT_PER_KG: 0.40,   // Additional time per kg for precision weighing
+  PACKAGED_UNIT_RATE: 0.20,    // Additional time per packaged unit
   SPECIAL_NOTE_MINUTES: 1.5,   // Time to review and execute custom customer instruction
 
   // Transit & dispatch parameters
   DELIVERY_HANDOFF_BUFFER: 6,  // Courier pickup, packing onto bike/van, building access & handoff
   MINUTES_PER_KM: 2.8,         // Average transit speed in local urban/suburban terrain (~21 km/h)
   MIN_DELIVERY_MINUTES: 5,     // Minimum transit time even for immediate neighbors
-  MIN_PREP_MINUTES: 5,         // Minimum prep time for any valid order
+  DRIVER_ROUNDTRIP_FACTOR: 1.6, // Round-trip transit factor before courier is back at store
 };
 
 /**
  * Calculate preparation time in minutes based on actual items in the basket/order.
+ * Strictly bounded between 7 and 20 minutes.
  * @param {Array} items - Array of order items ({ qty, unit, instruction, ... })
- * @returns {number} Estimated prep time in integer minutes
+ * @returns {number} Estimated prep time in integer minutes (7 to 20 mins)
  */
 export const calculateOrderPrepMinutes = (items = []) => {
   if (!Array.isArray(items) || items.length === 0) {
@@ -63,7 +67,7 @@ export const calculateOrderPrepMinutes = (items = []) => {
     }
   }
 
-  return Math.max(ETA_CONFIG.MIN_PREP_MINUTES, Math.round(totalPrep));
+  return Math.min(ETA_CONFIG.MAX_PREP_MINUTES, Math.max(ETA_CONFIG.MIN_PREP_MINUTES, Math.round(totalPrep)));
 };
 
 /**
@@ -104,32 +108,52 @@ export const calculateEtaWindow = (totalMinutes) => {
 };
 
 /**
- * Calculate the store queue wait time using a discrete 2-station parallel scheduling algorithm.
- * Simulates real store packing stations to calculate the exact minute
- * an active or new order can begin preparation.
+ * Calculate the store queue wait time using a dual-resource parallel scheduling algorithm:
+ * - 2 Preparation Stations
+ * - 2 Delivery Couriers / Drivers
+ * Accurately accounts for driver availability when multiple orders are in queue.
  *
  * @param {Array} activeOrders - Array of active order objects (sorted FIFO)
- * @param {string|null} beforeOrderId - If provided, returns wait time until this specific order starts
- * @returns {number} Queue wait time in minutes until preparation starts
+ * @param {string|null} beforeOrderId - If provided, returns queue wait time for this specific order
+ * @param {number|null} newOrderPrepMins - Optional prep minutes for new order
+ * @returns {number} Queue wait time in minutes before preparation/dispatch
  */
-export const calculateQueueWaitMinutes = (activeOrders = [], beforeOrderId = null) => {
+export const calculateQueueWaitMinutes = (activeOrders = [], beforeOrderId = null, newOrderPrepMins = null) => {
   if (!Array.isArray(activeOrders) || activeOrders.length === 0) {
     return 0;
   }
 
   const now = Date.now();
-  // Array tracking when each station (Station 1, Station 2) will next become idle (in minutes from now)
-  const stationAvailability = [0, 0];
+  // Timelines (in minutes from now)
+  const prepStations = [0, 0];       // 2 Prep packing stations
+  const deliveryDrivers = [0, 0];    // 2 Delivery drivers
 
-  // If beforeOrderId was specified and it's already in 'Preparing' status, its wait time is 0
+  // If beforeOrderId was specified and it's already in 'Preparing' or 'On the Way', queue wait is 0
   if (beforeOrderId) {
     const targetOrder = activeOrders.find(o => String(o._id || o.id || '') === String(beforeOrderId));
-    if (targetOrder && targetOrder.status === 'Preparing') {
+    if (targetOrder && (targetOrder.status === 'Preparing' || targetOrder.status === 'On the Way')) {
       return 0;
     }
   }
 
-  // 1. First schedule all currently "Preparing" orders to their active stations
+  // 1. Schedule orders currently 'On the Way' (occupying delivery drivers)
+  for (const order of activeOrders) {
+    const status = order.status || 'Pending';
+    if (status !== 'On the Way') continue;
+
+    const dispatchTime = order.dispatchedAt ? new Date(order.dispatchedAt).getTime() : now;
+    const elapsedMinutes = Math.max(0, Math.floor((now - dispatchTime) / 60000));
+    const dist = order.customerInfo?.distanceKm ?? order.distanceKm ?? null;
+    const delivMins = Number(order.estimatedDeliveryMinutes || calculateDeliveryMinutes(dist) || 10);
+    const roundTripMins = Math.round(delivMins * ETA_CONFIG.DRIVER_ROUNDTRIP_FACTOR);
+    const remainingDriverTime = Math.max(1, roundTripMins - elapsedMinutes);
+
+    // Occupy earliest available driver
+    const driverIdx = deliveryDrivers[0] <= deliveryDrivers[1] ? 0 : 1;
+    deliveryDrivers[driverIdx] += remainingDriverTime;
+  }
+
+  // 2. Schedule orders currently 'Preparing' (occupying prep stations, then requesting drivers)
   for (const order of activeOrders) {
     const status = order.status || 'Pending';
     if (status !== 'Preparing') continue;
@@ -140,34 +164,59 @@ export const calculateQueueWaitMinutes = (activeOrders = [], beforeOrderId = nul
     const elapsedMinutes = Math.max(0, Math.floor((now - prepStart) / 60000));
     const remainingPrep = Math.max(1, estimatedPrep - elapsedMinutes);
 
-    // Assign to the station that becomes free first
-    const earliestStationIdx = stationAvailability[0] <= stationAvailability[1] ? 0 : 1;
-    stationAvailability[earliestStationIdx] += remainingPrep;
+    // Occupy earliest prep station
+    const stationIdx = prepStations[0] <= prepStations[1] ? 0 : 1;
+    prepStations[stationIdx] += remainingPrep;
+    const readyTime = prepStations[stationIdx];
+
+    // Assign driver once ready
+    const driverIdx = deliveryDrivers[0] <= deliveryDrivers[1] ? 0 : 1;
+    const dispatchTime = Math.max(readyTime, deliveryDrivers[driverIdx]);
+    const dist = order.customerInfo?.distanceKm ?? order.distanceKm ?? null;
+    const delivMins = Number(order.estimatedDeliveryMinutes || calculateDeliveryMinutes(dist) || 10);
+    deliveryDrivers[driverIdx] = dispatchTime + Math.round(delivMins * ETA_CONFIG.DRIVER_ROUNDTRIP_FACTOR);
   }
 
-  // 2. Schedule "Pending" orders in strict FIFO sequence
+  // 3. Schedule 'Pending' orders in FIFO sequence
   for (const order of activeOrders) {
     const status = order.status || 'Pending';
     if (status !== 'Pending') continue;
 
     const orderIdStr = String(order._id || order.id || '');
-    // If target order reached, its wait time is when the next station opens
-    if (beforeOrderId && orderIdStr === String(beforeOrderId)) {
-      const waitTime = Math.min(stationAvailability[0], stationAvailability[1]);
-      return Math.max(0, Math.round(waitTime));
-    }
-
     const items = order.orderItems || order.items || [];
     const estimatedPrep = Number(order.estimatedPrepMinutes || order.eta?.prepMinutes || calculateOrderPrepMinutes(items));
 
-    // Order begins at earliest available station
-    const earliestStationIdx = stationAvailability[0] <= stationAvailability[1] ? 0 : 1;
-    stationAvailability[earliestStationIdx] += estimatedPrep;
+    // Earliest prep station available
+    const stationIdx = prepStations[0] <= prepStations[1] ? 0 : 1;
+    const prepStartTime = prepStations[stationIdx];
+    const readyTime = prepStartTime + estimatedPrep;
+
+    // Earliest driver available
+    const driverIdx = deliveryDrivers[0] <= deliveryDrivers[1] ? 0 : 1;
+    const dispatchTime = Math.max(readyTime, deliveryDrivers[driverIdx]);
+
+    if (beforeOrderId && orderIdStr === String(beforeOrderId)) {
+      // Return queue wait delay before this order is dispatched (beyond its prep)
+      const queueWait = Math.max(0, dispatchTime - estimatedPrep);
+      return Math.round(queueWait);
+    }
+
+    // Update timelines for this pending order
+    prepStations[stationIdx] = readyTime;
+    const dist = order.customerInfo?.distanceKm ?? order.distanceKm ?? null;
+    const delivMins = Number(order.estimatedDeliveryMinutes || calculateDeliveryMinutes(dist) || 10);
+    deliveryDrivers[driverIdx] = dispatchTime + Math.round(delivMins * ETA_CONFIG.DRIVER_ROUNDTRIP_FACTOR);
   }
 
-  // 3. For a new order (e.g. at Checkout), its wait time is when the next station becomes free
-  const newOrderWaitTime = Math.min(stationAvailability[0], stationAvailability[1]);
-  return Math.max(0, Math.round(newOrderWaitTime));
+  // 4. For a new order (e.g. at Checkout)
+  const targetPrep = newOrderPrepMins != null ? Number(newOrderPrepMins) : ETA_CONFIG.MIN_PREP_MINUTES;
+  const prepStartTime = Math.min(prepStations[0], prepStations[1]);
+  const readyTime = prepStartTime + targetPrep;
+  const driverAvailableTime = Math.min(deliveryDrivers[0], deliveryDrivers[1]);
+  const dispatchTime = Math.max(readyTime, driverAvailableTime);
+  const newOrderQueueWait = Math.max(0, dispatchTime - targetPrep);
+
+  return Math.round(newOrderQueueWait);
 };
 
 /**

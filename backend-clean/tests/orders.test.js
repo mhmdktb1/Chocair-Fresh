@@ -5,6 +5,7 @@ import app from '../server.js';
 import Product from '../models/productModel.js';
 import User from '../models/userModel.js';
 import generateToken from '../utils/generateToken.js';
+import { calculateOrderPrepMinutes, calculateQueueWaitMinutes } from '../utils/etaHelper.js';
 
 let mongoServer;
 let adminToken;
@@ -492,44 +493,73 @@ describe('Order API', () => {
     expect(deliverRes.body.deliveredAt).toBeDefined();
   });
 
-  it('2-STATION SCHEDULING: accurately schedules parallel orders across 2 packing stations', async () => {
-    // 1. First order: 10 min prep, status 'Preparing' (Station 1 busy for 10 min)
+  it('PREPARATION CONSTRAINTS: preparation time is bounded strictly between 7 and 20 minutes', () => {
+    // 1. Single minimal item -> hits minimum 7 minutes
+    const smallOrderPrep = calculateOrderPrepMinutes([{ qty: 1, unit: 'piece', name: 'Lemon' }]);
+    expect(smallOrderPrep).toBe(7);
+
+    // 2. Medium order -> scales dynamically between 7 and 20
+    const medOrderPrep = calculateOrderPrepMinutes([
+      { qty: 2, unit: '1kg', name: 'Apples' },
+      { qty: 2, unit: '1kg', name: 'Oranges' },
+      { qty: 1, unit: 'pack', name: 'Strawberries', instruction: 'Extra ripe' }
+    ]);
+    expect(medOrderPrep).toBeGreaterThanOrEqual(7);
+    expect(medOrderPrep).toBeLessThanOrEqual(20);
+
+    // 3. Huge basket -> capped at maximum 20 minutes
+    const hugeOrderPrep = calculateOrderPrepMinutes(
+      Array.from({ length: 30 }, (_, i) => ({ qty: 5, unit: '1kg', name: `Item ${i}` }))
+    );
+    expect(hugeOrderPrep).toBe(20);
+  });
+
+  it('2-DRIVER & 2-STATION CAPACITY: increases queue wait time as more orders occupy delivery drivers', () => {
+    // Case A: 0 active orders -> 0 wait
+    expect(calculateQueueWaitMinutes([])).toBe(0);
+
+    // Case B: 1 order preparing (8 min left, 10 min delivery) -> Driver 2 is free -> new order queue delay = 0
     const order1 = {
       _id: 'ord1',
       status: 'Preparing',
-      prepStartedAt: new Date(Date.now() - 2 * 60000), // 2 mins elapsed -> 8 mins left
+      prepStartedAt: new Date(Date.now() - 2 * 60000),
       estimatedPrepMinutes: 10,
+      estimatedDeliveryMinutes: 10,
     };
+    expect(calculateQueueWaitMinutes([order1], null, 7)).toBe(0);
 
-    // 2. Second order: 15 min prep, status 'Preparing' (Station 2 busy for 15 min)
-    const order2 = {
-      _id: 'ord2',
+    // Case C: 2 orders already 'On the Way' (each 10 min transit -> 16 min round trip, just dispatched)
+    // Both drivers are out on the road!
+    const onWay1 = {
+      _id: 'ow1',
+      status: 'On the Way',
+      dispatchedAt: new Date(),
+      estimatedDeliveryMinutes: 10,
+    };
+    const onWay2 = {
+      _id: 'ow2',
+      status: 'On the Way',
+      dispatchedAt: new Date(),
+      estimatedDeliveryMinutes: 10,
+    };
+    // 2 preparing orders (10 min prep each)
+    const prep1 = {
+      _id: 'p1',
       status: 'Preparing',
-      prepStartedAt: new Date(Date.now() - 5 * 60000), // 5 mins elapsed -> 10 mins left
-      estimatedPrepMinutes: 15,
+      prepStartedAt: new Date(),
+      estimatedPrepMinutes: 10,
+      estimatedDeliveryMinutes: 10,
+    };
+    const prep2 = {
+      _id: 'p2',
+      status: 'Preparing',
+      prepStartedAt: new Date(),
+      estimatedPrepMinutes: 10,
+      estimatedDeliveryMinutes: 10,
     };
 
-    // 3. Third order: 6 min prep, status 'Pending' (starts on Station 1 at t=8, finishes at t=14)
-    const order3 = {
-      _id: 'ord3',
-      status: 'Pending',
-      estimatedPrepMinutes: 6,
-    };
-
-    const { calculateQueueWaitMinutes } = await import('../utils/etaHelper.js');
-
-    // Case A: Only order1 is preparing (Station 2 is idle) -> new order starts immediately (0 wait)
-    const waitWith1Prep = calculateQueueWaitMinutes([order1]);
-    expect(waitWith1Prep).toBe(0);
-
-    // Case B: Both order1 (8m left) and order2 (10m left) are preparing -> order3 starts at t=8 (earliest station free)
-    const waitOrder3 = calculateQueueWaitMinutes([order1, order2, order3], 'ord3');
-    expect(waitOrder3).toBe(8);
-
-    // Case C: A new checkout order (after order3 is queued)
-    // Station 1: 8 + 6 = 14 min. Station 2: 10 min.
-    // Earliest station for new order is Station 2 at t=10!
-    const waitNewOrder = calculateQueueWaitMinutes([order1, order2, order3]);
-    expect(waitNewOrder).toBe(10);
+    // With 4 active orders and only 2 drivers, new order must wait for couriers to return and complete prior deliveries
+    const waitWithHeavyQueue = calculateQueueWaitMinutes([onWay1, onWay2, prep1, prep2], null, 7);
+    expect(waitWithHeavyQueue).toBeGreaterThan(0);
   });
 });

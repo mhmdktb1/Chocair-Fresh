@@ -1319,43 +1319,14 @@
   display: flex;
   align-items: center;
   gap: 0.35rem;
-  font-size: 0.78rem;
+  font-size: 0.8rem;
   color: #166534;
-  margin-bottom: 0.55rem;
-}
-
-.dynamic-eta-breakdown-row {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.4rem;
-  padding-top: 0.45rem;
-  border-top: 1px dashed rgba(22, 163, 74, 0.3);
-}
-
-.eta-breakdown-chip {
-  background: rgba(255, 255, 255, 0.85);
-  border: 1px solid #bbf7d0;
-  padding: 3px 8px;
-  border-radius: 6px;
-  font-size: 0.72rem;
-  display: flex;
-  align-items: center;
-  gap: 0.25rem;
-}
-
-.eta-chip-label {
-  color: #64748b;
-  font-weight: 600;
-}
-
-.eta-chip-val {
-  color: #15803d;
-  font-weight: 800;
+  margin: 0;
 }
 
 .dynamic-eta-pending-box {
   display: flex;
-  align-items: flex-start;
+  align-items: center;
   gap: 0.65rem;
   background: #f8fafc;
   border: 1.5px dashed #cbd5e1;

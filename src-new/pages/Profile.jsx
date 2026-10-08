@@ -875,28 +875,6 @@ const Profile = () => {
                   </div>
 
                   <div className="compact-order-actions">
-                    {/* Live Dynamic ETA Badge */}
-                    {!isCancelled && order.status !== 'Delivered' && (
-                      <span className={`order-eta-pill eta-${statusLower.replace(/\s+/g, '-')}`}>
-                        {statusLower === 'preparing' ? (
-                          <>
-                            <Zap size={11} className="eta-pulse-icon" />
-                            <span>Prep: {formatCountdownTimer(remainingPrepSecs)}</span>
-                          </>
-                        ) : (statusLower === 'on the way' || statusLower === 'out_for_delivery') ? (
-                          <>
-                            <Truck size={11} />
-                            <span>On Way: ~{remainingDeliveryMins}m</span>
-                          </>
-                        ) : (
-                          <>
-                            <Clock size={11} />
-                            <span>ETA: {etaWindow}</span>
-                          </>
-                        )}
-                      </span>
-                    )}
-
                     <span className={`order-status-pill status-${statusLower.replace(/\s+/g, '-')}`}>
                       {order.status || 'Pending'}
                     </span>

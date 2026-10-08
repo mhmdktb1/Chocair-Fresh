@@ -1021,7 +1021,7 @@ const Checkout = () => {
                     </div>
                   </div>
 
-                  {/* Dynamic Delivery ETA Display */}
+                  {/* Clean Dynamic Delivery ETA Result */}
                   <div className="dynamic-eta-checkout-card">
                     {etaPreview?.hasLocation && etaPreview?.windowText ? (
                       <div className="dynamic-eta-active-box">
@@ -1030,7 +1030,7 @@ const Checkout = () => {
                             <span className="dynamic-eta-icon-pulse">
                               <Zap size={15} />
                             </span>
-                            <span className="dynamic-eta-title">Live Dynamic ETA</span>
+                            <span className="dynamic-eta-title">Estimated Delivery</span>
                           </div>
                           <span className="dynamic-eta-window-val">
                             {etaPreview.windowText}
@@ -1045,21 +1045,6 @@ const Checkout = () => {
                             </span>
                           </div>
                         )}
-
-                        <div className="dynamic-eta-breakdown-row">
-                          <div className="eta-breakdown-chip" title="Preparation time calculated from your basket items and produce weighing">
-                            <span className="eta-chip-label">Prep:</span>
-                            <span className="eta-chip-val">~{etaPreview.prepMinutes} min</span>
-                          </div>
-                          <div className="eta-breakdown-chip" title="Wait time based on active store preparation orders">
-                            <span className="eta-chip-label">Queue:</span>
-                            <span className="eta-chip-val">~{etaPreview.queueMinutes} min</span>
-                          </div>
-                          <div className="eta-breakdown-chip" title="Delivery transit time based on exact distance">
-                            <span className="eta-chip-label">Transit ({formData.distanceKm} km):</span>
-                            <span className="eta-chip-val">~{etaPreview.deliveryMinutes} min</span>
-                          </div>
-                        </div>
                       </div>
                     ) : (
                       <div className="dynamic-eta-pending-box">
@@ -1067,9 +1052,9 @@ const Checkout = () => {
                           <MapPin size={16} />
                         </div>
                         <div className="eta-pending-content">
-                          <strong className="eta-pending-title">Live Dynamic ETA Calculation</strong>
+                          <strong className="eta-pending-title">Estimated Delivery Time</strong>
                           <p className="eta-pending-desc">
-                            Select your delivery location above to calculate the dynamic 15-minute arrival window based on basket preparation, store queue, and road distance.
+                            Select your delivery location above to see your dynamic 15-minute delivery arrival window.
                           </p>
                         </div>
                       </div>
