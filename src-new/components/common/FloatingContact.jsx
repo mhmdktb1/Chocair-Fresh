@@ -17,11 +17,12 @@ import {
 } from 'lucide-react';
 import { useAdmin } from '../../context/AdminContext';
 import api, { getAssetUrl } from '../../utils/api';
+import { BUSINESS } from '../../seo/siteConfig';
 import './FloatingContact.css';
 
 const PHONE_NUMBER = '+961 71 966 828';
 const RAW_PHONE = '96171966828';
-const STORE_LOCATION_URL = 'https://maps.google.com/?q=33.87413,35.50896';
+const STORE_LOCATION_URL = BUSINESS.mapsUrl;
 
 const GENERAL_INQUIRIES = [
   {
@@ -40,7 +41,7 @@ const GENERAL_INQUIRIES = [
     id: 'delivery',
     emoji: '🛵',
     label: 'Delivery Info',
-    text: 'Hello! Could you please help me with delivery coverage and timing in Beirut?'
+    text: 'Hello! Could you please help me with delivery coverage and timing for my area?'
   },
   {
     id: 'general',
@@ -184,7 +185,7 @@ const FloatingContact = () => {
       id: 'prod-delivery',
       emoji: '🛵',
       label: 'Delivery Speed',
-      text: `Hello! If I order "${productName}" now, how fast can you deliver it in Beirut?\n🔗 ${currentUrl}`
+      text: `Hello! If I order "${productName}" now, how fast can you deliver it to my area?\n🔗 ${currentUrl}`
     }
   ];
 
@@ -445,7 +446,7 @@ const FloatingContact = () => {
               >
                 <MapPin size={14} className="meta-row-icon" />
                 <div className="meta-row-text">
-                  <span>Choucair Market, Beirut</span>
+                  <span>Choucair Market, Dbayeh</span>
                 </div>
                 <ExternalLink size={12} className="meta-link-icon" />
               </a>

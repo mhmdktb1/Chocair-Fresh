@@ -1,1 +1,155 @@
+/* Contact & Delivery page */
+.cp-page {
+  min-height: 100vh;
+  background: var(--bg-body, #f8f9fa);
+}
 
+.cp-hero {
+  /* Dark band keeps the transparent (white-text) navbar readable */
+  background: linear-gradient(180deg, #0f172a 0%, #14532d 100%);
+  color: #ffffff;
+  text-align: center;
+  padding: clamp(7rem, 14vw, 9rem) 0 clamp(3rem, 7vw, 4.5rem);
+}
+
+.cp-title {
+  font-size: clamp(2rem, 5vw, 3.2rem);
+  font-weight: 800;
+  letter-spacing: -0.025em;
+  line-height: 1.15;
+}
+
+.cp-subtitle {
+  margin: 0.85rem auto 0;
+  max-width: 620px;
+  color: #e2e8f0;
+  font-size: clamp(1rem, 2vw, 1.15rem);
+}
+
+.cp-main {
+  padding: clamp(2rem, 5vw, 3.5rem) 1rem clamp(3rem, 6vw, 5rem);
+}
+
+.cp-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 1.25rem;
+}
+
+.cp-card,
+.cp-delivery {
+  background: var(--bg-card, #ffffff);
+  border: 1px solid var(--border-color, #e2e8f0);
+  border-radius: 1.1rem;
+  padding: 1.5rem;
+  box-shadow: var(--shadow-sm);
+}
+
+.cp-card h2,
+.cp-delivery h2 {
+  font-size: 1.2rem;
+  font-weight: 700;
+  color: var(--text-main, #1e293b);
+  margin: 0.6rem 0 0.4rem;
+}
+
+.cp-card p,
+.cp-delivery p {
+  color: var(--text-light, #64748b);
+}
+
+.cp-icon {
+  color: var(--primary-dark, #27ae60);
+}
+
+.cp-strong {
+  color: var(--text-main, #1e293b) !important;
+  font-weight: 600;
+}
+
+.cp-address {
+  font-style: normal;
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  color: var(--text-light, #64748b);
+}
+
+.cp-address strong {
+  color: var(--text-main, #1e293b);
+}
+
+.cp-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+  margin-top: 1rem;
+}
+
+.cp-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  padding: 0.65rem 1.1rem;
+  border-radius: var(--radius-full, 9999px);
+  border: 1px solid var(--border-color, #e2e8f0);
+  background: var(--bg-white, #ffffff);
+  color: var(--text-main, #1e293b);
+  font-weight: 600;
+  font-size: 0.95rem;
+}
+
+.cp-btn.primary {
+  background: var(--primary-dark, #27ae60);
+  border-color: var(--primary-dark, #27ae60);
+  color: #ffffff;
+}
+
+.cp-btn:hover {
+  box-shadow: var(--shadow-md);
+}
+
+.cp-delivery {
+  margin-top: 1.5rem;
+}
+
+.cp-delivery-head {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.cp-delivery-head h2 {
+  margin: 0;
+}
+
+.cp-delivery > p {
+  margin-top: 0.75rem;
+}
+
+.cp-fees {
+  list-style: none;
+  margin: 1rem 0;
+  max-width: 420px;
+}
+
+.cp-fees li {
+  display: flex;
+  justify-content: space-between;
+  padding: 0.55rem 0;
+  border-bottom: 1px dashed var(--border-color, #e2e8f0);
+  color: var(--text-light, #64748b);
+}
+
+.cp-fees strong {
+  color: var(--text-main, #1e293b);
+}
+
+.cp-free {
+  color: var(--primary-dark, #27ae60) !important;
+  font-weight: 600;
+}
+
+.cp-shop-btn {
+  margin-top: 1.25rem;
+}

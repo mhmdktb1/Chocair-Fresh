@@ -91,6 +91,7 @@ const ProductCard = ({ product }) => {
             alt={product.name} 
             className="product-image" 
             loading="lazy" 
+            decoding="async"
             onError={(e) => { e.currentTarget.src = '/assets/images/products/placeholder.jpg'; }}
           />
         </Link>

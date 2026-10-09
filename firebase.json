@@ -1,6 +1,8 @@
 {
   "hosting": {
     "public": "dist",
+    "cleanUrls": true,
+    "trailingSlash": false,
     "ignore": [
       "firebase.json",
       "**/.*",
@@ -8,8 +10,12 @@
     ],
     "rewrites": [
       {
+        "source": "/admin/**",
+        "destination": "/admin.html"
+      },
+      {
         "source": "**",
-        "destination": "/index.html"
+        "destination": "/spa-fallback.html"
       }
     ]
   }

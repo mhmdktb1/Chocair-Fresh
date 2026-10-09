@@ -22,7 +22,7 @@ const Footer = () => {
                 Choucair<span className="brand-highlight">Fresh</span>
               </Link>
               <p className="footer-tagline">
-                Premium hand-picked produce, fruits, and daily essentials delivered fresh to your door across Beirut.
+                Hand-picked fresh produce, fruits, and daily essentials, delivered fresh to your door from our store in Dbayeh, Metn.
               </p>
             </div>
 
@@ -32,7 +32,7 @@ const Footer = () => {
                 <MapPin size={18} className="footer-meta-icon pin-icon" />
                 <div>
                   <span className="footer-meta-title">Store Location</span>
-                  <p className="footer-meta-text">Choucair Market "Anas Fruits", Beirut, Lebanon</p>
+                  <p className="footer-meta-text">Choucair Market "Anas Fruits", Dbayeh, Metn, Lebanon</p>
                 </div>
               </div>
               <div className="footer-meta-item">
@@ -122,7 +122,7 @@ const Footer = () => {
                   <span className="live-dot"></span>
                   <span>Store Location</span>
                 </div>
-                <span className="map-location-label">Beirut, Lebanon</span>
+                <span className="map-location-label">Dbayeh, Metn</span>
               </div>
               <div className="footer-map-card">
                 <iframe 

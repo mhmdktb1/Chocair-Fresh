@@ -2,7 +2,7 @@ export const STORE_COORDS = {
   lat: 33.94376,
   lng: 35.59213,
   name: 'Choucair Market "Anas Fruits"',
-  address: 'Choucair Market "Anas Fruits", Beirut, Lebanon',
+  address: 'Choucair Market "Anas Fruits", Dbayeh, Metn, Lebanon',
   plusCode: 'WHVR+GVR, Beirut, Lebanon'
 };
 

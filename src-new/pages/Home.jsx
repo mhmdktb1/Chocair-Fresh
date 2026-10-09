@@ -8,6 +8,8 @@ import AboutSection from '../components/home/AboutSection';
 import Footer from '../components/layout/Footer';
 import RecommendationRow from '../components/shop/RecommendationRow';
 import api, { getStoredUser } from '../utils/api';
+import { useSeo } from '../seo/useSeo';
+import { homeSeo } from '../seo/pageSeo';
 import './Home.css';
 
 const defaultHomeConfig = {
@@ -131,6 +133,7 @@ const Home = () => {
   }, [hash]);
 
   const activeHomeConfig = homeConfig || defaultHomeConfig;
+  useSeo(homeSeo({ deliveryRadiusKm: activeHomeConfig.delivery?.maxDeliveryRadiusKm }));
 
   return (
     <div className="home-page">

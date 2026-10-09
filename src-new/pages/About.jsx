@@ -1,110 +1,63 @@
 import React from 'react';
-import { Truck, Heart, ShieldCheck, Leaf, Sprout, Sparkles, Award, ArrowRight } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { ArrowRight, Clock, MapPin, MessageCircle, Sparkles, Sprout } from 'lucide-react';
 import Navbar from '../components/layout/Navbar';
 import Footer from '../components/layout/Footer';
+import { useHomeConfig } from '../hooks/useHomeConfig';
+import { getStoryContent } from '../utils/storyContent';
+import { useSeo } from '../seo/useSeo';
+import { aboutSeo } from '../seo/pageSeo';
+import { BUSINESS } from '../seo/siteConfig';
 import './About.css';
 
-const featuresList = [
-  {
-    icon: Leaf,
-    badge: 'Purity',
-    title: '100% Organic & Clean',
-    description: 'Certified farm-grown produce free from harmful synthetic chemicals and pesticides.'
-  },
-  {
-    icon: Truck,
-    badge: 'Fast Route',
-    title: 'Express Delivery',
-    description: 'Chilled express transit directly from our sorting hub straight to your kitchen.'
-  },
-  {
-    icon: ShieldCheck,
-    badge: 'Protected',
-    title: 'Quality Guarantee',
-    description: 'If you are not 100% satisfied with freshness, we will replace or refund instantly.'
-  },
-  {
-    icon: Heart,
-    badge: 'Local Pride',
-    title: 'Community First',
-    description: 'We partner directly with local family farms and guarantee fair pricing for growers.'
-  }
-];
-
 const About = () => {
+  useSeo(aboutSeo());
+  const homeConfig = useHomeConfig();
+  const { lead, body, image, hasCustomImage } = getStoryContent(homeConfig?.story);
+
   return (
     <div className="about-page">
       <Navbar />
-      
-      {/* Hero Section */}
+
       <section className="about-hero">
         <div className="container">
           <div className="about-hero-badge">
             <Sparkles size={14} />
-            <span>Farm Fresh Heritage</span>
+            <span>Our Story</span>
           </div>
-          <h1 className="about-title">Cultivating <span className="highlight">Goodness</span></h1>
+          <h1 className="about-title">About <span className="highlight">Choucair Fresh</span></h1>
           <p className="about-subtitle">
-            We believe in the power of wholesome, farm-fresh produce to nourish lives, families, and local grower communities.
+            Choucair Fresh is the online store of {BUSINESS.storeName} in {BUSINESS.address.locality}, {BUSINESS.address.district} &mdash;
+            fresh produce, carefully selected and packed for every order.
           </p>
         </div>
       </section>
 
-      {/* Story Section */}
       <section className="section-story container">
         <div className="story-grid">
           <div className="story-image-wrapper">
-            <img 
-              src="https://images.unsplash.com/photo-1595855709915-445676d2f6cd?ixlib=rb-4.0.3&auto=format&fit=crop&w=1000&q=80" 
-              alt="Farmer holding fresh produce" 
+            <img
+              src={image}
+              alt={hasCustomImage ? '' : 'Farmer holding fresh produce'}
               className="story-img"
               loading="lazy"
+              decoding="async"
             />
             <div className="story-image-overlay" />
-            
-            <div className="story-badge">
-              <span className="years">15+</span>
-              <span className="label">Years of Freshness</span>
-            </div>
-
-            <div className="story-pill-scene">
-              <Sprout size={16} />
-              <span>50+ Partner Farms</span>
-            </div>
           </div>
-          
+
           <div className="story-content">
             <div className="story-tag">
               <Sprout size={14} />
-              <span>Our Roots</span>
+              <span>Who We Are</span>
             </div>
             <h2 className="section-title">Our Story</h2>
-            <p className="story-text">
-              Started in 2010, Choucair Fresh began with a simple mission: to bridge the gap between local growers and urban households. We noticed that while farmers struggled to find fair markets, families craved authentic, chemical-free produce with real flavor.
-            </p>
-            <p className="story-text">
-              Today, we partner with over 50 local farms, ensuring that the fruits and greens on your table are harvested at peak ripeness and handled with the utmost care. We are not just a grocery store — we are a family committed to sustainable, healthy living.
-            </p>
-            
-            <div className="story-stats-grid">
-              <div className="story-stat-card">
-                <span className="stat-num">50+</span>
-                <span className="stat-desc">Local Farms</span>
-              </div>
-              <div className="story-stat-card">
-                <span className="stat-num">24h</span>
-                <span className="stat-desc">Harvest to Door</span>
-              </div>
-              <div className="story-stat-card">
-                <span className="stat-num">100%</span>
-                <span className="stat-desc">Fresh Guarantee</span>
-              </div>
-            </div>
+            <p className="story-text">{lead}</p>
+            <p className="story-text">{body}</p>
 
             <div className="story-btn-row">
               <Link to="/shop" className="story-shop-btn">
-                <span>Shop Fresh Harvest</span>
+                <span>Shop Fresh Produce</span>
                 <ArrowRight size={16} />
               </Link>
             </div>
@@ -112,46 +65,39 @@ const About = () => {
         </div>
       </section>
 
-      {/* Features Section */}
-      <section className="section-features">
-        <div className="container">
-          <div className="features-header-wrap">
-            <div className="features-badge">
-              <Award size={14} />
-              <span>Our Pillars</span>
+      <section className="about-visit container" aria-labelledby="about-visit-title">
+        <h2 id="about-visit-title" className="section-title">Visit Our Store</h2>
+        <div className="about-visit-grid">
+          <div className="about-visit-item">
+            <MapPin size={20} aria-hidden="true" />
+            <div>
+              <strong>{BUSINESS.storeName}</strong>
+              <span>{BUSINESS.address.locality}, {BUSINESS.address.district}, {BUSINESS.address.countryName}</span>
             </div>
-            <h2 className="features-main-heading">What We Offer</h2>
-            <p className="features-main-sub">
-              Every detail is designed to give you produce that looks, tastes, and feels better.
-            </p>
           </div>
-
-          <div className="features-grid">
-            {featuresList.map((f, i) => {
-              const Icon = f.icon;
-              return (
-                <div key={i} className="feature-card">
-                  <div className="feature-card-top">
-                    <div className="feature-icon">
-                      <Icon size={22} />
-                    </div>
-                    <span className="feature-badge-tag">{f.badge}</span>
-                  </div>
-                  <h3 className="feature-title">{f.title}</h3>
-                  <p className="feature-desc">{f.description}</p>
-                </div>
-              );
-            })}
+          <div className="about-visit-item">
+            <Clock size={20} aria-hidden="true" />
+            <div>
+              <strong>Opening hours</strong>
+              <span>{BUSINESS.openingHours.display}</span>
+            </div>
+          </div>
+          <div className="about-visit-item">
+            <MessageCircle size={20} aria-hidden="true" />
+            <div>
+              <strong>WhatsApp orders &amp; support</strong>
+              <a href={BUSINESS.whatsappUrl} target="_blank" rel="noopener noreferrer">{BUSINESS.phoneDisplay}</a>
+            </div>
           </div>
         </div>
+        <p className="about-visit-more">
+          Delivery area, fees and directions are on our <Link to="/contact">contact &amp; delivery page</Link>.
+        </p>
       </section>
 
-      {/* Footer */}
       <Footer />
     </div>
   );
 };
-
-export default About;
 
 export default About;

@@ -120,6 +120,13 @@ cd backend-clean
 npm run recommend:build
 ```
 
+## 🔎 SEO
+
+- **Config & business facts:** `src-new/seo/siteConfig.js` (canonical host `https://www.choucairfresh.com`, store name/address/phone/hours). Add verified social profile URLs to `BUSINESS.sameAs`.
+- **Per-page metadata:** pages call `useSeo(...)` with configs from `src-new/seo/pageSeo.js` (title, description, canonical, Open Graph/Twitter, JSON-LD). Private pages (cart, checkout, login, profile, admin) are `noindex, follow`.
+- **Prerender & sitemap:** `npm run build` runs `vite build` and then `scripts/seo-prerender.mjs`, which reads the live catalog from `VITE_API_BASE_URL` and writes per-route HTML (`/`, `/shop`, `/shop/<category>`, `/product/<id>`, `/about`, `/contact`) plus `dist/sitemap.xml`. Products added after a deploy still work (client-rendered) but only appear in the sitemap after the next build, so redeploy (or trigger a Vercel deploy hook) after catalog changes. Set `SEO_PRERENDER_STRICT=true` to fail the build when the API is unreachable.
+- **Category URLs:** `/shop/<slug>` (e.g. `/shop/fruits`). Legacy `/shop?category=X` links redirect client-side to the clean URL.
+
 ## 📝 License
 
 This project is proprietary and developed for Chocair Fresh.

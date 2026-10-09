@@ -1,7 +1,8 @@
 import React from 'react';
-import { useNavigate } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import { ArrowRight, Sparkles } from 'lucide-react';
 import { useCategories } from '../../hooks/useCategories';
+import { categoryPath } from '../../seo/catalog';
 import './CategoryMarquee.css';
 
 const defaultCategories = [
@@ -48,7 +49,6 @@ const getCategoryVisuals = (name) => {
 };
 
 const CategoryMarquee = ({ categories: propCategories }) => {
-  const navigate = useNavigate();
   const { categories: fetchedCategories } = useCategories();
 
   const displayCategories = React.useMemo(() => {
@@ -71,17 +71,6 @@ const CategoryMarquee = ({ categories: propCategories }) => {
     });
   }, [propCategories, fetchedCategories]);
 
-  const handleCategoryClick = (categoryName) => {
-    navigate(`/shop?category=${encodeURIComponent(categoryName)}`);
-  };
-
-  const handleKeyDown = (e, categoryName) => {
-    if (e.key === 'Enter' || e.key === ' ') {
-      e.preventDefault();
-      handleCategoryClick(categoryName);
-    }
-  };
-
   return (
     <section className="category-marquee-section" aria-label="Product categories">
       {/* Mobile-Only Category App Rail */}
@@ -93,24 +82,22 @@ const CategoryMarquee = ({ categories: propCategories }) => {
             </span>
             <h2 className="mobile-category-title">Shop by Category</h2>
           </div>
-          <button 
+          <Link 
             className="mobile-see-all-btn" 
-            onClick={() => navigate('/shop')}
+            to="/shop"
             aria-label="See all categories"
           >
             <span>See All</span>
             <ArrowRight size={14} />
-          </button>
+          </Link>
         </div>
 
-        <div className="mobile-category-grid" role="list">
+        <div className="mobile-category-grid">
           {displayCategories.map((cat) => (
-            <div 
+            <Link 
               key={`mob-${cat.id}`} 
+              to={categoryPath(cat.name)}
               className="mobile-category-card"
-              onClick={() => handleCategoryClick(cat.name)}
-              role="listitem"
-              tabIndex={0}
               aria-label={`Shop ${cat.name}`}
             >
               <div className="mobile-category-bubble" style={{ background: cat.bg }}>
@@ -118,29 +105,31 @@ const CategoryMarquee = ({ categories: propCategories }) => {
                 {cat.badge && <span className="mobile-cat-microbadge">{cat.badge}</span>}
               </div>
               <span className="mobile-category-name">{cat.name}</span>
-            </div>
+            </Link>
           ))}
         </div>
       </div>
 
       {/* Desktop Marquee Track */}
-      <div className="marquee-container desktop-marquee-only" role="region">
-        <div className="marquee-track" role="list">
-          {/* Repeat items for seamless loop */}
-          {[...displayCategories, ...displayCategories, ...displayCategories].map((cat, index) => (
-            <div 
-              key={`${cat.id}-${index}`} 
-              className="marquee-item"
-              onClick={() => handleCategoryClick(cat.name)}
-              onKeyDown={(e) => handleKeyDown(e, cat.name)}
-              role="listitem"
-              tabIndex={index < displayCategories.length ? 0 : -1}
-              aria-label={`Browse ${cat.name}`}
-            >
-              <span className="marquee-icon" aria-hidden="true">{cat.icon}</span>
-              <span className="marquee-text">{cat.name}</span>
-            </div>
-          ))}
+      <div className="marquee-container desktop-marquee-only" role="region" aria-label="Browse categories">
+        <div className="marquee-track">
+          {/* Repeat items for seamless loop; only the first set is focusable / announced */}
+          {[...displayCategories, ...displayCategories, ...displayCategories].map((cat, index) => {
+            const isCopy = index >= displayCategories.length;
+            return (
+              <Link 
+                key={`${cat.id}-${index}`} 
+                to={categoryPath(cat.name)}
+                className="marquee-item"
+                tabIndex={isCopy ? -1 : undefined}
+                aria-hidden={isCopy ? 'true' : undefined}
+                aria-label={isCopy ? undefined : `Browse ${cat.name}`}
+              >
+                <span className="marquee-icon" aria-hidden="true">{cat.icon}</span>
+                <span className="marquee-text">{cat.name}</span>
+              </Link>
+            );
+          })}
         </div>
       </div>
     </section>

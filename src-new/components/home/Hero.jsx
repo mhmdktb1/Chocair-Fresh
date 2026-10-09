@@ -176,9 +176,10 @@ const Hero = ({ data }) => {
             <div className="image-frame-ring">
               <img 
                 src={activeSlide.image} 
-                alt={activeSlide.title} 
+                alt="" 
                 className="hero-feature-image" 
                 loading="eager"
+                fetchPriority="high"
               />
             </div>
           </div>

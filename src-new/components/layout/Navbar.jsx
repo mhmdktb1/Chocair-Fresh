@@ -22,6 +22,7 @@ import { useTheme } from '../../context/ThemeContext';
 import { translations } from '../../utils/translations';
 import { getArabicProductName, matchesProductQuery } from '../../utils/productTranslation';
 import { useProducts } from '../../hooks/useProducts';
+import { categoryPath } from '../../seo/catalog';
 import './Navbar.css';
 
 const CATEGORY_EMOJIS = {
@@ -204,11 +205,11 @@ const Navbar = () => {
       return;
     }
     if (searchQuery.trim()) {
-      navigate(`/shop?search=${encodeURIComponent(searchQuery.trim())}${activeCategory !== 'All' ? `&category=${encodeURIComponent(activeCategory)}` : ''}`);
+      navigate(`${activeCategory !== 'All' ? categoryPath(activeCategory) : '/shop'}?search=${encodeURIComponent(searchQuery.trim())}`);
       setSearchOpen(false);
       setSearchQuery('');
     } else if (activeCategory !== 'All') {
-      navigate(`/shop?category=${encodeURIComponent(activeCategory)}`);
+      navigate(categoryPath(activeCategory));
       setSearchOpen(false);
     }
   };
@@ -303,8 +304,8 @@ const Navbar = () => {
           <div className="nav-links desktop-only">
             <Link to="/" className="nav-link">{t.home}</Link>
             <Link to="/shop" className="nav-link">{t.shop}</Link>
-            <Link to="/#about" className="nav-link">{t.about}</Link>
-            <Link to="/#contact" className="nav-link">{t.contact}</Link>
+            <Link to="/about" className="nav-link">{t.about}</Link>
+            <Link to="/contact" className="nav-link">{t.contact}</Link>
           </div>
 
           {/* Desktop Modern Search Bar Trigger */}
@@ -392,7 +393,7 @@ const Navbar = () => {
               <ChevronRight size={18} className="c-chevron" />
             </Link>
 
-            <Link to="/#about" className="curtain-nav-item" onClick={() => setCurtainOpen(false)}>
+            <Link to="/about" className="curtain-nav-item" onClick={() => setCurtainOpen(false)}>
               <div className="c-icon-wrap"><Info size={18} /></div>
               <div className="c-info">
                 <strong>Our Story</strong>
@@ -541,7 +542,7 @@ const Navbar = () => {
                       >
                         <div className="item-thumb-wrapper">
                           <img 
-                            src={product.image || '/assets/images/placeholder.jpg'} 
+                            src={product.image || '/assets/images/products/placeholder.jpg'} 
                             alt={product.name}
                             onError={(e) => { e.target.src = 'https://images.unsplash.com/photo-1610832958506-aa56368176cf?w=150&auto=format&fit=crop&q=80'; }}
                           />

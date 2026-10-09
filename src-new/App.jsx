@@ -13,6 +13,8 @@ import Shop from './pages/Shop';
 import Loading from './components/common/Loading';
 import BottomNav from './components/layout/BottomNav';
 import FloatingContact from './components/common/FloatingContact';
+import { Seo } from './seo/useSeo';
+import { privateSeo } from './seo/pageSeo';
 
 // Scroll window to top on route navigation
 function ScrollToTop() {
@@ -60,6 +62,17 @@ const Checkout = lazy(withReload(importCheckout));
 const Login = lazy(withReload(() => import('./pages/Login')));
 const Profile = lazy(withReload(() => import('./pages/Profile')));
 const AdminDashboard = lazy(withReload(() => import('./pages/admin/AdminDashboard')));
+const About = lazy(withReload(() => import('./pages/About')));
+const Contact = lazy(withReload(() => import('./pages/Contact')));
+const NotFound = lazy(withReload(() => import('./pages/NotFound')));
+
+// Private / utility screens: "noindex, follow" so they never compete with real pages in search.
+const PrivatePage = ({ title, children }) => (
+  <>
+    <Seo {...privateSeo(title)} />
+    {children}
+  </>
+);
 
 // Warm the most likely next pages once the browser is idle so navigation stays instant.
 const usePrefetchRoutes = () => {
@@ -92,16 +105,20 @@ function App() {
                   <Suspense fallback={<Loading />}>
                     <Routes>
                       <Route path="/" element={<Home />} />
-                      <Route path="/shop" element={<Shop />} />
+                      <Route path="/shop/:categorySlug?" element={<Shop />} />
                       <Route path="/product/:id" element={<ProductDetails />} />
-                      <Route path="/cart" element={<Cart />} />
-                      <Route path="/checkout" element={<Checkout />} />
-                      <Route path="/login" element={<Login />} />
-                      <Route path="/profile" element={<Profile />} />
-                      <Route path="/loading" element={<Loading />} />
+                      <Route path="/about" element={<About />} />
+                      <Route path="/contact" element={<Contact />} />
+                      <Route path="/cart" element={<PrivatePage title="Your Cart"><Cart /></PrivatePage>} />
+                      <Route path="/checkout" element={<PrivatePage title="Checkout"><Checkout /></PrivatePage>} />
+                      <Route path="/login" element={<PrivatePage title="Sign In"><Login /></PrivatePage>} />
+                      <Route path="/profile" element={<PrivatePage title="My Account"><Profile /></PrivatePage>} />
+                      <Route path="/loading" element={<PrivatePage title="Loading"><Loading /></PrivatePage>} />
                       
                       {/* Admin Routes */}
-                      <Route path="/admin/*" element={<AdminDashboard />} />
+                      <Route path="/admin/*" element={<PrivatePage title="Admin"><AdminDashboard /></PrivatePage>} />
+
+                      <Route path="*" element={<NotFound />} />
                     </Routes>
                   </Suspense>
                   

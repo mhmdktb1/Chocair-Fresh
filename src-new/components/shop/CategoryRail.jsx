@@ -14,7 +14,7 @@ const CategoryRail = ({ categories, selectedCategory, onSelectCategory }) => {
           >
             <div className="cat-image-ring">
               <img 
-                src={getAssetUrl(cat.image) || '/assets/images/categories/placeholder.jpg'} 
+                src={getAssetUrl(cat.image) || '/assets/images/products/placeholder.jpg'} 
                 alt={cat.name} 
                 onError={(e) => { e.currentTarget.style.display = 'none'; }}
               />

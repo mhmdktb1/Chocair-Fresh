@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useEffect, useRef } from 'react';
-import { useSearchParams, useNavigate } from 'react-router-dom';
+import { useSearchParams, useNavigate, useParams } from 'react-router-dom';
 import { 
   Search, 
   X, 
@@ -27,6 +27,10 @@ import { translations } from '../utils/translations';
 import { formatCurrency } from '../utils/formatters';
 import { matchesProductQuery } from '../utils/productTranslation';
 import { getAssetUrl } from '../utils/api';
+import { useSeo } from '../seo/useSeo';
+import { categorySeo, shopSeo } from '../seo/pageSeo';
+import { categoryPath, categorySlug as toCategorySlug, findCategoryBySlug } from '../seo/catalog';
+import { SITE_NAME } from '../seo/siteConfig';
 import './Shop.css';
 
 const getCategoryEmoji = (name = '') => {
@@ -117,9 +121,18 @@ const Shop = () => {
   const t = translations[language] || translations.en;
   const [searchParams, setSearchParams] = useSearchParams();
   const navigate = useNavigate();
+  // Clean category URLs: /shop/<category-slug>. Legacy ?category= links are redirected below.
+  const { categorySlug } = useParams();
+  const decodedSlug = useMemo(() => {
+    try {
+      return categorySlug ? decodeURIComponent(categorySlug) : '';
+    } catch {
+      return categorySlug || '';
+    }
+  }, [categorySlug]);
 
   const searchQuery = searchParams.get('search') || '';
-  const initialCategory = searchParams.get('category') || 'all';
+  const initialCategory = decodedSlug || searchParams.get('category') || 'all';
   const initialSubCategory = searchParams.get('subCategory') || searchParams.get('subcategory') || 'all';
   const shouldFocusSearch = searchParams.get('focus') === 'search';
 
@@ -135,9 +148,9 @@ const Shop = () => {
   const subCategoryTrackRef = useRef(null);
   const sectionRefs = useRef({});
 
-  // Sync category & subcategory with URL search params
+  // Sync category & subcategory with the URL (path slug first, then legacy query param)
   useEffect(() => {
-    const cat = searchParams.get('category');
+    const cat = decodedSlug || searchParams.get('category');
     const subCat = searchParams.get('subCategory') || searchParams.get('subcategory');
     if (cat) {
       setSelectedCategory(cat);
@@ -149,7 +162,26 @@ const Shop = () => {
     } else {
       setSelectedSubCategory('all');
     }
-  }, [searchParams]);
+  }, [searchParams, decodedSlug]);
+
+  // Legacy /shop?category=X links (CMS links, bookmarks) and /shop/all -> canonical clean URLs
+  useEffect(() => {
+    const legacyCat = searchParams.get('category');
+    const isAllSlug = decodedSlug.trim().toLowerCase() === 'all';
+    if (!legacyCat && !isAllSlug) return;
+    const next = new URLSearchParams(searchParams);
+    next.delete('category');
+    const qs = next.toString();
+    navigate(`${categoryPath(legacyCat || 'all')}${qs ? `?${qs}` : ''}`, { replace: true });
+  }, [searchParams, decodedSlug, navigate]);
+
+  const goToCategory = (catName, { keepParams = true, subCategory } = {}) => {
+    const next = keepParams ? new URLSearchParams(searchParams) : new URLSearchParams();
+    ['category', 'subCategory', 'subcategory', 'discount', 'discounted'].forEach((key) => next.delete(key));
+    if (subCategory) next.set('subCategory', subCategory);
+    const qs = next.toString();
+    navigate(`${categoryPath(catName)}${qs ? `?${qs}` : ''}`);
+  };
 
   // Focus search input when requested via URL param (e.g. from bottom nav)
   useEffect(() => {
@@ -229,10 +261,33 @@ const Shop = () => {
       const found = categoriesList.find(c => c.id === 'offers' || c.name?.toLowerCase() === 'offers');
       return found || { id: 'offers', name: 'Offers', emoji: '🔥', count: 0 };
     }
+    const selSlug = toCategorySlug(selectedCategory);
     return categoriesList.find(
-      c => c.id === selectedCategory || c.name?.toLowerCase() === String(selectedCategory)?.toLowerCase()
+      c => c.id === selectedCategory ||
+        c.name?.toLowerCase() === String(selectedCategory)?.toLowerCase() ||
+        (selSlug && c.id !== 'all' && toCategorySlug(c.name) === selSlug)
     );
   }, [categoriesList, selectedCategory, isOffersSelected]);
+
+  const seoConfig = useMemo(() => {
+    const query = searchQuery.trim();
+    if (query) {
+      return { title: `Search results for \u201c${query}\u201d | ${SITE_NAME}`, noindex: true };
+    }
+    if (isOffersSelected) {
+      return { title: `Offers & Discounts | ${SITE_NAME}`, noindex: true };
+    }
+    if (decodedSlug) {
+      // Keep prerendered tags until the catalog is available to resolve the category.
+      if (!products.length) return null;
+      const cat = findCategoryBySlug(decodedSlug, products, adminCategories);
+      if (cat && cat.count > 0) return categorySeo(cat);
+      return { title: `${cat?.name || 'Category'} | ${SITE_NAME}`, noindex: true };
+    }
+    return shopSeo();
+  }, [searchQuery, isOffersSelected, decodedSlug, products, adminCategories]);
+
+  useSeo(seoConfig);
 
   // Filter & Sort Logic for full/filtered list
   const filteredProducts = useMemo(() => {
@@ -538,39 +593,15 @@ const Shop = () => {
     setSelectedSubCategory('all');
     if (catId === 'all') {
       setSelectedCategory('all');
-      setSearchParams(prev => {
-        const next = new URLSearchParams(prev);
-        next.delete('category');
-        next.delete('subCategory');
-        next.delete('subcategory');
-        next.delete('discount');
-        next.delete('discounted');
-        return next;
-      });
+      goToCategory(null);
     } else if (catId === 'offers' || catId === 'Offers') {
       setSelectedCategory('offers');
-      setSearchParams(prev => {
-        const next = new URLSearchParams(prev);
-        next.set('category', 'Offers');
-        next.delete('subCategory');
-        next.delete('subcategory');
-        next.delete('discount');
-        next.delete('discounted');
-        return next;
-      });
+      goToCategory('Offers');
     } else {
       const catObj = categoriesList.find(c => c.id === catId || c.name.toLowerCase() === String(catId).toLowerCase());
       const catName = catObj ? catObj.name : catId;
       setSelectedCategory(catObj ? catObj.id : catId);
-      setSearchParams(prev => {
-        const next = new URLSearchParams(prev);
-        next.set('category', catName);
-        next.delete('subCategory');
-        next.delete('subcategory');
-        next.delete('discount');
-        next.delete('discounted');
-        return next;
-      });
+      goToCategory(catName);
     }
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
@@ -609,10 +640,10 @@ const Shop = () => {
     setSelectedCategory(catId);
     if (subCatName) {
       setSelectedSubCategory(subCatName);
-      setSearchParams({ category: catName, subCategory: subCatName });
+      goToCategory(catName, { keepParams: false, subCategory: subCatName });
     } else {
       setSelectedSubCategory('all');
-      setSearchParams({ category: catName });
+      goToCategory(catName, { keepParams: false });
     }
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
@@ -625,7 +656,7 @@ const Shop = () => {
     setOnlyInStock(false);
     setOnlyDiscounted(false);
     setSortOption('featured');
-    setSearchParams({});
+    navigate('/shop');
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
@@ -698,6 +729,15 @@ const Shop = () => {
 
   return (
     <div className="modern-shop-page toters-layout">
+      <h1 className="sr-only">
+        {searchQuery.trim()
+          ? `Search results for “${searchQuery.trim()}”`
+          : isOffersSelected
+            ? 'Offers & Discounts'
+            : selectedCategory !== 'all' && selectedCategoryObj?.name
+              ? `${selectedCategoryObj.name} – Choucair Fresh`
+              : 'Shop Fresh Fruits & Vegetables'}
+      </h1>
       {/* Desktop-Only Navbar */}
       <div className="shop-desktop-navbar-wrapper">
         <Navbar />

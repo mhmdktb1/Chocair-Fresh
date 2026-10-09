@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useLayoutEffect, useRef } from 'react';
-import { useParams, useNavigate, useLocation } from 'react-router-dom';
+import { useParams, useNavigate, useLocation, Link } from 'react-router-dom';
 import { 
   Minus, 
   Plus, 
@@ -15,7 +15,11 @@ import { useCart } from '../context/CartContext';
 import { useFavorites } from '../context/FavoritesContext';
 import { useAdmin } from '../context/AdminContext';
 import { useCategories } from '../hooks/useCategories';
-import api, { getAssetUrl } from '../utils/api';
+import api, { API_HOST, getAssetUrl } from '../utils/api';
+import { useSeo } from '../seo/useSeo';
+import { notFoundSeo, productSeo } from '../seo/pageSeo';
+import { categoryPath } from '../seo/catalog';
+import { SITE_NAME } from '../seo/siteConfig';
 import Button from '../components/common/Button';
 import Loading from '../components/common/Loading';
 import WeightScale from '../components/shop/WeightScale';
@@ -41,6 +45,7 @@ const ProductDetails = () => {
   const [product, setProduct] = useState(initialProduct);
   const [loading, setLoading] = useState(!initialProduct);
   const [error, setError] = useState(null);
+  const [isMissing, setIsMissing] = useState(false);
   const [quantity, setQuantity] = useState(1);
   const [isScaleOpen, setIsScaleOpen] = useState(false);
   const [isLightboxOpen, setIsLightboxOpen] = useState(false);
@@ -53,6 +58,15 @@ const ProductDetails = () => {
 
   const isFavorite = checkIsFavorite(product?._id || id);
   const description = getProductDescription(product);
+
+  // Leave prerendered tags alone while loading; only noindex on a confirmed 404.
+  useSeo(
+    product
+      ? productSeo(product, { apiHost: API_HOST })
+      : isMissing
+        ? { ...notFoundSeo(), title: `Product Not Found | ${SITE_NAME}` }
+        : null
+  );
 
   // Only offer "Read more" when the collapsed description actually overflows
   useLayoutEffect(() => {
@@ -91,6 +105,7 @@ const ProductDetails = () => {
       try {
         if (!product) setLoading(true);
         setImageError(false);
+        setIsMissing(false);
         const response = await api.get(`/products/${id}`);
         const data = response.data;
         setProduct(data);
@@ -117,7 +132,10 @@ const ProductDetails = () => {
         }
       } catch (err) {
         console.error(err);
-        if (!product) setError('Failed to load product details');
+        if (!product) {
+          setError('Failed to load product details');
+          if (err?.response?.status === 404) setIsMissing(true);
+        }
       } finally {
         setLoading(false);
       }
@@ -294,6 +312,7 @@ const ProductDetails = () => {
             alt={product.name} 
             className="toters-hero-img"
             loading="eager"
+            fetchPriority="high"
             onError={() => setImageError(true)}
           />
           {isDiscounted && discountPercent > 0 && (
@@ -330,10 +349,10 @@ const ProductDetails = () => {
           <div className="toters-info-header">
             <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '4px', flexWrap: 'wrap' }}>
               {product.category && (
-                <button
-                  type="button"
-                  onClick={() => navigate(`/shop?category=${encodeURIComponent(product.category)}`)}
+                <Link
+                  to={categoryPath(product.category)}
                   style={{
+                    display: 'inline-block',
                     background: '#f1f5f9',
                     border: '1px solid #e2e8f0',
                     color: '#475569',
@@ -345,13 +364,13 @@ const ProductDetails = () => {
                   }}
                 >
                   {product.category}
-                </button>
+                </Link>
               )}
               {product.subCategory && (
-                <button
-                  type="button"
-                  onClick={() => navigate(`/shop?category=${encodeURIComponent(product.category)}&subCategory=${encodeURIComponent(product.subCategory)}`)}
+                <Link
+                  to={`${categoryPath(product.category)}?subCategory=${encodeURIComponent(product.subCategory)}`}
                   style={{
+                    display: 'inline-block',
                     background: '#e0f2fe',
                     border: '1px solid #bae6fd',
                     color: '#0284c7',
@@ -363,7 +382,7 @@ const ProductDetails = () => {
                   }}
                 >
                   🏷️ {product.subCategory}
-                </button>
+                </Link>
               )}
             </div>
 

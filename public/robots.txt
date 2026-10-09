@@ -1,0 +1,15 @@
+# Choucair Fresh - https://www.choucairfresh.com/
+#
+# Cart, checkout, login and profile pages are intentionally NOT disallowed here:
+# they serve <meta name="robots" content="noindex, follow"> which crawlers can only
+# see if they are allowed to fetch the page.
+
+User-agent: *
+Allow: /
+Disallow: /admin
+# Internal search results (thin/duplicate content)
+Disallow: /*?search=
+Disallow: /*&search=
+Disallow: /*?focus=
+
+Sitemap: https://www.choucairfresh.com/sitemap.xml

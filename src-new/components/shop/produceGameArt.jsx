@@ -358,7 +358,7 @@ export const ProduceGameSprite = ({ name = '', category = '', image = '', classN
     <div className={`game-produce-fallback-badge ${className}`}>
       <div className="fallback-badge-rim">
         <img
-          src={image || '/assets/images/products/apple-red.jpg'}
+          src={image || '/assets/images/products/fruits/apple-red.jpg'}
           alt={name}
           className="fallback-badge-img"
           onError={(e) => {
