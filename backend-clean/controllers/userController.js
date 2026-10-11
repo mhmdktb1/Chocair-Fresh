@@ -113,9 +113,13 @@ const sendOTP = asyncHandler(async (req, res) => {
 
   const responsePayload = {
     success: true,
-    message: 'OTP sent successfully',
-    otp: code, // Auto OTP enabled for seamless testing and instant access
+    message: 'OTP sent successfully to your WhatsApp',
   };
+
+  // Only expose OTP in test mode for automated test suites
+  if (process.env.NODE_ENV === 'test') {
+    responsePayload.otp = code;
+  }
 
   res.status(200).json(responsePayload);
 });

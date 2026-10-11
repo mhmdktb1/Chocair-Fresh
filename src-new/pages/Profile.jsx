@@ -296,11 +296,9 @@ const Profile = () => {
       const response = await api.post('/users/auth/send-otp', { phone: normalizedPhone });
       
       if (response.data.success) {
-        if (response.data.otp) {
-          toast.success(`Verification Code: ${response.data.otp}`, { autoClose: 15000 });
-          setOtp(response.data.otp);
-        }
+        setOtp('');
         setPhoneStep('OTP');
+        toast.info('Verification code sent to your WhatsApp!');
       }
     } catch (err) {
       setPhoneError(err.response?.data?.message || err.message || 'Failed to send OTP');

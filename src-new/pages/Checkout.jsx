@@ -578,12 +578,9 @@ const Checkout = () => {
       try {
         const phoneToSend = normalizedPhone || currentPhone;
         const res = await api.post('/users/auth/send-otp', { phone: phoneToSend });
-        if (res.data.otp) {
-          console.log('TEST OTP CODE:', res.data.otp);
-          toast.success(`Verification Code: ${res.data.otp}`, { autoClose: 15000 });
-          setOtpCode(res.data.otp);
-        }
+        setOtpCode('');
         setShowOtpModal(true);
+        toast.info('Verification code sent to your WhatsApp!');
       } catch (err) {
         setError(err.response?.data?.message || err.message || "Failed to send verification code. Please check your phone number.");
       } finally {

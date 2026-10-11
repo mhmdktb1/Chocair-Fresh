@@ -164,14 +164,9 @@ const Login = () => {
           return;
         }
 
-        // Show testing OTP banner/toast
-        if (response.data.otp) {
-          console.log('TEST OTP CODE:', response.data.otp);
-          toast.success(`Verification Code: ${response.data.otp}`, { autoClose: 15000 });
-          // Autofill OTP for fast testing
-          setOtp(response.data.otp);
-        }
+        setOtp('');
         setStep('OTP');
+        toast.info('Verification code sent to your WhatsApp!');
       } else {
         throw new Error(response.data.message || 'Failed to send verification code');
       }
