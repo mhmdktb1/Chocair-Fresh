@@ -105,10 +105,21 @@ const sendOTP = asyncHandler(async (req, res) => {
   });
 
   // Dispatch OTP via Meta WhatsApp Cloud API (with dev simulation fallback)
+  let whatsappResult = { success: true };
   try {
-    await sendWhatsAppOtp(phone, code);
+    whatsappResult = await sendWhatsAppOtp(phone, code);
   } catch (whatsappErr) {
-    console.warn('⚠️ WhatsApp dispatch notice:', whatsappErr.message);
+    console.warn('⚠️ WhatsApp dispatch exception:', whatsappErr.message);
+    whatsappResult = { success: false, error: whatsappErr.message };
+  }
+
+  if (!whatsappResult.success && process.env.NODE_ENV !== 'test') {
+    res.status(400).json({
+      success: false,
+      message: whatsappResult.error || 'Failed to deliver OTP via WhatsApp. Please check your phone number and try again.',
+      details: whatsappResult.allErrors || undefined,
+    });
+    return;
   }
 
   const responsePayload = {
