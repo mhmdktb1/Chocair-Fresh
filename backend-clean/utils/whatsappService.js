@@ -43,75 +43,116 @@ export const sendWhatsAppOtp = async (phone, otp) => {
 
   const errors = [];
 
-  // Strategy 1: User-configured or Standard Meta OTP Template
-  const customTemplate = process.env.WHATSAPP_OTP_TEMPLATE;
-  const templateNamesToTry = customTemplate 
-    ? [customTemplate] 
-    : ['authentication_code', 'verification_code', 'otp', 'jaspers_market_order_confirmation_v1'];
+  // Strategy 1: Standard Meta Authentication OTP Template (with code button/copy)
+  const customTemplate = process.env.WHATSAPP_OTP_TEMPLATE || 'choucair_otp';
+  const langCode = process.env.WHATSAPP_TEMPLATE_LANG || 'en_US';
 
-  for (const templateName of templateNamesToTry) {
-    // 1a. Try single-parameter template (Standard Meta Authentication / OTP format: {{1}} is OTP)
-    try {
-      const singleParamPayload = {
-        messaging_product: 'whatsapp',
-        recipient_type: 'individual',
-        to: recipient,
-        type: 'template',
-        template: {
-          name: templateName,
-          language: { code: process.env.WHATSAPP_TEMPLATE_LANG || 'en_US' },
-          components: [
-            {
-              type: 'body',
-              parameters: [
-                {
-                  type: 'text',
-                  text: String(otp),
-                },
-              ],
-            },
-          ],
-        },
-      };
+  // 1a. Meta Authentication Template with Button / Component parameters
+  try {
+    const authTemplatePayload = {
+      messaging_product: 'whatsapp',
+      recipient_type: 'individual',
+      to: recipient,
+      type: 'template',
+      template: {
+        name: customTemplate,
+        language: { code: langCode },
+        components: [
+          {
+            type: 'body',
+            parameters: [
+              {
+                type: 'text',
+                text: String(otp),
+              },
+            ],
+          },
+          {
+            type: 'button',
+            sub_type: 'url',
+            index: '0',
+            parameters: [
+              {
+                type: 'text',
+                text: String(otp),
+              },
+            ],
+          },
+        ],
+      },
+    };
 
-      const response = await axios.post(url, singleParamPayload, { headers, timeout: 10000 });
-      console.log(`✅ [WhatsApp Service] Delivered OTP via template '${templateName}' (1-param) to +${recipient} (Message ID: ${response.data.messages?.[0]?.id})`);
-      return { success: true, messageId: response.data.messages?.[0]?.id };
-    } catch (err) {
-      const metaErr = err.response?.data?.error;
-      errors.push(`Template '${templateName}' (1-param): ${metaErr?.message || err.message}`);
-    }
+    const response = await axios.post(url, authTemplatePayload, { headers, timeout: 10000 });
+    console.log(`✅ [WhatsApp Service] Delivered OTP via Auth template '${customTemplate}' (with button) to +${recipient} (Message ID: ${response.data.messages?.[0]?.id})`);
+    return { success: true, messageId: response.data.messages?.[0]?.id };
+  } catch (err) {
+    const metaErr = err.response?.data?.error;
+    errors.push(`Auth Template (button): ${metaErr?.message || err.message}`);
+  }
 
-    // 1b. Try 3-parameter template format
-    try {
-      const multiParamPayload = {
-        messaging_product: 'whatsapp',
-        recipient_type: 'individual',
-        to: recipient,
-        type: 'template',
-        template: {
-          name: templateName,
-          language: { code: process.env.WHATSAPP_TEMPLATE_LANG || 'en_US' },
-          components: [
-            {
-              type: 'body',
-              parameters: [
-                { type: 'text', text: 'Choucair Customer' },
-                { type: 'text', text: String(otp) },
-                { type: 'text', text: '5 minutes' },
-              ],
-            },
-          ],
-        },
-      };
+  // 1b. Meta Authentication/Utility Body-only Single Parameter ({{1}} = OTP)
+  try {
+    const bodyOnlyPayload = {
+      messaging_product: 'whatsapp',
+      recipient_type: 'individual',
+      to: recipient,
+      type: 'template',
+      template: {
+        name: customTemplate,
+        language: { code: langCode },
+        components: [
+          {
+            type: 'body',
+            parameters: [
+              {
+                type: 'text',
+                text: String(otp),
+              },
+            ],
+          },
+        ],
+      },
+    };
 
-      const response = await axios.post(url, multiParamPayload, { headers, timeout: 10000 });
-      console.log(`✅ [WhatsApp Service] Delivered OTP via template '${templateName}' (3-params) to +${recipient} (Message ID: ${response.data.messages?.[0]?.id})`);
-      return { success: true, messageId: response.data.messages?.[0]?.id };
-    } catch (err) {
-      const metaErr = err.response?.data?.error;
-      errors.push(`Template '${templateName}' (3-params): ${metaErr?.message || err.message}`);
-    }
+    const response = await axios.post(url, bodyOnlyPayload, { headers, timeout: 10000 });
+    console.log(`✅ [WhatsApp Service] Delivered OTP via template '${customTemplate}' (body-only) to +${recipient} (Message ID: ${response.data.messages?.[0]?.id})`);
+    return { success: true, messageId: response.data.messages?.[0]?.id };
+  } catch (err) {
+    const metaErr = err.response?.data?.error;
+    errors.push(`Template '${customTemplate}' (body-only): ${metaErr?.message || err.message}`);
+  }
+
+  // 1c. Try language variant fallback (e.g. en instead of en_US or vice versa)
+  const altLang = langCode === 'en_US' ? 'en' : 'en_US';
+  try {
+    const altLangPayload = {
+      messaging_product: 'whatsapp',
+      recipient_type: 'individual',
+      to: recipient,
+      type: 'template',
+      template: {
+        name: customTemplate,
+        language: { code: altLang },
+        components: [
+          {
+            type: 'body',
+            parameters: [
+              {
+                type: 'text',
+                text: String(otp),
+              },
+            ],
+          },
+        ],
+      },
+    };
+
+    const response = await axios.post(url, altLangPayload, { headers, timeout: 10000 });
+    console.log(`✅ [WhatsApp Service] Delivered OTP via template '${customTemplate}' (lang: ${altLang}) to +${recipient}`);
+    return { success: true, messageId: response.data.messages?.[0]?.id };
+  } catch (err) {
+    const metaErr = err.response?.data?.error;
+    errors.push(`Template '${customTemplate}' (lang ${altLang}): ${metaErr?.message || err.message}`);
   }
 
   // Strategy 2: Direct Text Message (works within 24h conversation window or in sandbox testing)
