@@ -12,7 +12,7 @@ router.get('/whatsapp', (req, res) => {
   const token = req.query['hub.verify_token'];
   const challenge = req.query['hub.challenge'];
 
-  const expectedToken = process.env.WHATSAPP_VERIFY_TOKEN || 'choucair_fresh_webhook_secret';
+  const expectedToken = process.env.WHATSAPP_VERIFY_TOKEN || process.env.WHATSAPP_WEBHOOK_VERIFY_TOKEN || 'choucair_fresh_webhook_secret';
 
   if (mode && token) {
     if (mode === 'subscribe' && token === expectedToken) {
