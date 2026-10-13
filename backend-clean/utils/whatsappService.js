@@ -64,14 +64,42 @@ const getMetaErrorDetails = (error) => {
     code: metaError?.code ?? error.code,
     subcode: metaError?.error_subcode,
     httpStatus: error.response?.status,
+    message: metaError?.message,
+    details: metaError?.error_data?.details,
+    userTitle: metaError?.error_user_title,
+    userMessage: metaError?.error_user_msg,
+    traceId: metaError?.fbtrace_id,
   };
 };
 
-const logMetaFailure = (label, details) => {
+const redactSensitiveValue = (value, secrets) => {
+  if (typeof value === 'string') {
+    return secrets
+      .filter((secret) => typeof secret === 'string' && secret.length > 0)
+      .sort((a, b) => b.length - a.length)
+      .reduce((message, secret) => message.split(secret).join('[REDACTED]'), value);
+  }
+  if (Array.isArray(value)) {
+    return value.map((item) => redactSensitiveValue(item, secrets));
+  }
+  if (value && typeof value === 'object') {
+    return Object.fromEntries(
+      Object.entries(value).map(([key, item]) => [key, redactSensitiveValue(item, secrets)])
+    );
+  }
+  return value;
+};
+
+const logMetaFailure = (label, details, secrets = []) => {
   console.error(label, {
     code: details.code,
     subcode: details.subcode,
     httpStatus: details.httpStatus,
+    message: redactSensitiveValue(details.message, secrets),
+    details: redactSensitiveValue(details.details, secrets),
+    userTitle: redactSensitiveValue(details.userTitle, secrets),
+    userMessage: redactSensitiveValue(details.userMessage, secrets),
+    traceId: details.traceId,
   });
 };
 
@@ -158,7 +186,12 @@ export const sendWhatsAppOtp = async (phone, otp) => {
     return { success: true, messageId };
   } catch (error) {
     const details = getMetaErrorDetails(error);
-    logMetaFailure('WhatsApp OTP delivery failed', details);
+    logMetaFailure('WhatsApp OTP delivery failed', details, [
+      credentials.token,
+      credentials.phoneNumberId,
+      recipient,
+      otpValue,
+    ]);
     return {
       success: false,
       error: 'Meta WhatsApp API rejected the OTP template request.',
@@ -221,7 +254,11 @@ export const sendWhatsAppOrderNotification = async (phone, order, options = {}) 
     return { success: true, messageId: response.data?.messages?.[0]?.id, isAdmin };
   } catch (error) {
     const details = getMetaErrorDetails(error);
-    logMetaFailure('WhatsApp order notification failed', details);
+    logMetaFailure('WhatsApp order notification failed', details, [
+      credentials.token,
+      credentials.phoneNumberId,
+      recipient,
+    ]);
     return {
       success: false,
       error: 'Meta WhatsApp API rejected the order notification.',

@@ -140,7 +140,7 @@ describe('WhatsApp Cloud API service', () => {
     expect(axiosCalls).toHaveLength(0);
   });
 
-  it('does not fall back to ordinary text and preserves Meta error codes without leaking secrets', async () => {
+  it('logs Meta parameter details for code 100 without leaking secrets', async () => {
     const recipient = '96170123456';
     const otp = '937204';
     const secret = process.env.WHATSAPP_ACCESS_TOKEN;
@@ -154,9 +154,12 @@ describe('WhatsApp Cloud API service', () => {
         status: 400,
         data: {
           error: {
-            message: 'Template language mismatch',
-            code: 132001,
-            error_subcode: 2388001,
+            message: 'Invalid parameter',
+            code: 100,
+            error_data: {
+              details: `Invalid value for ${recipient} with code ${otp}; token ${secret}`,
+            },
+            fbtrace_id: 'meta-trace-123',
           },
         },
       };
@@ -167,11 +170,12 @@ describe('WhatsApp Cloud API service', () => {
     try {
       const result = await sendWhatsAppOtp(`+${recipient}`, otp);
 
-      expect(result).toMatchObject({ success: false, code: 132001, subcode: 2388001 });
+      expect(result).toMatchObject({ success: false, code: 100 });
       expect(calls).toHaveLength(1);
       expect(calls[0][1].type).toBe('template');
-      expect(logged.join('\n')).toContain('132001');
-      expect(logged.join('\n')).toContain('2388001');
+      expect(logged.join('\n')).toContain('Invalid parameter');
+      expect(logged.join('\n')).toContain('Invalid value for [REDACTED] with code [REDACTED]; token [REDACTED]');
+      expect(logged.join('\n')).toContain('meta-trace-123');
       expect(logged.join('\n')).not.toContain(recipient);
       expect(logged.join('\n')).not.toContain(otp);
       expect(logged.join('\n')).not.toContain(secret);
