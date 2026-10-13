@@ -12,14 +12,19 @@ router.get('/whatsapp', (req, res) => {
   const token = req.query['hub.verify_token'];
   const challenge = req.query['hub.challenge'];
 
-  const expectedToken = process.env.WHATSAPP_VERIFY_TOKEN || process.env.WHATSAPP_WEBHOOK_VERIFY_TOKEN || 'choucair_fresh_webhook_secret';
+  const expectedToken = process.env.WHATSAPP_VERIFY_TOKEN;
+
+  if (!expectedToken) {
+    console.error('WhatsApp webhook verification is not configured');
+    return res.sendStatus(503);
+  }
 
   if (mode && token) {
     if (mode === 'subscribe' && token === expectedToken) {
-      console.log('✅ [WhatsApp Webhook] Verification successful with Meta!');
+      console.log('WhatsApp webhook verification successful');
       return res.status(200).send(challenge);
     } else {
-      console.warn('❌ [WhatsApp Webhook] Verification token mismatch');
+      console.warn('WhatsApp webhook verification token mismatch');
       return res.sendStatus(403);
     }
   }
@@ -46,12 +51,12 @@ router.post('/whatsapp', (req, res) => {
             const value = change.value;
             if (value?.messages) {
               for (const msg of value.messages) {
-                console.log(`💬 [WhatsApp Incoming] From: ${msg.from} | Text: ${msg.text?.body || msg.type}`);
+                console.log('WhatsApp incoming message received', { type: msg.type });
               }
             }
             if (value?.statuses) {
               for (const status of value.statuses) {
-                console.log(`📊 [WhatsApp Status] Message ${status.id} -> ${status.status} (Recipient: ${status.recipient_id})`);
+                console.log('WhatsApp message status updated', { status: status.status });
               }
             }
           }
@@ -61,7 +66,7 @@ router.post('/whatsapp', (req, res) => {
       res.sendStatus(404);
     }
   } catch (error) {
-    console.error('❌ [WhatsApp Webhook Error]:', error);
+    console.error('WhatsApp webhook event processing failed');
     res.status(500).send('Internal Server Error');
   }
 });

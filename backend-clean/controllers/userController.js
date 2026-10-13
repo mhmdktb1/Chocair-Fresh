@@ -89,35 +89,48 @@ const sendOTP = asyncHandler(async (req, res) => {
     return;
   }
 
-  // Delete any existing OTPs for this phone (guard against failures)
+  // Invalidate any previous OTP before creating a replacement.
   try {
     await OTP.deleteMany({ phone });
-  } catch (err) {
-    console.warn('⚠️ Failed to clear existing OTPs:', err.message || err);
-    // Do not block the flow for non-fatal DB errors; continue to create new OTP
+  } catch {
+    console.error('Failed to clear previous OTP records');
+    res.status(503).json({ success: false, message: 'Unable to issue an OTP right now. Please try again later.' });
+    return;
   }
 
   // Save new OTP
-  await OTP.create({
+  const otpRecord = await OTP.create({
     phone,
     code,
     expiresAt,
   });
 
-  // Dispatch OTP via Meta WhatsApp Cloud API (with dev simulation fallback)
-  let whatsappResult = { success: true };
+  // Dispatch OTP using the approved Meta authentication template.
+  let whatsappResult = { success: false };
   try {
     whatsappResult = await sendWhatsAppOtp(phone, code);
-  } catch (whatsappErr) {
-    console.warn('⚠️ WhatsApp dispatch exception:', whatsappErr.message);
-    whatsappResult = { success: false, error: whatsappErr.message };
+  } catch {
+    console.error('WhatsApp OTP dispatch failed unexpectedly');
+    whatsappResult = { success: false };
   }
 
-  if (!whatsappResult.success && process.env.NODE_ENV !== 'test') {
-    res.status(400).json({
+  if (!whatsappResult?.success) {
+    try {
+      await OTP.deleteOne({ _id: otpRecord._id });
+    } catch {
+      try {
+        await OTP.updateOne(
+          { _id: otpRecord._id },
+          { $set: { verified: true, expiresAt: new Date() } }
+        );
+      } catch {
+        console.error('Failed to invalidate an OTP after WhatsApp delivery failure');
+      }
+    }
+
+    res.status(502).json({
       success: false,
-      message: whatsappResult.error || 'Failed to deliver OTP via WhatsApp. Please check your phone number and try again.',
-      details: whatsappResult.allErrors || undefined,
+      message: 'Failed to deliver OTP via WhatsApp. Please check your phone number and try again.',
     });
     return;
   }
@@ -126,11 +139,6 @@ const sendOTP = asyncHandler(async (req, res) => {
     success: true,
     message: 'OTP sent successfully to your WhatsApp',
   };
-
-  // Only expose OTP in test mode for automated test suites
-  if (process.env.NODE_ENV === 'test') {
-    responsePayload.otp = code;
-  }
 
   res.status(200).json(responsePayload);
 });
@@ -180,7 +188,7 @@ const verifyOTP = asyncHandler(async (req, res) => {
     });
 
     if (user) {
-      console.log(`Migrating user ${user._id} phone from ${user.phone} to ${phone}`);
+      console.log(`Migrating legacy phone number for user ${user._id}`);
       user.phone = phone;
       await user.save();
     }
@@ -398,9 +406,6 @@ const updateUserPhone = asyncHandler(async (req, res) => {
     throw new Error('Phone number already in use');
   }
 
-  // TEMPORARILY DISABLED FOR TESTING:
-  /*
-  // Verify OTP
   const otpRecord = await OTP.findOne({
     phone,
     code,
@@ -413,10 +418,9 @@ const updateUserPhone = asyncHandler(async (req, res) => {
     throw new Error('Invalid or expired OTP');
   }
 
-  // Mark OTP as verified
+  // Consume the OTP before changing the account phone number.
   otpRecord.verified = true;
   await otpRecord.save();
-  */
 
   // Update user phone
   user.phone = phone;
