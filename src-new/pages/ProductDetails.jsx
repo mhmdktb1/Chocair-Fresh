@@ -254,7 +254,6 @@ const ProductDetails = () => {
   // Formatting helpers for Toters display
   const totalPrice = (currentUnitPrice * quantity).toFixed(2);
   const lbpPrice = Math.round(currentUnitPrice * 89500).toLocaleString('en-US');
-  const points = Math.round(currentUnitPrice * 105);
 
   const presets = getPresetOptions(normUnit);
   const rawImage = !imageError && product.image ? getAssetUrl(product.image) : FALLBACK_IMAGE;
@@ -416,9 +415,6 @@ const ProductDetails = () => {
                 </span>
               )}
               <span className="toters-lbp-price">LBP {lbpPrice}</span>
-              <span className="toters-points-pill">
-                <span className="gold-tag">Gold</span> {points} Pts
-              </span>
             </div>
           </div>
 
