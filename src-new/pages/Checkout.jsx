@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { 
   CheckCircle, CreditCard, Truck, MapPin, X, ArrowLeft, ArrowRight,
@@ -34,7 +34,7 @@ import './Checkout.css';
 
 const Checkout = () => {
   const { cartItems, cartTotal, clearCart, cartCount } = useCart();
-  const { user, login, updateUser } = useAuth();
+  const { user, updateUser } = useAuth();
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -49,6 +49,22 @@ const Checkout = () => {
   const [otpCode, setOtpCode] = useState("");
   const [otpLoading, setOtpLoading] = useState(false);
   const [otpError, setOtpError] = useState("");
+  const checkoutVerification = useRef(null);
+  const otpRequestInFlight = useRef(false);
+  const otpVerificationInFlight = useRef(false);
+  const orderSubmissionInFlight = useRef(false);
+
+  const getCheckoutRequestId = () => {
+    const storageKey = 'cf_checkout_request_id';
+    const storedId = localStorage.getItem(storageKey);
+    if (storedId && /^[a-f0-9]{32}$/i.test(storedId)) {
+      return storedId;
+    }
+
+    const requestId = window.crypto.randomUUID().replace(/-/g, '');
+    localStorage.setItem(storageKey, requestId);
+    return requestId;
+  };
 
   const [formData, setFormData] = useState({
     name: "",
@@ -289,6 +305,9 @@ const Checkout = () => {
   const handleInputChange = (e) => {
     const { name, value } = e.target;
     setFormData(prev => ({ ...prev, [name]: value }));
+    if (name === 'phone') {
+      checkoutVerification.current = null;
+    }
   };
 
   const handleLocationSelect = useCallback((locationData) => {
@@ -343,8 +362,23 @@ const Checkout = () => {
     setTimeout(() => setCopiedWhishNumber(false), 2500);
   };
 
-  const createOrder = async (authToken = null) => {
+  const createOrder = async (authToken = null, verifiedCheckoutToken) => {
+    if (orderSubmissionInFlight.current) return;
+    orderSubmissionInFlight.current = true;
+    setLoading(true);
+
     try {
+      if (!verifiedCheckoutToken) {
+        throw new Error('Verify your WhatsApp phone number before placing the order.');
+      }
+      const normalizedPhone =
+        normalizeLebanesePhoneNumber(formData.phone || user?.phone) || formData.phone || user?.phone;
+      if (
+        checkoutVerification.current?.token !== verifiedCheckoutToken ||
+        checkoutVerification.current?.phone !== normalizedPhone
+      ) {
+        throw new Error('The verified phone number changed. Please verify it again.');
+      }
       if (!formData.address || !formData.address.trim()) {
         const msg = 'Please choose your delivery location before placing your order.';
         setError(msg);
@@ -367,7 +401,7 @@ const Checkout = () => {
         customerInfo: {
           name: user?.name || formData.name,
           email: user?.email || '',
-          phone: user?.phone || formData.phone,
+          phone: normalizedPhone,
           address: formData.address,
           googleMapsLink: formData.googleMapsLink,
           lat: formData.lat != null ? Number(formData.lat) : undefined,
@@ -383,7 +417,9 @@ const Checkout = () => {
         paymentMethod: paymentMethod,
         itemsPrice: cartTotal,
         shippingPrice: shippingCost,
-        totalPrice: finalTotal
+        totalPrice: finalTotal,
+        checkoutVerificationToken: verifiedCheckoutToken,
+        checkoutRequestId: getCheckoutRequestId(),
       };
 
       const config = authToken ? {
@@ -391,6 +427,8 @@ const Checkout = () => {
       } : {};
 
       await api.post('/orders', orderData, config);
+      checkoutVerification.current = null;
+      localStorage.removeItem('cf_checkout_request_id');
 
       // Save the location the user entered to be remembered for future checkouts
       const cleanLabel = formData.building?.trim() || (formData.address ? formData.address.split(',')[0].trim() : 'Saved Address');
@@ -459,61 +497,49 @@ const Checkout = () => {
 
       setOrderPlaced(true);
       clearCart();
-      navigate('/profile', { state: { activeTab: 'orders' } });
+      if (user) {
+        navigate('/profile', { state: { activeTab: 'orders' } });
+      } else {
+        toast.success('Your order has been placed successfully.');
+        navigate('/');
+      }
     } catch (err) {
+      checkoutVerification.current = null;
       console.error("Order failed", err);
       setError(err.response?.data?.message || err.message || "Failed to place order. Please try again.");
       setLoading(false);
+    } finally {
+      orderSubmissionInFlight.current = false;
     }
   };
 
   const handleVerifyOtp = async (e) => {
     e.preventDefault();
+    if (otpVerificationInFlight.current) return;
+    otpVerificationInFlight.current = true;
     setOtpLoading(true);
     setOtpError("");
 
-    const normalizedPhone = normalizeLebanesePhoneNumber(formData.phone) || formData.phone;
+    const normalizedPhone =
+      normalizeLebanesePhoneNumber(formData.phone || user?.phone) || formData.phone || user?.phone;
 
     try {
-      if (user) {
-        const res = await api.put('/users/profile/phone', {
-          phone: normalizedPhone,
-          code: otpCode,
-        });
-
-        if (res.data.success) {
-          login(localStorage.getItem('token'), res.data.user);
-          setShowOtpModal(false);
-          await createOrder();
-        } else {
-          throw new Error(res.data.message || 'Verification failed');
-        }
-      } else {
-        const res = await api.post('/users/auth/verify-otp', { 
-          phone: normalizedPhone, 
-          code: otpCode 
-        });
-
-        const data = res.data;
-        let authToken = data.token;
-        let userData = data.user;
-
-        if (data.isNewUser) {
-          const regRes = await api.post('/users/auth/register', {
-            name: formData.name,
-            phone: normalizedPhone,
-            location: formData.address
-          });
-          authToken = regRes.data.token;
-          userData = regRes.data.user;
-        }
-
-        login(authToken, userData);
-        setShowOtpModal(false);
-        await createOrder(authToken);
+      const res = await api.post('/users/auth/verify-otp', {
+        phone: normalizedPhone,
+        code: otpCode,
+        purpose: 'checkout',
+      });
+      const verificationToken = res.data.checkoutVerificationToken;
+      if (!res.data.success || !verificationToken) {
+        throw new Error(res.data.message || 'Verification failed');
       }
+      checkoutVerification.current = { token: verificationToken, phone: normalizedPhone };
+      setShowOtpModal(false);
+      await createOrder(localStorage.getItem('token'), verificationToken);
     } catch (err) {
       setOtpError(err.response?.data?.message || err.message || "Invalid OTP. Please try again.");
+    } finally {
+      otpVerificationInFlight.current = false;
       setOtpLoading(false);
     }
   };
@@ -568,24 +594,26 @@ const Checkout = () => {
       return;
     }
     
-    // If user is already logged in AND has a verified phone number
-    if (user && user.phone) {
-      setLoading(true);
-      await createOrder();
-    } else {
-      // Prompt for WhatsApp OTP verification (e.g. Google user without phone or Guest)
-      setLoading(true);
-      try {
-        const phoneToSend = normalizedPhone || currentPhone;
-        const res = await api.post('/users/auth/send-otp', { phone: phoneToSend });
-        setOtpCode('');
-        setShowOtpModal(true);
-        toast.info('Verification code sent to your WhatsApp!');
-      } catch (err) {
-        setError(err.response?.data?.message || err.message || "Failed to send verification code. Please check your phone number.");
-      } finally {
-        setLoading(false);
+    if (otpRequestInFlight.current) return;
+    otpRequestInFlight.current = true;
+    setLoading(true);
+    try {
+      const res = await api.post('/users/auth/send-otp', {
+        phone: normalizedPhone,
+        purpose: 'checkout',
+      });
+      if (!res.data?.success) {
+        throw new Error(res.data?.message || 'Failed to send verification code');
       }
+      setOtpCode('');
+      setOtpError('');
+      setShowOtpModal(true);
+      toast.info('Verification code sent to your WhatsApp!');
+    } catch (err) {
+      setError(err.response?.data?.message || err.message || "Failed to send verification code. Please check your phone number.");
+    } finally {
+      otpRequestInFlight.current = false;
+      setLoading(false);
     }
   };
 

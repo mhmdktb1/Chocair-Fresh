@@ -5,7 +5,7 @@ import {
   MapPin, Mail, Calendar, ShieldCheck, Sparkles, Lock, MessageSquare, AlertCircle,
   ChevronDown, Search, Check
 } from 'lucide-react';
-import { normalizeLebanesePhoneNumber, formatPhoneNumber, validateAndNormalizePhone } from '../utils/phoneUtils';
+import { formatPhoneNumber, validateAndNormalizePhone } from '../utils/phoneUtils';
 import Navbar from '../components/layout/Navbar';
 import Button from '../components/common/Button';
 import LocationPicker from '../components/common/LocationPicker';
@@ -14,8 +14,6 @@ import { useAuth } from '../context/AuthContext';
 import { auth, provider, signInWithPopup } from '../config/firebase';
 import { toast } from 'react-toastify';
 import './Login.css';
-
-const ADMIN_ACCESS_KEYS = ['tookm', 'admin-access', 'mhmd382'];
 
 const COUNTRIES = [
   { code: 'LB', name: 'Lebanon', dialCode: '+961', flag: '🇱🇧' },
@@ -60,17 +58,8 @@ const COUNTRIES = [
   { code: 'ZA', name: 'South Africa', dialCode: '+27', flag: '🇿🇦' }
 ];
 
-const isAdminAccessKey = (value) => {
-  if (!import.meta.env.DEV) return false;
-  const input = (value || '').trim().toLowerCase();
-  return ADMIN_ACCESS_KEYS.includes(input);
-};
-
 const resolvePhone = (rawPhone, country) => {
   const trimmed = (rawPhone || '').trim();
-  if (isAdminAccessKey(trimmed)) {
-    return { isValid: true, normalized: trimmed.toLowerCase(), error: null };
-  }
   return validateAndNormalizePhone(trimmed, country);
 };
 
@@ -82,6 +71,7 @@ const Login = () => {
   const [showCountryDropdown, setShowCountryDropdown] = useState(false);
   const [countrySearch, setCountrySearch] = useState('');
   const [otp, setOtp] = useState('');
+  const [registrationToken, setRegistrationToken] = useState('');
   const [step, setStep] = useState('PHONE'); // PHONE, OTP, REGISTER
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -154,16 +144,9 @@ const Login = () => {
       const normalizedPhone = validation.normalized;
 
       // Call Backend API
-      const response = await api.post('/users/auth/send-otp', { phone: normalizedPhone });
+      const response = await api.post('/users/auth/send-otp', { phone: normalizedPhone, purpose: 'login' });
       
       if (response.data.success) {
-        // Check for direct login (Dev Bypass)
-        if (response.data.token) {
-          login(response.data.token, response.data.user);
-          navigate('/admin');
-          return;
-        }
-
         setOtp('');
         setStep('OTP');
         toast.info('Verification code sent to your WhatsApp!');
@@ -219,13 +202,15 @@ const Login = () => {
     try {
       const validation = resolvePhone(phoneNumber, selectedCountry);
       const normalizedPhone = validation.normalized || phoneNumber;
-      const response = await api.post('/users/auth/verify-otp', { 
+      const response = await api.post('/users/auth/verify-otp', {
         phone: normalizedPhone,
-        code: otp 
+        code: otp,
+        purpose: 'login',
       });
 
       if (response.data.success) {
         if (response.data.isNewUser) {
+          setRegistrationToken(response.data.registrationToken || '');
           setStep('REGISTER');
         } else {
           login(response.data.token, response.data.user);
@@ -265,6 +250,7 @@ const Login = () => {
       const response = await api.post('/users/auth/register', {
         phone: normalizedPhone,
         name: regData.name,
+        registrationToken,
         location: regData.location,
         email: regData.email || undefined,
         age: regData.age || undefined,
@@ -313,7 +299,10 @@ const Login = () => {
           type="button" 
           className="login-mobile-back-btn" 
           onClick={() => {
-            if (step === 'OTP' || step === 'REGISTER') setStep('PHONE');
+            if (step === 'OTP' || step === 'REGISTER') {
+              setRegistrationToken('');
+              setStep('PHONE');
+            }
             else navigate(-1);
           }}
           aria-label="Go back"
@@ -465,26 +454,6 @@ const Login = () => {
 
           {step === 'OTP' && (
             <form onSubmit={handleVerifyOtp} className="login-form otp-form-flow">
-              {/* Testing Mode Banner */}
-              {otp && (
-                <div style={{
-                  background: '#f0fdf4',
-                  border: '1.5px solid #86efac',
-                  borderRadius: '12px',
-                  padding: '0.75rem 1rem',
-                  textAlign: 'center',
-                  fontSize: '0.85rem',
-                  color: '#15803d',
-                  fontWeight: '600'
-                }}>
-                  <span>🧪 Testing Code: </span>
-                  <strong style={{ fontSize: '1.1rem', letterSpacing: '2px', color: '#166534' }}>{otp}</strong>
-                  <div style={{ fontSize: '0.75rem', fontWeight: 'normal', color: '#16a34a', marginTop: '2px' }}>
-                    (WhatsApp simulation mode active)
-                  </div>
-                </div>
-              )}
-
               <div className="otp-input-box">
                 <label className="login-input-label centered">Enter 6-Digit WhatsApp Code</label>
                 <input

@@ -8,6 +8,12 @@ const orderSchema = mongoose.Schema(
       default: null,
       ref: 'User',
     },
+    checkoutIdempotencyKeyHash: {
+      type: String,
+      unique: true,
+      sparse: true,
+      select: false,
+    },
     orderItems: [
       {
         name: { type: String, required: true },

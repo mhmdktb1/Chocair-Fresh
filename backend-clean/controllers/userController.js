@@ -1,12 +1,15 @@
 import asyncHandler from '../middleware/asyncHandler.js';
+import crypto from 'crypto';
+import process from 'node:process';
 import mongoose from 'mongoose';
-import jwt from 'jsonwebtoken';
 import axios from 'axios';
 import User from '../models/userModel.js';
 import OTP from '../models/otpModel.js';
+import { hashOtp, otpHashMatches } from '../utils/otpSecurity.js';
+import { createVerificationGrant, consumeVerificationGrant } from '../utils/verificationGrant.js';
 import generateToken from '../utils/generateToken.js';
-import { sendWhatsAppOtp } from '../utils/whatsappService.js';
-import { getRandomMascot, getDeterministicMascot } from '../utils/mascotAvatars.js';
+import { normalizePhoneForWhatsApp, sendWhatsAppOtp } from '../utils/whatsappService.js';
+import { getRandomMascot } from '../utils/mascotAvatars.js';
 
 // ==========================================
 // KNOWN ADMIN PHONE NUMBERS & CHECK HELPER
@@ -36,10 +39,169 @@ export const checkIsAdminPhone = (phone) => {
 };
 
 // ==========================================
-// GENERATE OTP CODE
+// OTP AUTH HELPERS
 // ==========================================
+const OTP_DEFAULT_PURPOSE = 'login';
+const OTP_MAX_ATTEMPTS = 5;
+const OTP_RATE_LIMIT_WINDOW_MS = 60 * 60 * 1000;
+const OTP_RESEND_COOLDOWN_MS = 30 * 1000;
+const OTP_MAX_REQUESTS_PER_PHONE = 5;
+const OTP_MAX_REQUESTS_PER_IP = 50;
+const otpRateLimitStore = new Map();
+
+const normalizeOtpPhone = (phone) => {
+  if (typeof phone !== 'string') {
+    return null;
+  }
+
+  const trimmed = phone.trim();
+  if (!trimmed) {
+    return null;
+  }
+
+  try {
+    const digits = normalizePhoneForWhatsApp(trimmed);
+    return `+${digits}`;
+  } catch {
+    return null;
+  }
+};
+
+const getOtpPurpose = (purpose, fallback = OTP_DEFAULT_PURPOSE) => {
+  if (purpose === undefined || purpose === null || purpose === '') return fallback;
+  if (typeof purpose !== 'string') return null;
+  const value = purpose.trim().toLowerCase();
+  if (value === 'checkout' || value === 'login' || value === 'profile') {
+    return value;
+  }
+  return null;
+};
+
+const consumeOtpCode = async (phone, purposes, code) => {
+  const otpRecord = await OTP.findOne({
+    phone,
+    purpose: { $in: purposes },
+    status: 'active',
+    expiresAt: { $gt: new Date() },
+  }).sort({ createdAt: -1 });
+
+  if (!otpRecord) return null;
+
+  if (!otpHashMatches(otpRecord.codeHash, code)) {
+    const failedAttempt = await OTP.findOneAndUpdate(
+      {
+        _id: otpRecord._id,
+        status: 'active',
+        expiresAt: { $gt: new Date() },
+        attemptsUsed: { $lt: OTP_MAX_ATTEMPTS },
+      },
+      { $inc: { attemptsUsed: 1 } },
+      { new: true }
+    );
+
+    if (!failedAttempt || failedAttempt.attemptsUsed >= OTP_MAX_ATTEMPTS) {
+      await OTP.updateOne(
+        { _id: otpRecord._id, status: 'active', attemptsUsed: { $gte: OTP_MAX_ATTEMPTS } },
+        { $set: { status: 'invalidated', verified: true, invalidatedAt: new Date() } }
+      );
+    }
+    return null;
+  }
+
+  return OTP.findOneAndUpdate(
+    {
+      _id: otpRecord._id,
+      status: 'active',
+      expiresAt: { $gt: new Date() },
+      attemptsUsed: { $lt: OTP_MAX_ATTEMPTS },
+      codeHash: otpRecord.codeHash,
+    },
+    {
+      $inc: { attemptsUsed: 1 },
+      $set: {
+        verified: true,
+        status: 'used',
+        usedAt: new Date(),
+        expiresAt: new Date(),
+      },
+    },
+    { new: true }
+  );
+};
+
+const invalidatePreviousOtpRecords = async (phone, purpose) => {
+  if (!phone || !purpose) return;
+
+  await OTP.updateMany(
+    {
+      phone,
+      purpose,
+      status: 'active',
+    },
+    {
+      $set: {
+        status: 'invalidated',
+        invalidatedAt: new Date(),
+        verified: true,
+      },
+    }
+  );
+};
+
+const enforceOtpRateLimit = (phone, ipAddress) => {
+  const normalizedPhone = normalizeOtpPhone(phone);
+  const now = Date.now();
+  const phoneKey = `phone:${normalizedPhone || 'unknown'}`;
+  const ipKey = `ip:${ipAddress || 'unknown'}`;
+  const phoneEntry = otpRateLimitStore.get(phoneKey) || { timestamps: [] };
+  const ipEntry = otpRateLimitStore.get(ipKey) || { timestamps: [] };
+
+  phoneEntry.timestamps = phoneEntry.timestamps.filter((ts) => now - ts < OTP_RATE_LIMIT_WINDOW_MS);
+  ipEntry.timestamps = ipEntry.timestamps.filter((ts) => now - ts < OTP_RATE_LIMIT_WINDOW_MS);
+  if (phoneEntry.timestamps.some((ts) => now - ts < OTP_RESEND_COOLDOWN_MS)) {
+    throw new Error('Please wait 30 seconds before requesting another verification code.');
+  }
+  if (phoneEntry.timestamps.length >= OTP_MAX_REQUESTS_PER_PHONE) {
+    throw new Error('Too many verification codes requested for this phone number. Try again later.');
+  }
+  if (ipEntry.timestamps.length >= OTP_MAX_REQUESTS_PER_IP) {
+    throw new Error('Too many OTP requests from this network. Try again later.');
+  }
+
+  phoneEntry.timestamps.push(now);
+  ipEntry.timestamps.push(now);
+  otpRateLimitStore.set(phoneKey, phoneEntry);
+  otpRateLimitStore.set(ipKey, ipEntry);
+};
+
+const findUserByPhone = async (phone) => {
+  const normalizedPhone = normalizeOtpPhone(phone);
+  if (!normalizedPhone) {
+    return null;
+  }
+
+  let user = await User.findOne({ phone: normalizedPhone });
+  if (user) {
+    return user;
+  }
+
+  const barePhone = normalizedPhone.replace('+961', '');
+  const legacyCandidates = [barePhone, `0${barePhone}`];
+
+  user = await User.findOne({
+    $or: legacyCandidates.map((candidate) => ({ phone: candidate })),
+  });
+
+  if (user) {
+    user.phone = normalizedPhone;
+    await user.save();
+  }
+
+  return user;
+};
+
 const generateOTP = () => {
-  return Math.floor(100000 + Math.random() * 900000).toString();
+  return crypto.randomInt(100000, 1000000).toString();
 };
 
 // ==========================================
@@ -48,99 +210,118 @@ const generateOTP = () => {
 // @access  Public
 // ==========================================
 const sendOTP = asyncHandler(async (req, res) => {
-  const { phone } = req.body;
+  const { phone, purpose } = req.body;
 
   if (!phone) {
     res.status(400);
     throw new Error('Phone number is required');
   }
 
-  // Dev Admin Bypass (strictly active only when NODE_ENV === 'development')
-  const devAdminKeys = ['mhmd382', 'tookm', 'admin-access'];
-  if (process.env.NODE_ENV === 'development' && devAdminKeys.includes(phone.toLowerCase())) {
-    const adminUser = await User.findOne({ isAdmin: true });
-    if (adminUser) {
-      const token = generateToken(adminUser._id);
-      return res.status(200).json({
-        success: true,
-        message: 'Dev Admin Bypass',
-        token,
-        user: {
-          _id: adminUser._id,
-          name: adminUser.name,
-          email: adminUser.email,
-          phone: adminUser.phone,
-          isAdmin: adminUser.isAdmin,
-          avatar: adminUser.avatar,
-          mascot: adminUser.mascot || getRandomMascot(),
-        }
-      });
-    }
+  const normalizedPhone = normalizeOtpPhone(phone);
+  if (!normalizedPhone) {
+    res.status(400);
+    throw new Error('Please enter a valid phone number.');
   }
 
-  // Generate 6-digit OTP
-  const code = generateOTP();
-  const expiresAt = new Date(Date.now() + 5 * 60 * 1000); // 5 minutes
+  const activePurpose = getOtpPurpose(purpose);
+  if (!activePurpose) {
+    res.status(400);
+    throw new Error('Invalid OTP purpose');
+  }
 
-  // Ensure we have a DB connection before attempting DB ops
+  try {
+    enforceOtpRateLimit(normalizedPhone, req.ip);
+  } catch (error) {
+    return res.status(429).json({
+      success: false,
+      message: error.message || 'Too many OTP requests. Please try again later.',
+    });
+  }
+
+  const code = generateOTP();
+  const expiresAt = new Date(Date.now() + 5 * 60 * 1000);
+
   if (mongoose.connection.readyState !== 1) {
     console.error('📛 MongoDB not connected - cannot send OTP');
     res.status(503).json({ success: false, message: 'Database not connected. Try again later.' });
     return;
   }
 
-  // Invalidate any previous OTP before creating a replacement.
+  const codeHash = hashOtp(code);
+  let otpRecord;
   try {
-    await OTP.deleteMany({ phone });
-  } catch {
-    console.error('Failed to clear previous OTP records');
-    res.status(503).json({ success: false, message: 'Unable to issue an OTP right now. Please try again later.' });
-    return;
+    otpRecord = await OTP.create({
+      phone: normalizedPhone,
+      purpose: activePurpose,
+      codeHash,
+      expiresAt,
+      attemptsUsed: 0,
+      status: 'pending',
+      verified: false,
+    });
+  } catch (error) {
+    if (error.code === 11000) {
+      return res.status(429).json({
+        success: false,
+        message: 'A verification code is already being issued. Please wait and try again.',
+      });
+    }
+    throw error;
   }
 
-  // Save new OTP
-  const otpRecord = await OTP.create({
-    phone,
-    code,
-    expiresAt,
-  });
-
-  // Dispatch OTP using the approved Meta authentication template.
   let whatsappResult = { success: false };
   try {
-    whatsappResult = await sendWhatsAppOtp(phone, code);
+    whatsappResult = await sendWhatsAppOtp(normalizedPhone, code);
   } catch {
     console.error('WhatsApp OTP dispatch failed unexpectedly');
     whatsappResult = { success: false };
   }
 
   if (!whatsappResult?.success) {
-    try {
-      await OTP.deleteOne({ _id: otpRecord._id });
-    } catch {
-      try {
-        await OTP.updateOne(
-          { _id: otpRecord._id },
-          { $set: { verified: true, expiresAt: new Date() } }
-        );
-      } catch {
-        console.error('Failed to invalidate an OTP after WhatsApp delivery failure');
-      }
-    }
+    await OTP.deleteOne({ _id: otpRecord._id }).catch(() => {
+      console.error('Could not remove pending OTP after WhatsApp delivery failure');
+    });
 
-    res.status(502).json({
+    return res.status(502).json({
       success: false,
       message: 'Failed to deliver OTP via WhatsApp. Please check your phone number and try again.',
     });
-    return;
   }
 
-  const responsePayload = {
+  try {
+    await invalidatePreviousOtpRecords(normalizedPhone, activePurpose);
+    const activatedOtp = await OTP.findOneAndUpdate(
+      { _id: otpRecord._id, status: 'pending', expiresAt: { $gt: new Date() } },
+      { $set: { status: 'active' } },
+      { new: true }
+    );
+    if (!activatedOtp) {
+      throw new Error('The OTP expired before it could be activated.');
+    }
+  } catch (error) {
+    await OTP.updateOne(
+      { _id: otpRecord._id, status: 'pending' },
+      { $set: { status: 'invalidated', verified: true, invalidatedAt: new Date() } }
+    ).catch(() => {
+      console.error('Could not invalidate pending OTP after activation failure');
+    });
+    if (error.code === 11000) {
+      return res.status(429).json({
+        success: false,
+        message: 'Another verification code was issued. Please use the most recently received code.',
+      });
+    }
+    console.error('Could not activate OTP after WhatsApp accepted the message');
+    return res.status(503).json({
+      success: false,
+      message: 'The verification code could not be activated. Please request a new code.',
+    });
+  }
+
+  return res.status(200).json({
     success: true,
     message: 'OTP sent successfully to your WhatsApp',
-  };
-
-  res.status(200).json(responsePayload);
+  });
 });
 
 // ==========================================
@@ -149,53 +330,63 @@ const sendOTP = asyncHandler(async (req, res) => {
 // @access  Public
 // ==========================================
 const verifyOTP = asyncHandler(async (req, res) => {
-  const { phone, code } = req.body;
+  const { phone, code, purpose } = req.body;
 
   if (!phone || !code) {
     res.status(400);
     throw new Error('Phone number and OTP code are required');
   }
 
-  // Find OTP record
-  const otpRecord = await OTP.findOne({
-    phone,
-    code,
-    verified: false,
-    expiresAt: { $gt: new Date() },
-  });
-
-  if (!otpRecord) {
+  const normalizedPhone = normalizeOtpPhone(phone);
+  if (!normalizedPhone) {
     res.status(400);
-    throw new Error('Invalid or expired OTP');
+    throw new Error('Please enter a valid phone number.');
   }
 
-  // Mark OTP as verified
-  otpRecord.verified = true;
-  await otpRecord.save();
+  const activePurpose = getOtpPurpose(purpose);
+  if (!activePurpose) {
+    res.status(400);
+    throw new Error('Invalid OTP purpose');
+  }
+  const otpCandidate = String(code).trim();
 
-  // Check if user exists
-  let user = await User.findOne({ phone });
-
-  // FIX: Handle legacy phone numbers (without +961 prefix)
-  // If user not found with normalized phone, try searching without prefix
-  if (!user && phone.startsWith('+961')) {
-    const localPhone = phone.replace('+961', '');
-    user = await User.findOne({ 
-      $or: [
-        { phone: localPhone },
-        { phone: `0${localPhone}` }
-      ]
+  const updatedOtpRecord = await consumeOtpCode(normalizedPhone, [activePurpose], otpCandidate);
+  if (!updatedOtpRecord) {
+    return res.status(400).json({
+      success: false,
+      message: 'Invalid, expired, or exhausted OTP',
     });
-
-    if (user) {
-      console.log(`Migrating legacy phone number for user ${user._id}`);
-      user.phone = phone;
-      await user.save();
-    }
   }
+
+  await OTP.updateMany(
+    {
+      phone: normalizedPhone,
+      purpose: activePurpose,
+      _id: { $ne: updatedOtpRecord._id },
+      status: 'active',
+    },
+    {
+      $set: {
+        status: 'invalidated',
+        invalidatedAt: new Date(),
+        verified: true,
+      },
+    }
+  );
+
+  if (activePurpose === 'checkout') {
+    const checkoutVerificationToken = await createVerificationGrant(normalizedPhone, 'checkout');
+    return res.status(200).json({
+      success: true,
+      purpose: 'checkout',
+      checkoutVerificationToken,
+    });
+  }
+
+  const user = await findUserByPhone(normalizedPhone);
 
   if (user) {
-    if (checkIsAdminPhone(phone) || checkIsAdminPhone(user.phone)) {
+    if (checkIsAdminPhone(normalizedPhone) || checkIsAdminPhone(user.phone)) {
       if (!user.isAdmin) {
         user.isAdmin = true;
         await user.save();
@@ -205,8 +396,8 @@ const verifyOTP = asyncHandler(async (req, res) => {
       user.mascot = getRandomMascot();
       await user.save();
     }
-    // Existing user - return user data (they're now logged in)
-    res.status(200).json({
+
+    return res.status(200).json({
       success: true,
       isNewUser: false,
       token: generateToken(user._id),
@@ -222,14 +413,14 @@ const verifyOTP = asyncHandler(async (req, res) => {
         isAdmin: user.isAdmin,
       },
     });
-  } else {
-    // New user - they need to complete registration
-    res.status(200).json({
-      success: true,
-      isNewUser: true,
-      phone,
-    });
   }
+
+  return res.status(200).json({
+    success: true,
+    isNewUser: true,
+    phone: normalizedPhone,
+    registrationToken: await createVerificationGrant(normalizedPhone, 'registration'),
+  });
 });
 
 // ==========================================
@@ -238,26 +429,39 @@ const verifyOTP = asyncHandler(async (req, res) => {
 // @access  Public
 // ==========================================
 const registerUser = asyncHandler(async (req, res) => {
-  const { phone, name, email, age, gender, location } = req.body;
+  const { phone, name, email, age, gender, location, registrationToken } = req.body;
 
   if (!phone || !name) {
     res.status(400);
     throw new Error('Phone number and name are required');
   }
 
-  // Check if user already exists
-  const existingUser = await User.findOne({ phone });
+  const normalizedPhone = normalizeOtpPhone(phone);
+  if (!normalizedPhone) {
+    res.status(400);
+    throw new Error('Please enter a valid phone number.');
+  }
+
+  const existingUser = await findUserByPhone(normalizedPhone);
   if (existingUser) {
     res.status(400);
     throw new Error('User already exists with this phone number');
   }
 
-  // Determine admin status based on verified admin numbers
-  const isAdmin = checkIsAdminPhone(phone);
+  const verifiedRegistration = await consumeVerificationGrant(
+    registrationToken,
+    normalizedPhone,
+    'registration'
+  );
+  if (!verifiedRegistration) {
+    res.status(403);
+    throw new Error('Verify this phone number before registering.');
+  }
 
-  // Create user with a random mascot
+  const isAdmin = checkIsAdminPhone(normalizedPhone);
+
   const user = await User.create({
-    phone,
+    phone: normalizedPhone,
     name,
     email: email || undefined,
     age: age || undefined,
@@ -386,7 +590,7 @@ const updateUserProfile = asyncHandler(async (req, res) => {
 // @access  Private
 // ==========================================
 const updateUserPhone = asyncHandler(async (req, res) => {
-  const { phone, code } = req.body;
+  const { phone, code, purpose } = req.body;
   const user = await User.findById(req.user._id);
 
   if (!user) {
@@ -399,31 +603,35 @@ const updateUserPhone = asyncHandler(async (req, res) => {
     throw new Error('Phone number and OTP are required');
   }
 
-  // Check if phone is already in use
-  const phoneExists = await User.findOne({ phone });
+  const normalizedPhone = normalizeOtpPhone(phone);
+  if (!normalizedPhone) {
+    res.status(400);
+    throw new Error('Please enter a valid phone number.');
+  }
+
+  const phoneExists = await User.findOne({ phone: normalizedPhone });
   if (phoneExists && phoneExists._id.toString() !== user._id.toString()) {
     res.status(400);
     throw new Error('Phone number already in use');
   }
 
-  const otpRecord = await OTP.findOne({
-    phone,
-    code,
-    verified: false,
-    expiresAt: { $gt: new Date() },
-  });
+  const activeOtpPurpose = getOtpPurpose(purpose, 'profile');
+  if (!activeOtpPurpose || activeOtpPurpose === 'checkout') {
+    res.status(400);
+    throw new Error('Invalid OTP purpose');
+  }
 
+  const otpRecord = await consumeOtpCode(
+    normalizedPhone,
+    activeOtpPurpose === 'profile' ? ['profile', 'login'] : [activeOtpPurpose],
+    code
+  );
   if (!otpRecord) {
     res.status(400);
     throw new Error('Invalid or expired OTP');
   }
 
-  // Consume the OTP before changing the account phone number.
-  otpRecord.verified = true;
-  await otpRecord.save();
-
-  // Update user phone
-  user.phone = phone;
+  user.phone = normalizedPhone;
   if (!user.mascot) user.mascot = getRandomMascot();
   const updatedUser = await user.save();
 

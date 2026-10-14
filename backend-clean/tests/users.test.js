@@ -6,6 +6,7 @@ import axios from 'axios';
 import app from '../server.js';
 import User from '../models/userModel.js';
 import OTP from '../models/otpModel.js';
+import { hashOtp } from '../utils/otpSecurity.js';
 import generateToken from '../utils/generateToken.js';
 import {
   defaultGoogleTokenVerifier,
@@ -80,7 +81,8 @@ describe('User and Auth API', () => {
 
     const otpDoc = await OTP.findOne({ phone: '+96170555666' });
     expect(otpDoc).toBeTruthy();
-    expect(otpDoc.code).toHaveLength(6);
+    expect(otpDoc.codeHash).toMatch(/^[a-f0-9]{64}$/);
+    expect(otpDoc.toObject()).not.toHaveProperty('code');
     expect(otpDoc.expiresAt.getTime()).toBeGreaterThan(Date.now());
     expect(otpDoc.expiresAt.getTime()).toBeLessThanOrEqual(Date.now() + 5 * 60 * 1000);
   });
@@ -88,7 +90,7 @@ describe('User and Auth API', () => {
   it('POST /api/users/auth/verify-otp - logs in existing user', async () => {
     await OTP.create({
       phone: '+96170333444',
-      code: '123456',
+      codeHash: hashOtp('123456'),
       expiresAt: new Date(Date.now() + 5 * 60 * 1000),
     });
 
@@ -101,6 +103,82 @@ describe('User and Auth API', () => {
     expect(res.body.isNewUser).toBe(false);
     expect(res.body.token).toBeTruthy();
     expect(res.body.user.name).toBe('Regular Customer');
+  });
+
+  it('OTP purpose is isolated and checkout verification returns a phone-bound grant', async () => {
+    await OTP.create({
+      phone: '+96170555667',
+      purpose: 'checkout',
+      codeHash: hashOtp('123456'),
+      expiresAt: new Date(Date.now() + 5 * 60 * 1000),
+    });
+
+    const wrongPurpose = await request(app)
+      .post('/api/users/auth/verify-otp')
+      .send({ phone: '70 555 667', code: '123456', purpose: 'login' });
+    expect(wrongPurpose.status).toBe(400);
+
+    const checkout = await request(app)
+      .post('/api/users/auth/verify-otp')
+      .send({ phone: '70 555 667', code: '123456', purpose: 'checkout' });
+    expect(checkout.status).toBe(200);
+    expect(checkout.body.checkoutVerificationToken).toBeTruthy();
+    expect(checkout.body).not.toHaveProperty('token');
+    expect(checkout.body).not.toHaveProperty('user');
+  });
+
+  it('counts wrong OTP attempts and invalidates the code after five failures', async () => {
+    const otpRecord = await OTP.create({
+      phone: '+96170555668',
+      purpose: 'login',
+      codeHash: hashOtp('123456'),
+      expiresAt: new Date(Date.now() + 5 * 60 * 1000),
+    });
+
+    for (let attempt = 0; attempt < 5; attempt += 1) {
+      const response = await request(app)
+        .post('/api/users/auth/verify-otp')
+        .send({ phone: '+96170555668', code: '000000', purpose: 'login' });
+      expect(response.status).toBe(400);
+    }
+
+    const exhaustedOtp = await OTP.findById(otpRecord._id);
+    expect(exhaustedOtp.attemptsUsed).toBe(5);
+    expect(exhaustedOtp.status).toBe('invalidated');
+
+    const correctAfterExhaustion = await request(app)
+      .post('/api/users/auth/verify-otp')
+      .send({ phone: '+96170555668', code: '123456', purpose: 'login' });
+    expect(correctAfterExhaustion.status).toBe(400);
+  });
+
+  it('atomically allows only one concurrent verification of an OTP', async () => {
+    await OTP.create({
+      phone: '+96170555669',
+      purpose: 'login',
+      codeHash: hashOtp('321654'),
+      expiresAt: new Date(Date.now() + 5 * 60 * 1000),
+    });
+
+    const responses = await Promise.all([
+      request(app)
+        .post('/api/users/auth/verify-otp')
+        .send({ phone: '+96170555669', code: '321654', purpose: 'login' }),
+      request(app)
+        .post('/api/users/auth/verify-otp')
+        .send({ phone: '+96170555669', code: '321654', purpose: 'login' }),
+    ]);
+
+    expect(responses.map((response) => response.status).sort()).toEqual([200, 400]);
+  });
+
+  it('rejects registration without a phone-verification grant', async () => {
+    const response = await request(app)
+      .post('/api/users/auth/register')
+      .send({ phone: '+96170999112', name: 'Unverified Registration' });
+
+    expect(response.status).toBe(403);
+    expect(await User.findOne({ phone: '+96170999112' })).toBeNull();
   });
 
   it('POST /api/users/auth/google - creates new user using verified token and ignores forged client claims', async () => {
@@ -411,7 +489,8 @@ describe('User and Auth API', () => {
 
     const otpDoc = await OTP.findOne({ phone: '+96170888999' });
     expect(otpDoc).toBeTruthy();
-    expect(otpDoc.code).toMatch(/^\d{6}$/);
+    expect(otpDoc.codeHash).toMatch(/^[a-f0-9]{64}$/);
+    expect(otpDoc.toObject()).not.toHaveProperty('code');
   });
 
   it('OTP FLOW: production delivery does not expose OTP or recipient in logs or response', async () => {
@@ -427,6 +506,7 @@ describe('User and Auth API', () => {
     const originalWarn = console.warn;
     const originalError = console.error;
     const logOutput = [];
+    let dispatchedCode;
 
     process.env.NODE_ENV = 'production';
     process.env.WHATSAPP_ACCESS_TOKEN = 'test-access-token';
@@ -434,7 +514,10 @@ describe('User and Auth API', () => {
     process.env.WHATSAPP_TEMPLATE_LANG = 'en_US';
     delete process.env.WHATSAPP_OTP_TEMPLATE;
     delete process.env.WHATSAPP_GRAPH_API_VERSION;
-    axios.post = async () => ({ data: { messages: [{ id: 'wamid.test' }] } });
+    axios.post = async (_url, payload) => {
+      dispatchedCode = payload.template.components[0].parameters[0].text;
+      return { data: { messages: [{ id: 'wamid.test' }] } };
+    };
     console.log = (...args) => logOutput.push(args.join(' '));
     console.warn = (...args) => logOutput.push(args.join(' '));
     console.error = (...args) => logOutput.push(args.join(' '));
@@ -451,7 +534,9 @@ describe('User and Auth API', () => {
       const otpDoc = await OTP.findOne({ phone: '+96170555991' });
       expect(otpDoc).toBeTruthy();
       const allLogs = logOutput.join('\n');
-      expect(allLogs).not.toContain(otpDoc.code);
+      expect(otpDoc.codeHash).toMatch(/^[a-f0-9]{64}$/);
+      expect(otpDoc.toObject()).not.toHaveProperty('code');
+      expect(allLogs).not.toContain(dispatchedCode);
       expect(allLogs).not.toContain('96170555991');
       expect(allLogs).not.toContain('+96170555991');
     } finally {
@@ -469,7 +554,13 @@ describe('User and Auth API', () => {
     }
   });
 
-  it('OTP FLOW: removes an OTP when Meta rejects delivery', async () => {
+  it('OTP FLOW: failed delivery leaves no usable new OTP and preserves the prior code', async () => {
+    const previousOtp = await OTP.create({
+      phone: '+96170555992',
+      purpose: 'login',
+      codeHash: hashOtp('112233'),
+      expiresAt: new Date(Date.now() + 5 * 60 * 1000),
+    });
     const originalEnv = {
       NODE_ENV: process.env.NODE_ENV,
       WHATSAPP_ACCESS_TOKEN: process.env.WHATSAPP_ACCESS_TOKEN,
@@ -498,7 +589,10 @@ describe('User and Auth API', () => {
       expect(res.status).toBe(502);
       expect(res.body.success).toBe(false);
       expect(res.body).not.toHaveProperty('otp');
-      expect(await OTP.findOne({ phone: '+96170555992' })).toBeNull();
+      const storedOtpRecords = await OTP.find({ phone: '+96170555992' });
+      expect(storedOtpRecords).toHaveLength(1);
+      expect(storedOtpRecords[0]._id.toString()).toBe(previousOtp._id.toString());
+      expect(storedOtpRecords[0].status).toBe('active');
     } finally {
       for (const [key, value] of Object.entries(originalEnv)) {
         if (value === undefined) delete process.env[key];
@@ -510,9 +604,9 @@ describe('User and Auth API', () => {
 
   it('EXPIRED & WRONG OTP: rejects invalid, expired, or already-used OTP codes', async () => {
     // 1. Expired OTP
-    await OTP.create({
+    const expiredOtp = await OTP.create({
       phone: '+96170333444',
-      code: '888888',
+      codeHash: hashOtp('888888'),
       expiresAt: new Date(Date.now() - 10000), // Expired in past
       verified: false,
     });
@@ -521,6 +615,7 @@ describe('User and Auth API', () => {
       .post('/api/users/auth/verify-otp')
       .send({ phone: '+96170333444', code: '888888' });
     expect(expiredRes.status).toBe(400);
+    await OTP.updateOne({ _id: expiredOtp._id }, { $set: { status: 'invalidated' } });
 
     // 2. Wrong OTP code
     const wrongRes = await request(app)
@@ -531,7 +626,7 @@ describe('User and Auth API', () => {
     // 3. Re-using already verified OTP
     const validOtp = await OTP.create({
       phone: '+96170333444',
-      code: '777777',
+      codeHash: hashOtp('777777'),
       expiresAt: new Date(Date.now() + 5 * 60 * 1000),
       verified: false,
     });
@@ -579,7 +674,7 @@ describe('User and Auth API', () => {
   it('PHONE UPDATE: consumes a valid OTP before changing the phone number', async () => {
     const otpRecord = await OTP.create({
       phone: '+96170987654',
-      code: '123456',
+      codeHash: hashOtp('123456'),
       expiresAt: new Date(Date.now() + 5 * 60 * 1000),
     });
 
@@ -606,12 +701,23 @@ describe('User and Auth API', () => {
     ];
 
     // 1. New user registration receives mascot
+    await OTP.create({
+      phone: '+96170999111',
+      purpose: 'login',
+      codeHash: hashOtp('654321'),
+      expiresAt: new Date(Date.now() + 5 * 60 * 1000),
+    });
+    const verificationRes = await request(app)
+      .post('/api/users/auth/verify-otp')
+      .send({ phone: '+96170999111', code: '654321', purpose: 'login' });
+
     const regRes = await request(app)
       .post('/api/users/auth/register')
       .send({
         phone: '+96170999111',
         name: 'Mascot Test User',
-        email: 'mascot@example.com'
+        email: 'mascot@example.com',
+        registrationToken: verificationRes.body.registrationToken,
       });
 
     expect(regRes.status).toBe(201);

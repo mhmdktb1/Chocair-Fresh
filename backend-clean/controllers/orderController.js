@@ -1,10 +1,13 @@
 import asyncHandler from '../middleware/asyncHandler.js';
+import process from 'node:process';
 import Order from '../models/orderModel.js';
 import Product from '../models/productModel.js';
 import User from '../models/userModel.js';
 import HomeConfig from '../models/homeModel.js';
-import { sendWhatsAppOrderNotification } from '../utils/whatsappService.js';
+import { normalizePhoneForWhatsApp, sendWhatsAppOrderNotification } from '../utils/whatsappService.js';
 import { sendTelegramOrderAlert } from '../utils/telegramService.js';
+import { consumeVerificationGrant, releaseVerificationGrant } from '../utils/verificationGrant.js';
+import { hashVerificationToken } from '../utils/otpSecurity.js';
 import { calculateProductDiscount } from '../utils/discountHelper.js';
 import {
   calculateDistanceKm,
@@ -33,11 +36,36 @@ const addOrderItems = asyncHandler(async (req, res) => {
     paymentMethod,
     deliveryPreference,
     shippingPrice: clientShippingPrice,
+    checkoutVerificationToken,
+    checkoutRequestId,
   } = req.body;
 
   if (!orderItems || orderItems.length === 0) {
     res.status(400);
     throw new Error('No order items');
+  }
+
+  let normalizedPhone;
+  try {
+    normalizedPhone = `+${normalizePhoneForWhatsApp(customerInfo?.phone)}`;
+  } catch {
+    res.status(400);
+    throw new Error('A valid, verified checkout phone number is required.');
+  }
+
+  if (typeof checkoutRequestId !== 'string' || !/^[a-f0-9]{32,64}$/i.test(checkoutRequestId)) {
+    res.status(400);
+    throw new Error('A valid checkout request ID is required.');
+  }
+  const checkoutIdempotencyKeyHash = hashVerificationToken(`checkout-order:${checkoutRequestId}`);
+  const existingOrder = await Order.findOne({
+    checkoutIdempotencyKeyHash,
+    'customerInfo.phone': normalizedPhone,
+  })
+    .select('+checkoutIdempotencyKeyHash')
+    .lean();
+  if (existingOrder) {
+    return res.status(200).json(existingOrder);
   }
 
   // Fetch active store delivery settings
@@ -79,10 +107,21 @@ const addOrderItems = asyncHandler(async (req, res) => {
     }
   }
 
+  const checkoutGrant = await consumeVerificationGrant(
+    checkoutVerificationToken,
+    normalizedPhone,
+    'checkout'
+  );
+  if (!checkoutGrant) {
+    res.status(403);
+    throw new Error('Verify the checkout phone number before placing this order.');
+  }
+
   // Atomically decrement stock and securely calculate price per item
   const decrementedItems = [];
   const normalizedOrderItems = [];
   let calculatedItemsPrice = 0;
+  let orderCreated = false;
 
   try {
     // Validate every line before touching stock so bad input never needs a rollback.
@@ -173,6 +212,7 @@ const addOrderItems = asyncHandler(async (req, res) => {
 
     const enrichedCustomerInfo = {
       ...customerInfo,
+      phone: normalizedPhone,
       lat: orderLat != null ? Number(orderLat) : undefined,
       lng: orderLng != null ? Number(orderLng) : undefined,
       distanceKm: calculatedDistanceKm != null ? calculatedDistanceKm : undefined,
@@ -203,6 +243,7 @@ const addOrderItems = asyncHandler(async (req, res) => {
     };
 
     const order = new Order({
+      checkoutIdempotencyKeyHash,
       orderItems: normalizedOrderItems,
       user: req.user ? req.user._id : undefined,
       customerInfo: enrichedCustomerInfo,
@@ -220,6 +261,7 @@ const addOrderItems = asyncHandler(async (req, res) => {
     });
 
     const createdOrder = await order.save();
+    orderCreated = true;
 
     console.log(`🔔 [Admin Notification] New order #${createdOrder._id} ($${createdOrder.totalPrice}) placed by ${customerInfo?.name || 'Guest'}`);
 
@@ -238,6 +280,24 @@ const addOrderItems = asyncHandler(async (req, res) => {
         )
       )
     );
+
+    if (!orderCreated) {
+      await releaseVerificationGrant(checkoutGrant).catch((releaseError) =>
+        console.error('Failed to release checkout verification grant after order failure:', releaseError.message)
+      );
+    }
+
+    if (error.code === 11000) {
+      const duplicateOrder = await Order.findOne({
+        checkoutIdempotencyKeyHash,
+        'customerInfo.phone': normalizedPhone,
+      })
+        .select('+checkoutIdempotencyKeyHash')
+        .lean();
+      if (duplicateOrder) {
+        return res.status(200).json(duplicateOrder);
+      }
+    }
 
     res.status(400);
     throw new Error(error.message || 'Failed to place order due to inventory constraints');

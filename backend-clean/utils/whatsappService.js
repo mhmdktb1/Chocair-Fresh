@@ -1,4 +1,5 @@
 import axios from 'axios';
+import process from 'node:process';
 
 const DEFAULT_GRAPH_API_VERSION = 'v26.0';
 
@@ -117,7 +118,7 @@ export const sendWhatsAppOtp = async (phone, otp) => {
     return { success: false, error: error.message };
   }
 
-  const templateName = process.env.WHATSAPP_OTP_TEMPLATE || 'chocair_otp';
+  const templateName = (process.env.WHATSAPP_OTP_TEMPLATE || 'chocair_otp').trim();
   const templateLanguage = process.env.WHATSAPP_TEMPLATE_LANG;
   if (!credentials.token || !credentials.phoneNumberId) {
     console.error('WhatsApp OTP delivery is not configured', {
@@ -138,6 +139,15 @@ export const sendWhatsAppOtp = async (phone, otp) => {
     return {
       success: false,
       error: 'WHATSAPP_TEMPLATE_LANG must match the approved Meta template language code.',
+    };
+  }
+  if (!templateName) {
+    console.error('WhatsApp OTP delivery is not configured', {
+      missing: ['WHATSAPP_OTP_TEMPLATE'],
+    });
+    return {
+      success: false,
+      error: 'WHATSAPP_OTP_TEMPLATE must match the approved Meta authentication template name.',
     };
   }
   if (typeof otp !== 'string' || !otp.trim()) {

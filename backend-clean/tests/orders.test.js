@@ -1,14 +1,28 @@
 import mongoose from 'mongoose';
+import { randomUUID } from 'node:crypto';
 import { MongoMemoryServer } from 'mongodb-memory-server';
 import request from 'supertest';
 import app from '../server.js';
 import Product from '../models/productModel.js';
 import User from '../models/userModel.js';
+import { createVerificationGrant } from '../utils/verificationGrant.js';
+import { normalizePhoneForWhatsApp } from '../utils/whatsappService.js';
 import generateToken from '../utils/generateToken.js';
 import { calculateOrderPrepMinutes, calculateQueueWaitMinutes } from '../utils/etaHelper.js';
 
 let mongoServer;
 let adminToken;
+
+const postVerifiedOrder = async (payload, authToken) => {
+  const phone = `+${normalizePhoneForWhatsApp(payload.customerInfo.phone)}`;
+  const checkoutVerificationToken = await createVerificationGrant(phone, 'checkout');
+  const checkoutRequestId = payload.checkoutRequestId || randomUUID().replace(/-/g, '');
+  let orderRequest = request(app).post('/api/orders');
+  if (authToken) {
+    orderRequest = orderRequest.set('Authorization', `Bearer ${authToken}`);
+  }
+  return orderRequest.send({ ...payload, checkoutVerificationToken, checkoutRequestId });
+};
 
 beforeAll(async () => {
   mongoServer = await MongoMemoryServer.create();
@@ -54,6 +68,7 @@ describe('Order API', () => {
   });
 
   const createOrderData = () => ({
+    checkoutRequestId: randomUUID().replace(/-/g, ''),
     orderItems: [{
       product: productId,
       name: 'Test Orange',
@@ -78,7 +93,7 @@ describe('Order API', () => {
   });
 
   it('POST /api/orders - should create an order and atomically decrement stock', async () => {
-    const res = await request(app).post('/api/orders').send(createOrderData());
+    const res = await postVerifiedOrder(createOrderData());
     expect(res.status).toBe(201);
     expect(res.body.totalPrice).toBe(9.00);
     expect(res.body.orderItems).toHaveLength(1);
@@ -88,11 +103,60 @@ describe('Order API', () => {
     expect(updatedProduct.countInStock).toBe(98);
   });
 
+  it('CHECKOUT SECURITY: rejects client flags and grants bound to another phone', async () => {
+    const payload = createOrderData();
+    const noGrant = await request(app)
+      .post('/api/orders')
+      .send({ ...payload, purpose: 'checkout', isPhoneVerified: true });
+    expect(noGrant.status).toBe(403);
+
+    const wrongPhoneGrant = await createVerificationGrant('+96170123456', 'checkout');
+    const changedPhone = await request(app)
+      .post('/api/orders')
+      .send({ ...payload, checkoutVerificationToken: wrongPhoneGrant });
+    expect(changedPhone.status).toBe(403);
+
+    expect(await Product.findById(productId).then((product) => product.countInStock)).toBe(100);
+  });
+
+  it('CHECKOUT SECURITY: a checkout verification grant cannot place duplicate orders', async () => {
+    const payload = createOrderData();
+    const phone = `+${normalizePhoneForWhatsApp(payload.customerInfo.phone)}`;
+    const checkoutVerificationToken = await createVerificationGrant(phone, 'checkout');
+    const first = await request(app)
+      .post('/api/orders')
+      .send({ ...payload, checkoutVerificationToken });
+    const replay = await request(app)
+      .post('/api/orders')
+      .send({ ...payload, checkoutVerificationToken });
+
+    expect(first.status).toBe(201);
+    expect(replay.status).toBe(200);
+    expect(replay.body._id).toBe(first.body._id);
+
+    const retryGrant = await createVerificationGrant(phone, 'checkout');
+    const networkRetry = await request(app)
+      .post('/api/orders')
+      .send({ ...payload, checkoutVerificationToken: retryGrant });
+    expect(networkRetry.status).toBe(200);
+    expect(networkRetry.body._id).toBe(first.body._id);
+
+    const replayWithNewRequestId = await request(app)
+      .post('/api/orders')
+      .send({
+        ...payload,
+        checkoutRequestId: randomUUID().replace(/-/g, ''),
+        checkoutVerificationToken,
+      });
+    expect(replayWithNewRequestId.status).toBe(403);
+    expect(await Product.findById(productId).then((product) => product.countInStock)).toBe(98);
+  });
+
   it('POST /api/orders - should reject order when quantity exceeds stock', async () => {
     const orderData = createOrderData();
     orderData.orderItems[0].qty = 999;
 
-    const res = await request(app).post('/api/orders').send(orderData);
+    const res = await postVerifiedOrder(orderData);
     expect(res.status).toBe(400);
 
     const untouchedProduct = await Product.findById(productId);
@@ -120,13 +184,13 @@ describe('Order API', () => {
       image: '',
     }];
 
-    const res = await request(app).post('/api/orders').send(payload);
+    const res = await postVerifiedOrder(payload);
     expect(res.status).toBe(201);
     expect(res.body.orderItems[0].image).toBe('/assets/images/placeholder-product.jpg');
   });
 
   it('GET /api/orders - should list all orders when authenticated as admin', async () => {
-    await request(app).post('/api/orders').send(createOrderData());
+    await postVerifiedOrder(createOrderData());
     
     const res = await request(app)
       .get('/api/orders')
@@ -137,7 +201,7 @@ describe('Order API', () => {
   });
 
   it('GET /api/orders/:id - should return single order for admin or owner', async () => {
-    const createRes = await request(app).post('/api/orders').send(createOrderData());
+    const createRes = await postVerifiedOrder(createOrderData());
     const orderId = createRes.body._id;
 
     // Admin should view it
@@ -153,7 +217,7 @@ describe('Order API', () => {
   });
 
   it('PUT /api/orders/:id/status - should update status when authenticated as admin', async () => {
-    const createRes = await request(app).post('/api/orders').send(createOrderData());
+    const createRes = await postVerifiedOrder(createOrderData());
     const orderId = createRes.body._id;
 
     const res = await request(app)
@@ -165,7 +229,7 @@ describe('Order API', () => {
   });
 
   it('DELETE /api/orders/:id - should delete order when authenticated as admin', async () => {
-    const createRes = await request(app).post('/api/orders').send(createOrderData());
+    const createRes = await postVerifiedOrder(createOrderData());
     const orderId = createRes.body._id;
 
     const res = await request(app)
@@ -204,7 +268,7 @@ describe('Order API', () => {
     tamperedPayload.shippingPrice = 2.00;
     tamperedPayload.totalPrice = 2.02;
 
-    const res = await request(app).post('/api/orders').send(tamperedPayload);
+    const res = await postVerifiedOrder(tamperedPayload);
     expect(res.status).toBe(201);
     // Real item price in DB is $2.00 * 2 = $4.00, + $2.00 shipping = $6.00
     expect(res.body.itemsPrice).toBe(4.00);
@@ -238,7 +302,7 @@ describe('Order API', () => {
     }];
     payload.shippingPrice = 0;
 
-    const res = await request(app).post('/api/orders').send(payload);
+    const res = await postVerifiedOrder(payload);
     expect(res.status).toBe(201);
     expect(res.body.orderItems[0].price).toBe(8.00);
     expect(res.body.orderItems[0].originalPrice).toBe(10.00);
@@ -249,12 +313,12 @@ describe('Order API', () => {
   it('INVALID QTY: rejects zero, negative, or non-numeric quantities', async () => {
     const zeroPayload = createOrderData();
     zeroPayload.orderItems[0].qty = 0;
-    const zeroRes = await request(app).post('/api/orders').send(zeroPayload);
+    const zeroRes = await postVerifiedOrder(zeroPayload);
     expect(zeroRes.status).toBe(400);
 
     const negPayload = createOrderData();
     negPayload.orderItems[0].qty = -5;
-    const negRes = await request(app).post('/api/orders').send(negPayload);
+    const negRes = await postVerifiedOrder(negPayload);
     expect(negRes.status).toBe(400);
 
     // Stock remains 100
@@ -280,7 +344,7 @@ describe('Order API', () => {
       { product: productB._id, qty: 10, price: 5.00, name: 'Low Stock Mango' } // Exceeds 2
     ];
 
-    const res = await request(app).post('/api/orders').send(batchPayload);
+    const res = await postVerifiedOrder(batchPayload);
     expect(res.status).toBe(400);
     expect(res.body.message).toMatch(/insufficient stock/i);
 
@@ -302,11 +366,12 @@ describe('Order API', () => {
     const orderData = createOrderData();
     orderData.customerInfo.phone = userA.phone;
     orderData.customerInfo.email = userA.email;
+    const checkoutGrant = await createVerificationGrant(userA.phone, 'checkout');
 
     const createRes = await request(app)
       .post('/api/orders')
       .set('Authorization', `Bearer ${tokenA}`)
-      .send(orderData);
+      .send({ ...orderData, checkoutVerificationToken: checkoutGrant });
     const orderId = createRes.body._id;
 
     // User B tries to view User A's order -> 401
@@ -350,7 +415,7 @@ describe('Order API', () => {
     payload.customerInfo.lat = 33.9350;
     payload.customerInfo.lng = 35.5880;
 
-    const res = await request(app).post('/api/orders').send(payload);
+    const res = await postVerifiedOrder(payload);
     expect(res.status).toBe(201);
     expect(res.body.customerInfo.distanceKm).toBeDefined();
     expect(res.body.customerInfo.distanceKm).toBeLessThanOrEqual(4.0);
@@ -361,7 +426,7 @@ describe('Order API', () => {
     const tier1Payload = createOrderData();
     tier1Payload.customerInfo.lat = 33.9350;
     tier1Payload.customerInfo.lng = 35.5880;
-    const res1 = await request(app).post('/api/orders').send(tier1Payload);
+    const res1 = await postVerifiedOrder(tier1Payload);
     expect(res1.status).toBe(201);
     expect(res1.body.customerInfo.distanceKm).toBeLessThan(1.5);
     expect(res1.body.shippingPrice).toBe(1.50);
@@ -370,7 +435,7 @@ describe('Order API', () => {
     const tier2Payload = createOrderData();
     tier2Payload.customerInfo.lat = 33.9250;
     tier2Payload.customerInfo.lng = 35.5850;
-    const res2 = await request(app).post('/api/orders').send(tier2Payload);
+    const res2 = await postVerifiedOrder(tier2Payload);
     expect(res2.status).toBe(201);
     expect(res2.body.customerInfo.distanceKm).toBeGreaterThanOrEqual(1.5);
     expect(res2.body.customerInfo.distanceKm).toBeLessThanOrEqual(2.5);
@@ -380,7 +445,7 @@ describe('Order API', () => {
     const tier3Payload = createOrderData();
     tier3Payload.customerInfo.lat = 33.9130;
     tier3Payload.customerInfo.lng = 35.5750;
-    const res3 = await request(app).post('/api/orders').send(tier3Payload);
+    const res3 = await postVerifiedOrder(tier3Payload);
     expect(res3.status).toBe(201);
     expect(res3.body.customerInfo.distanceKm).toBeGreaterThan(2.5);
     expect(res3.body.shippingPrice).toBe(3.50);
@@ -392,7 +457,7 @@ describe('Order API', () => {
     payload.customerInfo.lat = 33.8960;
     payload.customerInfo.lng = 35.4800;
 
-    const res = await request(app).post('/api/orders').send(payload);
+    const res = await postVerifiedOrder(payload);
     expect(res.status).toBe(400);
     expect(res.body.message).toMatch(/out of our 4 km delivery range/i);
 
@@ -406,7 +471,7 @@ describe('Order API', () => {
     // Tripoli coordinates (~60 km away)
     payload.customerInfo.googleMapsLink = 'https://www.google.com/maps/search/?api=1&query=34.4367,35.8497';
 
-    const res = await request(app).post('/api/orders').send(payload);
+    const res = await postVerifiedOrder(payload);
     expect(res.status).toBe(400);
     expect(res.body.message).toMatch(/out of our 4 km delivery range/i);
   });
@@ -418,7 +483,7 @@ describe('Order API', () => {
     payload.customerInfo.lat = 33.9350;
     payload.customerInfo.lng = 35.5880; // ~1.03 km
 
-    const res = await request(app).post('/api/orders').send(payload);
+    const res = await postVerifiedOrder(payload);
     expect(res.status).toBe(201);
     expect(res.body.estimatedPrepMinutes).toBeDefined();
     expect(res.body.estimatedPrepMinutes).toBeGreaterThanOrEqual(5);
@@ -454,7 +519,7 @@ describe('Order API', () => {
     payload.customerInfo.lat = 33.9350;
     payload.customerInfo.lng = 35.5880;
 
-    const createRes = await request(app).post('/api/orders').send(payload);
+    const createRes = await postVerifiedOrder(payload);
     const orderId = createRes.body._id;
 
     // 1. Admin advances to 'Preparing'
