@@ -49,18 +49,21 @@ const homeConfigResource = createCachedResource({
 const indexCache = new WeakMap();
 
 const buildIndex = (list) => {
-  let byId = indexCache.get(list);
-  if (!byId) {
-    byId = new Map(list.map((p) => [String(p._id), p]));
-    indexCache.set(list, byId);
+  let indexes = indexCache.get(list);
+  if (!indexes) {
+    indexes = {
+      byId: new Map(list.map((p) => [String(p._id), p])),
+      bySlug: new Map(list.filter((p) => p.slug).map((p) => [p.slug, p])),
+    };
+    indexCache.set(list, indexes);
   }
-  return byId;
+  return indexes;
 };
 
-/** Full catalog (newest first, discounts applied) plus an id index. Do not mutate. */
+/** Full catalog (newest first, discounts applied) plus ID and slug indexes. Do not mutate. */
 export const getProductCatalog = async () => {
   const entry = await productsResource.get();
-  return { entry, list: entry.value, byId: buildIndex(entry.value) };
+  return { entry, list: entry.value, ...buildIndex(entry.value) };
 };
 
 export const getCategoriesEntry = () => categoriesResource.get();

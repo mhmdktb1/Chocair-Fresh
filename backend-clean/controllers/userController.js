@@ -376,10 +376,47 @@ const verifyOTP = asyncHandler(async (req, res) => {
 
   if (activePurpose === 'checkout') {
     const checkoutVerificationToken = await createVerificationGrant(normalizedPhone, 'checkout');
+    const user = await findUserByPhone(normalizedPhone);
+
+    if (!user) {
+      return res.status(200).json({
+        success: true,
+        purpose: 'checkout',
+        isNewUser: true,
+        phone: normalizedPhone,
+        checkoutVerificationToken,
+        registrationToken: await createVerificationGrant(normalizedPhone, 'registration'),
+      });
+    }
+
+    if (checkIsAdminPhone(normalizedPhone) || checkIsAdminPhone(user.phone)) {
+      if (!user.isAdmin) {
+        user.isAdmin = true;
+        await user.save();
+      }
+    }
+    if (!user.mascot) {
+      user.mascot = getRandomMascot();
+      await user.save();
+    }
+
     return res.status(200).json({
       success: true,
       purpose: 'checkout',
+      isNewUser: false,
       checkoutVerificationToken,
+      token: generateToken(user._id),
+      user: {
+        _id: user._id,
+        name: user.name,
+        phone: user.phone,
+        email: user.email,
+        avatar: user.avatar,
+        mascot: user.mascot,
+        age: user.age,
+        gender: user.gender,
+        isAdmin: user.isAdmin,
+      },
     });
   }
 

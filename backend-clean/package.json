@@ -10,6 +10,7 @@
     "dev": "nodemon server.js",
     "seed": "node scripts/seed.js",
     "seed:atlas": "node scripts/seed-atlas.js",
+    "migrate:slugs": "node scripts/backfill-slugs.js",
     "test": "cross-env NODE_ENV=test node --experimental-vm-modules node_modules/jest/bin/jest.js --detectOpenHandles",
     "recommend:build": "node recommendation/scripts/buildAll.js",
     "recommend:associations": "node recommendation/scripts/buildProductAssociations.js",

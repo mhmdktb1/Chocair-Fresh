@@ -3,6 +3,7 @@ import { MongoMemoryServer } from 'mongodb-memory-server';
 import request from 'supertest';
 import app from '../server.js';
 import User from '../models/userModel.js';
+import Product from '../models/productModel.js';
 import generateToken from '../utils/generateToken.js';
 
 let mongoServer;
@@ -65,6 +66,84 @@ describe('Product API', () => {
       .send(productData);
     expect(res.status).toBe(201);
     expect(res.body.name).toBe(productData.name);
+    expect(res.body.slug).toBe('test-apple');
+  });
+
+  it('generates unique slugs, resolves them publicly, preserves ID lookup, and refreshes slugs on rename', async () => {
+    const auth = `Bearer ${adminToken}`;
+    const first = await request(app).post('/api/products').set('Authorization', auth).send({
+      ...productData,
+      name: 'Fresh Avocados',
+    });
+    const duplicate = await request(app).post('/api/products').set('Authorization', auth).send({
+      ...productData,
+      name: 'Fresh Avocados',
+    });
+
+    expect(first.status).toBe(201);
+    expect(duplicate.status).toBe(201);
+    expect(first.body.slug).toBe('fresh-avocados');
+    expect(duplicate.body.slug).not.toBe(first.body.slug);
+
+    const bySlug = await request(app).get(`/api/products/${first.body.slug}`);
+    const byId = await request(app).get(`/api/products/${first.body._id}`);
+    expect(bySlug.status).toBe(200);
+    expect(bySlug.body._id).toBe(first.body._id);
+    expect(byId.status).toBe(200);
+    expect(byId.body.slug).toBe(first.body.slug);
+
+    const renamed = await request(app)
+      .put(`/api/products/${first.body._id}`)
+      .set('Authorization', auth)
+      .send({ name: 'Premium Avocados' });
+    expect(renamed.status).toBe(200);
+    expect(renamed.body.slug).toBe('premium-avocados');
+  });
+
+  it('resolves a short slug even when Mongoose considers its length ObjectId-castable', async () => {
+    const created = await request(app)
+      .post('/api/products')
+      .set('Authorization', `Bearer ${adminToken}`)
+      .send({ ...productData, name: 'Freshpeaches' });
+    expect(created.status).toBe(201);
+    expect(created.body.slug).toBe('freshpeaches');
+
+    const lookup = await request(app).get('/api/products/freshpeaches');
+    expect(lookup.status).toBe(200);
+    expect(lookup.body._id).toBe(created.body._id);
+  });
+
+  it('preserves Arabic characters in product slugs', async () => {
+    const res = await request(app)
+      .post('/api/products')
+      .set('Authorization', `Bearer ${adminToken}`)
+      .send({ ...productData, name: 'تفاح أحمر' });
+    expect(res.status).toBe(201);
+    expect(res.body.slug).toBe('تفاح-أحمر');
+    const lookup = await request(app).get(`/api/products/${encodeURIComponent(res.body.slug)}`);
+    expect(lookup.status).toBe(200);
+    expect(lookup.body._id).toBe(res.body._id);
+  });
+
+  it('keeps legacy records without a slug available by ID and backfills on save', async () => {
+    const inserted = await Product.collection.insertOne({
+      name: 'Legacy Pears',
+      brand: 'Chocair',
+      category: 'fruits',
+      unit: '1kg',
+      price: 2,
+      countInStock: 4,
+      description: '',
+    });
+
+    const legacyLookup = await request(app).get(`/api/products/${inserted.insertedId}`);
+    expect(legacyLookup.status).toBe(200);
+    expect(legacyLookup.body.name).toBe('Legacy Pears');
+    expect(legacyLookup.body.slug).toBeUndefined();
+
+    const legacyProduct = await Product.findById(inserted.insertedId);
+    await legacyProduct.save();
+    expect(legacyProduct.slug).toBe('legacy-pears');
   });
 
   it('GET /api/products/:id - should return product details publicly', async () => {

@@ -28,6 +28,7 @@ import Button from '../components/common/Button';
 import Loading from '../components/common/Loading';
 import { normalizeLebanesePhoneNumber, formatPhoneNumber } from '../utils/phoneUtils';
 import { formatCurrency, formatDate } from '../utils/formatters';
+import { productPath } from '../seo/catalog';
 import { normalizeUnit } from '../utils/unitHelper';
 import { formatLocationDisplay } from '../utils/distanceHelper';
 import {
@@ -1190,7 +1191,7 @@ const Profile = () => {
                   <Heart size={14} fill="#ef4444" color="#ef4444" />
                 </button>
 
-                <Link to={`/product/${product._id}`} className="fav-compact-img-link">
+                <Link to={productPath(product)} className="fav-compact-img-link">
                   <img 
                     src={product.image || 'https://images.unsplash.com/photo-1542838132-92c53300491e?auto=format&fit=crop&w=600&q=80'} 
                     alt={product.name}
@@ -1199,7 +1200,7 @@ const Profile = () => {
                 </Link>
 
                 <div className="fav-compact-body">
-                  <Link to={`/product/${product._id}`} className="fav-compact-title-link">
+                  <Link to={productPath(product)} className="fav-compact-title-link">
                     <h4 className="fav-compact-name">{product.name}</h4>
                   </Link>
 

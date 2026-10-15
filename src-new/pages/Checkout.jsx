@@ -34,7 +34,7 @@ import './Checkout.css';
 
 const Checkout = () => {
   const { cartItems, cartTotal, clearCart, cartCount } = useCart();
-  const { user, updateUser } = useAuth();
+  const { user, login, updateUser } = useAuth();
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -362,7 +362,7 @@ const Checkout = () => {
     setTimeout(() => setCopiedWhishNumber(false), 2500);
   };
 
-  const createOrder = async (authToken = null, verifiedCheckoutToken) => {
+  const createOrder = async (authToken = null, verifiedCheckoutToken, activeUser = user) => {
     if (orderSubmissionInFlight.current) return;
     orderSubmissionInFlight.current = true;
     setLoading(true);
@@ -399,8 +399,8 @@ const Checkout = () => {
           product: item._id || item.id
         })),
         customerInfo: {
-          name: user?.name || formData.name,
-          email: user?.email || '',
+          name: activeUser?.name || formData.name,
+          email: activeUser?.email || '',
           phone: normalizedPhone,
           address: formData.address,
           googleMapsLink: formData.googleMapsLink,
@@ -455,7 +455,6 @@ const Checkout = () => {
       }
 
       // If user is authenticated, also persist to their profile in backend
-      const activeUser = user;
       if (activeUser) {
         try {
           const userAddresses = Array.isArray(activeUser.addresses) ? [...activeUser.addresses] : [];
@@ -497,12 +496,8 @@ const Checkout = () => {
 
       setOrderPlaced(true);
       clearCart();
-      if (user) {
-        navigate('/profile', { state: { activeTab: 'orders' } });
-      } else {
-        toast.success('Your order has been placed successfully.');
-        navigate('/');
-      }
+      toast.success('Your order has been placed successfully.');
+      navigate('/profile', { state: { activeTab: 'orders' } });
     } catch (err) {
       checkoutVerification.current = null;
       console.error("Order failed", err);
@@ -534,8 +529,27 @@ const Checkout = () => {
         throw new Error(res.data.message || 'Verification failed');
       }
       checkoutVerification.current = { token: verificationToken, phone: normalizedPhone };
+      let authenticatedUser = res.data.user;
+      let authToken = res.data.token;
+
+      if (res.data.isNewUser) {
+        const registration = await api.post('/users/auth/register', {
+          phone: normalizedPhone,
+          name: formData.name.trim(),
+          location: formData.address,
+          registrationToken: res.data.registrationToken,
+        });
+        authenticatedUser = registration.data.user;
+        authToken = registration.data.token;
+      }
+
+      if (!res.data.success || !authenticatedUser || !authToken) {
+        throw new Error('Could not sign in to your account. Please try again.');
+      }
+
+      login(authToken, authenticatedUser);
       setShowOtpModal(false);
-      await createOrder(localStorage.getItem('token'), verificationToken);
+      await createOrder(authToken, verificationToken, authenticatedUser);
     } catch (err) {
       setOtpError(err.response?.data?.message || err.message || "Invalid OTP. Please try again.");
     } finally {

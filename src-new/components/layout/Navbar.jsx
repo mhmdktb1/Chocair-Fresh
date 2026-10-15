@@ -22,7 +22,8 @@ import { useTheme } from '../../context/ThemeContext';
 import { translations } from '../../utils/translations';
 import { getArabicProductName, matchesProductQuery } from '../../utils/productTranslation';
 import { useProducts } from '../../hooks/useProducts';
-import { categoryPath } from '../../seo/catalog';
+import { useCategories } from '../../hooks/useCategories';
+import { categoryPath, productPath } from '../../seo/catalog';
 import './Navbar.css';
 
 const CATEGORY_EMOJIS = {
@@ -58,6 +59,7 @@ const Navbar = () => {
   const [activeCategory, setActiveCategory] = useState('All');
   const [recommendations, setRecommendations] = useState([]);
   const { products: allProducts } = useProducts();
+  const { categories: categoryRecords } = useCategories();
   const [selectedIndex, setSelectedIndex] = useState(-1);
   const searchInputRef = useRef(null);
   const { cartCount } = useCart();
@@ -205,11 +207,13 @@ const Navbar = () => {
       return;
     }
     if (searchQuery.trim()) {
-      navigate(`${activeCategory !== 'All' ? categoryPath(activeCategory) : '/shop'}?search=${encodeURIComponent(searchQuery.trim())}`);
+      const category = (categoryRecords || []).find((item) => item.name?.toLowerCase() === activeCategory.toLowerCase());
+      navigate(`${activeCategory !== 'All' ? categoryPath(category || activeCategory) : '/shop'}?search=${encodeURIComponent(searchQuery.trim())}`);
       setSearchOpen(false);
       setSearchQuery('');
     } else if (activeCategory !== 'All') {
-      navigate(categoryPath(activeCategory));
+      const category = (categoryRecords || []).find((item) => item.name?.toLowerCase() === activeCategory.toLowerCase());
+      navigate(categoryPath(category || activeCategory));
       setSearchOpen(false);
     }
   };
@@ -217,7 +221,7 @@ const Navbar = () => {
   const handleRecommendationClick = (productId) => {
     const product = allProducts.find(p => p._id === productId);
     if (product) {
-      navigate(`/product/${productId}`);
+      navigate(productPath(product));
     }
     setSearchOpen(false);
     setSearchQuery('');

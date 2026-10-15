@@ -123,8 +123,47 @@ describe('User and Auth API', () => {
       .send({ phone: '70 555 667', code: '123456', purpose: 'checkout' });
     expect(checkout.status).toBe(200);
     expect(checkout.body.checkoutVerificationToken).toBeTruthy();
+    expect(checkout.body.registrationToken).toBeTruthy();
+    expect(checkout.body.isNewUser).toBe(true);
     expect(checkout.body).not.toHaveProperty('token');
     expect(checkout.body).not.toHaveProperty('user');
+
+    const registration = await request(app)
+      .post('/api/users/auth/register')
+      .send({
+        phone: checkout.body.phone,
+        name: 'Checkout Customer',
+        location: 'Beirut, Building 1, Floor 2',
+        registrationToken: checkout.body.registrationToken,
+      });
+
+    expect(registration.status).toBe(201);
+    expect(registration.body.token).toBeTruthy();
+    expect(registration.body.user.name).toBe('Checkout Customer');
+    expect(registration.body.user.phone).toBe('+96170555667');
+    expect(registration.body.user.location).toBe('Beirut, Building 1, Floor 2');
+  });
+
+  it('checkout verification logs in an existing account and still returns an order grant', async () => {
+    await OTP.create({
+      phone: '+96170333444',
+      purpose: 'checkout',
+      codeHash: hashOtp('654321'),
+      expiresAt: new Date(Date.now() + 5 * 60 * 1000),
+    });
+
+    const response = await request(app)
+      .post('/api/users/auth/verify-otp')
+      .send({ phone: '+96170333444', code: '654321', purpose: 'checkout' });
+
+    expect(response.status).toBe(200);
+    expect(response.body.success).toBe(true);
+    expect(response.body.isNewUser).toBe(false);
+    expect(response.body.checkoutVerificationToken).toBeTruthy();
+    expect(response.body.token).toBeTruthy();
+    expect(response.body.user._id).toBe(String(userId));
+    expect(response.body.user.phone).toBe('+96170333444');
+    expect(response.body).not.toHaveProperty('registrationToken');
   });
 
   it('counts wrong OTP attempts and invalidates the code after five failures', async () => {

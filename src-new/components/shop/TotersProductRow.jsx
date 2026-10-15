@@ -5,6 +5,7 @@ import { useCart } from '../../context/CartContext';
 import api, { getAssetUrl } from '../../utils/api';
 import { normalizeUnit, formatQuantityWithUnit } from '../../utils/unitHelper';
 import { getArabicProductName } from '../../utils/productTranslation';
+import { productPath } from '../../seo/catalog';
 import './TotersProductRow.css';
 
 const FALLBACK_IMAGE = 'https://images.unsplash.com/photo-1542838132-92c53300491e?auto=format&fit=crop&w=600&q=80';
@@ -122,7 +123,7 @@ const TotersProductRow = ({ title, type, productId = null, category = null, limi
                 key={item._id} 
                 className="toters-item-card"
                 onClick={() => {
-                  navigate(`/product/${item._id}`, { state: { product: item } });
+                  navigate(productPath(item), { state: { product: item } });
                   window.scrollTo({ top: 0, behavior: 'smooth' });
                 }}
               >

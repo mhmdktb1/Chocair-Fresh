@@ -16,14 +16,16 @@ export const categorySlug = (name) =>
     .normalize('NFKD')
     .replace(/[\u0300-\u036f]/g, '')
     .replace(/&/g, ' and ')
-    .replace(/[^a-z0-9\u0600-\u06ff]+/g, '-')
+    .replace(/[ً-ٰٟ]/g, '')
+    .replace(/[^a-z0-9\u0600-\u06ff\u0750-\u077f\u08a0-\u08ff]+/g, '-')
     .replace(/^-+|-+$/g, '');
 
-export const categoryPath = (name) => {
+export const categoryPath = (category) => {
+  const name = typeof category === 'object' ? category?.name : category;
   if (!name || String(name).trim().toLowerCase() === 'all') return '/shop';
   if (isOffersCategoryName(name)) return '/shop/offers';
-  const slug = categorySlug(name);
-  return slug ? `/shop/${encodeURIComponent(slug)}` : '/shop';
+  const slug = (typeof category === 'object' && category?.slug) || categorySlug(name);
+  return slug ? `/category/${encodeURIComponent(slug)}` : '/shop';
 };
 
 const sameText = (a, b) => String(a || '').trim().toLowerCase() === String(b || '').trim().toLowerCase();
@@ -38,20 +40,21 @@ export const getCatalogCategories = (products = [], categories = []) => {
   const add = (raw) => {
     const name = String(raw || '').trim();
     if (!name || sameText(name, 'all') || isOffersCategoryName(name)) return;
-    const slug = categorySlug(name);
+    const adminCat = (categories || []).find((c) => sameText(c?.name, name));
+    const slug = adminCat?.slug || categorySlug(name);
     if (!slug || seen.has(slug)) return;
     seen.add(slug);
-    names.push(name);
+    names.push({ name, slug });
   };
   (categories || []).filter((c) => c && c.isVisible !== false).forEach((c) => add(c.name));
   (products || []).forEach((p) => add(p?.category));
 
-  return names.map((name) => {
+  return names.map(({ name, slug }) => {
     const adminCat = (categories || []).find((c) => sameText(c?.name, name));
     return {
       name,
-      slug: categorySlug(name),
-      path: categoryPath(name),
+      slug,
+      path: categoryPath({ name, slug }),
       count: (products || []).filter((p) => sameText(p?.category, name)).length,
       image: adminCat?.image || '',
     };
@@ -71,12 +74,14 @@ export const findCategoryBySlug = (slug, products = [], categories = []) => {
     // keep raw slug
   }
   const target = categorySlug(decoded);
-  return getCatalogCategories(products, categories).find((c) => c.slug === target) || null;
+  return getCatalogCategories(products, categories).find((c) => c.slug === decoded || c.slug === target) || null;
 };
 
 export const getProductId = (product) => String(product?._id || product?.id || '');
 
-export const productPath = (product) => `/product/${encodeURIComponent(getProductId(product))}`;
+export const getProductSlug = (product) => String(product?.slug || getProductId(product));
+
+export const productPath = (product) => `/product/${encodeURIComponent(getProductSlug(product))}`;
 
 export const getProductPricing = (product) => {
   const current = Number(product?.finalPrice ?? product?.price ?? 0);

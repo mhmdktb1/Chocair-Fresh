@@ -18,7 +18,7 @@ import { useCategories } from '../hooks/useCategories';
 import api, { API_HOST, getAssetUrl } from '../utils/api';
 import { useSeo } from '../seo/useSeo';
 import { notFoundSeo, productSeo } from '../seo/pageSeo';
-import { categoryPath } from '../seo/catalog';
+import { categoryPath, productPath } from '../seo/catalog';
 import { SITE_NAME } from '../seo/siteConfig';
 import Button from '../components/common/Button';
 import Loading from '../components/common/Loading';
@@ -41,7 +41,10 @@ const ProductDetails = () => {
   const { isFavorite: checkIsFavorite, toggleFavorite } = useFavorites();
   const { categories } = useCategories();
   
-  const initialProduct = location.state?.product || allProducts?.find(p => (p._id || p.id) === id) || null;
+  const initialProduct =
+    location.state?.product ||
+    allProducts?.find(p => (p._id || p.id) === id || p.slug === id) ||
+    null;
   const [product, setProduct] = useState(initialProduct);
   const [loading, setLoading] = useState(!initialProduct);
   const [error, setError] = useState(null);
@@ -58,11 +61,15 @@ const ProductDetails = () => {
 
   const isFavorite = checkIsFavorite(product?._id || id);
   const description = getProductDescription(product);
+  const productCategory = (categories || []).find(
+    (category) => category.name?.trim().toLowerCase() === product?.category?.trim().toLowerCase()
+  );
+  const productCategoryPath = categoryPath(productCategory || product?.category);
 
   // Leave prerendered tags alone while loading; only noindex on a confirmed 404.
   useSeo(
     product
-      ? productSeo(product, { apiHost: API_HOST })
+    ? productSeo(product, { apiHost: API_HOST, category: productCategory })
       : isMissing
         ? { ...notFoundSeo(), title: `Product Not Found | ${SITE_NAME}` }
         : null
@@ -109,6 +116,12 @@ const ProductDetails = () => {
         const response = await api.get(`/products/${id}`);
         const data = response.data;
         setProduct(data);
+        if (data.slug && data.slug !== id) {
+          navigate(`${productPath(data)}${location.search}${location.hash}`, {
+            replace: true,
+            state: { product: data },
+          });
+        }
         
         // Save to last viewed history
         try {
@@ -144,7 +157,7 @@ const ProductDetails = () => {
     if (id) {
       fetchProduct();
     }
-  }, [id]);
+  }, [id, location.hash, location.search, navigate]);
 
   const normUnit = normalizeUnit(product?.unit);
   const isWeightBased = ['1kg', '500g', '200g'].includes(normUnit);
@@ -349,7 +362,7 @@ const ProductDetails = () => {
             <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '4px', flexWrap: 'wrap' }}>
               {product.category && (
                 <Link
-                  to={categoryPath(product.category)}
+                  to={productCategoryPath}
                   style={{
                     display: 'inline-block',
                     background: '#f1f5f9',
@@ -367,7 +380,7 @@ const ProductDetails = () => {
               )}
               {product.subCategory && (
                 <Link
-                  to={`${categoryPath(product.category)}?subCategory=${encodeURIComponent(product.subCategory)}`}
+                  to={`${productCategoryPath}?subCategory=${encodeURIComponent(product.subCategory)}`}
                   style={{
                     display: 'inline-block',
                     background: '#e0f2fe',

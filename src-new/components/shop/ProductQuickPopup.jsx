@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { Plus, Minus, ShoppingCart, ArrowUpRight } from 'lucide-react';
 import { formatCurrency } from '../../utils/formatters';
 import { getProductDescription } from '../../utils/textUtils';
+import { productPath } from '../../seo/catalog';
 import './ProductQuickPopup.css';
 
 const VIEWPORT_MARGIN = 12;
@@ -65,7 +66,7 @@ const ProductQuickPopup = ({
   const stock = product.countInStock ?? product.stock;
   const hasStockInfo = stock !== undefined && stock !== null && stock !== '';
   const isOutOfStock = hasStockInfo && Number(stock) <= 0;
-  const productUrl = `/product/${product._id}`;
+  const productUrl = productPath(product);
 
   const requestClose = useCallback(() => {
     if (closeTimerRef.current) return;

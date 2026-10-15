@@ -64,6 +64,7 @@ const CategoryMarquee = ({ categories: propCategories }) => {
       return {
         id: c._id || c.id || `cat-${index}`,
         name,
+        slug: c.slug,
         icon: c.icon || visuals.icon,
         bg: c.bg || visuals.bg,
         badge: c.badge || visuals.badge,
@@ -96,7 +97,7 @@ const CategoryMarquee = ({ categories: propCategories }) => {
           {displayCategories.map((cat) => (
             <Link 
               key={`mob-${cat.id}`} 
-              to={categoryPath(cat.name)}
+              to={categoryPath(cat)}
               className="mobile-category-card"
               aria-label={`Shop ${cat.name}`}
             >
@@ -119,7 +120,7 @@ const CategoryMarquee = ({ categories: propCategories }) => {
             return (
               <Link 
                 key={`${cat.id}-${index}`} 
-                to={categoryPath(cat.name)}
+                to={categoryPath(cat)}
                 className="marquee-item"
                 tabIndex={isCopy ? -1 : undefined}
                 aria-hidden={isCopy ? 'true' : undefined}

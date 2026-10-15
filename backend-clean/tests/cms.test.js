@@ -55,6 +55,7 @@ describe('Category API', () => {
     expect(res.status).toBe(200);
     expect(res.body).toHaveLength(1);
     expect(res.body[0].name).toBe('Organic Fruits');
+    expect(res.body[0].slug).toBe('organic-fruits');
   });
 
   it('POST /api/categories - admin can create category with isVisible and featured', async () => {
@@ -72,6 +73,18 @@ describe('Category API', () => {
     expect(res.body.name).toBe('Fresh Greens');
     expect(res.body.isVisible).toBe(true);
     expect(res.body.featured).toBe(true);
+    expect(res.body.slug).toBe('fresh-greens');
+  });
+
+  it('creates collision-safe category slugs and refreshes them on category rename', async () => {
+    const first = await Category.create({ name: 'Fresh & Local' });
+    const duplicateBase = await Category.create({ name: 'Fresh and Local' });
+    expect(first.slug).toBe('fresh-and-local');
+    expect(duplicateBase.slug).not.toBe(first.slug);
+
+    first.name = 'Fresh Market';
+    await first.save();
+    expect(first.slug).toBe('fresh-market');
   });
 });
 

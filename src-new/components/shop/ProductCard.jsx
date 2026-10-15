@@ -6,6 +6,7 @@ import { useFavorites } from '../../context/FavoritesContext';
 import { formatCurrency } from '../../utils/formatters';
 import { normalizeUnit } from '../../utils/unitHelper';
 import { getAssetUrl } from '../../utils/api';
+import { productPath } from '../../seo/catalog';
 import { getArabicProductName } from '../../utils/productTranslation';
 import useLongPress from '../../hooks/useLongPress';
 import ProductQuickPopup from './ProductQuickPopup';
@@ -31,6 +32,7 @@ const ProductCard = ({ product }) => {
   const discountPercent = product.discountPercent || (isDiscounted && originalPrice > 0 ? Math.round(((originalPrice - currentPrice) / originalPrice) * 100) : (product.discount || 0));
   const unit = normalizeUnit(product.unit);
   const imageSrc = getAssetUrl(product.image) || '/assets/images/products/placeholder.jpg';
+  const productUrl = productPath(product);
 
   const handleAddToCart = () => {
     addToCart({ 
@@ -85,7 +87,7 @@ const ProductCard = ({ product }) => {
           <Heart size={18} fill={isFav ? '#e74c3c' : 'none'} color={isFav ? '#e74c3c' : 'currentColor'} />
         </button>
 
-        <Link to={`/product/${product._id}`} state={{ product }}>
+        <Link to={productUrl} state={{ product }}>
           <img 
             src={imageSrc} 
             alt={product.name} 
@@ -98,7 +100,7 @@ const ProductCard = ({ product }) => {
         
         {/* Overlay Actions */}
         <div className="product-actions-overlay">
-          <Link to={`/product/${product._id}`} state={{ product }} className="action-btn quick-view" title="Quick View">
+          <Link to={productUrl} state={{ product }} className="action-btn quick-view" title="Quick View">
             <Eye size={18} />
           </Link>
           
@@ -159,7 +161,7 @@ const ProductCard = ({ product }) => {
           )}
         </div>
 
-        <Link to={`/product/${product._id}`} state={{ product }} className="product-name-link">
+        <Link to={productUrl} state={{ product }} className="product-name-link">
           <h3 className="product-name" title={`${product.name}${arabicName ? ` | ${arabicName}` : ''}`}>
             <span className="product-name-en">{product.name}</span>
             {arabicName && (

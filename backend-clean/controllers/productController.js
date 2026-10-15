@@ -121,18 +121,23 @@ const getProducts = asyncHandler(async (req, res) => {
 // @route   GET /api/products/:id
 // @access  Public
 const getProductById = asyncHandler(async (req, res) => {
-  if (!mongoose.isValidObjectId(req.params.id)) {
-    res.status(404);
-    throw new Error('Product not found');
-  }
+  let product;
+  if (/^[a-f0-9]{24}$/i.test(req.params.id) && mongoose.isValidObjectId(req.params.id)) {
+    const { byId } = await getProductCatalog();
+    product = byId.get(String(req.params.id));
 
-  const { byId } = await getProductCatalog();
-  let product = byId.get(String(req.params.id));
-
-  if (!product) {
-    // Catalog may be a few seconds behind writes made outside this process.
-    const doc = await Product.findById(req.params.id).lean();
-    product = doc ? applyDiscountToProductDoc(doc) : null;
+    if (!product) {
+      // Catalog may be a few seconds behind writes made outside this process.
+      const doc = await Product.findById(req.params.id).lean();
+      product = doc ? applyDiscountToProductDoc(doc) : null;
+    }
+  } else {
+    const { bySlug } = await getProductCatalog();
+    product = bySlug.get(req.params.id);
+    if (!product) {
+      const doc = await Product.findOne({ slug: req.params.id }).lean();
+      product = doc ? applyDiscountToProductDoc(doc) : null;
+    }
   }
 
   if (!product) {

@@ -17,8 +17,9 @@ import path from 'node:path';
 import process from 'node:process';
 import { fileURLToPath } from 'node:url';
 import { loadEnv } from 'vite';
-import { BUSINESS, SITE_NAME, absoluteUrl } from '../src-new/seo/siteConfig.js';
+import { BUSINESS, SITE_NAME } from '../src-new/seo/siteConfig.js';
 import { buildHeadTags, escapeHtml, renderHeadTagsHtml } from '../src-new/seo/headTags.js';
+import { renderSitemap } from '../src-new/seo/sitemap.js';
 import {
   categoryPath,
   cleanDescription,
@@ -27,6 +28,7 @@ import {
   getProductAvailability,
   getProductId,
   getProductPricing,
+  getProductSlug,
   productPath,
 } from '../src-new/seo/catalog.js';
 import {
@@ -49,7 +51,7 @@ const STRICT = String(env.SEO_PRERENDER_STRICT || '').toLowerCase() === 'true';
 
 const SEO_BLOCK = /<!--seo:start-->[\s\S]*?<!--seo:end-->/;
 const NOSCRIPT_SLOT = '<!--seo:noscript-->';
-const SAFE_SEGMENT = /^[A-Za-z0-9_-]+$/;
+const SAFE_SEGMENT = /^[A-Za-z0-9_%\-\u0600-\u06FF\u0750-\u077F\u08A0-\u08FF]+$/;
 
 const log = (...args) => console.log('[seo-prerender]', ...args);
 const warn = (...args) => console.warn('[seo-prerender] WARNING:', ...args);
@@ -139,7 +141,8 @@ const renderSpaFallback = (template) => {
     .replace(NOSCRIPT_SLOT, '');
 };
 
-const routeToFile = (route) => (route === '/' ? 'index.html' : `${route.replace(/^\//, '')}.html`);
+const routeToFile = (route) =>
+  route === '/' ? 'index.html' : `${decodeURIComponent(route.replace(/^\//, ''))}.html`;
 
 const writeHtml = async (route, html) => {
   const file = path.join(DIST, routeToFile(route));
@@ -156,16 +159,6 @@ const isoDate = (value) => {
 const latest = (items) =>
   items.map((i) => isoDate(i?.updatedAt || i?.createdAt)).filter(Boolean).sort().pop() || null;
 
-const renderSitemap = (entries) => {
-  const urls = entries
-    .map(({ route, lastmod }) => {
-      const loc = escapeHtml(absoluteUrl(route));
-      return `  <url>\n    <loc>${loc}</loc>${lastmod ? `\n    <lastmod>${lastmod}</lastmod>` : ''}\n  </url>`;
-    })
-    .join('\n');
-  return `<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${urls}\n</urlset>\n`;
-};
-
 // ---------------------------------------------------------------- main
 const main = async () => {
   const templatePath = path.join(DIST, 'index.html');
@@ -181,14 +174,17 @@ const main = async () => {
     warn(message);
   }
 
-  const products = (catalog.products || []).filter((p) => p?.name && SAFE_SEGMENT.test(getProductId(p)));
+  const allProducts = (catalog.products || []).filter((p) => p?.name && SAFE_SEGMENT.test(getProductId(p)));
+  const productsWithoutSlug = allProducts.filter((product) => !product.slug);
+  if (productsWithoutSlug.length) {
+    const message = `${productsWithoutSlug.length} catalog product(s) have no slug. Run the backend slug migration before publishing SEO routes.`;
+    if (STRICT) throw new Error(message);
+    warn(message);
+  }
+  const products = allProducts.filter((p) => p.slug && SAFE_SEGMENT.test(getProductSlug(p)));
   const categories = catalog.categories || [];
   const deliveryRadiusKm = catalog.homeConfig?.delivery?.maxDeliveryRadiusKm;
-  const indexableCategories = getIndexableCategories(products, categories).filter((c) => {
-    if (SAFE_SEGMENT.test(c.slug)) return true;
-    warn(`Skipping prerender for category "${c.name}" (non-ASCII slug); it is still client-rendered.`);
-    return false;
-  });
+  const indexableCategories = getIndexableCategories(products, categories).filter((c) => SAFE_SEGMENT.test(encodeURIComponent(c.slug)));
   const productsIn = (cat) =>
     products.filter((p) => String(p.category || '').trim().toLowerCase() === cat.name.toLowerCase());
 
@@ -221,7 +217,10 @@ const main = async () => {
 
   products.forEach((product) => {
     const route = productPath(product);
-    pages.push({ route, seo: productSeo(product, { apiHost: API_HOST }), body: productNoscript(product) });
+    const category = categories.find(
+      (item) => String(item.name || '').trim().toLowerCase() === String(product.category || '').trim().toLowerCase()
+    );
+    pages.push({ route, seo: productSeo(product, { apiHost: API_HOST, category }), body: productNoscript(product) });
     sitemap.push({ route, lastmod: isoDate(product.updatedAt || product.createdAt) });
   });
 

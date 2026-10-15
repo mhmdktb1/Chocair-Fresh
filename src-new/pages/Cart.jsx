@@ -12,6 +12,7 @@ import Navbar from '../components/layout/Navbar';
 import Button from '../components/common/Button';
 import ProductCard from '../components/shop/ProductCard';
 import CartRecommendations from '../components/shop/CartRecommendations';
+import { productPath } from '../seo/catalog';
 import { formatCurrency, formatLL } from '../utils/formatters';
 import { normalizeUnit, formatQuantityWithUnit, formatUnitRate } from '../utils/unitHelper';
 import { getArabicProductName } from '../utils/productTranslation';
@@ -536,7 +537,7 @@ const Cart = () => {
                 return (
                   <div key={item._id} className="cart-item-card">
                     {/* Left: Product Thumbnail */}
-                    <Link to={`/product/${item._id}`} className="cart-item-thumb-link">
+                    <Link to={productPath(item)} className="cart-item-thumb-link">
                       <img 
                         src={item.image || 'https://images.unsplash.com/photo-1610832958506-aa56368176cf?w=400&auto=format&fit=crop&q=80'} 
                         alt={item.name} 
@@ -552,7 +553,7 @@ const Cart = () => {
                           {item.category && (
                             <span className="cart-item-cat">{item.category}</span>
                           )}
-                          <Link to={`/product/${item._id}`} className="cart-item-name">
+                          <Link to={productPath(item)} className="cart-item-name">
                             <span>{item.name}</span>
                             {(item.nameAr || getArabicProductName(item)) && (
                               <span style={{ fontSize: '0.82rem', fontWeight: 600, color: '#16a34a', marginLeft: '6px', direction: 'rtl' }}>

@@ -121,7 +121,7 @@ const Shop = () => {
   const t = translations[language] || translations.en;
   const [searchParams, setSearchParams] = useSearchParams();
   const navigate = useNavigate();
-  // Clean category URLs: /shop/<category-slug>. Legacy ?category= links are redirected below.
+  // Category pages use /category/<slug>; legacy /shop/<slug> paths remain compatible.
   const { categorySlug } = useParams();
   const decodedSlug = useMemo(() => {
     try {
@@ -180,7 +180,8 @@ const Shop = () => {
     ['category', 'subCategory', 'subcategory', 'discount', 'discounted'].forEach((key) => next.delete(key));
     if (subCategory) next.set('subCategory', subCategory);
     const qs = next.toString();
-    navigate(`${categoryPath(catName)}${qs ? `?${qs}` : ''}`);
+    const category = (adminCategories || []).find((item) => item.name?.toLowerCase() === String(catName).toLowerCase());
+    navigate(`${categoryPath(category || catName)}${qs ? `?${qs}` : ''}`);
   };
 
   // Focus search input when requested via URL param (e.g. from bottom nav)
@@ -242,6 +243,7 @@ const Shop = () => {
       return {
         id: adminCat?._id || catName,
         name: catName,
+        slug: adminCat?.slug || toCategorySlug(catName),
         image: adminCat?.image,
         emoji: getCategoryEmoji(catName),
         count
@@ -264,6 +266,7 @@ const Shop = () => {
     const selSlug = toCategorySlug(selectedCategory);
     return categoriesList.find(
       c => c.id === selectedCategory ||
+        c.slug === decodedSlug ||
         c.name?.toLowerCase() === String(selectedCategory)?.toLowerCase() ||
         (selSlug && c.id !== 'all' && toCategorySlug(c.name) === selSlug)
     );

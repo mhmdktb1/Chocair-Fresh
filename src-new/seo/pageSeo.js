@@ -39,7 +39,7 @@ export const shopSeo = () => ({
 
 export const categorySeo = (category) => {
   const { title, description } = getCategorySeo(category);
-  const path = categoryPath(category.name);
+  const path = categoryPath(category);
   return {
     title,
     description,
@@ -48,14 +48,17 @@ export const categorySeo = (category) => {
   };
 };
 
-export const productSeo = (product, { apiHost = '' } = {}) => {
+export const productSeo = (product, { apiHost = '', category } = {}) => {
   const { title, description } = getProductSeo(product);
   const path = productPath(product);
   const imageUrl = absoluteAssetUrl(product.image, apiHost);
   const { current } = getProductPricing(product);
   const availability = getProductAvailability(product);
   const crumbs = [HOME_CRUMB, SHOP_CRUMB];
-  if (product.category) crumbs.push({ name: String(product.category).trim(), path: categoryPath(product.category) });
+  if (product.category) {
+    const categoryItem = category || { name: String(product.category).trim() };
+    crumbs.push({ name: categoryItem.name, path: categoryPath(categoryItem) });
+  }
   crumbs.push({ name: product.name, path });
 
   return {
