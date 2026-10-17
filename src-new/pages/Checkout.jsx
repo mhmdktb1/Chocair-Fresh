@@ -368,16 +368,22 @@ const Checkout = () => {
     setLoading(true);
 
     try {
-      if (!verifiedCheckoutToken) {
-        throw new Error('Verify your WhatsApp phone number before placing the order.');
-      }
+      const phoneForOrder = activeUser?.phone || formData.phone || user?.phone;
       const normalizedPhone =
-        normalizeLebanesePhoneNumber(formData.phone || user?.phone) || formData.phone || user?.phone;
-      if (
-        checkoutVerification.current?.token !== verifiedCheckoutToken ||
-        checkoutVerification.current?.phone !== normalizedPhone
-      ) {
-        throw new Error('The verified phone number changed. Please verify it again.');
+        normalizeLebanesePhoneNumber(phoneForOrder) || phoneForOrder;
+      const hasVerifiedAccountPhone = Boolean(
+        activeUser?.phone &&
+        normalizeLebanesePhoneNumber(activeUser.phone) === normalizedPhone
+      );
+      if (verifiedCheckoutToken) {
+        if (
+          checkoutVerification.current?.token !== verifiedCheckoutToken ||
+          checkoutVerification.current?.phone !== normalizedPhone
+        ) {
+          throw new Error('The verified phone number changed. Please verify it again.');
+        }
+      } else if (!hasVerifiedAccountPhone) {
+        throw new Error('Verify your WhatsApp phone number before placing the order.');
       }
       if (!formData.address || !formData.address.trim()) {
         const msg = 'Please choose your delivery location before placing your order.';
@@ -605,6 +611,11 @@ const Checkout = () => {
       const msg = 'Please enter a valid Lebanese phone number (e.g., 70 123 456 or 03 123 456)';
       setError(msg);
       toast.error(msg);
+      return;
+    }
+
+    if (user?.phone && normalizeLebanesePhoneNumber(user.phone) === normalizedPhone) {
+      await createOrder(null, null, user);
       return;
     }
     

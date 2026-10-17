@@ -107,14 +107,27 @@ const addOrderItems = asyncHandler(async (req, res) => {
     }
   }
 
-  const checkoutGrant = await consumeVerificationGrant(
-    checkoutVerificationToken,
-    normalizedPhone,
-    'checkout'
-  );
-  if (!checkoutGrant) {
-    res.status(403);
-    throw new Error('Verify the checkout phone number before placing this order.');
+  let checkoutGrant = null;
+  let authenticatedUserHasVerifiedPhone = false;
+  if (req.user?.phone) {
+    try {
+      authenticatedUserHasVerifiedPhone =
+        `+${normalizePhoneForWhatsApp(req.user.phone)}` === normalizedPhone;
+    } catch {
+      authenticatedUserHasVerifiedPhone = false;
+    }
+  }
+
+  if (!authenticatedUserHasVerifiedPhone) {
+    checkoutGrant = await consumeVerificationGrant(
+      checkoutVerificationToken,
+      normalizedPhone,
+      'checkout'
+    );
+    if (!checkoutGrant) {
+      res.status(403);
+      throw new Error('Verify the checkout phone number before placing this order.');
+    }
   }
 
   // Atomically decrement stock and securely calculate price per item

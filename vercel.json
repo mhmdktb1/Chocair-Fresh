@@ -23,7 +23,7 @@
     },
     {
       "source": "/product/:id([0-9a-fA-F]{24})",
-      "destination": "/api/product-redirect?id=:id"
+      "destination": "/spa-fallback"
     },
     {
       "source": "/category/:id([0-9a-fA-F]{24})",

@@ -12,22 +12,10 @@
 }
 
 .floating-cart-summary-dock.product-page-cart-dock {
-  bottom: 88px;
-  z-index: 1051;
-  padding: 0 5rem 0 1rem;
-  justify-content: flex-end;
-}
-
-@media (max-width: 768px) {
-  .floating-cart-summary-dock.product-page-cart-dock {
-    bottom: calc(76px + env(safe-area-inset-bottom, 0px));
-  }
-}
-
-@media (max-width: 480px) {
-  .floating-cart-summary-dock.product-page-cart-dock {
-    bottom: 134px;
-  }
+  bottom: calc(env(safe-area-inset-bottom, 0px) + 84px);
+  z-index: 997;
+  justify-content: flex-start;
+  padding-left: max(0.75rem, env(safe-area-inset-left, 0px));
 }
 
 .floating-cart-summary-pill {

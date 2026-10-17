@@ -119,6 +119,40 @@ describe('Order API', () => {
     expect(await Product.findById(productId).then((product) => product.countInStock)).toBe(100);
   });
 
+  it('CHECKOUT SECURITY: accepts the verified phone on the authenticated account without another OTP', async () => {
+    const user = await User.create({
+      name: 'Verified Customer',
+      phone: '+96170123456',
+    });
+    const payload = createOrderData();
+    payload.customerInfo.phone = user.phone;
+
+    const response = await request(app)
+      .post('/api/orders')
+      .set('Authorization', `Bearer ${generateToken(user._id)}`)
+      .send(payload);
+
+    expect(response.status).toBe(201);
+    expect(response.body.customerInfo.phone).toBe(user.phone);
+    expect(await Product.findById(productId).then((product) => product.countInStock)).toBe(98);
+  });
+
+  it('CHECKOUT SECURITY: does not skip OTP when authenticated account phone differs from order phone', async () => {
+    const user = await User.create({
+      name: 'Verified Customer',
+      phone: '+96170111111',
+    });
+    const payload = createOrderData();
+
+    const response = await request(app)
+      .post('/api/orders')
+      .set('Authorization', `Bearer ${generateToken(user._id)}`)
+      .send(payload);
+
+    expect(response.status).toBe(403);
+    expect(await Product.findById(productId).then((product) => product.countInStock)).toBe(100);
+  });
+
   it('CHECKOUT SECURITY: a checkout verification grant cannot place duplicate orders', async () => {
     const payload = createOrderData();
     const phone = `+${normalizePhoneForWhatsApp(payload.customerInfo.phone)}`;
