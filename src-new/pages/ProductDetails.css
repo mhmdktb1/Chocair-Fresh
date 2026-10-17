@@ -8,7 +8,7 @@
   max-width: 100vw;
   box-sizing: border-box;
   background-color: var(--bg-body, #ffffff);
-  padding-bottom: 7rem;
+  padding-bottom: 10rem;
   overflow-x: hidden;
   position: relative;
 }
@@ -20,7 +20,7 @@
 /* Hide global desktop site navbar on mobile when in Toters mode */
 @media (max-width: 768px) {
   .product-details-page.toters-mode {
-    padding-bottom: calc(85px + env(safe-area-inset-bottom, 0px));
+    padding-bottom: calc(145px + env(safe-area-inset-bottom, 0px));
   }
 
   .product-details-page.toters-mode .navbar {
@@ -758,6 +758,5 @@
     font-size: 0.95rem;
   }
 }
-
 
 

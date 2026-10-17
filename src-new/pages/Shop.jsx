@@ -19,12 +19,11 @@ import {
 } from 'lucide-react';
 import Navbar from '../components/layout/Navbar';
 import ProductCard from '../components/shop/ProductCard';
+import FloatingCartSummary from '../components/shop/FloatingCartSummary';
 import Loading from '../components/common/Loading';
 import { useAdmin } from '../context/AdminContext';
-import { useCart } from '../context/CartContext';
 import { useTheme } from '../context/ThemeContext';
 import { translations } from '../utils/translations';
-import { formatCurrency } from '../utils/formatters';
 import { matchesProductQuery } from '../utils/productTranslation';
 import { getAssetUrl } from '../utils/api';
 import { useSeo } from '../seo/useSeo';
@@ -116,7 +115,6 @@ const getSubCategoryImage = (subName, catName, products = [], adminCategories = 
 
 const Shop = () => {
   const { products, categories: adminCategories, loading, error, refreshProducts } = useAdmin();
-  const { cartItems, cartCount, cartTotal } = useCart();
   const { language } = useTheme();
   const t = translations[language] || translations.en;
   const [searchParams, setSearchParams] = useSearchParams();
@@ -1157,52 +1155,7 @@ const Shop = () => {
         </div>
       )}
 
-      {/* ==========================================
-          6. FLOATING CIRCULAR PILL CART BAR (TOTERS STYLE)
-          ========================================== */}
-      {cartCount > 0 && (
-        <aside className="toters-floating-cart-dock" aria-label="Shopping Cart Summary">
-          <div className="toters-floating-cart-pill" onClick={() => navigate('/cart')}>
-            <div className="toters-cart-left-wrap">
-              {/* Overlapping Product Thumbnails Stack */}
-              <div className="toters-cart-thumbnails-stack">
-                {cartItems.slice(0, 3).map((item, idx) => {
-                  const itemImg = getAssetUrl(item.image) || '/assets/images/products/placeholder.jpg';
-                  return (
-                    <div 
-                      key={item._id || item.id || idx} 
-                      className="toters-cart-thumb-item"
-                      style={{ zIndex: 10 - idx }}
-                    >
-                      <img
-                        src={itemImg}
-                        alt={item.name}
-                        className="toters-cart-thumb-img"
-                        onError={(e) => { e.currentTarget.src = '/assets/images/products/placeholder.jpg'; }}
-                      />
-                    </div>
-                  );
-                })}
-              </div>
-
-              {/* Items Count & Total Price */}
-              <div className="toters-cart-info-col">
-                <span className="toters-cart-items-label">
-                  {cartCount} {cartCount === 1 ? 'item' : 'items'}
-                </span>
-                <span className="toters-cart-price-val">
-                  {formatCurrency(cartTotal)}
-                </span>
-              </div>
-            </div>
-
-            {/* Circular Green Arrow Action Button */}
-            <div className="toters-cart-arrow-bubble">
-              <ChevronRight size={14} strokeWidth={3} />
-            </div>
-          </div>
-        </aside>
-      )}
+      <FloatingCartSummary />
     </div>
   );
 };

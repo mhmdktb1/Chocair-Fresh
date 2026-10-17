@@ -1,0 +1,126 @@
+.floating-cart-summary-dock {
+  position: fixed;
+  bottom: calc(env(safe-area-inset-bottom, 0px) + 64px);
+  left: 0;
+  right: 0;
+  z-index: 950;
+  padding: 0 1rem;
+  display: flex;
+  justify-content: center;
+  pointer-events: none;
+  animation: cartDockFloat 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.floating-cart-summary-dock.product-page-cart-dock {
+  bottom: calc(env(safe-area-inset-bottom, 0px) + 84px);
+  z-index: 997;
+}
+
+.floating-cart-summary-pill {
+  pointer-events: auto;
+  background: linear-gradient(135deg, #0d5f42 0%, #00a680 100%);
+  color: #ffffff;
+  border: 0;
+  border-radius: 9999px;
+  padding: 0.4rem 0.5rem 0.4rem 0.65rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  width: min(280px, 100%);
+  max-width: calc(100vw - 2rem);
+  box-shadow: 0 10px 25px rgba(0, 166, 128, 0.38), 0 2px 8px rgba(0, 0, 0, 0.12);
+  cursor: pointer;
+  font: inherit;
+  text-align: left;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.floating-cart-summary-pill:active {
+  transform: scale(0.98);
+}
+
+.floating-cart-summary-items {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  min-width: 0;
+}
+
+.floating-cart-summary-thumbnails {
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+}
+
+.floating-cart-summary-thumbnail {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  border: 1.5px solid #ffffff;
+  overflow: hidden;
+  background: #ffffff;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
+  margin-left: -8px;
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.floating-cart-summary-thumbnail:first-child {
+  margin-left: 0;
+}
+
+.floating-cart-summary-thumbnail img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  padding: 2px;
+}
+
+.floating-cart-summary-info {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.floating-cart-summary-count {
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: #a7f3d0;
+  line-height: 1.1;
+  white-space: nowrap;
+}
+
+.floating-cart-summary-total {
+  font-size: 0.9rem;
+  font-weight: 850;
+  color: #ffffff;
+  line-height: 1.1;
+  white-space: nowrap;
+}
+
+.floating-cart-summary-arrow {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: #007a5e;
+  color: #ffffff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+  transition: transform 0.15s ease, background-color 0.15s ease;
+}
+
+.floating-cart-summary-pill:hover .floating-cart-summary-arrow {
+  transform: translateX(2px);
+  background: #00664e;
+}
+
+@keyframes cartDockFloat {
+  from { opacity: 0; transform: translateY(16px); }
+  to { opacity: 1; transform: translateY(0); }
+}

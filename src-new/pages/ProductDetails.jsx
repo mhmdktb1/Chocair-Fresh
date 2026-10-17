@@ -24,6 +24,7 @@ import Button from '../components/common/Button';
 import Loading from '../components/common/Loading';
 import WeightScale from '../components/shop/WeightScale';
 import TotersProductRow from '../components/shop/TotersProductRow';
+import FloatingCartSummary from '../components/shop/FloatingCartSummary';
 import { normalizeUnit, formatQuantityWithUnit, getPresetOptions } from '../utils/unitHelper';
 import { getArabicProductName } from '../utils/productTranslation';
 import { getProductDescription } from '../utils/textUtils';
@@ -565,6 +566,8 @@ const ProductDetails = () => {
           <span className="btn-price-text">${totalPrice}</span>
         </button>
       </div>
+
+      <FloatingCartSummary productPage />
 
       {/* Lightbox Modal */}
       {isLightboxOpen && (
